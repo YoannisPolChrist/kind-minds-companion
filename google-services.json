@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "893187424974",
+    "project_id": "therapieprozessunterstuetzung",
+    "storage_bucket": "therapieprozessunterstuetzung.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:893187424974:android:f5df3653eded23e337869f",
+        "android_client_info": {
+          "package_name": "therapie.prozess.optimierung"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCXo45lA08WE-A6Hheg4F7BwS9KZE55mKU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
