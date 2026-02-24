@@ -18,10 +18,20 @@ export default function AppLayout() {
         return <Redirect href="/(auth)/login" />;
     }
 
+    // Role-based routing
+    if (profile?.role === 'therapist') {
+        return (
+            <Stack>
+                <Stack.Screen name="therapist/index" options={{ title: 'Dashboard', headerShown: false }} />
+                {/* Further therapist routes can be added here */}
+            </Stack>
+        );
+    }
+
+    // Fallback for default 'client'
     return (
         <Stack>
-            <Stack.Screen name="index" options={{ title: 'Dashboard', headerShown: false }} />
-            <Stack.Screen name="therapist" options={{ title: 'Therapeuten-Ansicht' }} />
+            <Stack.Screen name="index" options={{ title: 'Übersicht', headerShown: false }} />
         </Stack>
     );
 }
