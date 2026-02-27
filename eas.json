@@ -1,0 +1,21 @@
+{
+  "cli": {
+    "version": ">= 14.1.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyCXo45lA08WE-A6Hheg4F7BwS9KZE55mKU",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "therapieprozessunterstuetzung.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "therapieprozessunterstuetzung",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "therapieprozessunterstuetzung.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "893187424974",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:893187424974:web:1234567890abcdef"
+      }
+    }
+  }
+}

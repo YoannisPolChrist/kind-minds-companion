@@ -1,0 +1,25 @@
+
+> therapyclientapp@1.0.0 android
+> expo run:android
+
+env: load .env
+env: export EXPO_PUBLIC_FIREBASE_API_KEY EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN EXPO_PUBLIC_FIREBASE_PROJECT_ID EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID EXPO_PUBLIC_FIREBASE_APP_ID
+› Building app...
+ 
+ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH. 
+ 
+Please set the JAVA_HOME variable in your environment to match the 
+location of your Java installation. 
+Error: C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\android\gradlew.bat app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 -PreactNativeArchitectures=arm64-v8a,armeabi-v7a exited with non-zero code: 9009
+Error: C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\android\gradlew.bat app:assembleDebug -x lint -x test --configure-on-demand --build-cache -PreactNativeDevServerPort=8081 -PreactNativeArchitectures=arm64-v8a,armeabi-v7a exited with non-zero code: 9009
+    at ChildProcess.completionListener (C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\node_modules\@expo\spawn-async\src\spawnAsync.ts:67:13)
+    at Object.onceWrapper (node:events:634:26)
+    at ChildProcess.emit (node:events:519:28)
+    at ChildProcess.cp.emit (C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\node_modules\cross-spawn\lib\enoent.js:34:29)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Process.ChildProcess._handle.onexit (node:internal/child_process:304:5)
+    ...
+    at spawnAsync (C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\node_modules\@expo\spawn-async\src\spawnAsync.ts:28:21)
+    at spawnGradleAsync (C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\node_modules\expo\node_modules\@expo\cli\src\start\platforms\android\gradle.ts:134:28)
+    at assembleAsync (C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\node_modules\expo\node_modules\@expo\cli\src\start\platforms\android\gradle.ts:83:16)
+    at runAndroidAsync (C:\Users\psjoh\Desktop\Personal\Coding\Apps\TherapyClientApp\node_modules\expo\node_modules\@expo\cli\src\run\android\runAndroidAsync.ts:62:24)

@@ -3,35 +3,39 @@ import { useAuth } from '../../contexts/AuthContext';
 import { View, ActivityIndicator } from 'react-native';
 
 export default function AppLayout() {
-    const { user, loading } = useAuth();
+    const { user, profile, loading } = useAuth();
 
     if (loading) {
         return (
-            <View className="flex-1 justify-center items-center bg-white">
-                <ActivityIndicator size="large" color="#0000ff" />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9F8F6' }}>
+                <ActivityIndicator size="large" color="#137386" />
             </View>
         );
     }
 
-    // Redirect to login if user is not authenticated
-    if (!user) {
-        return <Redirect href="/(auth)/login" />;
-    }
+    if (!user) return <Redirect href="/(auth)/login" />;
 
-    // Role-based routing
+    // Therapeut → immer direkt zum Therapeuten-Dashboard
     if (profile?.role === 'therapist') {
         return (
-            <Stack>
-                <Stack.Screen name="therapist/index" options={{ title: 'Dashboard', headerShown: false }} />
-                {/* Further therapist routes can be added here */}
+            <Stack screenOptions={{ headerShown: false }}>
+                <Stack.Screen name="therapist/index" />
+                <Stack.Screen name="therapist/templates" />
+                <Stack.Screen name="therapist/template/[id]" />
+                <Stack.Screen name="therapist/client/[id]" />
+                <Stack.Screen name="therapist/client/assign/[clientId]" />
             </Stack>
         );
     }
 
-    // Fallback for default 'client'
+    // Klient → Client-Dashboard mit allen Sub-Screens
     return (
-        <Stack>
-            <Stack.Screen name="index" options={{ title: 'Übersicht', headerShown: false }} />
+        <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" />
+            <Stack.Screen name="exercise/[id]" />
+            <Stack.Screen name="checkin" />
+            <Stack.Screen name="history" />
+            <Stack.Screen name="settings" />
         </Stack>
     );
 }

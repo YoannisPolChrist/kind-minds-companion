@@ -23,14 +23,38 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
-    ]
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Die App benötigt Zugriff auf deinen Kalender, um Therapie-Erinnerungen einzutragen."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Die App benötigt Zugriff auf deine Fotos für Medien-Uploads in Übungen.",
+          "cameraPermission": "Die App benötigt Zugriff auf die Kamera für Medien-Uploads."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5e4f2bb0-ee84-4751-bfb1-a149335020e5"
+      }
+    }
   }
 }

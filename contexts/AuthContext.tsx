@@ -1,74 +1,36 @@
-import { createContext, useContext, useEffect, useState } from "react";
-import { User, onAuthStateChanged, signOut as firebaseSignOut } from "firebase/auth";
-import { auth, db } from "../utils/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { createContext, useContext, useEffect } from "react";
+import { signOut as firebaseSignOut } from "firebase/auth";
+import { auth } from "../utils/firebase";
+import { useAuthStore, initializeAuthListener, UserProfile } from "../stores/authStore";
 
-interface UserProfile {
-    id: string;
-    role: "therapist" | "client";
-    firstName: string;
-    lastName: string;
-}
+// Export the types for backwards compatibility
+export { UserProfile };
 
-interface AuthContextType {
-    user: User | null;
-    profile: UserProfile | null;
-    loading: boolean;
-    signOut: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType>({
-    user: null,
-    profile: null,
-    loading: true,
-    signOut: async () => { },
-});
-
-export const useAuth = () => useContext(AuthContext);
-
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-    const [user, setUser] = useState<User | null>(null);
-    const [profile, setProfile] = useState<UserProfile | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setUser(firebaseUser);
-            if (firebaseUser) {
-                try {
-                    // Fetch additional profile data from Firestore
-                    const docRef = doc(db, "users", firebaseUser.uid);
-                    const docSnap = await getDoc(docRef);
-                    if (docSnap.exists()) {
-                        setProfile({ id: docSnap.id, ...docSnap.data() } as UserProfile);
-                    } else {
-                        // Default fallback if profile doesn't exist yet
-                        setProfile({
-                            id: firebaseUser.uid,
-                            role: "client", // default role
-                            firstName: "Neuer",
-                            lastName: "Benutzer"
-                        });
-                    }
-                } catch (error) {
-                    console.error("Error fetching user profile:", error);
-                }
-            } else {
-                setProfile(null);
-            }
-            setLoading(false);
-        });
-
-        return unsubscribe;
-    }, []);
+// We export a unified hook that uses Zustand hook selectors to prevent re-renders
+export const useAuth = () => {
+    const user = useAuthStore(state => state.user);
+    const profile = useAuthStore(state => state.profile);
+    const loading = useAuthStore(state => state.isLoading);
+    const session = useAuthStore(state => state.session);
 
     const signOut = async () => {
         await firebaseSignOut(auth);
     };
 
-    return (
-        <AuthContext.Provider value={{ user, profile, loading, signOut }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    return { user, profile, loading, session, signOut };
+};
+
+// We don't actually need the Context Provider anymore for Zustand, 
+// but we keep the AuthProvider wrapper to initialize the listener once
+// and preserve the <AuthProvider> layout nesting in app/_layout.tsx
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+    useEffect(() => {
+        // Start listening to Firebase Auth changes when the app mounts
+        const unsubscribe = initializeAuthListener();
+        return () => {
+            if (unsubscribe) unsubscribe();
+        };
+    }, []);
+
+    return <>{children}</>;
 };

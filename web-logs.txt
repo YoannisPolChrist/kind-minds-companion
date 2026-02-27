@@ -1,0 +1,14 @@
+Navigating to http://localhost:8081 ...
+[Page Error] Cannot use 'import.meta' outside a module
+Body HTML:
+ 
+    <!-- Use static rendering with Expo Router to support running without JavaScript. -->
+    <noscript>
+      You need to enable JavaScript to run this app.
+    </noscript>
+    <!-- The root element for your Expo app. -->
+    <div id="root"></div>
+  <script src="/index.bundle?platform=web&amp;dev=true&amp;hot=false&amp;lazy=true&amp;transform.engine=hermes&amp;transform.routerRoot=app&amp;unstable_transformProfile=hermes-stable" defer=""></script>
+
+
+Root element inline styles: 

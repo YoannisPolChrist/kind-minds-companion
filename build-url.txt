@@ -1,0 +1,19 @@
+
+Builds for @jhnnschrist/TherapyClientApp:
+
+ID                       c6e4dcb3-2c5b-4a20-8e04-93a8efdb3c50
+Platform                 Android
+Status                   in progress
+Profile                  preview
+Distribution             store
+SDK Version              54.0.0
+Version                  1.0.0
+Version code             1
+Commit                   d57ebff56d28936194e6060a41d9b84dc43fcf0c
+Logs                     https://expo.dev/accounts/jhnnschrist/projects/TherapyClientApp/builds/c6e4dcb3-2c5b-4a20-8e04-93a8efdb3c50
+Application Archive URL  <in progress>
+Build Artifacts URL      <in progress>
+Fingerprint              <in progress>
+Started at               27/02/2026 00:56:41
+Finished at              <in progress>
+Started by               jhnnschrist

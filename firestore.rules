@@ -1,0 +1,30 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Hilfsfunktion zur Prüfung der Therapeuten-Rolle
+    function isTherapist() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'therapist';
+    }
+
+    // Users: Any logged in user can update profiles
+    match /users/{userId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Exercises: Allow logged in users to create/read
+    match /exercises/{exerciseId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Exercise Templates: Any authenticated user can build templates
+    match /exercise_templates/{templateId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // Check-ins
+    match /checkins/{checkinId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}
