@@ -39,3 +39,41 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Logs & debug artifacts
+*.log
+logcat_crash.txt
+build-url.txt
+android_build_error.log
+
+# Debug images & text dumps
+debug_ui_error.png
+web_login_current.png
+web_screenshot.png
+login_screen_review.png
+playwright_output.txt
+meta-out.txt
+out.log
+full-logs.txt
+logs.txt
+logs_clean.txt
+web-logs.txt
+compile.log
+errors.log
+errors.txt
+ts_errors.txt
+tsc_errors.log
+compile_errors.txt
+
+# Temp / test environments
+tmp_test_env/
+test-results/
+
+# Scatter scripts
+createTestAccount.mjs
+createTestAccount.ts
+readDB.mjs
+check-web.js
+find-meta.js
+playwright_debug.js
+update_i18n.js

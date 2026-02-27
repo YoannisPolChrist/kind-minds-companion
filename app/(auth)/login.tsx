@@ -3,12 +3,19 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, K
 import i18n from '../../utils/i18n';
 import { MotiView } from 'moti';
 import { useAuthActions } from '../../hooks/useAuthActions';
-// --- Pure Components ---
+
+// ─── Design Tokens ─────────────────────────────────────────────────────────────
+// 8-pt grid: 8, 16, 24, 32, 40, 48, 64px
+// Max form width: 480px (premium web convention — Notion, Linear, Superhuman)
+// Input height: 52px (14px top/bottom padding + 24px line height)
+// CTA height: 56px (18px top/bottom padding + 20px line height)
+
+// ─── Pure Components ───────────────────────────────────────────────────────────
 
 const DecorativeBackground = () => (
     <>
-        <View className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-[#137386]/5 rounded-full blur-3xl pointer-events-none" />
-        <View className="absolute bottom-[-50px] left-[-50px] w-64 h-64 bg-[#C09D59]/10 rounded-full blur-3xl pointer-events-none" />
+        <View className="absolute top-0 right-0 w-96 h-96 bg-[#137386]/5 rounded-full pointer-events-none" style={{ transform: [{ translateX: 120 }, { translateY: -120 }] }} />
+        <View className="absolute bottom-0 left-0 w-80 h-80 bg-[#C09D59]/8 rounded-full pointer-events-none" style={{ transform: [{ translateX: -80 }, { translateY: 80 }] }} />
     </>
 );
 
@@ -16,20 +23,22 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
     <MotiView
         from={{ opacity: 0, translateY: -20 }}
         animate={{ opacity: 1, translateY: 0 }}
-        transition={{ type: 'timing', duration: 1000 }}
-        className={`items-center ${isKeyboardVisible ? 'mb-6 mt-12' : 'mb-12'}`}
+        transition={{ type: 'timing', duration: 900 }}
+        style={{ alignItems: 'center', marginBottom: isKeyboardVisible ? 24 : 40 }}
     >
-        <View className="items-center mb-4">
-            <View className="flex-row items-end">
-                <Text className="text-5xl font-light text-[#243842]" style={{ fontFamily: 'Oxygen', letterSpacing: -1.5 }}>Johannes</Text>
-                <Text className="text-5xl font-bold text-[#137386]" style={{ fontFamily: 'Oxygen', letterSpacing: -1.5 }}>Christ</Text>
+        {/* Logo */}
+        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                <Text style={{ fontSize: 44, fontWeight: '300', color: '#243842', letterSpacing: -2, lineHeight: 52 }}>Johannes</Text>
+                <Text style={{ fontSize: 44, fontWeight: '800', color: '#137386', letterSpacing: -2, lineHeight: 52 }}>Christ</Text>
             </View>
-            <View className="flex-row items-center mt-3">
-                <View className="h-[1px] w-12 bg-[#C09D59]/50" />
-                <Text className="text-[11px] uppercase font-bold text-[#C09D59] tracking-[0.2em] mx-3">
-                    Therapie & Coaching
+            {/* Tagline with ornamental lines */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                <View style={{ height: 1, width: 40, backgroundColor: '#C09D59', opacity: 0.5 }} />
+                <Text style={{ fontSize: 11, fontWeight: '700', color: '#C09D59', letterSpacing: 3, marginHorizontal: 12, textTransform: 'uppercase' }}>
+                    Therapie &amp; Coaching
                 </Text>
-                <View className="h-[1px] w-12 bg-[#C09D59]/50" />
+                <View style={{ height: 1, width: 40, backgroundColor: '#C09D59', opacity: 0.5 }} />
             </View>
         </View>
 
@@ -39,7 +48,7 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
                 animate={{ opacity: 1 }}
                 transition={{ delay: 500, type: 'timing', duration: 800 }}
             >
-                <Text className="text-[#243842]/60 text-center text-base mt-2 px-4 leading-relaxed">
+                <Text style={{ color: 'rgba(36,56,66,0.55)', textAlign: 'center', fontSize: 15, lineHeight: 24, paddingHorizontal: 16, marginTop: 8 }}>
                     {i18n.t('login.subtitle')}
                 </Text>
             </MotiView>
@@ -47,7 +56,7 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
     </MotiView>
 );
 
-// --- Main Component ---
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Login() {
     const { login, resetPassword, loading, error: globalError, success } = useAuthActions();
@@ -78,7 +87,6 @@ export default function Login() {
 
     const handleChange = (field: keyof typeof formData, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-        // Clear specific error when user starts typing
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: undefined }));
         }
@@ -116,87 +124,157 @@ export default function Login() {
     return (
         <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            className="flex-1 bg-[#F9F8F6]"
+            style={{ flex: 1, backgroundColor: '#F9F8F6' }}
         >
-            <View className="flex-1 justify-center px-8 relative overflow-hidden">
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, position: 'relative', overflow: 'hidden' }}>
                 <DecorativeBackground />
-                <BrandHeader isKeyboardVisible={isKeyboardVisible} />
 
-                <MotiView
-                    from={{ opacity: 0, translateY: 40 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 300 }}
-                    className="bg-white/80 p-6 rounded-[32px] shadow-sm border border-white/50"
-                >
-                    {globalError ? (
-                        <MotiView
-                            from={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="bg-red-50 p-4 rounded-2xl mb-4 border border-red-100 mt-2"
-                        >
-                            <Text className="text-red-600 text-sm text-center font-medium">{globalError}</Text>
-                        </MotiView>
-                    ) : null}
+                {/* ── Centered content column (max 480px like premium web) ── */}
+                <View style={{ width: '100%', maxWidth: 480 }}>
+                    <BrandHeader isKeyboardVisible={isKeyboardVisible} />
 
-                    {success ? (
-                        <MotiView
-                            from={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="bg-green-50 p-4 rounded-2xl mb-4 border border-green-100 mt-2"
-                        >
-                            <Text className="text-green-600 text-sm text-center font-medium">{success}</Text>
-                        </MotiView>
-                    ) : null}
+                    {/* ── Form Card ── */}
+                    <MotiView
+                        from={{ opacity: 0, translateY: 40 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 300 }}
+                        style={{
+                            backgroundColor: 'rgba(255, 255, 255, 0.85)',
+                            // 40px padding (8pt × 5) — premium web standard
+                            padding: 40,
+                            borderRadius: 28,
+                            shadowColor: '#243842',
+                            shadowOffset: { width: 0, height: 8 },
+                            shadowOpacity: 0.07,
+                            shadowRadius: 24,
+                            elevation: 6,
+                            borderWidth: 1,
+                            borderColor: 'rgba(255,255,255,0.6)',
+                        }}
+                    >
+                        {/* Error / Success alerts */}
+                        {globalError ? (
+                            <MotiView
+                                from={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                style={{ backgroundColor: '#FEF2F2', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: '#FEE2E2' }}
+                            >
+                                <Text style={{ color: '#DC2626', fontSize: 14, textAlign: 'center', fontWeight: '500' }}>{globalError}</Text>
+                            </MotiView>
+                        ) : null}
 
-                    <View>
-                        <View className="mb-4">
-                            <Text className="text-[#243842]/60 text-[11px] font-bold uppercase tracking-wider mb-2 ml-2">E-Mail</Text>
+                        {success ? (
+                            <MotiView
+                                from={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                style={{ backgroundColor: '#F0FDF4', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: '#DCFCE7' }}
+                            >
+                                <Text style={{ color: '#16A34A', fontSize: 14, textAlign: 'center', fontWeight: '500' }}>{success}</Text>
+                            </MotiView>
+                        ) : null}
+
+                        {/* ── Email Field ── */}
+                        <View style={{ marginBottom: 20 }}>
+                            <Text style={{
+                                color: 'rgba(36,56,66,0.5)',
+                                fontSize: 11,
+                                fontWeight: '700',
+                                textTransform: 'uppercase',
+                                letterSpacing: 2,
+                                marginBottom: 8,
+                                marginLeft: 4,
+                            }}>E-Mail</Text>
                             <TextInput
-                                className={`bg-[#F9F8F6] px-5 py-4 rounded-2xl border ${errors.email ? 'border-red-300' : 'border-gray-100/50'} text-[#243842] text-base font-medium`}
+                                style={{
+                                    backgroundColor: '#F9F8F6',
+                                    paddingHorizontal: 20,
+                                    paddingVertical: 14, // → 52px total height
+                                    borderRadius: 16,
+                                    borderWidth: 1.5,
+                                    borderColor: errors.email ? '#FCA5A5' : 'rgba(36,56,66,0.1)',
+                                    color: '#243842',
+                                    fontSize: 16,
+                                    fontWeight: '500',
+                                }}
                                 placeholder={i18n.t('login.email')}
                                 value={formData.email}
                                 onChangeText={(text) => handleChange('email', text)}
                                 autoCapitalize="none"
                                 keyboardType="email-address"
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor="rgba(36,56,66,0.3)"
                             />
-                            {errors.email && <Text className="text-red-500 text-xs ml-2 mt-1">{errors.email}</Text>}
+                            {errors.email && (
+                                <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{errors.email}</Text>
+                            )}
                         </View>
 
-                        <View className="mb-6">
-                            <Text className="text-[#243842]/60 text-[11px] font-bold uppercase tracking-wider mb-2 ml-2">Passwort</Text>
+                        {/* ── Password Field ── */}
+                        <View style={{ marginBottom: 32 }}>
+                            <Text style={{
+                                color: 'rgba(36,56,66,0.5)',
+                                fontSize: 11,
+                                fontWeight: '700',
+                                textTransform: 'uppercase',
+                                letterSpacing: 2,
+                                marginBottom: 8,
+                                marginLeft: 4,
+                            }}>Passwort</Text>
                             <TextInput
-                                className={`bg-[#F9F8F6] px-5 py-4 rounded-2xl border ${errors.password ? 'border-red-300' : 'border-gray-100/50'} text-[#243842] text-base font-medium`}
+                                style={{
+                                    backgroundColor: '#F9F8F6',
+                                    paddingHorizontal: 20,
+                                    paddingVertical: 14, // → 52px total
+                                    borderRadius: 16,
+                                    borderWidth: 1.5,
+                                    borderColor: errors.password ? '#FCA5A5' : 'rgba(36,56,66,0.1)',
+                                    color: '#243842',
+                                    fontSize: 16,
+                                    fontWeight: '500',
+                                }}
                                 placeholder={i18n.t('login.password')}
                                 value={formData.password}
                                 onChangeText={(text) => handleChange('password', text)}
                                 secureTextEntry
-                                placeholderTextColor="#9CA3AF"
+                                placeholderTextColor="rgba(36,56,66,0.3)"
                             />
-                            {errors.password && <Text className="text-red-500 text-xs ml-2 mt-1">{errors.password}</Text>}
+                            {errors.password && (
+                                <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{errors.password}</Text>
+                            )}
                         </View>
 
+                        {/* ── Primary CTA Button (56px height — premium standard) ── */}
                         <TouchableOpacity
-                            className="bg-[#137386] py-4 rounded-2xl items-center shadow-lg shadow-[#137386]/30 active:opacity-90 mt-1"
+                            style={{
+                                backgroundColor: '#137386',
+                                paddingVertical: 18,   // → 56px total with 20px text
+                                borderRadius: 16,
+                                alignItems: 'center',
+                                shadowColor: '#137386',
+                                shadowOffset: { width: 0, height: 8 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 20,
+                                elevation: 6,
+                            }}
                             onPress={handleLoginSubmit}
                             disabled={loading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text className="text-white font-bold text-lg tracking-wide">{i18n.t('login.button')}</Text>
+                                <Text style={{ color: 'white', fontWeight: '700', fontSize: 16, letterSpacing: 0.5 }}>{i18n.t('login.button')}</Text>
                             )}
                         </TouchableOpacity>
 
+                        {/* ── Forgot Password ── */}
                         <TouchableOpacity
-                            className="py-4 mt-1 items-center"
+                            style={{ paddingVertical: 16, marginTop: 4, alignItems: 'center' }}
                             onPress={handleResetPasswordSubmit}
                             disabled={loading}
                         >
-                            <Text className="text-[#137386]/80 font-bold text-sm tracking-wide">{i18n.t('login.forgot')}</Text>
+                            <Text style={{ color: 'rgba(19,115,134,0.75)', fontWeight: '600', fontSize: 14, letterSpacing: 0.3 }}>{i18n.t('login.forgot')}</Text>
                         </TouchableOpacity>
-                    </View>
-                </MotiView>
+                    </MotiView>
+                </View>
             </View>
         </KeyboardAvoidingView>
     );
