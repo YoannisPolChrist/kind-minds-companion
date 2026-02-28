@@ -31,7 +31,8 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "plugins": [
       "expo-router",
@@ -48,10 +49,10 @@
           "cameraPermission": "Die App benötigt Zugriff auf die Kamera für Medien-Uploads."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "./modules/expo-mindful-tracking/app.plugin.js"
     ],
     "extra": {
-      "router": {},
       "eas": {
         "projectId": "5e4f2bb0-ee84-4751-bfb1-a149335020e5"
       }

@@ -7,24 +7,31 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'therapist';
     }
 
-    // Users: Any logged in user can update profiles
+    // Users: Any logged in user can read (needed to list clients/therapists). 
+    // Write is restricted to the user themselves or a therapist.
     match /users/{userId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isTherapist());
     }
 
-    // Exercises: Allow logged in users to create/read
+    // Exercises: Read/write by authenticated users. Clients can update their exercises (e.g. mark done),
+    // Therapists create them.
     match /exercises/{exerciseId} {
-      allow read, write: if request.auth != null;
+      allow create: if request.auth != null && (isTherapist() || request.resource.data.clientId == request.auth.uid);
+      allow read, update, delete: if request.auth != null;
     }
 
-    // Exercise Templates: Any authenticated user can build templates
+    // Exercise Templates: Only therapists can create/update/delete templates. 
+    // Anyone can read (in case clients need to fetch a read-only template reference).
     match /exercise_templates/{templateId} {
-      allow read, write: if request.auth != null;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && isTherapist();
     }
 
-    // Check-ins
+    // Check-ins: Clients create their own check-ins.
     match /checkins/{checkinId} {
-      allow read, write: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read, update, delete: if request.auth != null;
     }
   }
 }

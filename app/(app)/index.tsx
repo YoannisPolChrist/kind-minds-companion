@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform, useWindowDimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
 import { Settings, Calendar, BookOpen } from 'lucide-react-native';
@@ -24,11 +24,7 @@ import { MoodChart } from '../../components/dashboard/MoodChart';
 import { DarkAmbientOrbs, LightAmbientOrbs } from '../../components/ui/AmbientOrbs';
 import { Skeleton } from '../../components/ui/Skeleton';
 
-function getTodayQuote(): string {
-    const quotes = i18n.t('dashboard.daily_quotes', { returnObjects: true }) as string[];
-    if (!Array.isArray(quotes) || quotes.length === 0) return '';
-    return quotes[new Date().getDay() % quotes.length];
-}
+
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
@@ -97,20 +93,7 @@ export default function ClientDashboard() {
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
     const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
 
-    const scrollY = useSharedValue(0);
-    const scrollHandler = useAnimatedScrollHandler({
-        onScroll: (event) => {
-            scrollY.value = event.contentOffset.y;
-        },
-    });
 
-    const headerAnimatedStyle = useAnimatedStyle(() => {
-        const translateY = interpolate(scrollY.value, [-100, 0, 200], [0, 0, -20], Extrapolate.CLAMP);
-        const scale = interpolate(scrollY.value, [-100, 0, 200], [1.05, 1, 0.98], Extrapolate.CLAMP);
-        return {
-            transform: [{ translateY }, { scale }]
-        };
-    });
 
     if (profile?.role === 'therapist') {
         return <Redirect href="/(app)/therapist" />;
@@ -135,11 +118,15 @@ export default function ClientDashboard() {
 
     return (
         <View className="flex-1 bg-[#F9F8F6]">
-            {/* ── Header ────────────────────────────────── */}
-            <Animated.View
-                style={[
-                    {
-                        // 8pt grid: paddingTop 64 (Android) / 72 (iOS), paddingBottom 56
+            <Animated.ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 56 }}
+                style={{ flex: 1 }}
+                bounces={false}
+            >
+                {/* ── Header ────────────────────────────────── */}
+                <View
+                    style={{
                         paddingTop: Platform.OS === 'android' ? 64 : 72,
                         paddingBottom: 56,
                         paddingHorizontal: 24,
@@ -152,68 +139,59 @@ export default function ClientDashboard() {
                         shadowOpacity: 0.2,
                         shadowRadius: 32,
                         elevation: 14,
-                    },
-                    headerAnimatedStyle
-                ]}
-            >
-                <LinearGradient
-                    colors={['#0d6474', '#137386', '#1a8fa5']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                />
-                {/* Ambient 3D depth orbs */}
-                <DarkAmbientOrbs />
+                        marginBottom: 24,
+                    }}
+                >
+                    <LinearGradient
+                        colors={['#0d6474', '#137386', '#1a8fa5']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    />
+                    {/* Ambient 3D depth orbs */}
+                    <DarkAmbientOrbs />
 
-                {/* Foreground Content — max-width 680px for web readability */}
-                <View style={{ zIndex: 10, maxWidth: 680, width: '100%', alignSelf: 'center' }} pointerEvents="box-none">
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-                        <View style={{ flex: 1, paddingRight: 16 }}>
-                            <Text
-                                style={{ fontSize: 34, fontWeight: '900', color: 'white', letterSpacing: -1, lineHeight: 40 }}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.8}
-                                numberOfLines={2}
-                            >
-                                {i18n.t('dashboard.greeting', { name: profile?.firstName || '' })}
-                            </Text>
-                            <Text
-                                style={{ color: '#C09D59', marginTop: 10, fontSize: 12, fontWeight: '700', letterSpacing: 1.8, textTransform: 'uppercase' }}
-                                adjustsFontSizeToFit
-                                minimumFontScale={0.8}
-                                numberOfLines={2}
-                            >
-                                „{getTodayQuote()}"
-                            </Text>
+                    {/* Foreground Content — max-width 680px for web readability */}
+                    <View style={{ zIndex: 10, maxWidth: 680, width: '100%', alignSelf: 'center' }} pointerEvents="box-none">
+                        {/* Logo */}
+                        <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                            <Image
+                                source={require('../../assets/logo-transparent.png')}
+                                style={{ width: 180, height: 50, resizeMode: 'contain', tintColor: '#ffffff' }}
+                            />
                         </View>
-                        {/* Settings button — 48px hit target (6 × 8pt) */}
-                        <TouchableOpacity
-                            onPress={() => {
-                                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                router.push('/(app)/settings' as any);
-                            }}
-                            style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
-                        >
-                            <Settings size={22} color="white" />
-                        </TouchableOpacity>
-                    </View>
-                    <View style={{ marginTop: 4 }}>
-                        {exercises.length > 0 && (
-                            <ProgressBar completed={completedExercises.length} total={exercises.length} />
-                        )}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                            <View style={{ flex: 1, paddingRight: 16 }}>
+                                <Text
+                                    style={{ fontSize: 34, fontWeight: '900', color: 'white', letterSpacing: -1, lineHeight: 40 }}
+                                    adjustsFontSizeToFit
+                                    minimumFontScale={0.8}
+                                    numberOfLines={2}
+                                >
+                                    Hi {profile?.firstName || ''} 👋
+                                </Text>
+                            </View>
+                            {/* Settings button — 48px hit target (6 × 8pt) */}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    router.push('/(app)/settings' as any);
+                                }}
+                                style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
+                            >
+                                <Settings size={22} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={{ marginTop: 4 }}>
+                            {exercises.length > 0 && (
+                                <ProgressBar completed={completedExercises.length} total={exercises.length} />
+                            )}
+                        </View>
                     </View>
                 </View>
-            </Animated.View>
 
-            <Animated.ScrollView
-                showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingBottom: 56, paddingHorizontal: horizPadding, paddingTop: 24 }}
-                onScroll={scrollHandler}
-                scrollEventThrottle={16}
-                style={{ flex: 1 }}
-            >
                 {/* Responsive content column: no max-width on mobile, capped on tablet/desktop */}
-                <View style={contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined}>
+                <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: horizPadding }]}>
                     <MotiView
                         from={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}

@@ -3,7 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform } 
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity } from 'lucide-react-native';
-import ExerciseCompositionChart from './ExerciseCompositionChart';
 import ExerciseFlowTimeline from './ExerciseFlowTimeline';
 import ExerciseDifficultyGauge from './ExerciseDifficultyGauge';
 import Block3DTiltWrapper from './Block3DTiltWrapper';
@@ -94,9 +93,10 @@ const StyledInput = memo(function StyledInput({ value, onChangeText, placeholder
             placeholderTextColor="#9CA3AF" multiline={multiline}
             textAlignVertical={multiline ? 'top' : 'center'}
             style={{
-                backgroundColor: '#F9FAFB', borderWidth: 1, borderColor: '#E5E7EB',
-                borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
-                fontSize: 14, color: '#111827', minHeight: multiline ? 90 : undefined,
+                backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#E2E8F0',
+                borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
+                fontSize: 14, color: '#0F172A', minHeight: multiline ? 100 : undefined,
+                shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 3, elevation: 1
             }}
         />
     );
@@ -544,7 +544,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
         <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
             <ScrollView
                 style={{ flex: 1 }}
-                contentContainerStyle={{ padding: 16, paddingBottom: 32 }}
+                contentContainerStyle={{ padding: 24, paddingBottom: 64, maxWidth: 896, width: '100%', marginHorizontal: 'auto' }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
@@ -558,9 +558,6 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
                         style={{ fontSize: 20, fontWeight: '800', color: '#111827' }}
                     />
                 </View>
-
-                {/* D3 Composition Chart — always visible, reacts live to block changes */}
-                <ExerciseCompositionChart blocks={blocks} />
 
                 {/* Flow Timeline — horizontal journey view */}
                 <ExerciseFlowTimeline blocks={blocks} />
@@ -607,17 +604,19 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
             </ScrollView>
 
             {/* Save / Cancel Footer */}
-            <View style={{ flexDirection: 'row', gap: 12, padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 20, backgroundColor: '#F9F8F6', borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
-                <TouchableOpacity onPress={handleCancel}
-                    style={{ paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' }}>
-                    <Text style={{ fontWeight: '700', color: '#4B5563', fontSize: 15 }}>Abbrechen</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={handleSave}
-                    style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#137386', alignItems: 'center', shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 }}>
-                    <Text style={{ fontWeight: '800', color: '#fff', fontSize: 15 }}>
-                        💾 Speichern · {blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}
-                    </Text>
-                </TouchableOpacity>
+            <View style={{ padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 15 }}>
+                <View style={{ flexDirection: 'row', gap: 12, maxWidth: 896, width: '100%', marginHorizontal: 'auto' }}>
+                    <TouchableOpacity onPress={handleCancel}
+                        style={{ paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' }}>
+                        <Text style={{ fontWeight: '700', color: '#4B5563', fontSize: 15 }}>Abbrechen</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleSave}
+                        style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#137386', alignItems: 'center', shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 }}>
+                        <Text style={{ fontWeight: '800', color: '#fff', fontSize: 15 }}>
+                            💾 Speichern · {blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}
+                        </Text>
+                    </TouchableOpacity>
+                </View>
             </View>
         </View>
     );

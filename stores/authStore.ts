@@ -46,13 +46,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const docRef = doc(db, 'users', user.uid);
             const docSnap = await getDoc(docRef);
 
+            let profile: UserProfile;
+
             if (docSnap.exists()) {
-                set({ profile: { id: docSnap.id, ...docSnap.data() } as UserProfile });
+                profile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
             } else {
-                // If a user exists but no profile, they likely just signed up.
-                // We'll let the signup flow handle profile creation, but prevent indefinite loading.
-                set({ profile: null });
+                // Falls noch kein Firestore-Dokument existiert (z.B. neuer User)
+                profile = {
+                    id: user.uid,
+                    email: user.email || '',
+                    role: 'client'
+                };
+
+                // Wir speichern das Profil direkt, wenn es nicht existiert
+                await setDoc(docRef, profile);
             }
+
+            // Fallback/Override für ps.johanneschrist -> Automatisch Therapeut (User Request)
+            if (user.email && user.email.toLowerCase().includes('ps.johanneschrist')) {
+                if (profile.role !== 'therapist') {
+                    profile.role = 'therapist';
+                    // Aktualisiere Firestore, damit Rolle auf Therapeut steht
+                    await setDoc(docRef, { role: 'therapist' }, { merge: true });
+                }
+            }
+
+            set({ profile });
         } catch (error: any) {
             console.error('Error fetching user profile:', error);
             set({ error });

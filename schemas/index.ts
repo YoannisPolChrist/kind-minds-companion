@@ -43,10 +43,8 @@ export function safeValidate<T>(
     data: unknown
 ): { success: true; data: T } | { success: false; error: string } {
     const result = schema.safeParse(data);
-    if (result.success) {
-        return { success: true, data: result.data };
+    if (!result.success) {
+        return { success: false, error: result.error.errors[0]?.message ?? 'Ungültige Eingabe' };
     }
-    // Return first error message
-    const firstError = result.error.errors[0]?.message ?? 'Ungültige Eingabe';
-    return { success: false, error: firstError };
+    return { success: true, data: result.data };
 }

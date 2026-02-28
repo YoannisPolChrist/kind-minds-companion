@@ -11,7 +11,7 @@ import { NoteRepository } from '../../../../utils/repositories/NoteRepository';
 import ExerciseBuilder, { ExerciseBlock } from '../../../../components/therapist/ExerciseBuilder';
 import { VoiceNoteTaker } from '../../../../components/therapist/VoiceNoteTaker';
 import i18n from '../../../../utils/i18n';
-import { ClipboardList, Trash2, Sparkles, Activity, Edit3 } from 'lucide-react-native';
+import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock } from 'lucide-react-native';
 import { useAuth } from '../../../../contexts/AuthContext';
 
 export default function ClientView() {
@@ -218,16 +218,18 @@ export default function ClientView() {
     return (
         <View className="flex-1 bg-[#FAF9F6]">
             {/* Header Section */}
-            <View className="bg-[#2C3E50] pt-16 pb-8 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between">
-                <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
-                    <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
-                </TouchableOpacity>
-                <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4" numberOfLines={1}>
-                    {client?.firstName ? `${client.firstName} ${client.lastName}` : i18n.t('therapist.client_details')}
-                </Text>
+            <View className="bg-[#2C3E50] pt-16 pb-8 px-6 rounded-b-3xl shadow-md z-10">
+                <View className="flex-row items-center justify-between w-full max-w-5xl mx-auto">
+                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
+                        <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
+                    </TouchableOpacity>
+                    <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4" numberOfLines={1}>
+                        {client?.firstName ? `${client.firstName} ${client.lastName}` : i18n.t('therapist.client_details')}
+                    </Text>
+                </View>
             </View>
 
-            <View className="flex-1 px-6 pt-6">
+            <View className="flex-1 px-6 pt-6 w-full max-w-5xl mx-auto">
                 <VoiceNoteTaker onTranscriptionComplete={handleSaveNote} />
 
                 {notes.length > 0 && (
@@ -300,26 +302,39 @@ export default function ClientView() {
                                 </View>
 
                                 {/* Client Answers */}
-                                {ex.completed && ex.answers && Object.keys(ex.answers).length > 0 && (
+                                {ex.completed && (
                                     <View className="mt-3 pt-3 border-t border-gray-100">
                                         <Text className="text-[#2C3E50] font-bold text-xs uppercase tracking-wider mb-2">{i18n.t('therapist.client_answers')}</Text>
-                                        {ex.blocks?.map((block: any) => {
-                                            if (!ex.answers[block.id]) return null;
-                                            return (
-                                                <View key={block.id} className="mb-2 bg-gray-50 p-3 rounded-xl">
-                                                    <View className="flex-row items-center mb-1.5 mt-0.5">
-                                                        {block.type === 'scale' ? <Activity size={14} color="#9CA3AF" style={{ marginRight: 4 }} /> : <Edit3 size={14} color="#9CA3AF" style={{ marginRight: 4 }} />}
-                                                        <Text className="text-xs text-gray-400 font-bold">
-                                                            {block.type === 'scale' ? (i18n.t('blocks.scale') || 'Skala') : (i18n.t('blocks.reflection') || 'Reflektion')}
-                                                        </Text>
+
+                                        {ex.sharedAnswers === false ? (
+                                            <View className="bg-gray-50 p-4 rounded-xl items-center justify-center border border-gray-100 mt-1">
+                                                <Lock size={20} color="#9CA3AF" style={{ marginBottom: 8 }} />
+                                                <Text className="text-gray-500 text-sm font-medium text-center">
+                                                    Der Klient hat sich entschieden, die Antworten privat zu halten.
+                                                </Text>
+                                                <Text className="text-gray-400 text-xs text-center mt-1">
+                                                    Abgeschlossen am: {new Date(ex.lastCompletedAt || ex.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                </Text>
+                                            </View>
+                                        ) : (
+                                            ex.answers && Object.keys(ex.answers).length > 0 && ex.blocks?.map((block: any) => {
+                                                if (!ex.answers[block.id]) return null;
+                                                return (
+                                                    <View key={block.id} className="mb-2 bg-gray-50 p-3 rounded-xl">
+                                                        <View className="flex-row items-center mb-1.5 mt-0.5">
+                                                            {block.type === 'scale' ? <Activity size={14} color="#9CA3AF" style={{ marginRight: 4 }} /> : <Edit3 size={14} color="#9CA3AF" style={{ marginRight: 4 }} />}
+                                                            <Text className="text-xs text-gray-400 font-bold">
+                                                                {block.type === 'scale' ? (i18n.t('blocks.scale') || 'Skala') : (i18n.t('blocks.reflection') || 'Reflektion')}
+                                                            </Text>
+                                                        </View>
+                                                        <Text className="text-xs text-gray-500 mb-1.5" numberOfLines={2}>{block.content}</Text>
+                                                        <View className="bg-white px-3 py-2 rounded-lg border border-gray-200">
+                                                            <Text className="text-sm text-[#2C3E50] font-medium">{ex.answers[block.id]}</Text>
+                                                        </View>
                                                     </View>
-                                                    <Text className="text-xs text-gray-500 mb-1.5" numberOfLines={2}>{block.content}</Text>
-                                                    <View className="bg-white px-3 py-2 rounded-lg border border-gray-200">
-                                                        <Text className="text-sm text-[#2C3E50] font-medium">{ex.answers[block.id]}</Text>
-                                                    </View>
-                                                </View>
-                                            );
-                                        })}
+                                                );
+                                            })
+                                        )}
                                     </View>
                                 )}
                                 {/* Telegram Reminder Button for Open Exercises */}
@@ -350,15 +365,17 @@ export default function ClientView() {
             {/* Exercise Assignment Modal */}
             <Modal visible={showBuilder} animationType="slide" presentationStyle="formSheet">
                 <View className="flex-1 bg-[#FAF9F6]">
-                    <View className="bg-[#2C3E50] pt-6 pb-6 px-6 shadow-md z-10 flex-row items-center justify-between">
-                        <Text className="text-2xl font-extrabold text-white tracking-tight">{i18n.t('therapist.assign_title')}</Text>
-                        <TouchableOpacity onPress={() => setShowBuilder(false)} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
-                            <Text className="text-white font-bold">{i18n.t('therapist.cancel')}</Text>
-                        </TouchableOpacity>
+                    <View className="bg-[#2C3E50] pt-6 pb-6 px-6 shadow-md z-10">
+                        <View className="flex-row items-center justify-between w-full max-w-4xl mx-auto">
+                            <Text className="text-2xl font-extrabold text-white tracking-tight">{i18n.t('therapist.assign_title')}</Text>
+                            <TouchableOpacity onPress={() => setShowBuilder(false)} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
+                                <Text className="text-white font-bold">{i18n.t('therapist.cancel')}</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
 
                     {builderMode === 'select' ? (
-                        <ScrollView className="flex-1 p-6" contentContainerStyle={{ paddingBottom: 40 }}>
+                        <ScrollView className="flex-1 p-6" contentContainerStyle={{ paddingBottom: 40, maxWidth: 896, width: '100%', marginHorizontal: 'auto' }}>
                             <Text className="text-lg font-bold text-[#2C3E50] mb-3">{i18n.t('therapist.step_1_select')}</Text>
 
                             <TouchableOpacity

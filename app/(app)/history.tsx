@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { Lock } from 'lucide-react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
@@ -209,18 +210,25 @@ export default function HistoryScreen() {
                                         </View>
 
                                         {/* Answer preview */}
-                                        {ex.answers && Object.keys(ex.answers).length > 0 && (
-                                            <View style={{ marginTop: 10, backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                                                <Text style={{ fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{i18n.t('history.answers')}</Text>
-                                                {Object.values(ex.answers).slice(0, 2).map((ans, j) => (
-                                                    <Text key={j} numberOfLines={1} style={{ fontSize: 12, color: '#374151', marginBottom: 2 }}>
-                                                        · {String(ans)}
-                                                    </Text>
-                                                ))}
-                                                {Object.keys(ex.answers).length > 2 && (
-                                                    <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{i18n.t('history.more', { count: Object.keys(ex.answers).length - 2 })}</Text>
-                                                )}
+                                        {ex.completed && ex.sharedAnswers === false ? (
+                                            <View style={{ marginTop: 10, backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}>
+                                                <Lock size={12} color="#9CA3AF" style={{ marginRight: 6 }} />
+                                                <Text style={{ fontSize: 11, color: '#6B7280', flex: 1 }}>Privte Antwort</Text>
                                             </View>
+                                        ) : (
+                                            ex.answers && Object.keys(ex.answers).length > 0 && (
+                                                <View style={{ marginTop: 10, backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#F3F4F6' }}>
+                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{i18n.t('history.answers')}</Text>
+                                                    {Object.values(ex.answers).slice(0, 2).map((ans, j) => (
+                                                        <Text key={j} numberOfLines={1} style={{ fontSize: 12, color: '#374151', marginBottom: 2 }}>
+                                                            · {String(ans)}
+                                                        </Text>
+                                                    ))}
+                                                    {Object.keys(ex.answers).length > 2 && (
+                                                        <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{i18n.t('history.more', { count: Object.keys(ex.answers).length - 2 })}</Text>
+                                                    )}
+                                                </View>
+                                            )
                                         )}
                                     </View>
                                 </TouchableOpacity>

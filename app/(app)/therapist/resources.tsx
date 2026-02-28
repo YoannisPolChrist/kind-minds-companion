@@ -198,6 +198,7 @@ export default function TherapistResources() {
 
                     <TextInput
                         placeholder="Titel der Ressource"
+                        placeholderTextColor="#9CA3AF"
                         value={title}
                         onChangeText={setTitle}
                         className="bg-gray-50 border border-gray-200 p-4 rounded-xl mb-3 font-medium text-[#2C3E50]"
@@ -205,6 +206,7 @@ export default function TherapistResources() {
 
                     <TextInput
                         placeholder="Kurze Beschreibung (optional)"
+                        placeholderTextColor="#9CA3AF"
                         value={description}
                         onChangeText={setDescription}
                         multiline
@@ -214,6 +216,7 @@ export default function TherapistResources() {
                     {resourceType === 'link' && (
                         <TextInput
                             placeholder="https://..."
+                            placeholderTextColor="#9CA3AF"
                             value={linkUrl}
                             onChangeText={setLinkUrl}
                             autoCapitalize="none"

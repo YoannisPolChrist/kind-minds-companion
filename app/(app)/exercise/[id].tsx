@@ -10,8 +10,9 @@ import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import i18n from '../../../utils/i18n';
+import { useAuth } from '../../../contexts/AuthContext';
 
-import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity } from 'lucide-react-native';
+import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Lock, Unlock } from 'lucide-react-native';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,15 +56,68 @@ function getBlockIcon(type: string) {
 
 function formatPdfHtml(exercise: Exercise, answers: Answers): string {
     const rows = (exercise.blocks ?? [])
-        .filter(b => b.type === 'text' || b.type === 'reflection')
-        .map(b => `<div style="margin-top:20px">
-            <h3>Aufgabe:</h3><p>${b.content}</p>
-            <h3>Antwort:</h3>
-            <p style="background:#f5f5f5;padding:10px;border-radius:5px">${answers[b.id] ?? '<i>Keine Antwort</i>'}</p>
-        </div>`)
+        .map(b => {
+            let hasAnswer = false;
+            let answerHtml = '';
+
+            if (b.type === 'text' || b.type === 'reflection' || b.type === 'scale' || b.type === 'choice') {
+                const ans = answers[b.id];
+                if (ans && ans.trim().length > 0) {
+                    hasAnswer = true;
+                    answerHtml = `<p style="background:#f5f5f5;padding:10px;border-radius:5px">${ans}</p>`;
+                }
+            } else if (b.type === 'checklist') {
+                const ans = answers[b.id];
+                if (ans) {
+                    try {
+                        const parsed = JSON.parse(ans);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            hasAnswer = true;
+                            answerHtml = `<ul style="background:#f5f5f5;padding:10px 10px 10px 30px;border-radius:5px">
+                                 ${parsed.map((item: string) => `<li>${item}</li>`).join('')}
+                             </ul>`;
+                        }
+                    } catch (e) { }
+                }
+            } else if (b.type === 'homework') {
+                const a = answers[`${b.id}_A`];
+                const b_ans = answers[`${b.id}_B`];
+                const c = answers[`${b.id}_C`];
+                if ((a && a.trim().length > 0) || (b_ans && b_ans.trim().length > 0) || (c && c.trim().length > 0)) {
+                    hasAnswer = true;
+                    answerHtml = `<div style="background:#f5f5f5;padding:10px;border-radius:5px">
+                         ${a && a.trim().length > 0 ? `<p><strong>A (Auslöser):</strong><br/>${a}</p>` : ''}
+                         ${b_ans && b_ans.trim().length > 0 ? `<p><strong>B (Bewertung):</strong><br/>${b_ans}</p>` : ''}
+                         ${c && c.trim().length > 0 ? `<p><strong>C (Konsequenz):</strong><br/>${c}</p>` : ''}
+                     </div>`;
+                }
+            } else if (b.type === 'gratitude') {
+                const a1 = answers[`${b.id}_1`];
+                const a2 = answers[`${b.id}_2`];
+                const a3 = answers[`${b.id}_3`];
+                const acts = [a1, a2, a3].filter(x => x && x.trim().length > 0);
+                if (acts.length > 0) {
+                    hasAnswer = true;
+                    answerHtml = `<ul style="background:#f5f5f5;padding:10px 10px 10px 30px;border-radius:5px">
+                         ${acts.map(item => `<li>${item}</li>`).join('')}
+                     </ul>`;
+                }
+            }
+
+            if (hasAnswer) {
+                return `<div style="margin-top:20px">
+                     <h3>${blockTypeLabel(b.type)} / Aufgabe:</h3><p>${b.content || ''}</p>
+                     <h3>Antwort:</h3>
+                     ${answerHtml}
+                 </div>`;
+            }
+            return '';
+        })
+        .filter(html => html.length > 0)
         .join('');
+
     return `<html><body style="font-family:Arial;padding:20px">
-        <h1 style="color:#2C3E50">${exercise.title}</h1><hr/>${rows}
+        <h1 style="color:#2C3E50">${exercise.title}</h1><hr/>${rows || '<p><i>Keine ausgefüllten Übungen vorhanden.</i></p>'}
     </body></html>`;
 }
 
@@ -294,9 +348,11 @@ function ExerciseBlockRenderer({ block, answers, onAnswerChange }: {
 export default function ExerciseExecutionView() {
     const { id } = useLocalSearchParams<{ id: string }>();
     const router = useRouter();
+    const { profile } = useAuth();
     const [exercise, setExercise] = useState<Exercise | null>(null);
     const [loading, setLoading] = useState(true);
     const [answers, setAnswers] = useState<Answers>({});
+    const [sharedAnswers, setSharedAnswers] = useState(true);
 
     useEffect(() => { if (id) loadExercise(); }, [id]);
 
@@ -325,11 +381,32 @@ export default function ExerciseExecutionView() {
             await updateDoc(doc(db, 'exercises', id as string), {
                 completed: true,
                 answers: cleanAnswers,
+                sharedAnswers, // Save privacy preference
                 lastCompletedAt: new Date().toISOString(),
             });
 
             if (Platform.OS !== 'web') {
                 Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+
+            // Trigger Therapist Notification Webhook
+            try {
+                const webhookUrl = "https://cloud.activepieces.com/api/v1/webhooks/PLACEHOLDER_COMPLETION"; // Configure in ActivePieces
+                await fetch(webhookUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        event: 'exercise_completed',
+                        clientId: profile?.id,
+                        clientName: profile?.firstName || 'Ein Klient',
+                        exerciseId: id,
+                        exerciseTitle: exercise?.title,
+                        isShared: sharedAnswers,
+                        therapistId: exercise?.therapistId
+                    })
+                });
+            } catch (webhookErr) {
+                console.log("Failed to send completion webhook", webhookErr);
             }
 
             Alert.alert(i18n.t('exercise.complete_success'), i18n.t('exercise.complete_success_msg'));
@@ -380,6 +457,29 @@ export default function ExerciseExecutionView() {
                         <ExerciseBlockRenderer block={block} answers={answers} onAnswerChange={handleAnswerChange} />
                     </View>
                 ))}
+
+                {!exercise?.completed && (
+                    <View className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-6 mt-2">
+                        <View className="flex-row items-center justify-between">
+                            <View className="flex-1 pr-4">
+                                <Text className="text-[#2C3E50] font-bold text-base mb-1">
+                                    Antworten teilen
+                                </Text>
+                                <Text className="text-gray-500 text-xs">
+                                    {sharedAnswers
+                                        ? "Dein Therapeut kann deine geschriebenen Texte lesen."
+                                        : "Deine Antworten bleiben in dieser App verschlüsselt und privat."}
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setSharedAnswers(!sharedAnswers)}
+                                className={`w-14 h-14 rounded-full items-center justify-center ${sharedAnswers ? 'bg-blue-100 border-2 border-blue-500' : 'bg-gray-100 border border-gray-300'}`}
+                            >
+                                {sharedAnswers ? <Unlock size={24} color="#3B82F6" /> : <Lock size={24} color="#9CA3AF" />}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                )}
 
                 <View className="mt-4 mb-8 gap-4">
                     <TouchableOpacity onPress={handleComplete} disabled={exercise?.completed}

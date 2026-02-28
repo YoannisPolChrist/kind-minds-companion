@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Image } from 'react-native';
 import i18n from '../../utils/i18n';
 import { MotiView } from 'moti';
 import { useAuthActions } from '../../hooks/useAuthActions';
@@ -28,18 +28,10 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
     >
         {/* Logo */}
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
-                <Text style={{ fontSize: 44, fontWeight: '300', color: '#243842', letterSpacing: -2, lineHeight: 52 }}>Johannes</Text>
-                <Text style={{ fontSize: 44, fontWeight: '800', color: '#137386', letterSpacing: -2, lineHeight: 52 }}>Christ</Text>
-            </View>
-            {/* Tagline with ornamental lines */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
-                <View style={{ height: 1, width: 40, backgroundColor: '#C09D59', opacity: 0.5 }} />
-                <Text style={{ fontSize: 11, fontWeight: '700', color: '#C09D59', letterSpacing: 3, marginHorizontal: 12, textTransform: 'uppercase' }}>
-                    Therapie &amp; Coaching
-                </Text>
-                <View style={{ height: 1, width: 40, backgroundColor: '#C09D59', opacity: 0.5 }} />
-            </View>
+            <Image
+                source={require('../../assets/logo-transparent.png')}
+                style={{ width: 280, height: 120, resizeMode: 'contain' }}
+            />
         </View>
 
         {!isKeyboardVisible && (

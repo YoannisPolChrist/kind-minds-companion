@@ -152,222 +152,214 @@ export default function SettingsScreen() {
                 </LinearGradient>
             </MotiView>
 
-            <View style={{ flex: 1 }}>
-                <FlashList
-                    data={[1]}
-                    // @ts-ignore - 'estimatedItemSize' isn't explicitly defined in local FlashListProps for some reason
-                    estimatedItemSize={800}
-                    showsVerticalScrollIndicator={false}
-                    renderItem={() => (
-                        <View className="px-6 pt-6 pb-10">
+            <DefaultScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+                <View className="px-6 pt-6 pb-10">
 
-                            <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 150 }}>
-                                <Text className="text-xl font-bold text-[#2C3E50] mb-4">{i18n.t('settings.advanced')}</Text>
-                            </MotiView>
+                    <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 150 }}>
+                        <Text className="text-xl font-bold text-[#2C3E50] mb-4">{i18n.t('settings.advanced')}</Text>
+                    </MotiView>
 
-                            <MotiView
-                                from={{ opacity: 0, translateY: 25 }}
-                                animate={{ opacity: 1, translateY: 0 }}
-                                transition={{ type: 'timing', duration: 350, delay: 200 }}
-                            >
-                                <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
-                                    <View className="flex-row justify-between items-center mb-6">
-                                        <View className="flex-1 pr-4">
-                                            <Text className="text-lg font-bold text-[#2C3E50] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.cal_title')}</Text>
-                                            <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.cal_desc')}</Text>
-                                        </View>
-                                        <Switch
-                                            value={calendarEnabled}
-                                            onValueChange={(val) => { toggleCalendar(); }}
-                                            trackColor={{ false: '#E5E7EB', true: '#2C3E50' }}
-                                        />
-                                    </View>
-
-                                    <View className="h-[1px] bg-gray-100 w-full mb-6" />
-
-                                    <View className="flex-row justify-between items-center">
-                                        <View className="flex-1 pr-4">
-                                            <Text className="text-lg font-bold text-[#2C3E50] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.notif_title')}</Text>
-                                            <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.notif_desc')}</Text>
-                                        </View>
-                                        <Switch
-                                            value={notificationsEnabled}
-                                            onValueChange={(val) => { toggleNotifications(); }}
-                                            trackColor={{ false: '#E5E7EB', true: '#2C3E50' }}
-                                        />
-                                    </View>
+                    <MotiView
+                        from={{ opacity: 0, translateY: 25 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'timing', duration: 350, delay: 200 }}
+                    >
+                        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
+                            <View className="flex-row justify-between items-center mb-6">
+                                <View className="flex-1 pr-4">
+                                    <Text className="text-lg font-bold text-[#2C3E50] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.cal_title')}</Text>
+                                    <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.cal_desc')}</Text>
                                 </View>
-                            </MotiView>
+                                <Switch
+                                    value={calendarEnabled}
+                                    onValueChange={(val) => { toggleCalendar(); }}
+                                    trackColor={{ false: '#E5E7EB', true: '#2C3E50' }}
+                                />
+                            </View>
 
-                            {notificationsEnabled && (
-                                <MotiView
-                                    from={{ opacity: 0, translateY: 25 }}
-                                    animate={{ opacity: 1, translateY: 0 }}
-                                    transition={{ type: 'timing', duration: 350, delay: 250 }}
-                                >
-                                    <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
-                                        <Text className="text-lg font-bold text-[#2C3E50] mb-3">{i18n.t('settings.reminder_time')}</Text>
-                                        <Text className="text-gray-500 text-sm mb-4">{i18n.t('settings.reminder_desc')}</Text>
-                                        <View className="flex-row flex-wrap gap-2">
-                                            {['08:00', '10:00', '14:00', '18:00', '20:00'].map((time) => {
-                                                const hour = parseInt(time.split(':')[0]);
-                                                const isSelected = reminderHour === hour;
-                                                return (
-                                                    <TouchableOpacity
-                                                        key={time}
-                                                        onPress={() => {
-                                                            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                                            saveReminderHour(hour);
-                                                        }}
-                                                        className={`border px-4 py-3 rounded-xl flex-1 items-center min-w-[30%] ${isSelected ? 'bg-[#2C3E50] border-[#2C3E50]' : 'bg-gray-50 border-gray-200'}`}
-                                                    >
-                                                        <Text className={`font-bold ${isSelected ? 'text-white' : 'text-[#2C3E50]'}`}>{time}</Text>
-                                                    </TouchableOpacity>
-                                                );
-                                            })}
-                                        </View>
-                                    </View>
-                                </MotiView>
-                            )}
+                            <View className="h-[1px] bg-gray-100 w-full mb-6" />
 
-                            <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 300 }}>
-                                <Text className="text-xl font-bold text-[#2C3E50] mb-4 mt-2">{i18n.t('settings.app_settings')}</Text>
-                            </MotiView>
+                            <View className="flex-row justify-between items-center">
+                                <View className="flex-1 pr-4">
+                                    <Text className="text-lg font-bold text-[#2C3E50] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.notif_title')}</Text>
+                                    <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.notif_desc')}</Text>
+                                </View>
+                                <Switch
+                                    value={notificationsEnabled}
+                                    onValueChange={(val) => { toggleNotifications(); }}
+                                    trackColor={{ false: '#E5E7EB', true: '#2C3E50' }}
+                                />
+                            </View>
+                        </View>
+                    </MotiView>
 
-                            <MotiView
-                                from={{ opacity: 0, translateY: 25 }}
-                                animate={{ opacity: 1, translateY: 0 }}
-                                transition={{ type: 'timing', duration: 350, delay: 350 }}
-                            >
-                                {profile?.role === 'therapist' && (
-                                    <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
-                                        <Text className="text-lg font-bold text-[#2C3E50] mb-1">{i18n.t('settings.booking_title', { defaultValue: 'Buchungs-Link (Cal.com / Calendly)' })}</Text>
-                                        <Text className="text-gray-500 text-sm mb-4">
-                                            {i18n.t('settings.booking_desc', { defaultValue: 'Hinterlege deinen Link, damit Klienten direkt Termine bei dir buchen können.' })}
-                                        </Text>
-                                        <View className="flex-row items-center">
-                                            <TextInput
-                                                value={bookingUrl}
-                                                onChangeText={setBookingUrl}
-                                                placeholder="https://cal.com/dein-name"
-                                                className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
-                                                autoCapitalize="none"
-                                                keyboardType="url"
-                                            />
+                    {notificationsEnabled && (
+                        <MotiView
+                            from={{ opacity: 0, translateY: 25 }}
+                            animate={{ opacity: 1, translateY: 0 }}
+                            transition={{ type: 'timing', duration: 350, delay: 250 }}
+                        >
+                            <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
+                                <Text className="text-lg font-bold text-[#2C3E50] mb-3">{i18n.t('settings.reminder_time')}</Text>
+                                <Text className="text-gray-500 text-sm mb-4">{i18n.t('settings.reminder_desc')}</Text>
+                                <View className="flex-row flex-wrap gap-2">
+                                    {['08:00', '10:00', '14:00', '18:00', '20:00'].map((time) => {
+                                        const hour = parseInt(time.split(':')[0]);
+                                        const isSelected = reminderHour === hour;
+                                        return (
                                             <TouchableOpacity
+                                                key={time}
                                                 onPress={() => {
                                                     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                                    saveBookingUrl();
+                                                    saveReminderHour(hour);
                                                 }}
-                                                className="bg-[#137386] px-4 py-3 rounded-xl ml-2">
-                                                <Text className="text-white font-bold">{i18n.t('settings.save', { defaultValue: 'Speichern' })}</Text>
+                                                className={`border px-4 py-3 rounded-xl flex-1 items-center min-w-[30%] ${isSelected ? 'bg-[#2C3E50] border-[#2C3E50]' : 'bg-gray-50 border-gray-200'}`}
+                                            >
+                                                <Text className={`font-bold ${isSelected ? 'text-white' : 'text-[#2C3E50]'}`}>{time}</Text>
                                             </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                )}
+                                        );
+                                    })}
+                                </View>
+                            </View>
+                        </MotiView>
+                    )}
 
-                                <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-6">
-                                    {/* Language Setting */}
-                                    <View className="flex-row justify-between items-center py-3">
-                                        <View className="flex-1 pr-4">
-                                            <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.lang_title')}</Text>
-                                            <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.lang_desc')}</Text>
-                                        </View>
-                                        <DefaultScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pl-2">
-                                            {['de', 'en', 'es', 'fr', 'it'].map((lang) => (
-                                                <TouchableOpacity
-                                                    key={lang}
-                                                    onPress={() => setLanguage(lang)}
-                                                    className={`px-3 py-1 rounded-lg ${locale === lang ? 'bg-[#2C3E50]' : 'bg-gray-100'} mx-1`}
-                                                >
-                                                    <Text className={`font-bold ${locale === lang ? 'text-white' : 'text-gray-500'}`}>
-                                                        {lang.toUpperCase()}
-                                                    </Text>
-                                                </TouchableOpacity>
-                                            ))}
-                                        </DefaultScrollView>
-                                    </View>
+                    <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 300 }}>
+                        <Text className="text-xl font-bold text-[#2C3E50] mb-4 mt-2">{i18n.t('settings.app_settings')}</Text>
+                    </MotiView>
 
-                                    <View className="h-[1px] bg-gray-100 w-full" />
-
-                                    {/* Telegram Connection */}
+                    <MotiView
+                        from={{ opacity: 0, translateY: 25 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'timing', duration: 350, delay: 350 }}
+                    >
+                        {profile?.role === 'therapist' && (
+                            <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
+                                <Text className="text-lg font-bold text-[#2C3E50] mb-1">{i18n.t('settings.booking_title', { defaultValue: 'Buchungs-Link (Cal.com / Calendly)' })}</Text>
+                                <Text className="text-gray-500 text-sm mb-4">
+                                    {i18n.t('settings.booking_desc', { defaultValue: 'Hinterlege deinen Link, damit Klienten direkt Termine bei dir buchen können.' })}
+                                </Text>
+                                <View className="flex-row items-center">
+                                    <TextInput
+                                        value={bookingUrl}
+                                        onChangeText={setBookingUrl}
+                                        placeholder="https://cal.com/dein-name"
+                                        className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                        autoCapitalize="none"
+                                        keyboardType="url"
+                                    />
                                     <TouchableOpacity
                                         onPress={() => {
                                             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                            if (!profile?.id) return;
-                                            // Replace YOUR_BOT_USERNAME with the actual bot username provided by BotFather
-                                            const botUrl = `tg://resolve?domain=TherapieAppBot&start=${profile.id}`;
-                                            import('react-native').then(rn => {
-                                                rn.Linking.openURL(botUrl).catch(() => {
-                                                    Alert.alert(i18n.t('settings.error'), i18n.t('settings.telegram_error'));
-                                                });
-                                            });
+                                            saveBookingUrl();
                                         }}
-                                        className="flex-row justify-between items-center py-4"
-                                    >
-                                        <View className="flex-1 pr-4">
-                                            <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.telegram_title')}</Text>
-                                            <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.telegram_desc')}</Text>
-                                        </View>
-                                        <View className="flex-row items-center">
-                                            <Text className="text-[#0088cc] font-bold mr-1">Verbinden</Text>
-                                            <ChevronRight size={18} color="#0088cc" />
-                                        </View>
-                                    </TouchableOpacity>
-
-                                    <View className="h-[1px] bg-gray-100 w-full" />
-
-                                    {/* Password Reset */}
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                            handleResetPassword();
-                                        }}
-                                        className="flex-row justify-between items-center py-4">
-                                        <View className="flex-1 pr-4">
-                                            <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.pw_title')}</Text>
-                                            <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.pw_desc')}</Text>
-                                        </View>
-                                        <ChevronRight size={20} color="#9ca3af" />
-                                    </TouchableOpacity>
-
-                                    <View className="h-[1px] bg-gray-100 w-full" />
-
-                                    {/* Exercise History */}
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                            router.push('/(app)/history' as any);
-                                        }}
-                                        className="flex-row justify-between items-center py-4">
-                                        <View className="flex-1 pr-4">
-                                            <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.hist_title')}</Text>
-                                            <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.hist_desc')}</Text>
-                                        </View>
-                                        <ChevronRight size={20} color="#9ca3af" />
+                                        className="bg-[#137386] px-4 py-3 rounded-xl ml-2">
+                                        <Text className="text-white font-bold">{i18n.t('settings.save', { defaultValue: 'Speichern' })}</Text>
                                     </TouchableOpacity>
                                 </View>
-                            </MotiView>
+                            </View>
+                        )}
 
-                            <MotiView
-                                from={{ opacity: 0, translateY: 20 }}
-                                animate={{ opacity: 1, translateY: 0 }}
-                                transition={{ type: 'timing', duration: 350, delay: 400 }}
+                        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-6">
+                            {/* Language Setting */}
+                            <View className="flex-row justify-between items-center py-3">
+                                <View className="flex-1 pr-4">
+                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.lang_title')}</Text>
+                                    <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.lang_desc')}</Text>
+                                </View>
+                                <DefaultScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pl-2">
+                                    {['de', 'en', 'es', 'fr', 'it'].map((lang) => (
+                                        <TouchableOpacity
+                                            key={lang}
+                                            onPress={() => setLanguage(lang)}
+                                            className={`px-3 py-1 rounded-lg ${locale === lang ? 'bg-[#2C3E50]' : 'bg-gray-100'} mx-1`}
+                                        >
+                                            <Text className={`font-bold ${locale === lang ? 'text-white' : 'text-gray-500'}`}>
+                                                {lang.toUpperCase()}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </DefaultScrollView>
+                            </View>
+
+                            <View className="h-[1px] bg-gray-100 w-full" />
+
+                            {/* Telegram Connection */}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    if (!profile?.id) return;
+                                    // Replace YOUR_BOT_USERNAME with the actual bot username provided by BotFather
+                                    const botUrl = `tg://resolve?domain=TherapieAppBot&start=${profile.id}`;
+                                    import('react-native').then(rn => {
+                                        rn.Linking.openURL(botUrl).catch(() => {
+                                            Alert.alert(i18n.t('settings.error'), i18n.t('settings.telegram_error'));
+                                        });
+                                    });
+                                }}
+                                className="flex-row justify-between items-center py-4"
                             >
-                                <TouchableOpacity
-                                    onPress={() => {
-                                        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                        signOut();
-                                    }}
-                                    className="mt-2 bg-red-50 border border-red-100 py-4 rounded-2xl items-center">
-                                    <Text className="text-red-600 font-bold text-lg">{i18n.t('settings.logout')}</Text>
-                                </TouchableOpacity>
-                            </MotiView>
+                                <View className="flex-1 pr-4">
+                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.telegram_title')}</Text>
+                                    <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.telegram_desc')}</Text>
+                                </View>
+                                <View className="flex-row items-center">
+                                    <Text className="text-[#0088cc] font-bold mr-1">Verbinden</Text>
+                                    <ChevronRight size={18} color="#0088cc" />
+                                </View>
+                            </TouchableOpacity>
 
+                            <View className="h-[1px] bg-gray-100 w-full" />
+
+                            {/* Password Reset */}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    handleResetPassword();
+                                }}
+                                className="flex-row justify-between items-center py-4">
+                                <View className="flex-1 pr-4">
+                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.pw_title')}</Text>
+                                    <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.pw_desc')}</Text>
+                                </View>
+                                <ChevronRight size={20} color="#9ca3af" />
+                            </TouchableOpacity>
+
+                            <View className="h-[1px] bg-gray-100 w-full" />
+
+                            {/* Exercise History */}
+                            <TouchableOpacity
+                                onPress={() => {
+                                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                    router.push('/(app)/history' as any);
+                                }}
+                                className="flex-row justify-between items-center py-4">
+                                <View className="flex-1 pr-4">
+                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.hist_title')}</Text>
+                                    <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.hist_desc')}</Text>
+                                </View>
+                                <ChevronRight size={20} color="#9ca3af" />
+                            </TouchableOpacity>
                         </View>
-                    )}
-                />
-            </View>
+                    </MotiView>
+
+                    <MotiView
+                        from={{ opacity: 0, translateY: 20 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'timing', duration: 350, delay: 400 }}
+                    >
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                signOut();
+                            }}
+                            className="mt-2 bg-red-50 border border-red-100 py-4 rounded-2xl items-center">
+                            <Text className="text-red-600 font-bold text-lg">{i18n.t('settings.logout')}</Text>
+                        </TouchableOpacity>
+                    </MotiView>
+
+                </View>
+            </DefaultScrollView>
         </View>
     );
 }

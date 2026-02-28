@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Linking, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Linking, Alert, Platform, Image } from 'react-native';
 import { useEffect, useState } from 'react';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../../utils/firebase';
@@ -204,7 +204,14 @@ export default function TherapistDashboard() {
                 <DarkAmbientOrbs />
 
                 {/* Foreground Content */}
-                <View style={{ zIndex: 10 }} pointerEvents="box-none">
+                <View style={{ zIndex: 10, width: '100%', maxWidth: 1024, marginHorizontal: 'auto' }} pointerEvents="box-none">
+                    {/* Logo */}
+                    <View style={{ alignItems: 'center', marginBottom: 16 }}>
+                        <Image
+                            source={require('../../../assets/logo-transparent.png')}
+                            style={{ width: 200, height: 60, resizeMode: 'contain', tintColor: '#ffffff' }}
+                        />
+                    </View>
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                         <View>
                             <Text style={{ fontSize: 28, fontWeight: '900', color: 'white', letterSpacing: -0.5 }}>{i18n.t('therapist.cockpit')}</Text>
@@ -245,7 +252,7 @@ export default function TherapistDashboard() {
                 </View>
             </MotiView>
 
-            <View className="pt-8 flex-1">
+            <View className="pt-8 flex-1 w-full max-w-5xl mx-auto">
                 <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 150 }}>
                     <Text className="text-xl font-bold text-[#243842] mb-4 px-6">{i18n.t('therapist.clients')}</Text>
                 </MotiView>

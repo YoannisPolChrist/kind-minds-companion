@@ -6,13 +6,13 @@ export { LanguageCode };
 
 export function useLanguage() {
     const locale = useLanguageStore(state => state.locale);
-    const setLanguage = useLanguageStore(state => state.setLocale);
+    const setLocaleStore = useLanguageStore(state => state.setLocale);
 
     return {
         locale,
         setLanguage: async (lang: string) => {
             const { user } = useAuth();
-            await setLanguage(lang as LanguageCode, user?.uid);
+            await setLocaleStore(lang as LanguageCode, user?.uid);
         }
     };
 }
