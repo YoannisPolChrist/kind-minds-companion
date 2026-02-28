@@ -44,7 +44,7 @@ export function safeValidate<T>(
 ): { success: true; data: T } | { success: false; error: string } {
     const result = schema.safeParse(data);
     if (!result.success) {
-        return { success: false, error: result.error.errors[0]?.message ?? 'Ungültige Eingabe' };
+        return { success: false, error: result.error.issues[0]?.message ?? 'Ungültige Eingabe' };
     }
     return { success: true, data: result.data };
 }
