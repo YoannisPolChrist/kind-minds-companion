@@ -7,6 +7,8 @@ import * as Haptics from 'expo-haptics';
 import { Sparkles } from 'lucide-react-native';
 
 export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () => void }) {
+    const [pressed, setPressed] = useState(false);
+
     if (done) {
         return (
             <View className="bg-white/60 border border-[#E5E7EB] p-6 rounded-[32px] mb-6 shadow-sm flex-row items-center gap-5">
@@ -20,7 +22,6 @@ export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () =>
             </View>
         );
     }
-    const [pressed, setPressed] = useState(false);
 
     const handlePressIn = () => {
         setPressed(true);

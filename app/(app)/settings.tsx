@@ -22,9 +22,7 @@ import { FlashList } from '@shopify/flash-list';
 export default function SettingsScreen() {
     const router = useRouter();
     const { profile, signOut } = useAuth();
-    const [calendarEnabled, setCalendarEnabled] = useState(false);
-    const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-    const { reminderHour, setReminderHour } = useAppStore();
+    const { reminderHour, setReminderHour, calendarSyncEnabled, setCalendarSyncEnabled, notificationsEnabled, setNotificationsEnabled } = useAppStore();
     const [bookingUrl, setBookingUrl] = useState<string>('');
     const { locale, setLanguage } = useLanguage();
 
@@ -67,18 +65,19 @@ export default function SettingsScreen() {
     };
 
     const checkPermissions = async () => {
+        // Turn off preferences if permissions were revoked system-wide
         const { status: calStatus } = await Calendar.getCalendarPermissionsAsync();
-        setCalendarEnabled(calStatus === 'granted');
+        if (calStatus !== 'granted') setCalendarSyncEnabled(false);
 
         const { status: notifStatus } = await Notifications.getPermissionsAsync();
-        setNotificationsEnabled(notifStatus === 'granted');
+        if (notifStatus !== 'granted') setNotificationsEnabled(false);
     };
 
     const toggleCalendar = async () => {
-        if (!calendarEnabled) {
+        if (!calendarSyncEnabled) {
             const { status } = await Calendar.requestCalendarPermissionsAsync();
             if (status === 'granted') {
-                setCalendarEnabled(true);
+                setCalendarSyncEnabled(true);
 
                 try {
                     const q = query(collection(db, "exercises"), where("clientId", "==", profile?.id));
@@ -94,7 +93,7 @@ export default function SettingsScreen() {
                 Alert.alert(i18n.t('settings.error'), i18n.t('settings.cal_denied'));
             }
         } else {
-            setCalendarEnabled(false);
+            setCalendarSyncEnabled(false);
             // Optional: Remove calendars/events
         }
     };
@@ -104,6 +103,15 @@ export default function SettingsScreen() {
             const { status } = await Notifications.requestPermissionsAsync();
             if (status === 'granted') {
                 setNotificationsEnabled(true);
+                // Trigger a rescheduling now that they are enabled
+                try {
+                    if (profile?.id) {
+                        const q = query(collection(db, 'exercises'), where('clientId', '==', profile?.id));
+                        const snap = await getDocs(q);
+                        const exercises = snap.docs.map(d => ({ id: d.id, ...d.data() } as any));
+                        await scheduleExerciseReminders(exercises);
+                    }
+                } catch (e) { console.error('Error scheduling on toggle', e); }
             } else {
                 Alert.alert(i18n.t('settings.error'), i18n.t('settings.notif_denied'));
             }
@@ -135,21 +143,38 @@ export default function SettingsScreen() {
                 from={{ opacity: 0, translateY: -40 }}
                 animate={{ opacity: 1, translateY: 0 }}
                 transition={{ type: 'timing', duration: 400, delay: 50 }}
+                style={{ zIndex: 100, elevation: 100 }}
             >
-                <LinearGradient
-                    colors={['#1a365d', '#2C3E50']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    className="pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between"
-                >
-                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md flex-row items-center">
-                        <ChevronLeft size={18} color="white" />
+                <View className="pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between overflow-hidden">
+                    <LinearGradient
+                        colors={['#1a365d', '#2C3E50']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    />
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                            if (router.canGoBack()) {
+                                router.back();
+                            } else {
+                                if (profile?.role === 'therapist') {
+                                    router.replace('/(app)/therapist' as any);
+                                } else {
+                                    router.replace('/(app)' as any);
+                                }
+                            }
+                        }}
+                        className="bg-white/20 px-4 py-3 rounded-xl backdrop-blur-md flex-row items-center z-50"
+                        style={{ zIndex: 50, elevation: 50 }}
+                    >
+                        <ChevronLeft size={20} color="white" />
                         <Text className="text-white font-bold ml-1">{i18n.t('exercise.back')}</Text>
                     </TouchableOpacity>
-                    <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4">
+                    <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4 z-10">
                         {i18n.t('settings.title')}
                     </Text>
-                </LinearGradient>
+                </View>
             </MotiView>
 
             <DefaultScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -171,7 +196,7 @@ export default function SettingsScreen() {
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.cal_desc')}</Text>
                                 </View>
                                 <Switch
-                                    value={calendarEnabled}
+                                    value={calendarSyncEnabled}
                                     onValueChange={(val) => { toggleCalendar(); }}
                                     trackColor={{ false: '#E5E7EB', true: '#2C3E50' }}
                                 />

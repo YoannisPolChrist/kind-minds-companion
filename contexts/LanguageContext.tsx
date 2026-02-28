@@ -7,11 +7,11 @@ export { LanguageCode };
 export function useLanguage() {
     const locale = useLanguageStore(state => state.locale);
     const setLocaleStore = useLanguageStore(state => state.setLocale);
+    const { user } = useAuth();
 
     return {
         locale,
         setLanguage: async (lang: string) => {
-            const { user } = useAuth();
             await setLocaleStore(lang as LanguageCode, user?.uid);
         }
     };

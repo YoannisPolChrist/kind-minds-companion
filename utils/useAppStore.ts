@@ -10,6 +10,12 @@ interface AppState {
     // Profiles mapping (in case multiple users log into same device)
     therapistBookingUrls: Record<string, string>;
     setTherapistBookingUrl: (userId: string, url: string) => void;
+
+    // Feature toggles
+    calendarSyncEnabled: boolean;
+    setCalendarSyncEnabled: (enabled: boolean) => void;
+    notificationsEnabled: boolean;
+    setNotificationsEnabled: (enabled: boolean) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -26,6 +32,12 @@ export const useAppStore = create<AppState>()(
                         [userId]: url,
                     },
                 })),
+
+            calendarSyncEnabled: false,
+            setCalendarSyncEnabled: (enabled) => set({ calendarSyncEnabled: enabled }),
+
+            notificationsEnabled: false,
+            setNotificationsEnabled: (enabled) => set({ notificationsEnabled: enabled }),
         }),
         {
             name: 'app-storage',

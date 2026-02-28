@@ -1,70 +1,55 @@
-// Shared domain types for the TherapyClientApp
-
-export type ExerciseBlockType =
-    | 'reflection'
-    | 'text'       // legacy alias for reflection
-    | 'scale'
-    | 'choice'
-    | 'checklist'
-    | 'homework'
-    | 'gratitude'
-    | 'info'
-    | 'timer'
-    | 'breathing'
-    | 'media';
-
-export interface ExerciseBlock {
-    id: string;
-    type: ExerciseBlockType;
-    content: string;
-    duration?: number;
-    options?: string[];
-    minLabel?: string;
-    maxLabel?: string;
-    mediaUri?: string;
-    mediaType?: 'image' | 'video';
-    mediaSize?: 'small' | 'medium' | 'large';
-}
+/**
+ * types/index.ts
+ *
+ * Central type definitions for the TherapyProzessOptimierung app.
+ */
 
 export interface Exercise {
     id: string;
     title: string;
     description?: string;
-    clientId: string;
-    therapistId?: string;
-    blocks: ExerciseBlock[];
-    completed: boolean;
-    recurrence?: 'none' | 'daily' | 'weekly';
-    answers?: Record<string, string>;
+    recurrence?: 'daily' | 'weekly' | 'none';
+    completed?: boolean;
+    completedAt?: string;
     lastCompletedAt?: string;
     createdAt?: string;
-    reminderFrequency?: string;
+    therapistId?: string;
     archived?: boolean;
+    reminderFrequency?: string;
+    blocks?: ExerciseBlock[];
+}
+
+export interface ExerciseBlock {
+    id: string;
+    type: 'text' | 'video' | 'reflection' | 'breathing' | 'timer' | 'info' | 'media' | 'scale' | 'choice' | 'checklist' | 'homework' | 'gratitude';
+    content?: string;
+    mediaUri?: string;
+    videoUrl?: string; // fallback
+    duration?: number; // for timers/breathing
+    options?: string[]; // for choice/checklist
+    mediaSize?: 'small' | 'medium' | 'large';
+    mediaType?: 'image' | 'video';
+    minLabel?: string; // for scale
+    maxLabel?: string; // for scale
 }
 
 export interface UserProfile {
     id: string;
-    uid: string;
-    role: 'therapist' | 'client';
-    firstName: string;
-    lastName: string;
-    email?: string;
-    therapistId?: string;
+    email: string;
+    role: 'client' | 'therapist';
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
     bookingUrl?: string;
 }
 
-export interface CheckinEntry {
+export interface Checkin {
+    id?: string;
     uid: string;
-    date: string;           // ISO date string YYYY-MM-DD
-    mood: number;           // 1-10
+    date: string;
+    mood: number;
     tags: string[];
-    note: string;
-    createdAt: string;
-}
-
-export interface ExerciseTemplate {
-    id: string;
-    title: string;
-    blocks: ExerciseBlock[];
+    note?: string;
+    duration?: number;
     createdAt: string;
 }

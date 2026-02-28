@@ -1,10 +1,15 @@
-import * as Calendar from 'expo-calendar';
-import { Platform, Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Calendar from 'expo-calendar';
+import { useAppStore } from './useAppStore';
 import { Exercise } from '../types';
 
 export async function syncExercisesToCalendar(exercises: Exercise[], silent = false) {
     try {
+        // Respect the user's preference in settings
+        const { calendarSyncEnabled } = useAppStore.getState();
+        if (!calendarSyncEnabled) return;
+
         const { status } = await Calendar.requestCalendarPermissionsAsync();
         if (status !== 'granted') {
             if (!silent) Alert.alert("Fehler", "Bitte erlaube den Kalender-Zugriff in deinen Geräteeinstellungen.");

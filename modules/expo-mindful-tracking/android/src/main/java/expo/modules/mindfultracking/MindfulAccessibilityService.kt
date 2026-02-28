@@ -27,6 +27,8 @@ class MindfulAccessibilityService : AccessibilityService() {
         val prefs = getSharedPreferences("TherapyPrefs", Context.MODE_PRIVATE)
         val blockedApps = prefs.getStringSet("blocked_apps", emptySet()) ?: emptySet()
         val isStrict = prefs.getBoolean("strict_mode", false)
+        val expiryTime = prefs.getLong("access_expiry", 0L)
+        val isAccessGranted = System.currentTimeMillis() < expiryTime
 
         // Strict Mode: instantly minimize settings if they try to bypass accessibility
         if (isStrict && packageName == "com.android.settings" && className.contains("Accessibility")) {
@@ -34,8 +36,8 @@ class MindfulAccessibilityService : AccessibilityService() {
             return
         }
 
-        // If app is in our restricted list, mount the 5-sec friction overlay
-        if (blockedApps.contains(packageName)) {
+        // If app is in our restricted list AND access has expired (or wasn't granted), mount friction overlay
+        if (blockedApps.contains(packageName) && !isAccessGranted) {
             showOverlay()
         } else {
             hideOverlay()

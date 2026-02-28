@@ -6,6 +6,7 @@ declare class ExpoMindfulTrackingModule extends NativeModule<ExpoMindfulTracking
   PI: number;
   hello(): string;
   setValueAsync(value: string): Promise<void>;
+  grantTemporaryAccess(minutes: number): void;
 }
 
 // This call loads the native module object from the JSI.

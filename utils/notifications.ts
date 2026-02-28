@@ -41,14 +41,7 @@ async function requestPermission(): Promise<boolean> {
     return requested === 'granted';
 }
 
-async function loadReminderHour(): Promise<number> {
-    try {
-        const saved = await AsyncStorage.getItem(REMINDER_HOUR_KEY);
-        return saved !== null ? parseInt(saved, 10) : DEFAULT_REMINDER_HOUR;
-    } catch {
-        return DEFAULT_REMINDER_HOUR;
-    }
-}
+import { useAppStore } from './useAppStore';
 
 function buildDailyTrigger(hour: number) {
     return { hour, minute: 0, repeats: true, type: 'calendar' } as unknown as Notifications.NotificationTriggerInput;
@@ -88,7 +81,10 @@ export async function scheduleExerciseReminders(exercises: Exercise[]): Promise<
     if (Platform.OS === 'web') return;
 
     await Notifications.cancelAllScheduledNotificationsAsync();
-    const reminderHour = await loadReminderHour();
+
+    // Check if the user has enabled notifications in settings
+    const { notificationsEnabled, reminderHour } = useAppStore.getState();
+    if (!notificationsEnabled) return;
 
     const pendingExercises = exercises.filter(ex => !ex.completed && ex.reminderFrequency);
     for (const ex of pendingExercises) {

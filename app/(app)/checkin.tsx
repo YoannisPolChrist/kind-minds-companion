@@ -96,51 +96,15 @@ export default function CheckinScreen() {
         if (!mood) { Alert.alert('Fehler', i18n.t('checkin.error_mood')); return; }
         if (!profile?.id) { Alert.alert('Fehler', i18n.t('checkin.error_auth')); return; }
 
-        setSaving(true);
-        // Haptic feedback for main action
-        if (Platform.OS !== 'web') {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            const checkinData = {
-                uid: profile.id,
-                date: today,
+        // Navigate to duration selection screen instead of saving directly
+        router.push({
+            pathname: '/(app)/access_duration',
+            params: {
                 mood,
-                tags: selectedTags,
-                note: note.trim(),
-                createdAt: new Date().toISOString(),
-            };
-
-            // OPTIMISTIC UPDATE:
-            // We fire the setDoc into the background. Firestore's persistentLocalCache handles offline queuing.
-            // We immediately tell the user it was saved.
-            setDoc(doc(db, 'checkins', `${profile.id}_${today}`), checkinData).catch(e => {
-                console.warn("Background Check-in sync failed (will retry automatically if offline)", e);
-            });
-
-            if (!isConnected) {
-                Alert.alert(
-                    'Offline gespeichert',
-                    'Dein Check-in wurde lokal gesichert und wird synchronisiert, sobald du wieder online bist.',
-                    [{ text: 'OK', onPress: () => router.back() }]
-                );
-            } else {
-                Alert.alert(i18n.t('checkin.saved_title'), i18n.t('checkin.saved_msg'), [
-                    { text: 'OK', onPress: () => router.back() }
-                ]);
+                tags: selectedTags.join(','),
+                note: note.trim()
             }
-
-            if (Platform.OS === 'web') {
-                router.back();
-            }
-        } catch (e: any) {
-            console.error("Check-in Error:", e);
-            Alert.alert('Fehler', i18n.t('checkin.error_save'));
-        } finally {
-            setSaving(false);
-        }
+        });
     };
 
     const contactTherapist = async () => {
@@ -316,7 +280,7 @@ export default function CheckinScreen() {
                         <TouchableOpacity onPress={handleSave} disabled={saving || !mood}
                             style={{ backgroundColor: mood ? '#2C3E50' : '#D1D5DB', padding: 18, borderRadius: 18, alignItems: 'center', marginBottom: 16 }}>
                             {saving ? <ActivityIndicator color="#fff" /> :
-                                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Check-in speichern ✓</Text>
+                                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Weiter →</Text>
                             }
                         </TouchableOpacity>
                     </MotiView>

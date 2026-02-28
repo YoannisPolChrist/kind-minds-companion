@@ -7,7 +7,7 @@ import { useAppStore } from '../../utils/useAppStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect, useCallback, useMemo, useState } from 'react';
 import { useRouter, useFocusEffect, Redirect } from 'expo-router';
-import { collection, query, where, limit, getDocs } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs, updateDoc, doc, orderBy } from 'firebase/firestore';
 import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import { db } from '../../utils/firebase';
 import { registerForPushNotificationsAsync } from '../../utils/notifications';
@@ -33,6 +33,8 @@ export default function ClientDashboard() {
     const router = useRouter();
     const { exercises, loading, fetchExercises } = useClientExercises(profile?.id);
     const { checkedInToday, recentCheckins, fetchCheckinStatus } = useCheckinStatus(profile?.id);
+
+    const [notifications, setNotifications] = useState<any[]>([]);
 
     // Replace context-bound state with Zustand global store state
     const bookingUrl = useAppStore(state => profile?.id ? state.therapistBookingUrls[profile.id] : null);
@@ -82,6 +84,7 @@ export default function ClientDashboard() {
                 const promises = [fetchExercises()];
                 if (active) {
                     promises.push(fetchCheckinStatus());
+                    promises.push(fetchNotifications());
                 }
                 await Promise.all(promises);
             };
@@ -89,6 +92,36 @@ export default function ClientDashboard() {
             return () => { active = false; };
         }, [profile?.id, fetchExercises])
     );
+
+    const fetchNotifications = async () => {
+        if (!profile?.id) return;
+        try {
+            const q = query(
+                collection(db, 'notifications'),
+                where('clientId', '==', profile.id),
+                where('read', '==', false)
+            );
+            const snap = await getDocs(q);
+            const notifs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            // sort by createdAt manually since we can't easily compound query without an index
+            notifs.sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+            setNotifications(notifs);
+        } catch (e) {
+            console.error('Error fetching notifications', e);
+        }
+    };
+
+    const handleNotificationClick = async () => {
+        // Mark all as read
+        try {
+            const promises = notifications.map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }));
+            await Promise.all(promises);
+            setNotifications([]);
+            router.push('/(app)/resources');
+        } catch (e) {
+            console.error('Error updating notifications', e);
+        }
+    };
 
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
     const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
@@ -192,6 +225,47 @@ export default function ClientDashboard() {
 
                 {/* Responsive content column: no max-width on mobile, capped on tablet/desktop */}
                 <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: horizPadding }]}>
+
+                    {notifications.length > 0 && (
+                        <MotiView
+                            from={{ opacity: 0, translateY: -20 }}
+                            animate={{ opacity: 1, translateY: 0 }}
+                            transition={{ type: 'spring', damping: 20, stiffness: 100 }}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <TouchableOpacity
+                                onPress={handleNotificationClick}
+                                style={{
+                                    backgroundColor: '#E0F2FE',
+                                    borderWidth: 1,
+                                    borderColor: '#BAE6FD',
+                                    borderRadius: 16,
+                                    padding: 16,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    shadowColor: '#0284C7',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.1,
+                                    shadowRadius: 8,
+                                    elevation: 2
+                                }}
+                            >
+                                <View style={{ backgroundColor: '#0284C7', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                                    <BookOpen size={20} color="white" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: '#0369A1', fontWeight: 'bold', fontSize: 16, marginBottom: 2 }}>{notifications.length} neue Nachricht{notifications.length > 1 ? 'en' : ''}</Text>
+                                    <Text style={{ color: '#0284C7', fontSize: 13 }} numberOfLines={2}>
+                                        {notifications[0]?.message || 'Dein Therapeut hat neue Ressourcen für dich freigeschaltet.'}
+                                    </Text>
+                                </View>
+                                <View style={{ backgroundColor: 'rgba(2,132,199,0.1)', padding: 8, borderRadius: 100 }}>
+                                    <Text style={{ color: '#0369A1', fontWeight: 'bold' }}>{'>'}</Text>
+                                </View>
+                            </TouchableOpacity>
+                        </MotiView>
+                    )}
+
                     <MotiView
                         from={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}

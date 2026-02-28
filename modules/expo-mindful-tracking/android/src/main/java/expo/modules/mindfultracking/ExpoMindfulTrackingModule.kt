@@ -85,6 +85,16 @@ class ExpoMindfulTrackingModule : Module() {
             }
         }
         
+        // Grant temporary access for N minutes
+        Function("grantTemporaryAccess") { minutes: Int ->
+            val context = appContext.reactContext
+            if (context != null) {
+                val expiryTime = System.currentTimeMillis() + (minutes * 60 * 1000L)
+                val prefs = context.getSharedPreferences("TherapyPrefs", Context.MODE_PRIVATE)
+                prefs.edit().putLong("access_expiry", expiryTime).apply()
+            }
+        }
+
         // Open Accessibility settings
         Function("requestAccessibilityPermission") {
             val context = appContext.reactContext
