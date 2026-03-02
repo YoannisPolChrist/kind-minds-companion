@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, TextInput, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, Platform, KeyboardAvoidingView, TextInput, ActivityIndicator, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
@@ -11,8 +11,10 @@ import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import i18n from '../../../utils/i18n';
 import { useAuth } from '../../../contexts/AuthContext';
+import { MotiView, AnimatePresence } from 'moti';
+import { ProgressChart, BarChart, PieChart, LineChart } from 'react-native-chart-kit';
 
-import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Lock, Unlock } from 'lucide-react-native';
+import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Lock, Unlock, Radar, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon } from 'lucide-react-native';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,7 +34,11 @@ function blockTypeLabel(type: string): string {
         timer: i18n.t('blocks.timer') || 'Timer',
         breathing: i18n.t('blocks.breathing') || 'Atemübung',
         info: i18n.t('blocks.info') || 'Information',
-        media: 'Medium'
+        media: 'Medium',
+        spider_chart: 'Netzdiagramm',
+        bar_chart: 'Balkendiagramm',
+        pie_chart: 'Kreisdiagramm',
+        line_chart: 'Liniendiagramm',
     };
     return labels[type] ?? 'Block';
 }
@@ -50,6 +56,10 @@ function getBlockIcon(type: string) {
         case 'media': return ImageIcon;
         case 'timer': return Clock;
         case 'breathing': return Wind;
+        case 'spider_chart': return Radar;
+        case 'bar_chart': return BarChart3;
+        case 'pie_chart': return PieChartIcon;
+        case 'line_chart': return LineChartIcon;
         default: return Edit3;
     }
 }
@@ -308,6 +318,163 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
     );
 }
 
+const CHART_PALETTE = ['#F97316', '#0EA5E9', '#10B981', '#8B5CF6', '#F43F5E', '#F59E0B', '#14B8A6', '#64748B', '#EC4899', '#3B82F6'];
+
+function InteractiveChartBlock({ block, value, onChange }: { block: ExerciseBlock; value: string; onChange: (v: string) => void }) {
+    const currentValues: Record<string, number> = (() => {
+        try { return value ? JSON.parse(value) : {}; } catch { return {}; }
+    })();
+
+    const updateValue = (label: string, valStr: string) => {
+        const next = { ...currentValues };
+        const num = parseFloat(valStr);
+        if (isNaN(num)) {
+            delete next[label];
+        } else {
+            next[label] = num;
+        }
+        onChange(JSON.stringify(next));
+    };
+
+    const data = (block.options ?? []).map((opt, i) => {
+        const parts = opt.split(':');
+        const label = parts[0] || `Option ${i+1}`;
+        const defaultVal = parseFloat(parts[1] || '0');
+        const color = parts[2] || CHART_PALETTE[i % CHART_PALETTE.length];
+        const currentVal = currentValues[label] !== undefined ? currentValues[label] : defaultVal;
+        return { label, currentVal, color };
+    });
+
+    const screenWidth = Dimensions.get('window').width - 96;
+
+    return (
+        <MotiView
+            from={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: 'spring' }}
+            className="items-center"
+        >
+            {block.content ? <Text style={{ fontSize: 16, color: '#2C3E50', marginBottom: 20, textAlign: 'center', fontWeight: '600' }}>{block.content}</Text> : null}
+            
+            <View className="bg-white rounded-[32px] p-4 shadow-sm border border-gray-100 items-center justify-center overflow-hidden w-full mb-6">
+                {block.type === 'spider_chart' && (
+                    <ProgressChart
+                        data={{
+                            labels: data.map(d => d.label),
+                            data: data.map(d => Math.min(Math.max(d.currentVal / 100, 0), 1)),
+                            colors: data.map(d => d.color)
+                        }}
+                        width={screenWidth}
+                        height={220}
+                        strokeWidth={12}
+                        radius={32}
+                        hideLegend={false}
+                        chartConfig={{
+                            backgroundColor: '#ffffff',
+                            backgroundGradientFrom: '#ffffff',
+                            backgroundGradientTo: '#ffffff',
+                            color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+                            labelColor: (opacity = 1) => `#6B7C85`,
+                        }}
+                        style={{ marginVertical: 8 }}
+                    />
+                )}
+                {block.type === 'bar_chart' && (
+                    <BarChart
+                        data={{
+                            labels: data.map(d => d.label),
+                            datasets: [{
+                                data: data.map(d => d.currentVal || 0),
+                                colors: data.map(d => () => d.color)
+                            }]
+                        }}
+                        width={screenWidth}
+                        height={220}
+                        yAxisLabel=""
+                        yAxisSuffix=""
+                        fromZero
+                        withCustomBarColorFromData={true}
+                        flatColor={true}
+                        chartConfig={{
+                            backgroundColor: '#ffffff',
+                            backgroundGradientFrom: '#ffffff',
+                            backgroundGradientTo: '#ffffff',
+                            color: (opacity = 1) => `rgba(0,0,0, ${opacity})`,
+                            labelColor: (opacity = 1) => `#6B7C85`,
+                            barPercentage: 0.6,
+                        }}
+                        style={{ marginVertical: 8 }}
+                    />
+                )}
+                {block.type === 'pie_chart' && (
+                    <PieChart
+                        data={data.map((d) => ({
+                            name: d.label,
+                            population: d.currentVal || 0,
+                            color: d.color,
+                            legendFontColor: '#6B7C85',
+                            legendFontSize: 12
+                        }))}
+                        width={screenWidth}
+                        height={220}
+                        accessor="population"
+                        backgroundColor="transparent"
+                        paddingLeft="15"
+                        absolute
+                        chartConfig={{ color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})` }}
+                        style={{ marginVertical: 8 }}
+                    />
+                )}
+                {block.type === 'line_chart' && (
+                    <LineChart
+                        data={{
+                            labels: data.map(d => d.label),
+                            datasets: [{ data: data.map(d => d.currentVal || 0) }]
+                        }}
+                        width={screenWidth}
+                        height={220}
+                        bezier
+                        chartConfig={{
+                            backgroundColor: '#ffffff',
+                            backgroundGradientFrom: '#ffffff',
+                            backgroundGradientTo: '#ffffff',
+                            decimalPlaces: 0,
+                            color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+                            labelColor: (opacity = 1) => `#6B7C85`,
+                            propsForDots: { r: "6", strokeWidth: "2", stroke: "#059669" }
+                        }}
+                        style={{ marginVertical: 8 }}
+                    />
+                )}
+            </View>
+            
+            <View className="w-full gap-3">
+                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Deine Werte eintragen</Text>
+                {data.map((item, i) => (
+                    <MotiView 
+                        key={i} 
+                        from={{ opacity: 0, translateX: -10 }} 
+                        animate={{ opacity: 1, translateX: 0 }} 
+                        transition={{ delay: i * 100 }}
+                        className="flex-row items-center bg-gray-50 p-3 rounded-2xl border border-gray-100"
+                    >
+                        <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: item.color, marginRight: 12 }} />
+                        <Text className="flex-1 font-bold text-[#2C3E50] text-base">{item.label}</Text>
+                        <TextInput 
+                            keyboardType="numeric"
+                            value={currentValues[item.label] !== undefined ? String(currentValues[item.label]) : ''}
+                            onChangeText={(t) => updateValue(item.label, t)}
+                            placeholder={String(item.currentVal)}
+                            placeholderTextColor="#CBD5E1"
+                            className="bg-white border border-gray-200 px-4 py-2 rounded-xl text-center font-bold text-[#137386] min-w-[80px]"
+                        />
+                    </MotiView>
+                ))}
+            </View>
+        </MotiView>
+    );
+}
+
 // ─── Block dispatcher ─────────────────────────────────────────────────────────
 
 function ExerciseBlockRenderer({ block, answers, onAnswerChange }: {
@@ -338,6 +505,11 @@ function ExerciseBlockRenderer({ block, answers, onAnswerChange }: {
         case 'timer':
         case 'breathing':
             return <TimerBlock block={block} />;
+        case 'spider_chart':
+        case 'bar_chart':
+        case 'pie_chart':
+        case 'line_chart':
+            return <InteractiveChartBlock block={block} value={value} onChange={onChange} />;
         default:
             return null;
     }

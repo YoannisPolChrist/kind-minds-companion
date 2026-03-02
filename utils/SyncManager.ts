@@ -89,9 +89,11 @@ async function executeAction(action: SyncAction): Promise<boolean> {
             return true;
 
         case 'SAVE_CHECKIN':
-            const { userId, checkinData } = payload;
-            const ref = doc(db, `users/${userId}/history`, checkinData.id || Date.now().toString());
-            await setDoc(ref, checkinData);
+            // The payload is the checkinData itself
+            const checkin = payload;
+            const docId = `${checkin.uid}_${checkin.date}`;
+            const ref = doc(db, 'checkins', docId);
+            await setDoc(ref, checkin);
             return true;
 
         case 'UPDATE_PROFILE':

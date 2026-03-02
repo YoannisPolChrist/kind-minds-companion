@@ -28,9 +28,13 @@ const CATEGORY_MAP: Record<ExerciseBlockType, { category: string; color: string 
     choice: { category: 'Bewertung', color: '#F59E0B' },
     checklist: { category: 'Verhalten', color: '#10B981' },
     gratitude: { category: 'Verhalten', color: '#10B981' },
-    breathing: { category: 'Körper', color: '#137386' },
-    timer: { category: 'Körper', color: '#137386' },
-    media: { category: 'Körper', color: '#137386' },
+    timer: { category: 'Ausführung', color: '#8B5CF6' },      // Purple
+    breathing: { category: 'Achtsamkeit', color: '#137386' },  // Primary
+    media: { category: 'Multimedia', color: '#F43F5E' },       // Rose
+    spider_chart: { category: 'Analyse', color: '#F59E0B' },   // Amber
+    bar_chart: { category: 'Analyse', color: '#10B981' },      // Emerald
+    pie_chart: { category: 'Analyse', color: '#8B5CF6' },      // Purple
+    line_chart: { category: 'Analyse', color: '#0EA5E9' },     // Sky
 };
 
 const ALL_CATEGORIES = [

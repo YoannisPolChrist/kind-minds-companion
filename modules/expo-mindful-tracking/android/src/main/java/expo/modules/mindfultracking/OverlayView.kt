@@ -61,7 +61,12 @@ class OverlayView(context: Context) : LinearLayout(context) {
                     actionBtn.setBackgroundColor(Color.parseColor("#C09D59")) // Our brand accent color
                     actionBtn.setOnClickListener {
                         // The user chose to bypass intentionally. 
-                        // The AccessibilityService normally removes this view. But let's just forcefully hide it.
+                        // Save a 15-minute temporary bypass token so the AccessibilityService doesn't loop
+                        val prefs = context.getSharedPreferences("TherapyPrefs", Context.MODE_PRIVATE)
+                        val bypassExpiry = System.currentTimeMillis() + (15 * 60 * 1000L)
+                        prefs.edit().putLong("access_expiry", bypassExpiry).apply()
+
+                        // Forcefully hide it.
                         (parent as? android.view.ViewGroup)?.removeView(this@OverlayView)
                     }
                 }

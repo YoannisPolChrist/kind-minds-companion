@@ -51,14 +51,17 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Login() {
-    const { login, resetPassword, loading, error: globalError, success } = useAuthActions();
+    const { login, register, resetPassword, loading, error: globalError, success } = useAuthActions();
+
+    const [isLoginMode, setIsLoginMode] = useState(true);
 
     const [formData, setFormData] = useState({
         email: '',
-        password: ''
+        password: '',
+        inviteCode: ''
     });
 
-    const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+    const [errors, setErrors] = useState<{ email?: string; password?: string; inviteCode?: string }>({});
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
     useEffect(() => {
@@ -85,7 +88,7 @@ export default function Login() {
     };
 
     const validateForm = (isReset: boolean = false): boolean => {
-        const newErrors: { email?: string; password?: string } = {};
+        const newErrors: { email?: string; password?: string; inviteCode?: string } = {};
 
         if (!formData.email.trim()) {
             newErrors.email = i18n.t('login.error_fields');
@@ -101,9 +104,13 @@ export default function Login() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleLoginSubmit = () => {
+    const handleAuthSubmit = () => {
         if (validateForm()) {
-            login(formData.email, formData.password);
+            if (isLoginMode) {
+                login(formData.email, formData.password);
+            } else {
+                register(formData.email, formData.password, formData.inviteCode.trim() || undefined);
+            }
         }
     };
 
@@ -234,6 +241,44 @@ export default function Login() {
                             )}
                         </View>
 
+                        {/* ── Invite Code Field (Register Mode Only) ── */}
+                        {!isLoginMode && (
+                            <View style={{ marginBottom: 32 }}>
+                                <Text style={{
+                                    color: 'rgba(36,56,66,0.5)',
+                                    fontSize: 11,
+                                    fontWeight: '700',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: 2,
+                                    marginBottom: 8,
+                                    marginLeft: 4,
+                                }}>Einladungscode (Optional)</Text>
+                                <TextInput
+                                    style={{
+                                        backgroundColor: '#F9F8F6',
+                                        paddingHorizontal: 20,
+                                        paddingVertical: 14,
+                                        borderRadius: 16,
+                                        borderWidth: 1.5,
+                                        borderColor: errors.inviteCode ? '#FCA5A5' : 'rgba(36,56,66,0.1)',
+                                        color: '#243842',
+                                        fontSize: 16,
+                                        fontWeight: '500',
+                                        textTransform: 'uppercase',
+                                    }}
+                                    placeholder="ABCDEF"
+                                    value={formData.inviteCode}
+                                    onChangeText={(text) => handleChange('inviteCode', text)}
+                                    autoCapitalize="characters"
+                                    maxLength={6}
+                                    placeholderTextColor="rgba(36,56,66,0.3)"
+                                />
+                                {errors.inviteCode && (
+                                    <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{errors.inviteCode}</Text>
+                                )}
+                            </View>
+                        )}
+
                         {/* ── Primary CTA Button (56px height — premium standard) ── */}
                         <TouchableOpacity
                             style={{
@@ -247,24 +292,43 @@ export default function Login() {
                                 shadowRadius: 20,
                                 elevation: 6,
                             }}
-                            onPress={handleLoginSubmit}
+                            onPress={handleAuthSubmit}
                             disabled={loading}
                         >
                             {loading ? (
                                 <ActivityIndicator color="#fff" />
                             ) : (
-                                <Text style={{ color: 'white', fontWeight: '700', fontSize: 16, letterSpacing: 0.5 }}>{i18n.t('login.button')}</Text>
+                                <Text style={{ color: 'white', fontWeight: '700', fontSize: 16, letterSpacing: 0.5 }}>
+                                    {isLoginMode ? i18n.t('login.button') : 'Registrieren'}
+                                </Text>
                             )}
                         </TouchableOpacity>
 
-                        {/* ── Forgot Password ── */}
+                        {/* ── Toggle Mode ── */}
                         <TouchableOpacity
-                            style={{ paddingVertical: 16, marginTop: 4, alignItems: 'center' }}
-                            onPress={handleResetPasswordSubmit}
+                            style={{ paddingVertical: 16, marginTop: 12, alignItems: 'center' }}
+                            onPress={() => {
+                                setIsLoginMode(!isLoginMode);
+                                setErrors({});
+                                setFormData(prev => ({ ...prev, inviteCode: '' }));
+                            }}
                             disabled={loading}
                         >
-                            <Text style={{ color: 'rgba(19,115,134,0.75)', fontWeight: '600', fontSize: 14, letterSpacing: 0.3 }}>{i18n.t('login.forgot')}</Text>
+                            <Text style={{ color: 'rgba(36,56,66,0.6)', fontWeight: '600', fontSize: 14 }}>
+                                {isLoginMode ? 'Noch kein Account? Registrieren' : 'Bereits einen Account? Anmelden'}
+                            </Text>
                         </TouchableOpacity>
+
+                        {/* ── Forgot Password ── */}
+                        {isLoginMode && (
+                            <TouchableOpacity
+                                style={{ paddingVertical: 8, alignItems: 'center' }}
+                                onPress={handleResetPasswordSubmit}
+                                disabled={loading}
+                            >
+                                <Text style={{ color: 'rgba(19,115,134,0.75)', fontWeight: '600', fontSize: 14, letterSpacing: 0.3 }}>{i18n.t('login.forgot')}</Text>
+                            </TouchableOpacity>
+                        )}
                     </MotiView>
                 </View>
             </View>

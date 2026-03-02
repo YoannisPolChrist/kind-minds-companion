@@ -7,6 +7,8 @@
 export interface Exercise {
     id: string;
     title: string;
+    coverImage?: string;
+    themeColor?: string;
     description?: string;
     recurrence?: 'daily' | 'weekly' | 'none';
     completed?: boolean;
@@ -16,6 +18,7 @@ export interface Exercise {
     therapistId?: string;
     archived?: boolean;
     reminderFrequency?: string;
+    reminderTime?: string; // Optional specific time "HH:mm" for the reminder
     blocks?: ExerciseBlock[];
 }
 
@@ -41,6 +44,22 @@ export interface UserProfile {
     lastName?: string;
     phone?: string;
     bookingUrl?: string;
+    
+    // Extended Client Profile Fields
+    birthDate?: string;
+    profilePictureUrl?: string;
+    therapistId?: string;
+    isOfflineProfile?: boolean;
+    linkedAuthUid?: string;
+}
+
+export interface Invitation {
+    id: string;
+    code: string;
+    therapistId: string;
+    targetOfflineProfileId?: string;
+    status: 'pending' | 'used' | 'expired';
+    createdAt: any; // Firestore Timestamp
 }
 
 export interface Checkin {

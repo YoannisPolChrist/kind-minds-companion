@@ -41,7 +41,10 @@ export default function ResourcesScreen() {
                 const bTime = b.createdAt?.seconds || 0;
                 return bTime - aTime;
             });
-            setResources(data);
+
+            // Remove duplicates by URL so assigned global resources don't show up twice
+            const uniqueData = data.filter((v, i, a) => a.findIndex(t => (t.url === v.url)) === i);
+            setResources(uniqueData);
         } catch (error) {
             console.error("Error fetching resources:", error);
         } finally {
@@ -117,15 +120,15 @@ export default function ResourcesScreen() {
                             className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-4"
                         >
                             <View className="flex-row items-start mb-3">
-                                <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : 'bg-blue-50'}`}>
-                                    {item.type === 'document' ? <FileText size={24} color="#6366F1" /> : item.type === 'pdf' ? <Text className="text-xl">📄</Text> : <Text className="text-xl">🔗</Text>}
+                                <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : item.type === 'video' ? 'bg-purple-50' : item.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
+                                    {item.type === 'document' ? <FileText size={24} color="#6366F1" /> : item.type === 'pdf' ? <Text className="text-xl">📄</Text> : item.type === 'video' ? <Text className="text-xl">🎥</Text> : item.type === 'image' ? <Text className="text-xl">🖼️</Text> : <Text className="text-xl">🔗</Text>}
                                 </View>
                                 <View className="flex-1">
                                     <Text className="text-lg font-bold text-[#2C3E50] leading-tight mb-1">{item.title}</Text>
                                     <View className="flex-row items-center">
-                                        <View className={`px-2 py-0.5 rounded-md ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : 'bg-blue-50'}`}>
-                                            <Text className={`text-[10px] font-bold uppercase tracking-wider ${item.type === 'document' ? 'text-indigo-600' : item.type === 'pdf' ? 'text-red-600' : 'text-blue-600'}`}>
-                                                {item.type === 'document' ? 'Geteiltes Dokument' : item.type === 'pdf' ? 'PDF Dokument' : 'Web Link'}
+                                        <View className={`px-2 py-0.5 rounded-md ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : item.type === 'video' ? 'bg-purple-50' : item.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
+                                            <Text className={`text-[10px] font-bold uppercase tracking-wider ${item.type === 'document' ? 'text-indigo-600' : item.type === 'pdf' ? 'text-red-600' : item.type === 'video' ? 'text-purple-600' : item.type === 'image' ? 'text-pink-600' : 'text-blue-600'}`}>
+                                                {item.type === 'document' ? 'Geteiltes Dokument' : item.type === 'pdf' ? 'PDF Dokument' : item.type === 'video' ? 'Video' : item.type === 'image' ? 'Bild' : 'Web Link'}
                                             </Text>
                                         </View>
                                     </View>
@@ -138,10 +141,10 @@ export default function ResourcesScreen() {
 
                             <TouchableOpacity
                                 onPress={() => handleOpenResource(item.url)}
-                                className={`py-3.5 rounded-xl items-center flex-row justify-center ${item.type === 'document' ? 'bg-indigo-500' : item.type === 'pdf' ? 'bg-red-500' : 'bg-[#137386]'}`}
+                                className={`py-3.5 rounded-xl items-center flex-row justify-center ${item.type === 'document' ? 'bg-indigo-500' : item.type === 'pdf' ? 'bg-red-500' : item.type === 'video' ? 'bg-purple-500' : item.type === 'image' ? 'bg-pink-500' : 'bg-[#137386]'}`}
                             >
-                                {item.type === 'document' || item.type === 'pdf' ? <Download size={18} color="white" style={{ marginRight: 8 }} /> : null}
-                                <Text className="text-white font-bold">{item.type === 'document' ? 'Dokument öffnen' : item.type === 'pdf' ? i18n.t('resources.open_pdf', { defaultValue: 'Open PDF' }) : i18n.t('resources.open_link', { defaultValue: 'Open Link' })}</Text>
+                                {item.type !== 'link' ? <Download size={18} color="white" style={{ marginRight: 8 }} /> : null}
+                                <Text className="text-white font-bold">{item.type === 'document' || item.type === 'pdf' ? 'Dokument öffnen' : item.type === 'video' ? 'Video ansehen' : item.type === 'image' ? 'Bild öffnen' : i18n.t('resources.open_link', { defaultValue: 'Open Link' })}</Text>
                             </TouchableOpacity>
                         </MotiView>
                     ))

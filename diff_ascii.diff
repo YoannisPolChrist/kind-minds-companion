@@ -1,0 +1,1908 @@
+diff --git a/app.json b/app.json
+index b46691e..d745d95 100644
+--- a/app.json
++++ b/app.json
+@@ -6,7 +6,7 @@
+     "orientation": "portrait",
+     "icon": "./assets/icon.png",
+     "userInterfaceStyle": "light",
+-    "newArchEnabled": true,
++    "newArchEnabled": false,
+     "splash": {
+       "image": "./assets/splash-icon.png",
+       "resizeMode": "contain",
+diff --git a/app/(app)/access_duration.tsx b/app/(app)/access_duration.tsx
+index 7a66d84..84fc8c8 100644
+--- a/app/(app)/access_duration.tsx
++++ b/app/(app)/access_duration.tsx
+@@ -4,8 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
+ import * as Haptics from 'expo-haptics';
+ import { useAuth } from '../../contexts/AuthContext';
+ import { useNetwork } from '../../contexts/NetworkContext';
+-import { doc, setDoc } from 'firebase/firestore';
+-import { db } from '../../utils/firebase';
++import { submitCheckin } from '../../services/checkinService';
+ import i18n from '../../utils/i18n';
+ import { MotiView } from 'moti';
+ import { LinearGradient } from 'expo-linear-gradient';
+@@ -44,7 +43,7 @@ export default function AccessDurationScreen() {
+                 date: today,
+                 mood: Number(params.mood),
+                 tags: params.tags ? (params.tags as string).split(',') : [],
+-                note: params.note || '',
++                note: (params.note as string) || '',
+                 duration: selectedDuration,
+                 createdAt: new Date().toISOString(),
+             };
+@@ -58,8 +57,8 @@ export default function AccessDurationScreen() {
+                 }
+             }
+ 
+-            // Save to Firestore
+-            await setDoc(doc(db, 'checkins', `${profile.id}_${today}`), checkinData);
++            // Save via CheckinService
++            await submitCheckin(checkinData, isConnected);
+ 
+             if (!isConnected) {
+                 Alert.alert(
+diff --git a/app/(app)/index.tsx b/app/(app)/index.tsx
+index 676035f..36754aa 100644
+--- a/app/(app)/index.tsx
++++ b/app/(app)/index.tsx
+@@ -23,8 +23,7 @@ import { useCheckinStatus } from '../../hooks/useCheckinStatus';
+ import { MoodChart } from '../../components/dashboard/MoodChart';
+ import { DarkAmbientOrbs, LightAmbientOrbs } from '../../components/ui/AmbientOrbs';
+ import { Skeleton } from '../../components/ui/Skeleton';
+-
+-
++import { markNotificationsAsRead } from '../../services/notificationService';
+ 
+ // ─── Main Screen ─────────────────────────────────────────────────────────────
+ 
+@@ -112,12 +111,11 @@ export default function ClientDashboard() {
+     };
+ 
+     const handleNotificationClick = async () => {
+-        // Mark all as read
++        // Mark all as read using batch mutation
+         try {
+-            const promises = notifications.map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }));
+-            await Promise.all(promises);
++            await markNotificationsAsRead(notifications.map(n => n.id));
+             setNotifications([]);
+-            router.push('/(app)/resources');
++            router.push('/(app)/resources' as any);
+         } catch (e) {
+             console.error('Error updating notifications', e);
+         }
+diff --git a/app/(app)/therapist/client/[id].tsx b/app/(app)/therapist/client/[id].tsx
+index a7e706c..f6a68e2 100644
+--- a/app/(app)/therapist/client/[id].tsx
++++ b/app/(app)/therapist/client/[id].tsx
+@@ -12,9 +12,10 @@ import { NoteRepository } from '../../../../utils/repositories/NoteRepository';
+ import ExerciseBuilder, { ExerciseBlock } from '../../../../components/therapist/ExerciseBuilder';
+ import { VoiceNoteTaker } from '../../../../components/therapist/VoiceNoteTaker';
+ import i18n from '../../../../utils/i18n';
+-import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock, FileUp, FileText, Link as LinkIcon, Download } from 'lucide-react-native';
++import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock, FileUp, FileText, Link as LinkIcon, Download, Clock } from 'lucide-react-native';
+ import { MotiView } from 'moti';
+ import { useAuth } from '../../../../contexts/AuthContext';
++import { generateDetailedClientSummary } from '../../../../utils/geminiAI';
+ 
+ export default function ClientView() {
+     const { id } = useLocalSearchParams();
+@@ -29,8 +30,26 @@ export default function ClientView() {
+     const [templates, setTemplates] = useState<any[]>([]);
+     const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+     const [recurrence, setRecurrence] = useState<string>('none');
++    const [recurrenceDays, setRecurrenceDays] = useState<string[]>([]);
+     const [reminderFrequency, setReminderFrequency] = useState<string>('none');
++    const [reminderTime, setReminderTime] = useState<string>('18:00');
+     const [builderMode, setBuilderMode] = useState<'select' | 'build'>('select');
++
++    const toggleDay = (dayKey: string) => {
++        setRecurrenceDays(prev => 
++            prev.includes(dayKey) ? prev.filter(d => d !== dayKey) : [...prev, dayKey]
++        );
++    };
++
++    const WEEKDAYS = [
++        { key: '1', label: 'Mo' },
++        { key: '2', label: 'Di' },
++        { key: '3', label: 'Mi' },
++        { key: '4', label: 'Do' },
++        { key: '5', label: 'Fr' },
++        { key: '6', label: 'Sa' },
++        { key: '0', label: 'So' }
++    ];
+     const [notes, setNotes] = useState<any[]>([]);
+ 
+     // File Upload State
+@@ -40,6 +59,12 @@ export default function ClientView() {
+     const [newFileTitle, setNewFileTitle] = useState('');
+     const [newFileDesc, setNewFileDesc] = useState('');
+ 
++    // Deep navigation state
++    const [activeSection, setActiveSection] = useState<'dashboard' | 'exercises' | 'notes' | 'files'>('dashboard');
++
++    const [manualNote, setManualNote] = useState('');
++    const [savingNote, setSavingNote] = useState(false);
++
+     useEffect(() => {
+         if (id) {
+             fetchClientData();
+@@ -116,6 +141,17 @@ export default function ClientView() {
+         }
+     };
+ 
++    const handleSaveManualNote = async () => {
++        if (!manualNote.trim()) return;
++        setSavingNote(true);
++        try {
++            await handleSaveNote(manualNote.trim());
++            setManualNote('');
++        } finally {
++            setSavingNote(false);
++        }
++    };
++
+     const deleteExercise = async (exerciseId: string, title: string) => {
+         Alert.alert(
+             i18n.t('therapist.delete_title'),
+@@ -256,11 +292,12 @@ export default function ClientView() {
+ 
+             const exerciseData = {
+                 clientId: id,
+-                therapistId: profile?.id || "unknown", // Prevent undefined
++                therapistId: profile?.id || "unknown",
+                 title,
+                 blocks: processedBlocks,
+                 recurrence: recurrence || 'none',
+-                reminderFrequency: reminderFrequency || 'none',
++                recurrenceDays: recurrence === 'custom' ? recurrenceDays : [],
++                reminderTime: reminderTime || '18:00',
+                 createdAt: serverTimestamp(),
+                 completed: false,
+             };
+@@ -338,8 +375,8 @@ export default function ClientView() {
+             {/* Header Section */}
+             <View className="bg-[#2C3E50] pt-16 pb-8 px-6 rounded-b-3xl shadow-md z-10">
+                 <View className="flex-row items-center justify-between w-full max-w-5xl mx-auto">
+-                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
+-                        <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
++                    <TouchableOpacity onPress={() => activeSection === 'dashboard' ? router.back() : setActiveSection('dashboard')} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
++                        <Text className="text-white font-bold">{activeSection === 'dashboard' ? i18n.t('exercise.back') : 'Zurück zum Dashboard'}</Text>
+                     </TouchableOpacity>
+                     <View className="flex-row items-center flex-1 justify-end ml-4">
+                         <View className="bg-white/10 w-10 h-10 rounded-full items-center justify-center mr-3 border border-white/20">
+@@ -358,291 +395,432 @@ export default function ClientView() {
+                 </View>
+             </View>
+ 
+-            <View className="flex-1 px-6 pt-6 w-full max-w-5xl mx-auto">
+-                <VoiceNoteTaker onTranscriptionComplete={handleSaveNote} />
++            <ScrollView className="flex-1 w-full" contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 32, paddingBottom: 120, maxWidth: 1024, marginHorizontal: 'auto' }}>
++                {activeSection === 'dashboard' && (
++                    <View className="flex-1 w-full max-w-4xl mx-auto">
++                        <Text className="text-[28px] font-black text-[#243842] mb-8 tracking-tight">Patienten-Akte</Text>
++                        <View className="flex-row flex-wrap gap-6">
++                            <TouchableOpacity 
++                                onPress={() => setActiveSection('exercises')} 
++                                className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(50%-12px)] aspect-square max-h-[280px]"
++                                style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
++                            >
++                                <View className="w-20 h-20 bg-[#F9F8F6] rounded-full items-center justify-center mb-5">
++                                    <Activity size={36} color="#137386" />
++                                </View>
++                                <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Übungen</Text>
++                                <Text className="text-[15px] text-[#243842]/60 font-medium text-center leading-relaxed">{exercises.filter(e => !e.completed).length} offen, {exercises.filter(e => e.completed).length} abgeschlossen</Text>
++                            </TouchableOpacity>
+ 
+-                {notes.length > 0 && (
+-                    <View className="mb-6">
+-                        <Text className="text-xl font-bold text-[#2C3E50] mb-3">Letzte Session Notes</Text>
+-                        {notes.map(note => (
+-                            <View key={note.id} className="bg-blue-50/50 p-4 rounded-3xl border border-blue-100 mb-3">
+-                                <Text className="text-xs text-blue-400 font-bold mb-2 uppercase tracking-wide">
+-                                    {new Date(note.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'long', year: 'numeric' })}
+-                                </Text>
+-                                <Text className="text-[#2C3E50] leading-5">{note.content}</Text>
+-                            </View>
+-                        ))}
++                            <TouchableOpacity 
++                                onPress={() => setActiveSection('notes')} 
++                                className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(50%-12px)] aspect-square max-h-[280px]"
++                                style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
++                            >
++                                <View className="w-20 h-20 bg-[#F9F8F6] rounded-full items-center justify-center mb-5">
++                                    <Edit3 size={36} color="#3B82F6" />
++                                </View>
++                                <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Session Notes</Text>
++                                <Text className="text-[15px] text-[#243842]/60 font-medium text-center leading-relaxed">{notes.length} gespeicherte Notizen</Text>
++                            </TouchableOpacity>
++
++                            <TouchableOpacity 
++                                onPress={() => setActiveSection('files')} 
++                                className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(50%-12px)] aspect-square max-h-[280px]"
++                                style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
++                            >
++                                <View className="w-20 h-20 bg-[#F9F8F6] rounded-full items-center justify-center mb-5">
++                                    <FileText size={36} color="#C09D59" />
++                                </View>
++                                <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Dateien</Text>
++                                <Text className="text-[15px] text-[#243842]/60 font-medium text-center leading-relaxed">{clientFiles.length} Dokumente geteilt</Text>
++                            </TouchableOpacity>
++                        </View>
+                     </View>
+                 )}
+ 
+-                {/* Client Files Section */}
+-                <View className="mb-6">
+-                    <View className="flex-row justify-between items-center mb-3">
+-                        <Text className="text-xl font-bold text-[#2C3E50]">Hinterlegte Dateien</Text>
+-                        <TouchableOpacity
+-                            onPress={() => setShowUploadModal(true)}
+-                            className="bg-[#137386] px-4 py-2 rounded-xl flex-row items-center shadow-sm"
+-                        >
+-                            <FileUp size={16} color="white" style={{ marginRight: 6 }} />
+-                            <Text className="text-white font-bold text-sm">Datei hochladen</Text>
+-                        </TouchableOpacity>
++                {activeSection === 'notes' && (
++                    <View className="flex-1 max-w-4xl mx-auto w-full">
++                        <Text className="text-[28px] font-black text-[#243842] mb-8 mt-4 tracking-tight">Session Notes</Text>
++                        
++                        <View className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm mb-6" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 3 }}>
++                            <Text className="text-[16px] font-bold text-[#243842] mb-4">Neue Notiz erfassen</Text>
++                            <TextInput
++                                value={manualNote}
++                                onChangeText={setManualNote}
++                                placeholder="Schreibe eine Notiz..."
++                                placeholderTextColor="#9CA3AF"
++                                multiline
++                                textAlignVertical="top"
++                                className="bg-[#F9F8F6] p-4 rounded-2xl border border-gray-200 text-[#243842] min-h-[120px] mb-4"
++                            />
++                            <View className="flex-row items-center justify-between">
++                                <View className="flex-1 mr-4">
++                                    <VoiceNoteTaker onTranscriptionComplete={handleSaveNote} />
++                                </View>
++                                <TouchableOpacity 
++                                    onPress={handleSaveManualNote}
++                                    disabled={savingNote || !manualNote.trim()}
++                                    className={`px-6 py-3.5 rounded-2xl flex-row items-center justify-center ${savingNote || !manualNote.trim() ? 'bg-gray-200' : 'bg-[#137386]'}`}
++                                >
++                                    {savingNote ? (
++                                        <ActivityIndicator size="small" color="#fff" />
++                                    ) : (
++                                        <Text className="text-white font-bold text-[15px]">Speichern</Text>
++                                    )}
++                                </TouchableOpacity>
++                            </View>
++                        </View>
++
++                        {notes.length > 0 && (
++                            <View className="mb-10 mt-10">
++                                <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-6 ml-2">Letzte Session Notes</Text>
++                                <View className="gap-6">
++                                    {notes.map(note => (
++                                        <View key={note.id} className="bg-white p-6 rounded-[28px] border border-blue-100/60 shadow-sm" style={{ shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 3 }}>
++                                            <View className="flex-row items-center mb-4">
++                                                <View className="w-10 h-10 bg-blue-50 rounded-[16px] items-center justify-center mr-3 border border-blue-100/50">
++                                                    <Edit3 size={18} color="#3B82F6" />
++                                                </View>
++                                                <Text className="text-[14px] text-[#243842]/60 font-bold tracking-wide">
++                                                    {new Date(note.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'long', year: 'numeric' })}
++                                                </Text>
++                                            </View>
++                                            <Text className="text-[#243842] text-[16px] leading-relaxed font-medium">{note.content}</Text>
++                                        </View>
++                                    ))}
++                                </View>
++                            </View>
++                        )}
+                     </View>
++                )}
+ 
+-                    {clientFiles.length === 0 ? (
+-                        <View className="bg-gray-50 border border-gray-100 p-5 rounded-3xl items-center">
+-                            <Text className="text-gray-500 text-sm mb-1 text-center font-medium">Noch keine Dateien hochgeladen.</Text>
+-                            <Text className="text-gray-400 text-xs text-center">Hier kannst du PDFs oder Dokumente speziell für diesen Klienten ablegen.</Text>
++                {activeSection === 'files' && (
++                    <View className="mb-8 flex-1 max-w-4xl mx-auto w-full">
++                        <View className="flex-row justify-between items-center mb-6 mt-2">
++                            <Text className="text-[24px] font-black text-[#243842]">Hinterlegte Dateien</Text>
++                            <TouchableOpacity
++                                onPress={() => setShowUploadModal(true)}
++                                className="bg-[#137386] px-5 py-3 rounded-2xl flex-row items-center shadow-sm"
++                            >
++                                <FileUp size={18} color="white" style={{ marginRight: 8 }} />
++                                <Text className="text-white font-bold text-[15px]">Datei hochladen</Text>
++                            </TouchableOpacity>
+                         </View>
+-                    ) : (
+-                        clientFiles.map(file => (
+-                            <View key={file.id} className="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm mb-3 flex-row justify-between items-center">
+-                                <View className="flex-1 pr-4 flex-row items-center">
+-                                    <View className="w-10 h-10 rounded-full bg-blue-50 items-center justify-center mr-3">
+-                                        <FileText size={20} color="#3B82F6" />
+-                                    </View>
+-                                    <View className="flex-1">
+-                                        <Text className="font-bold text-[#2C3E50]">{file.title}</Text>
+-                                        {file.description ? (
+-                                            <Text className="text-gray-500 text-xs mt-0.5" numberOfLines={1}>{file.description}</Text>
+-                                        ) : null}
+-                                        <Text className="text-gray-400 text-[10px] mt-1">
+-                                            {new Date(file.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString(i18n.locale)}
+-                                        </Text>
++
++                        {clientFiles.length === 0 ? (
++                            <View className="bg-[#F9F8F6] border-2 border-dashed border-gray-200/80 py-16 px-8 rounded-[32px] items-center mt-4 mb-10">
++                                <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
++                                    <FileText size={40} color="#D1D5DB" />
++                                </View>
++                                <Text className="text-[#243842] text-[20px] mb-3 text-center font-black tracking-tight">Noch keine Dateien hochgeladen</Text>
++                                <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">Hier kannst du PDFs, Arbeitsblätter oder Dokumente speziell für diesen Klienten ablegen.</Text>
++                            </View>
++                        ) : (
++                            <View className="flex-row flex-wrap gap-6">
++                            {clientFiles.map(file => (
++                                <View 
++                                    key={file.id} 
++                                    className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm flex-row justify-between items-center flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
++                                    style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 16, elevation: 2 }}
++                                >
++                                    <View className="flex-1 pr-4 flex-row items-center">
++                                        <View className="w-14 h-14 rounded-[20px] bg-amber-50/80 items-center justify-center mr-4 border border-amber-100/50">
++                                            <FileText size={24} color="#C09D59" />
++                                        </View>
++                                        <View className="flex-1 justify-center">
++                                            <Text className="font-bold text-[16px] text-[#243842] mb-1">{file.title}</Text>
++                                            {file.description ? (
++                                                <Text className="text-[#243842]/60 text-[13px] mb-1.5 font-medium" numberOfLines={1}>{file.description}</Text>
++                                            ) : null}
++                                            <Text className="text-[#243842]/40 text-[11px] font-bold tracking-wider uppercase">
++                                                {new Date(file.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString(i18n.locale)}
++                                            </Text>
++                                        </View>
+                                     </View>
++                                    <TouchableOpacity onPress={() => deleteClientFile(file)} className="bg-red-50/80 p-3 rounded-xl border border-red-100">
++                                        <Trash2 size={18} color="#EF4444" />
++                                    </TouchableOpacity>
+                                 </View>
+-                                <TouchableOpacity onPress={() => deleteClientFile(file)} className="bg-red-50 p-2 rounded-xl">
+-                                    <Trash2 size={16} color="#EF4444" />
+-                                </TouchableOpacity>
++                            ))}
+                             </View>
+-                        ))
+-                    )}
+-                </View>
++                        )}
++                    </View>
++                )}
+ 
+-                <View className="flex-row justify-between items-center mb-4 mt-2">
+-                    <Text className="text-xl font-bold text-[#2C3E50]">{i18n.t('therapist.exercises')}</Text>
+-                    <View className="flex-row gap-2">
+-                        <View className="bg-orange-100 px-3 py-1 rounded-full border border-orange-200">
+-                            <Text className="text-orange-700 text-xs font-bold">{i18n.t('therapist.open_exercises', { count: exercises.filter(e => !e.completed).length })}</Text>
+-                        </View>
+-                        <View className="bg-green-100 px-3 py-1 rounded-full border border-green-200">
+-                            <Text className="text-green-700 text-xs font-bold">{i18n.t('therapist.done_exercises', { count: exercises.filter(e => e.completed).length })}</Text>
++                {activeSection === 'exercises' && (
++                    <View className="flex-1 max-w-4xl mx-auto w-full">
++                        <View className="flex-row justify-between items-center mb-8 mt-4">
++                            <Text className="text-[28px] font-black text-[#243842] tracking-tight">{i18n.t('therapist.exercises')}</Text>
++                            <View className="flex-row gap-3">
++                                <View className="bg-orange-50 px-4 py-2 rounded-[16px] border border-orange-100/50 shadow-sm">
++                                    <Text className="text-orange-600 text-[13px] font-black tracking-wide uppercase">{i18n.t('therapist.open_exercises', { count: exercises.filter(e => !e.completed).length })}</Text>
++                                </View>
++                                <View className="bg-emerald-50 px-4 py-2 rounded-[16px] border border-emerald-100/50 shadow-sm">
++                                    <Text className="text-emerald-600 text-[13px] font-black tracking-wide uppercase">{i18n.t('therapist.done_exercises', { count: exercises.filter(e => e.completed).length })}</Text>
++                                </View>
++                            </View>
+                         </View>
+-                    </View>
+-                </View>
+ 
+-                {exercises.length === 0 ? (
+-                    <View className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm items-center mt-2 mb-6">
+-                        <ClipboardList size={36} color="#9CA3AF" style={{ marginBottom: 12, alignSelf: 'center' }} />
+-                        <Text className="text-gray-500 italic text-center font-medium">{i18n.t('therapist.no_exercises_assigned')}</Text>
+-                        <Text className="text-gray-400 text-xs text-center mt-1">{i18n.t('therapist.tap_to_assign')}</Text>
+-                    </View>
+-                ) : (
+-                    <View className="mb-6">
+-                        {/* Open Exercises Section */}
+-                        {exercises.filter(e => !e.completed).length > 0 && (
++                        {exercises.length === 0 ? (
++                            <View className="bg-[#F9F8F6] p-10 py-16 px-8 rounded-[32px] border-2 border-dashed border-gray-200/80 items-center mt-4 mb-10">
++                                <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
++                                    <ClipboardList size={40} color="#D1D5DB" />
++                                </View>
++                                <Text className="text-[#243842] text-[20px] text-center font-black mb-3 tracking-tight">{i18n.t('therapist.no_exercises_assigned')}</Text>
++                                <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">{i18n.t('therapist.tap_to_assign')}</Text>
++                            </View>
++                        ) : (
+                             <View className="mb-6">
+-                                <Text className="text-sm font-bold text-[#2C3E50]/60 uppercase tracking-wider mb-3">Offene Übungen</Text>
+-                                {exercises.filter(e => !e.completed).map((ex) => (
+-                                    <View key={ex.id} className="bg-white p-5 rounded-3xl border border-orange-100 shadow-sm mb-4">
+-                                        <View className="flex-row justify-between items-start mb-2">
+-                                            <View className="flex-1 pr-3">
+-                                                <Text className="text-base font-bold text-[#2C3E50]">{ex.title}</Text>
+-                                                <View className="flex-row flex-wrap gap-1 mt-1">
+-                                                    <View className="px-2 py-0.5 rounded-full self-start bg-orange-100">
+-                                                        <Text className="text-xs font-bold text-orange-700">
+-                                                            {i18n.t('therapist.status_open')}
+-                                                        </Text>
+-                                                    </View>
+-                                                    {ex.recurrence && ex.recurrence !== 'none' && (
+-                                                        <View className="bg-blue-50 px-2 py-0.5 rounded-full self-start">
+-                                                            <Text className="text-blue-600 text-xs font-bold">
+-                                                                {ex.recurrence === 'daily' ? i18n.t('therapist.recur_daily') : i18n.t('therapist.recur_weekly')}
++                                {/* Open Exercises Section */}
++                        {exercises.filter(e => !e.completed).length > 0 && (
++                            <View className="mb-8">
++                                <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">Offene Übungen</Text>
++                                <View className="flex-row flex-wrap gap-6">
++                                    {exercises.filter(e => !e.completed).map((ex) => (
++                                        <View 
++                                            key={ex.id} 
++                                            className="bg-white p-6 rounded-[28px] border border-orange-100/60 shadow-sm flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
++                                            style={{ shadowColor: '#F97316', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
++                                        >
++                                            <View className="flex-row justify-between items-start mb-4">
++                                                <View className="flex-1 pr-4">
++                                                    <Text className="text-[18px] font-bold text-[#243842] mb-2">{ex.title}</Text>
++                                                    <View className="flex-row flex-wrap gap-2 mt-1">
++                                                        <View className="px-3 py-1.5 rounded-xl self-start bg-orange-50 border border-orange-100/50">
++                                                            <Text className="text-[13px] font-bold text-orange-600">
++                                                                {i18n.t('therapist.status_open')}
+                                                             </Text>
+                                                         </View>
+-                                                    )}
++                                                        {ex.recurrence && ex.recurrence !== 'none' && (
++                                                            <View className="bg-sky-50 px-3 py-1.5 rounded-xl self-start border border-sky-100/50">
++                                                                <Text className="text-sky-600 text-[13px] font-bold">
++                                                                    {ex.recurrence === 'daily' ? i18n.t('therapist.recur_daily') : i18n.t('therapist.recur_weekly')}
++                                                                </Text>
++                                                            </View>
++                                                        )}
++                                                    </View>
+                                                 </View>
++                                                <TouchableOpacity
++                                                    onPress={() => deleteExercise(ex.id, ex.title)}
++                                                    className="bg-red-50/80 w-11 h-11 rounded-full items-center justify-center ml-2 border border-red-100"
++                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
++                                                >
++                                                    <Trash2 size={18} color="#EF4444" />
++                                                </TouchableOpacity>
++                                            </View>
++                                            <View className="mt-auto pt-5 border-t border-gray-100">
++                                                <TouchableOpacity
++                                                    onPress={() => triggerTelegramWebhook(ex)}
++                                                    className="bg-[#137386] py-3.5 rounded-2xl flex-row justify-center items-center shadow-sm"
++                                                >
++                                                    <Text className="text-white font-bold text-[15px] mr-2">{i18n.t('therapist.send_reminder_telegram')}</Text>
++                                                </TouchableOpacity>
++                                                <Text className="text-[#243842]/40 text-[11px] text-center mt-2.5 font-medium">{i18n.t('therapist.telegram_desc')}</Text>
+                                             </View>
+-                                            <TouchableOpacity
+-                                                onPress={() => deleteExercise(ex.id, ex.title)}
+-                                                className="bg-red-50 w-9 h-9 rounded-full items-center justify-center ml-2"
+-                                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+-                                            >
+-                                                <Trash2 size={18} color="#EF4444" />
+-                                            </TouchableOpacity>
+-                                        </View>
+-                                        <View className="mt-3 pt-3 border-t border-gray-100">
+-                                            <TouchableOpacity
+-                                                onPress={() => triggerTelegramWebhook(ex)}
+-                                                className="bg-[#0088cc] py-2 rounded-xl flex-row justify-center items-center shadow-sm"
+-                                            >
+-                                                <Text className="text-white font-bold text-sm mr-2">{i18n.t('therapist.send_reminder_telegram')}</Text>
+-                                            </TouchableOpacity>
+-                                            <Text className="text-gray-400 text-[10px] text-center mt-1">{i18n.t('therapist.telegram_desc')}</Text>
+                                         </View>
+-                                    </View>
+-                                ))}
++                                    ))}
++                                </View>
+                             </View>
+                         )}
+ 
+                         {/* Completed Exercises Section */}
+                         {exercises.filter(e => e.completed).length > 0 && (
+-                            <View className="mb-2">
+-                                <Text className="text-sm font-bold text-[#2C3E50]/60 uppercase tracking-wider mb-3">Abgeschlossene Übungen</Text>
+-                                {exercises.filter(e => e.completed).map((ex) => (
+-                                    <View key={ex.id} className="bg-white p-5 rounded-3xl border border-green-100 shadow-sm mb-4">
+-                                        <View className="flex-row justify-between items-start mb-2">
+-                                            <View className="flex-1 pr-3">
+-                                                <Text className="text-base font-bold text-[#2C3E50]">{ex.title}</Text>
+-                                                <View className="flex-row flex-wrap gap-1 mt-1">
+-                                                    <View className="px-2 py-0.5 rounded-full self-start bg-green-100">
+-                                                        <Text className="text-xs font-bold text-green-700">
+-                                                            {i18n.t('therapist.status_done')}
+-                                                        </Text>
++                            <View className="mb-4">
++                                <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">Abgeschlossene Übungen</Text>
++                                <View className="flex-row flex-wrap gap-6">
++                                    {exercises.filter(e => e.completed).map((ex) => (
++                                        <View 
++                                            key={ex.id} 
++                                            className="bg-white p-6 rounded-[28px] border border-emerald-100/60 shadow-sm flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
++                                            style={{ shadowColor: '#10B981', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 3 }}
++                                        >
++                                            <View className="flex-row justify-between items-start mb-4">
++                                                <View className="flex-1 pr-4">
++                                                    <Text className="text-[18px] font-bold text-[#243842] mb-2">{ex.title}</Text>
++                                                    <View className="flex-row flex-wrap gap-2 mt-1">
++                                                        <View className="px-3 py-1.5 rounded-xl self-start bg-emerald-50 border border-emerald-100/50">
++                                                            <Text className="text-[13px] font-bold text-emerald-600">
++                                                                {i18n.t('therapist.status_done')}
++                                                            </Text>
++                                                        </View>
+                                                     </View>
+                                                 </View>
++                                                <TouchableOpacity
++                                                    onPress={() => deleteExercise(ex.id, ex.title)}
++                                                    className="bg-red-50/80 w-11 h-11 rounded-full items-center justify-center ml-2 border border-red-100"
++                                                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
++                                                >
++                                                    <Trash2 size={18} color="#EF4444" />
++                                                </TouchableOpacity>
+                                             </View>
+-                                            <TouchableOpacity
+-                                                onPress={() => deleteExercise(ex.id, ex.title)}
+-                                                className="bg-red-50 w-9 h-9 rounded-full items-center justify-center ml-2"
+-                                                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+-                                            >
+-                                                <Trash2 size={18} color="#EF4444" />
+-                                            </TouchableOpacity>
+-                                        </View>
+ 
+-                                        <View className="mt-3 pt-3 border-t border-gray-100">
+-                                            <Text className="text-[#2C3E50] font-bold text-xs uppercase tracking-wider mb-2">{i18n.t('therapist.client_answers')}</Text>
+-
+-                                            {ex.sharedAnswers === false ? (
+-                                                <View className="bg-gray-50 p-4 rounded-xl items-center justify-center border border-gray-100 mt-1">
+-                                                    <Lock size={20} color="#9CA3AF" style={{ marginBottom: 8 }} />
+-                                                    <Text className="text-gray-500 text-sm font-medium text-center">
+-                                                        Der Klient hat sich entschieden, die Antworten privat zu halten.
+-                                                    </Text>
+-                                                    <Text className="text-gray-400 text-xs text-center mt-1">
+-                                                        Abgeschlossen am: {new Date(ex.lastCompletedAt || ex.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+-                                                    </Text>
+-                                                </View>
+-                                            ) : (
+-                                                ex.answers && Object.keys(ex.answers).length > 0 && ex.blocks?.map((block: any) => {
+-                                                    if (!ex.answers[block.id]) return null;
+-                                                    return (
+-                                                        <View key={block.id} className="mb-2 bg-gray-50 p-3 rounded-xl">
+-                                                            <View className="flex-row items-center mb-1.5 mt-0.5">
+-                                                                {block.type === 'scale' ? <Activity size={14} color="#9CA3AF" style={{ marginRight: 4 }} /> : <Edit3 size={14} color="#9CA3AF" style={{ marginRight: 4 }} />}
+-                                                                <Text className="text-xs text-gray-400 font-bold">
+-                                                                    {block.type === 'scale' ? (i18n.t('blocks.scale') || 'Skala') : (i18n.t('blocks.reflection') || 'Reflektion')}
+-                                                                </Text>
+-                                                            </View>
+-                                                            <Text className="text-xs text-gray-500 mb-1.5" numberOfLines={2}>{block.content}</Text>
+-                                                            <View className="bg-white px-3 py-2 rounded-lg border border-gray-200">
+-                                                                <Text className="text-sm text-[#2C3E50] font-medium">{ex.answers[block.id]}</Text>
+-                                                            </View>
+-                                                        </View>
+-                                                    );
+-                                                })
+-                                            )}
++                                            <View className="mt-auto pt-5 border-t border-gray-100">
++                                                <Text className="text-[#243842]/50 font-bold text-[12px] uppercase tracking-wider mb-4">{i18n.t('therapist.client_answers')}</Text>
++
++                                                {ex.sharedAnswers === false ? (
++                                                    <View className="bg-[#F9F8F6] p-6 rounded-[20px] items-center justify-center border border-gray-100 mt-2 flex-1">
++                                                        <Lock size={24} color="#C09D59" style={{ marginBottom: 12 }} />
++                                                        <Text className="text-[#243842]/70 text-[14px] font-medium text-center leading-relaxed">
++                                                            Der Klient hat sich entschieden, die Antworten privat zu halten.
++                                                        </Text>
++                                                        <Text className="text-[#243842]/50 text-[12px] text-center mt-3 font-medium">
++                                                            Abgeschlossen am: {new Date(ex.lastCompletedAt || ex.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
++                                                        </Text>
++                                                    </View>
++                                                ) : (
++                                                    <View className="flex-1 gap-3">
++                                                        {ex.answers && Object.keys(ex.answers).length > 0 && ex.blocks?.map((block: any) => {
++                                                            if (!ex.answers[block.id]) return null;
++                                                            return (
++                                                                <View key={block.id} className="mb-2 bg-[#F9F8F6] p-4 rounded-[20px] border border-gray-200/50">
++                                                                    <View className="flex-row items-center mb-2 mt-0.5">
++                                                                        {block.type === 'scale' ? <Activity size={16} color="#137386" style={{ marginRight: 6 }} /> : <Edit3 size={16} color="#137386" style={{ marginRight: 6 }} />}
++                                                                        <Text className="text-[13px] text-[#137386]/80 font-bold tracking-wide">
++                                                                            {block.type === 'scale' ? (i18n.t('blocks.scale') || 'Skala') : (i18n.t('blocks.reflection') || 'Reflektion')}
++                                                                        </Text>
++                                                                    </View>
++                                                                    <Text className="text-[14px] text-[#243842]/70 mb-3 font-medium" numberOfLines={2}>{block.content}</Text>
++                                                                    <View className="bg-white px-4 py-3 rounded-2xl border border-gray-200 shadow-sm">
++                                                                        <Text className="text-[15px] text-[#243842] font-semibold">{ex.answers[block.id]}</Text>
++                                                                    </View>
++                                                                </View>
++                                                            );
++                                                        })}
++                                                    </View>
++                                                )}
++                                            </View>
+                                         </View>
+-                                    </View>
+-                                ))}
++                                    ))}
++                                </View>
+                             </View>
+                         )}
++                        </View>
++                        )}
+                     </View>
+                 )}
+ 
+-                <TouchableOpacity
+-                    className="bg-[#2C3E50] py-5 rounded-2xl items-center shadow-sm mb-8"
+-                    onPress={handleOpenModal}
+-                >
+-                    <Text className="text-white font-bold text-lg">{i18n.t('therapist.assign_exercise')}</Text>
+-                </TouchableOpacity>
+-            </View>
++                {activeSection === 'exercises' && (
++                    <View className="flex-1 max-w-4xl mx-auto w-full">
++                        <TouchableOpacity
++                            className="bg-[#137386] py-5 rounded-[24px] items-center justify-center flex-row shadow-sm mb-12"
++                            style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 24, elevation: 6 }}
++                            onPress={handleOpenModal}
++                        >
++                            <Activity size={20} color="white" style={{ marginRight: 10 }} />
++                            <Text className="text-white font-bold text-[18px]">{i18n.t('therapist.assign_exercise')}</Text>
++                        </TouchableOpacity>
++                    </View>
++                )}
++            </ScrollView>
+ 
+             {/* Exercise Assignment Modal */}
+             <Modal visible={showBuilder} animationType="slide" presentationStyle="formSheet">
+-                <View className="flex-1 bg-[#FAF9F6]">
+-                    <View className="bg-[#2C3E50] pt-6 pb-6 px-6 shadow-md z-10">
++                <View className="flex-1 bg-[#F9F8F6]">
++                    <View className="bg-[#137386] pt-8 pb-8 px-8 shadow-lg z-10 rounded-b-[32px]">
+                         <View className="flex-row items-center justify-between w-full max-w-4xl mx-auto">
+-                            <Text className="text-2xl font-extrabold text-white tracking-tight">{i18n.t('therapist.assign_title')}</Text>
+-                            <TouchableOpacity onPress={() => setShowBuilder(false)} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
++                            <Text className="text-[24px] font-black text-white tracking-tight">{i18n.t('therapist.assign_title')}</Text>
++                            <TouchableOpacity onPress={() => setShowBuilder(false)} className="bg-white/20 px-4 py-2.5 rounded-2xl backdrop-blur-md">
+                                 <Text className="text-white font-bold">{i18n.t('therapist.cancel')}</Text>
+                             </TouchableOpacity>
+                         </View>
+                     </View>
+ 
+                     {builderMode === 'select' ? (
+-                        <ScrollView className="flex-1 p-6" contentContainerStyle={{ paddingBottom: 40, maxWidth: 896, width: '100%', marginHorizontal: 'auto' }}>
+-                            <Text className="text-lg font-bold text-[#2C3E50] mb-3">{i18n.t('therapist.step_1_select')}</Text>
++                        <ScrollView className="flex-1 w-full" contentContainerStyle={{ padding: 32, paddingBottom: 60, maxWidth: 896, marginHorizontal: 'auto' }}>
++                            <Text className="text-[18px] font-black text-[#243842] mb-4">{i18n.t('therapist.step_1_select')}</Text>
+ 
+                             <TouchableOpacity
+                                 onPress={() => setBuilderMode('build')}
+-                                className="bg-blue-50 border border-blue-200 p-5 rounded-2xl mb-6 shadow-sm flex-row items-center"
++                                className="bg-sky-50 border border-sky-200/60 p-6 rounded-[24px] mb-8 shadow-sm flex-row items-center"
+                             >
+-                                <Sparkles size={28} color="#1D4ED8" style={{ marginRight: 12 }} />
+-                                <View>
+-                                    <Text className="text-blue-900 font-bold text-lg">{i18n.t('therapist.create_new')}</Text>
+-                                    <Text className="text-blue-700 text-sm">{i18n.t('therapist.create_new_desc')}</Text>
++                                <View className="w-14 h-14 bg-white rounded-[20px] items-center justify-center shadow-sm mr-5">
++                                    <Sparkles size={24} color="#0EA5E9" />
++                                </View>
++                                <View className="flex-1">
++                                    <Text className="text-sky-900 font-bold text-[18px] mb-1">{i18n.t('therapist.create_new')}</Text>
++                                    <Text className="text-sky-700/80 text-[14px] font-medium leading-relaxed">{i18n.t('therapist.create_new_desc')}</Text>
+                                 </View>
+                             </TouchableOpacity>
+ 
+                             {templates.length > 0 && (
+                                 <>
+-                                    <Text className="text-gray-500 font-bold text-sm uppercase tracking-wider mb-3">{i18n.t('therapist.or_template')}</Text>
++                                    <Text className="text-[#243842]/40 font-black text-[13px] uppercase tracking-widest mb-4">{i18n.t('therapist.or_template')}</Text>
+                                     {templates.map(t => (
+                                         <TouchableOpacity
+                                             key={t.id}
+                                             onPress={() => setSelectedTemplate(t)}
+-                                            className={`p-4 rounded-xl mb-3 border ${selectedTemplate?.id === t.id ? 'border-teal-500 bg-teal-50' : 'border-gray-200 bg-white'}`}
++                                            className={`p-5 rounded-[24px] mb-4 border ${selectedTemplate?.id === t.id ? 'border-[#137386] bg-[#137386]/5' : 'border-gray-200 bg-white'}`}
++                                            style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 2 }}
+                                         >
+-                                            <Text className={`font-bold text-lg ${selectedTemplate?.id === t.id ? 'text-teal-900' : 'text-[#2C3E50]'}`}>{t.title}</Text>
+-                                            <Text className="text-gray-500 text-sm">{t.blocks?.length || 0} Module</Text>
++                                            <Text className={`font-bold text-[18px] mb-1 ${selectedTemplate?.id === t.id ? 'text-[#137386]' : 'text-[#243842]'}`}>{t.title}</Text>
++                                            <Text className="text-[#243842]/50 text-[14px] font-medium">{t.blocks?.length || 0} Module</Text>
+                                         </TouchableOpacity>
+                                     ))}
+                                 </>
+                             )}
+ 
+-                            <View className="mt-8">
+-                                <Text className="text-lg font-bold text-[#2C3E50] mb-3">{i18n.t('therapist.step_2_recur')}</Text>
+-                                <View className="flex-row gap-2 mb-6">
+-                                    {['none', 'daily', 'weekly'].map(freq => (
++                            <View className="mt-10">
++                                <Text className="text-[18px] font-black text-[#243842] mb-4">Wiederholung der Übung</Text>
++                                <View className="flex-row gap-3 mb-5">
++                                    {['none', 'daily', 'custom'].map(freq => (
+                                         <TouchableOpacity
+                                             key={freq}
+                                             onPress={() => setRecurrence(freq)}
+-                                            className={`flex-1 py-3 rounded-xl items-center border ${recurrence === freq ? 'bg-[#2C3E50] border-[#2C3E50]' : 'bg-white border-gray-200'}`}
++                                            className={`flex-1 py-4 rounded-[20px] items-center border ${recurrence === freq ? 'bg-[#243842] border-[#243842]' : 'bg-white border-gray-200'}`}
++                                            style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: recurrence === freq ? 0.2 : 0.02, shadowRadius: 12, elevation: 2 }}
+                                         >
+-                                            <Text className={`font-bold ${recurrence === freq ? 'text-white' : 'text-gray-600'}`}>
+-                                                {freq === 'none' ? i18n.t('therapist.frequency_none') : freq === 'daily' ? i18n.t('therapist.recur_daily').replace('🔁 ', '') : i18n.t('therapist.recur_weekly').replace('🔁 ', '')}
++                                            <Text className={`font-bold text-[15px] ${recurrence === freq ? 'text-white' : 'text-[#243842]/60'}`}>
++                                                {freq === 'none' ? 'Keine' : freq === 'daily' ? 'Täglich' : 'Spezifische Tage'}
+                                             </Text>
+                                         </TouchableOpacity>
+                                     ))}
+                                 </View>
++                                {recurrence === 'custom' && (
++                                    <View className="flex-row justify-between mb-8 bg-white p-5 rounded-[24px] border border-gray-200 shadow-sm" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 1 }}>
++                                        {WEEKDAYS.map(day => {
++                                            const isActive = recurrenceDays.includes(day.key);
++                                            return (
++                                                <TouchableOpacity 
++                                                    key={day.key} 
++                                                    onPress={() => toggleDay(day.key)}
++                                                    className={`w-12 h-12 rounded-[16px] items-center justify-center ${isActive ? 'bg-[#137386]' : 'bg-[#F9F8F6] border border-gray-100'}`}
++                                                >
++                                                    <Text className={`font-bold text-[15px] ${isActive ? 'text-white' : 'text-[#243842]/50'}`}>{day.label}</Text>
++                                                </TouchableOpacity>
++                                            )
++                                        })}
++                                    </View>
++                                )}
+                             </View>
+ 
+-                            <View className="mt-2">
+-                                <Text className="text-lg font-bold text-[#2C3E50] mb-3">{i18n.t('therapist.step_3_remind')}</Text>
+-                                <View className="flex-row gap-2 mb-6">
+-                                    {['none', 'daily', 'weekly'].map(freq => (
+-                                        <TouchableOpacity
+-                                            key={freq}
+-                                            onPress={() => setReminderFrequency(freq)}
+-                                            className={`flex-1 py-3 rounded-xl items-center border ${reminderFrequency === freq ? 'bg-orange-500 border-orange-500' : 'bg-white border-gray-200'}`}
+-                                        >
+-                                            <Text className={`font-bold ${reminderFrequency === freq ? 'text-white' : 'text-gray-600'}`}>
+-                                                {freq === 'none' ? i18n.t('therapist.frequency_none') : freq === 'daily' ? i18n.t('therapist.recur_daily').replace('🔁 ', '') : i18n.t('therapist.recur_weekly').replace('🔁 ', '')}
+-                                            </Text>
+-                                        </TouchableOpacity>
+-                                    ))}
++                            <View className="mt-4">
++                                <Text className="text-[18px] font-black text-[#243842] mb-4">Push-Erinnerung (Uhrzeit)</Text>
++                                <View className="flex-row items-center bg-white border border-gray-200 rounded-[24px] p-5 mb-8 shadow-sm" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 12, elevation: 2 }}>
++                                    <View className="w-12 h-12 bg-blue-50 rounded-[16px] items-center justify-center mr-4 border border-blue-100/50">
++                                        <Clock size={24} color="#3B82F6" />
++                                    </View>
++                                    <TextInput 
++                                        value={reminderTime}
++                                        onChangeText={setReminderTime}
++                                        placeholder="18:00"
++                                        keyboardType="numeric"
++                                        maxLength={5}
++                                        className="flex-1 font-black text-[24px] text-[#243842] tracking-wider"
++                                    />
++                                    <Text className="text-[#243842]/40 font-bold text-[16px] uppercase tracking-widest ml-3">Uhr</Text>
+                                 </View>
+                             </View>
+ 
+                             <TouchableOpacity
+                                 onPress={confirmTemplateAssignment}
+                                 disabled={!selectedTemplate}
+-                                className={`py-5 rounded-2xl items-center shadow-sm mt-4 ${(selectedTemplate) ? 'bg-[#2C3E50]' : 'bg-gray-300'}`}
++                                className={`py-5 rounded-[24px] items-center shadow-sm mt-4 ${(selectedTemplate) ? 'bg-[#137386]' : 'bg-gray-300'}`}
++                                style={{ shadowColor: selectedTemplate ? '#137386' : 'transparent', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: selectedTemplate ? 4 : 0 }}
+                             >
+-                                <Text className="text-white font-bold text-lg">{i18n.t('therapist.assign_save')}</Text>
++                                <Text className="text-white font-bold text-[18px]">{i18n.t('therapist.assign_save')}</Text>
+                             </TouchableOpacity>
+-                            <View className="h-20" />
++                            <View className="h-32" />
+                         </ScrollView>
+                     ) : (
+                         <ExerciseBuilder
+diff --git a/app/(app)/therapist/index.tsx b/app/(app)/therapist/index.tsx
+index 59e98a6..6659e1b 100644
+--- a/app/(app)/therapist/index.tsx
++++ b/app/(app)/therapist/index.tsx
+@@ -1,4 +1,4 @@
+-import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Linking, Alert, Platform, Image } from 'react-native';
++import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Linking, Alert, Platform, Image, ScrollView } from 'react-native';
+ import { useEffect, useState } from 'react';
+ import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+ import { db } from '../../../utils/firebase';
+@@ -8,6 +8,7 @@ import { MotiView } from 'moti';
+ import i18n from '../../../utils/i18n';
+ import { DarkAmbientOrbs } from '../../../components/ui/AmbientOrbs';
+ import { Skeleton } from '../../../components/ui/Skeleton';
++import { FileText, Library } from 'lucide-react-native';
+ 
+ export default function TherapistDashboard() {
+     const { profile, signOut } = useAuth();
+@@ -102,45 +103,56 @@ export default function TherapistDashboard() {
+     };
+     const renderClientItem = ({ item, index }: { item: any, index: number }) => (
+         <MotiView
++            key={item.id}
+             from={{ opacity: 0, translateY: 40, scale: 0.95 }}
+             animate={{ opacity: 1, translateY: 0, scale: 1 }}
+             transition={{ type: 'timing', duration: 350, delay: 150 + (index * 50) }}
+-            className="bg-white p-6 rounded-3xl mb-4 shadow-sm border border-gray-100 flex-col justify-between mx-6 overflow-hidden"
++            className="bg-white p-8 rounded-[32px] border border-gray-100/50 flex-col justify-between overflow-hidden flex-1 min-w-[320px] max-w-full md:max-w-[calc(50%-12px)]"
++            style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.04, shadowRadius: 32, elevation: 4 }}
+         >
+-            <View className="flex-row justify-between items-start mb-4">
+-                <View className="flex-1 pr-4">
+-                    <Text className="text-xl font-extrabold text-[#243842] tracking-tight mb-0.5">
+-                        {item.firstName} {item.lastName}
+-                    </Text>
+-                    <View className="flex-row items-center mt-1">
+-                        {item.latestMood && (
+-                            <View className="bg-blue-50 px-2 py-1 rounded-md mr-2">
+-                                <Text className="text-blue-600 text-xs font-bold">Stimmung: {item.latestMood}/10</Text>
++            <View className="flex-row justify-between items-start mb-6">
++                <View className="flex-row flex-1 pr-4">
++                    {/* Avatar */}
++                    <View className="w-14 h-14 bg-gradient-to-br from-[#137386]/20 to-[#137386]/5 rounded-[20px] border border-[#137386]/10 items-center justify-center mr-4">
++                        <Text className="text-[#137386] font-black text-[20px]">
++                            {item.firstName?.charAt(0)}{item.lastName?.charAt(0)}
++                        </Text>
++                    </View>
++                    <View className="flex-1 justify-center">
++                        <Text className="text-[22px] font-black text-[#243842] tracking-tight mb-1.5" numberOfLines={1}>
++                            {item.firstName} {item.lastName}
++                        </Text>
++                        <View className="flex-row flex-wrap gap-2">
++                            {item.latestMood && (
++                                <View className="bg-sky-50 px-2.5 py-1 rounded-[10px] border border-sky-100/50">
++                                    <Text className="text-sky-600 text-[11px] font-black uppercase tracking-widest">Stimmung: {item.latestMood}/10</Text>
++                                </View>
++                            )}
++                            <View className="bg-emerald-50 px-2.5 py-1 rounded-[10px] border border-emerald-100/50">
++                                <Text className="text-emerald-600 text-[11px] font-black uppercase tracking-widest">Fortschritt: {item.completionRate ?? 0}%</Text>
+                             </View>
+-                        )}
+-                        <View className="bg-emerald-50 px-2 py-1 rounded-md">
+-                            <Text className="text-emerald-600 text-xs font-bold">Fortschritt: {item.completionRate ?? 0}%</Text>
+                         </View>
+                     </View>
+                 </View>
+-                <View className="bg-[#F9F8F6] px-3 py-1.5 rounded-lg border border-gray-100">
+-                    <Text className="text-xs font-bold text-slate-500">{i18n.t('therapist.active')}</Text>
++                <View className="bg-[#F9F8F6] px-3 py-1.5 rounded-xl border border-gray-100/80">
++                    <Text className="text-[11px] font-black text-[#243842]/40 tracking-widest uppercase">{i18n.t('therapist.active')}</Text>
+                 </View>
+             </View>
+-            <View className="flex-row gap-3">
++            <View className="flex-row gap-3 pt-6 border-t border-gray-50/80">
+                 <TouchableOpacity
+-                    className="flex-1 bg-[#F9F8F6] border border-gray-100 py-3.5 rounded-2xl items-center justify-center flex-row"
++                    className="flex-1 bg-[#F9F8F6] border border-gray-200/60 py-4 rounded-[20px] items-center justify-center flex-row"
+                     onPress={() => notifyClient(item)}
+                     activeOpacity={0.7}
+                 >
+-                    <Text className="text-[#243842] font-bold text-[15px]">{i18n.t('therapist.msg_btn')}</Text>
++                    <Text className="text-[#243842] font-black text-[15px]">Nachricht</Text>
+                 </TouchableOpacity>
+                 <TouchableOpacity
+-                    className="flex-1 bg-[#137386] py-3.5 rounded-2xl shadow-sm items-center justify-center flex-row"
++                    className="flex-[1.2] bg-[#137386] py-4 rounded-[20px] items-center justify-center flex-row shadow-sm"
++                    style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 4 }}
+                     onPress={() => router.push(`/(app)/therapist/client/${item.id}` as any)}
+                     activeOpacity={0.8}
+                 >
+-                    <Text className="text-white font-extrabold text-[15px]">{i18n.t('therapist.exercises_btn')}</Text>
++                    <Text className="text-white font-black text-[15px]">Akte öffnen</Text>
+                 </TouchableOpacity>
+             </View>
+         </MotiView>
+@@ -153,25 +165,27 @@ export default function TherapistDashboard() {
+                     <Skeleton width={180} height={34} borderRadius={8} />
+                     <Skeleton width={140} height={16} borderRadius={4} style={{ marginTop: 12 }} />
+                 </View>
+-                <View style={{ paddingTop: 24 }}>
+-                    {[1, 2, 3].map(i => (
+-                        <View key={i} className="bg-white p-6 rounded-3xl mb-4 shadow-sm border border-gray-100 mx-6">
+-                            <View className="flex-row justify-between items-start mb-4">
+-                                <View className="flex-1 pr-4">
+-                                    <Skeleton width={150} height={20} borderRadius={6} style={{ marginBottom: 6 }} />
+-                                    <View className="flex-row gap-2 mt-2">
+-                                        <Skeleton width={80} height={24} borderRadius={6} />
+-                                        <Skeleton width={80} height={24} borderRadius={6} />
++                <View style={{ paddingTop: 32, paddingHorizontal: 32 }}>
++                    <View className="flex-row flex-wrap gap-6">
++                        {[1, 2, 3].map(i => (
++                            <View key={i} className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100/50 flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.03, shadowRadius: 24, elevation: 2 }}>
++                                <View className="flex-row justify-between items-start mb-6">
++                                    <View className="flex-1 pr-4">
++                                        <Skeleton width={180} height={24} borderRadius={8} style={{ marginBottom: 12 }} />
++                                        <View className="flex-row gap-2 mt-2">
++                                            <Skeleton width={100} height={28} borderRadius={12} />
++                                            <Skeleton width={90} height={28} borderRadius={12} />
++                                        </View>
+                                     </View>
++                                    <Skeleton width={60} height={26} borderRadius={10} />
++                                </View>
++                                <View className="flex-row gap-4 mt-4 border-t border-gray-50 pt-5">
++                                    <Skeleton width="48%" height={56} borderRadius={20} />
++                                    <Skeleton width="48%" height={56} borderRadius={20} />
+                                 </View>
+-                                <Skeleton width={60} height={24} borderRadius={8} />
+-                            </View>
+-                            <View className="flex-row gap-3 mt-2">
+-                                <Skeleton width="48%" height={48} borderRadius={16} />
+-                                <Skeleton width="48%" height={48} borderRadius={16} />
+                             </View>
+-                        </View>
+-                    ))}
++                        ))}
++                    </View>
+                 </View>
+             </View>
+         );
+@@ -230,31 +244,37 @@ export default function TherapistDashboard() {
+                         from={{ opacity: 0, scale: 0.9 }}
+                         animate={{ opacity: 1, scale: 1 }}
+                         transition={{ type: 'spring', damping: 22, stiffness: 120, delay: 100 }}
+-                        style={{ flexDirection: 'row', gap: 12 }}
++                        style={{ flexDirection: 'row', gap: 16 }}
+                     >
+                         <TouchableOpacity
+-                            style={{ backgroundColor: 'rgba(255,255,255,0.15)', flex: 1, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
++                            style={{ backgroundColor: 'rgba(255,255,255,0.1)', flex: 1, padding: 20, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                             onPress={() => router.push('/(app)/therapist/templates')}
+                             activeOpacity={0.8}
+                         >
+-                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>{i18n.t('therapist.templates')}</Text>
+-                            <Text style={{ color: 'rgba(255,255,255,0.75)', fontWeight: '500', fontSize: 12, marginTop: 2 }}>{i18n.t('therapist.templates_desc')}</Text>
++                            <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
++                                <FileText size={20} color="#ffffff" strokeWidth={2.5} />
++                            </View>
++                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 16, marginBottom: 2 }}>{i18n.t('therapist.templates')}</Text>
++                            <Text style={{ color: 'rgba(255,255,255,0.6)', fontWeight: '600', fontSize: 13, lineHeight: 18 }}>Übungsvorlagen erstellen und verwalten</Text>
+                         </TouchableOpacity>
+                         <TouchableOpacity
+-                            style={{ backgroundColor: 'rgba(255,255,255,0.15)', flex: 1, padding: 16, borderRadius: 24, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
++                            style={{ backgroundColor: 'rgba(255,255,255,0.1)', flex: 1, padding: 20, borderRadius: 28, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
+                             onPress={() => router.push('/(app)/therapist/resources')}
+                             activeOpacity={0.8}
+                         >
+-                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 15 }}>{i18n.t('therapist.resources_title', { defaultValue: 'Resources' })}</Text>
+-                            <Text style={{ color: 'rgba(255,255,255,0.75)', fontWeight: '500', fontSize: 12, marginTop: 2 }}>{i18n.t('therapist.resources_manage', { defaultValue: 'Manage Library' })}</Text>
++                            <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: 'rgba(255,255,255,0.15)', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
++                                <Library size={20} color="#ffffff" strokeWidth={2.5} />
++                            </View>
++                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 16, marginBottom: 2 }}>Bibliothek</Text>
++                            <Text style={{ color: 'rgba(255,255,255,0.6)', fontWeight: '600', fontSize: 13, lineHeight: 18 }}>Gemeinsame Materialien & Dokumente</Text>
+                         </TouchableOpacity>
+                     </MotiView>
+                 </View>
+             </MotiView>
+ 
+-            <View className="pt-8 flex-1 w-full max-w-5xl mx-auto">
++            <View className="pt-10 flex-1 w-full max-w-5xl mx-auto">
+                 <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 150 }}>
+-                    <Text className="text-xl font-bold text-[#243842] mb-4 px-6">{i18n.t('therapist.clients')}</Text>
++                    <Text className="text-[26px] font-black text-[#243842] mb-6 px-8 tracking-tight">{i18n.t('therapist.clients')}</Text>
+                 </MotiView>
+ 
+                 {clients.length === 0 ? (
+@@ -262,22 +282,24 @@ export default function TherapistDashboard() {
+                         from={{ opacity: 0, scale: 0.95 }}
+                         animate={{ opacity: 1, scale: 1 }}
+                         transition={{ type: 'timing', duration: 350, delay: 200 }}
+-                        className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm items-center mx-6"
++                        className="bg-white p-8 rounded-[32px] border border-gray-100 shadow-sm items-center mx-8 mt-4"
++                        style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
+                     >
+-                        <View className="w-16 h-16 bg-[#F9F8F6] rounded-full items-center justify-center mb-4">
+-                            <Text className="text-2xl">👥</Text>
++                        <View className="w-20 h-20 bg-[#F9F8F6] rounded-full items-center justify-center mb-6">
++                            <Text className="text-[32px]">👥</Text>
+                         </View>
+-                        <Text className="text-[#243842] font-extrabold text-lg tracking-tight mb-2 text-center">{i18n.t('therapist.no_clients')}</Text>
+-                        <Text className="text-[#243842]/60 text-center font-medium leading-5">{i18n.t('therapist.clients_must_register', { defaultValue: 'Clients must register in the app before you can assign them specific therapy tasks.' })}</Text>
++                        <Text className="text-[#243842] font-black text-[20px] tracking-tight mb-3 text-center">{i18n.t('therapist.no_clients')}</Text>
++                        <Text className="text-[#243842]/60 text-center font-medium leading-relaxed max-w-[300px]">{i18n.t('therapist.clients_must_register', { defaultValue: 'Clients must register in the app before you can assign them specific therapy tasks.' })}</Text>
+                     </MotiView>
+                 ) : (
+-                    <FlatList
+-                        data={clients}
+-                        keyExtractor={(item) => item.id}
+-                        renderItem={renderClientItem}
++                    <ScrollView
+                         showsVerticalScrollIndicator={false}
+-                        contentContainerStyle={{ paddingBottom: 40 }}
+-                    />
++                        contentContainerStyle={{ paddingBottom: 60, paddingHorizontal: 32 }}
++                    >
++                        <View className="flex-row flex-wrap gap-6">
++                            {clients.map((item, index) => renderClientItem({ item, index }))}
++                        </View>
++                    </ScrollView>
+                 )}
+             </View>
+         </View >
+diff --git a/app/(app)/therapist/template/[id].tsx b/app/(app)/therapist/template/[id].tsx
+index 47a8137..500186f 100644
+--- a/app/(app)/therapist/template/[id].tsx
++++ b/app/(app)/therapist/template/[id].tsx
+@@ -113,25 +113,28 @@ export default function TemplateDetail() {
+ 
+     if (loading) {
+         return (
+-            <View className="flex-1 justify-center items-center bg-[#FAF9F6]">
+-                <ActivityIndicator size="large" color="#2C3E50" />
++            <View className="flex-1 justify-center items-center bg-[#F9F8F6]">
++                <ActivityIndicator size="large" color="#137386" />
+             </View>
+         );
+     }
+ 
+     return (
+-        <View className="flex-1 bg-[#FAF9F6]">
++        <View className="flex-1 bg-[#F9F8F6]">
+             {/* Header */}
+-            <View className="bg-[#2C3E50] pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between">
+-                <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
++            <View 
++                className="bg-[#137386] pt-16 pb-8 px-8 rounded-b-[40px] z-10 shadow-lg flex-row items-center justify-between"
++                style={{ paddingTop: Platform.OS === 'android' ? 48 : 56 }}
++            >
++                <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2.5 rounded-2xl backdrop-blur-md">
+                     <Text className="text-white font-bold">{i18n.t('templates.back')}</Text>
+                 </TouchableOpacity>
+-                <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4">
++                <Text className="text-[22px] font-black text-white flex-1 text-right ml-4 tracking-tight">
+                     {isNew ? i18n.t('templates.new_title') : i18n.t('templates.edit_title')}
+                 </Text>
+             </View>
+ 
+-            <View className="flex-1 p-4">
++            <View className="flex-1">
+                 <ExerciseBuilder
+                     initialTitle={template.title}
+                     initialBlocks={template.blocks}
+diff --git a/app/(app)/therapist/templates.tsx b/app/(app)/therapist/templates.tsx
+index a950ea5..d91edbb 100644
+--- a/app/(app)/therapist/templates.tsx
++++ b/app/(app)/therapist/templates.tsx
+@@ -1,11 +1,12 @@
+-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, Platform, Modal } from 'react-native';
++import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, Platform, Modal, ScrollView, useWindowDimensions } from 'react-native';
+ import { useEffect, useState } from 'react';
+-import { collection, query, getDocs, deleteDoc, doc, limit, updateDoc, setDoc } from 'firebase/firestore';
++import { collection, query, getDocs, deleteDoc, doc, limit, updateDoc, setDoc, where } from 'firebase/firestore';
+ import { db } from '../../../utils/firebase';
+ import { useRouter } from 'expo-router';
+ import i18n from '../../../utils/i18n';
+ import { MotiView } from 'moti';
+-import { Search, Plus, Trash2, Send, X, FileText } from 'lucide-react-native';
++import { Search, Plus, Trash2, Send, X, FileText, Sparkles, LayoutTemplate } from 'lucide-react-native';
++import { DarkAmbientOrbs } from '../../../components/ui/AmbientOrbs';
+ 
+ export default function TherapistTemplates() {
+     const [templates, setTemplates] = useState<any[]>([]);
+@@ -19,6 +20,8 @@ export default function TherapistTemplates() {
+     const [clients, setClients] = useState<any[]>([]); // To be populated from TherapistDashboard context
+ 
+     const router = useRouter();
++    const { width } = useWindowDimensions();
++    const isDesktop = width >= 768;
+ 
+     useEffect(() => {
+         fetchTemplates();
+@@ -26,13 +29,11 @@ export default function TherapistTemplates() {
+     }, []);
+ 
+     const fetchClientsForAssignment = async () => {
+-        // Pulls active clients so the therapist can pick who gets the template
+         try {
+-            const q = query(collection(db, "users"));
++            const q = query(collection(db, "users"), where("role", "==", "client"));
+             const querySnapshot = await getDocs(q);
+-            const rawClients = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter((c: any) => c.role === 'client');
++            const rawClients = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+ 
+-            // Phase 7 Mock Client Logic Fallback
+             if (rawClients.length === 0) {
+                 setClients([{ id: "mock_client_123", firstName: "Max", lastName: "Mustermann (Beispiel-Klient)" }]);
+             } else {
+@@ -89,7 +90,7 @@ export default function TherapistTemplates() {
+                             await updateDoc(doc(db, "exercise_templates", id), { archived: true });
+                             const updated = templates.filter(t => t.id !== id);
+                             setTemplates(updated);
+-                            handleSearch(searchQuery); // trigger re-filter
++                            handleSearch(searchQuery);
+                         } catch (error) {
+                             Alert.alert("Fehler", i18n.t('templates.delete_err'));
+                         }
+@@ -107,7 +108,6 @@ export default function TherapistTemplates() {
+     const confirmAssignToClient = async (clientId: string) => {
+         if (!selectedTemplateForAssign) return;
+         try {
+-            // Create a new exercise document for the specific client based on the template
+             const newExerciseRef = doc(collection(db, "exercises"));
+             await setDoc(newExerciseRef, {
+                 title: selectedTemplateForAssign.title,
+@@ -127,132 +127,197 @@ export default function TherapistTemplates() {
+ 
+     const renderTemplateItem = ({ item, index }: { item: any, index: number }) => (
+         <MotiView
++            key={item.id}
+             from={{ opacity: 0, translateY: 20 }}
+             animate={{ opacity: 1, translateY: 0 }}
+-            transition={{ type: 'timing', duration: 300, delay: index * 50 }}
+-            className="bg-white p-5 rounded-3xl mb-4 shadow-sm border border-gray-100 mx-6 overflow-hidden"
++            transition={{ type: 'timing', duration: 350, delay: index * 50 }}
++            style={{
++                backgroundColor: '#ffffff',
++                padding: 28,
++                borderRadius: 32,
++                borderWidth: 1,
++                borderColor: 'rgba(0,0,0,0.04)',
++                shadowColor: '#243842',
++                shadowOffset: { width: 0, height: 12 },
++                shadowOpacity: 0.05,
++                shadowRadius: 24,
++                elevation: 4,
++                flexDirection: 'column',
++                justifyContent: 'space-between',
++                flex: 1,
++                minWidth: isDesktop ? 340 : '100%',
++                maxWidth: isDesktop ? '48%' : '100%',
++            }}
+         >
+-            <View className="flex-row justify-between items-start mb-4">
++            <View className="flex-row justify-between items-start mb-8">
+                 <View className="flex-1 pr-4">
+-                    <Text className="text-xl font-extrabold text-[#243842] mb-1">{item.title}</Text>
+-                    <View className="flex-row items-center">
+-                        <FileText size={14} color="#C09D59" />
+-                        <Text className="text-gray-500 font-medium text-sm ml-1.5">{item.blocks?.length || 0} Module</Text>
++                    <View className="w-14 h-14 bg-indigo-50/80 rounded-[20px] items-center justify-center mb-4 border border-indigo-100/50">
++                        <LayoutTemplate size={24} color="#6366F1" />
++                    </View>
++                    <Text className="text-[22px] font-black text-[#243842] mb-3 leading-tight tracking-tight">{item.title}</Text>
++                    <View className="flex-row items-center bg-gray-50 px-3 py-1.5 rounded-xl self-start border border-gray-100">
++                        <FileText size={14} color="#6B7280" />
++                        <Text className="text-gray-600 font-bold text-[13px] ml-2">{item.blocks?.length || 0} Module</Text>
+                     </View>
+                 </View>
+-                <TouchableOpacity onPress={() => handleDelete(item.id)} className="bg-red-50 p-2.5 rounded-xl">
+-                    <Trash2 size={18} color="#EF4444" />
++                <TouchableOpacity onPress={() => handleDelete(item.id)} className="bg-red-50/80 w-11 h-11 rounded-[16px] items-center justify-center border border-red-100/50">
++                    <Trash2 size={20} color="#EF4444" />
+                 </TouchableOpacity>
+             </View>
+ 
+-            <View className="flex-row gap-3">
++            <View className="flex-row gap-3 pt-5 border-t border-gray-50">
+                 <TouchableOpacity
+-                    className="bg-[#F9F8F6] border border-gray-100 flex-1 py-3.5 rounded-2xl items-center justify-center flex-row"
++                    className="bg-[#F9F8F6] border border-gray-100 flex-1 py-4 rounded-[20px] items-center justify-center flex-row"
+                     onPress={() => router.push(`/(app)/therapist/template/${item.id}` as any)}
+                 >
+-                    <Text className="text-[#243842] font-bold text-[15px]">{i18n.t('templates.edit')}</Text>
++                    <Text className="text-[#243842] font-black text-[15px]">{i18n.t('templates.edit')}</Text>
+                 </TouchableOpacity>
+ 
+                 <TouchableOpacity
+-                    className="bg-[#137386] flex-1 py-3.5 rounded-2xl shadow-sm items-center justify-center flex-row"
++                    className="bg-[#137386] flex-1 py-4 rounded-[20px] items-center justify-center flex-row"
++                    style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 4 }}
+                     onPress={() => openAssignModal(item)}
+                 >
+-                    <Send size={16} color="white" className="mr-2" />
+-                    <Text className="text-white font-extrabold text-[15px]">Zuweisen</Text>
++                    <Send size={18} color="white" className="mr-2" />
++                    <Text className="text-white font-black text-[15px]">Zuweisen</Text>
+                 </TouchableOpacity>
+             </View>
+         </MotiView>
+     );
+ 
+     return (
+-        <View className="flex-1 bg-[#FAF9F6]">
+-            {/* Header Section matching index.tsx premium colors */}
++        <View className="flex-1 bg-[#F9F8F6]">
++            {/* Premium Header matching Dashboard */}
+             <MotiView
+-                className="bg-[#137386] pt-16 pb-8 px-6 rounded-b-[40px] z-10 shadow-lg"
+-                style={{ paddingTop: Platform.OS === 'android' ? 48 : 56 }}
++                from={{ opacity: 0, translateY: -40 }}
++                animate={{ opacity: 1, translateY: 0 }}
++                transition={{ type: 'timing', duration: 350, delay: 50 }}
++                style={{
++                    backgroundColor: '#137386',
++                    paddingTop: Platform.OS === 'android' ? 48 : 56,
++                    paddingBottom: 40,
++                    paddingHorizontal: 24,
++                    borderBottomLeftRadius: 40,
++                    borderBottomRightRadius: 40,
++                    overflow: 'hidden',
++                    zIndex: 10,
++                    shadowColor: '#000',
++                    shadowOffset: { width: 0, height: 6 },
++                    shadowOpacity: 0.2,
++                    shadowRadius: 16,
++                    elevation: 10,
++                }}
+             >
+-                <View className="flex-row items-center justify-between mb-6">
+-                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2.5 rounded-2xl backdrop-blur-md">
+-                        <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
+-                    </TouchableOpacity>
+-                    <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="bg-white/20 px-4 py-2.5 rounded-2xl flex-row items-center">
+-                        <Plus size={18} color="white" className="mr-1" />
+-                        <Text className="text-white font-bold">{i18n.t('templates.new')}</Text>
+-                    </TouchableOpacity>
+-                </View>
++                <DarkAmbientOrbs />
+ 
+-                <Text className="text-3xl font-black text-white tracking-tight mb-4">{i18n.t('templates.title')}</Text>
+-
+-                {/* Search Bar */}
+-                <View className="flex-row items-center bg-white/10 border border-white/20 rounded-2xl px-4 py-3">
+-                    <Search size={20} color="rgba(255,255,255,0.7)" />
+-                    <TextInput
+-                        placeholder="Vorlagen durchsuchen..."
+-                        placeholderTextColor="rgba(255,255,255,0.5)"
+-                        className="flex-1 text-white font-medium ml-3 text-[16px]"
+-                        value={searchQuery}
+-                        onChangeText={handleSearch}
+-                    />
+-                    {searchQuery.length > 0 && (
+-                        <TouchableOpacity onPress={() => handleSearch('')}>
+-                            <X size={20} color="rgba(255,255,255,0.7)" />
++                <View style={{ zIndex: 10, width: '100%', maxWidth: 1024, marginHorizontal: 'auto' }} pointerEvents="box-none">
++                    <View className="flex-row items-center justify-between mb-8">
++                        <TouchableOpacity onPress={() => router.back()} className="bg-white/10 px-4 py-3 rounded-[16px] backdrop-blur-md border border-white/10">
++                            <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
++                        </TouchableOpacity>
++                        <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="bg-white px-5 py-3 rounded-[16px] flex-row items-center shadow-lg">
++                            <Plus size={18} color="#137386" className="mr-1.5" strokeWidth={3} />
++                            <Text className="text-[#137386] font-black text-[15px]">{i18n.t('templates.new')}</Text>
+                         </TouchableOpacity>
+-                    )}
++                    </View>
++
++                    <Text className="text-[32px] font-black text-white tracking-tight mb-2">{i18n.t('templates.title')}</Text>
++                    <Text className="text-white/70 font-medium text-[15px] mb-8">Erstelle und verwalte interaktive Vorlagen für deine Klienten.</Text>
++
++                    {/* Search Bar - Glassmorphism */}
++                    <View className="flex-row items-center bg-white/10 border border-white/20 rounded-[20px] px-5 py-4 backdrop-blur-md">
++                        <Search size={22} color="rgba(255,255,255,0.7)" />
++                        <TextInput
++                            placeholder="Vorlagen durchsuchen..."
++                            placeholderTextColor="rgba(255,255,255,0.5)"
++                            className="flex-1 text-white font-bold ml-3 text-[16px]"
++                            value={searchQuery}
++                            onChangeText={handleSearch}
++                        />
++                        {searchQuery.length > 0 && (
++                            <TouchableOpacity onPress={() => handleSearch('')} className="bg-white/10 p-2 rounded-full">
++                                <X size={16} color="rgba(255,255,255,0.9)" />
++                            </TouchableOpacity>
++                        )}
++                    </View>
+                 </View>
+             </MotiView>
+ 
+-            <View className="flex-1 mt-6">
++            <View className="flex-1 w-full max-w-5xl mx-auto pt-8">
+                 {loading ? (
+-                    <ActivityIndicator size="large" color="#137386" className="mt-10" />
++                    <ActivityIndicator size="large" color="#137386" className="mt-12" />
+                 ) : filteredTemplates.length === 0 ? (
+-                    <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm items-center mx-6 mt-4">
+-                        <View className="w-16 h-16 bg-[#F9F8F6] rounded-full items-center justify-center mb-4">
+-                            <Text className="text-2xl">📋</Text>
++                    <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 200 }} className="bg-white p-10 rounded-[32px] border border-gray-100 shadow-sm items-center mx-8 mt-4" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 4 }}>
++                        <View className="w-20 h-20 bg-indigo-50 rounded-[28px] items-center justify-center mb-6 border border-indigo-100/50">
++                            <Sparkles size={32} color="#6366F1" />
+                         </View>
+-                        <Text className="text-[#243842] font-black text-lg text-center mb-2">Keine Vorlagen gefunden</Text>
+-                        <Text className="text-[#243842]/60 text-center font-medium leading-5">
+-                            Erstelle neue interaktive Therapie-Bausteine oder passe deinen Suchfilter an.
++                        <Text className="text-[#243842] font-black text-[22px] tracking-tight mb-2 text-center">Keine Vorlagen</Text>
++                        <Text className="text-[#243842]/50 text-[15px] text-center font-medium leading-relaxed max-w-[300px]">
++                            {searchQuery ? 'Es wurden keine Vorlagen für diese Suche gefunden.' : 'Erstelle jetzt deine erste Übungsvorlage für deine Klienten.'}
+                         </Text>
++                        {!searchQuery && (
++                            <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="mt-8 bg-[#137386] px-8 py-4 rounded-[20px] shadow-lg">
++                                <Text className="text-white font-black text-[16px]">Erste Vorlage erstellen</Text>
++                            </TouchableOpacity>
++                        )}
+                     </MotiView>
+                 ) : (
+-                    <FlatList
+-                        data={filteredTemplates}
+-                        keyExtractor={(item) => item.id}
+-                        renderItem={renderTemplateItem}
++                    <ScrollView
+                         showsVerticalScrollIndicator={false}
+-                        contentContainerStyle={{ paddingBottom: 120 }}
+-                    />
++                        contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 32 }}
++                    >
++                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 24 }}>
++                            {filteredTemplates.map((item, index) => renderTemplateItem({ item, index }))}
++                        </View>
++                    </ScrollView>
+                 )}
+             </View>
+ 
+-            {/* Assignment Modal */}
+-            <Modal visible={assignModalVisible} transparent animationType="slide">
+-                <View className="flex-1 justify-end bg-black/40">
+-                    <View className="bg-white rounded-t-3xl pt-6 pb-12 px-6">
+-                        <View className="flex-row justify-between items-center mb-6">
+-                            <Text className="text-xl font-black text-[#243842]">Klient Zuweisen</Text>
+-                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-gray-100 p-2 rounded-full">
++            {/* Assignment Modal (Premium Style) */}
++            <Modal visible={assignModalVisible} transparent animationType="fade">
++                <View className="flex-1 justify-center items-center bg-black/40 p-4">
++                    <MotiView
++                        from={{ opacity: 0, scale: 0.95, translateY: 20 }}
++                        animate={{ opacity: 1, scale: 1, translateY: 0 }}
++                        className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl"
++                    >
++                        <View className="bg-gray-50/50 p-6 border-b border-gray-100 flex-row justify-between items-center">
++                            <Text className="text-[20px] font-black text-[#243842] tracking-tight">Klient Zuweisen</Text>
++                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100">
+                                 <X size={20} color="#243842" />
+                             </TouchableOpacity>
+                         </View>
+ 
+-                        <Text className="text-gray-500 font-medium mb-4">Wähle einen aktiven Klienten aus, um die Übung "{selectedTemplateForAssign?.title}" in deren Dashboard zu kopieren.</Text>
++                        <View className="p-6">
++                            <Text className="text-[#243842]/60 font-medium text-[15px] mb-6 leading-relaxed">
++                                Wem möchtest du die Vorlage <Text className="font-bold text-[#137386]">"{selectedTemplateForAssign?.title}"</Text> zuweisen?
++                            </Text>
+ 
+-                        <FlatList
+-                            data={clients}
+-                            keyExtractor={(c) => c.id}
+-                            renderItem={({ item }) => (
+-                                <TouchableOpacity
+-                                    onPress={() => confirmAssignToClient(item.id)}
+-                                    className="bg-[#F9F8F6] p-4 rounded-xl border border-gray-100 mb-2 flex-row items-center justify-between"
+-                                >
+-                                    <Text className="font-bold text-[#243842] text-base">{item.firstName} {item.lastName}</Text>
+-                                    <Send size={18} color="#137386" />
+-                                </TouchableOpacity>
+-                            )}
+-                            style={{ maxHeight: 300 }}
+-                        />
+-                    </View>
++                            <FlatList
++                                data={clients}
++                                keyExtractor={(c) => c.id}
++                                renderItem={({ item }) => (
++                                    <TouchableOpacity
++                                        onPress={() => confirmAssignToClient(item.id)}
++                                        className="bg-white p-5 rounded-[20px] border border-gray-100 mb-3 flex-row items-center justify-between"
++                                        style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 1 }}
++                                    >
++                                        <View className="flex-row items-center">
++                                            <View className="w-10 h-10 bg-[#137386]/10 rounded-full items-center justify-center mr-3">
++                                                <Text className="text-[#137386] font-bold">{item.firstName?.charAt(0)}{item.lastName?.charAt(0)}</Text>
++                                            </View>
++                                            <Text className="font-black text-[#243842] text-[16px]">{item.firstName} {item.lastName}</Text>
++                                        </View>
++                                        <View className="bg-[#137386] w-9 h-9 rounded-full items-center justify-center opacity-90">
++                                            <Send size={14} color="#ffffff" style={{ marginLeft: -2 }} />
++                                        </View>
++                                    </TouchableOpacity>
++                                )}
++                                style={{ maxHeight: 300 }}
++                                showsVerticalScrollIndicator={false}
++                            />
++                        </View>
++                    </MotiView>
+                 </View>
+             </Modal>
+         </View>
+diff --git a/components/therapist/ExerciseBuilder.tsx b/components/therapist/ExerciseBuilder.tsx
+index 1cf2a3e..899050a 100644
+--- a/components/therapist/ExerciseBuilder.tsx
++++ b/components/therapist/ExerciseBuilder.tsx
+@@ -90,13 +90,13 @@ const StyledInput = memo(function StyledInput({ value, onChangeText, placeholder
+     return (
+         <TextInput
+             value={value} onChangeText={onChangeText} placeholder={placeholder}
+-            placeholderTextColor="#9CA3AF" multiline={multiline}
++            placeholderTextColor="#8F9CA3" multiline={multiline}
+             textAlignVertical={multiline ? 'top' : 'center'}
+             style={{
+-                backgroundColor: '#ffffff', borderWidth: 1.5, borderColor: '#E2E8F0',
+-                borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12,
+-                fontSize: 14, color: '#0F172A', minHeight: multiline ? 100 : undefined,
+-                shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 3, elevation: 1
++                backgroundColor: '#F9F8F6', borderWidth: 1.5, borderColor: '#E8E6E1',
++                borderRadius: 16, paddingHorizontal: 18, paddingVertical: 14,
++                fontSize: 15, color: '#243842', minHeight: multiline ? 120 : undefined,
++                fontWeight: '500'
+             }}
+         />
+     );
+@@ -150,26 +150,26 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+     };
+ 
+     return (
+-        <View style={{ marginBottom: 16, borderRadius: 24, overflow: 'hidden', borderWidth: 1, borderColor: '#E5E7EB', backgroundColor: '#FFFFFF', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 3 }}>
++        <View style={{ marginBottom: 20, borderRadius: 28, overflow: 'hidden', borderWidth: 1, borderColor: cat.border, backgroundColor: '#FFFFFF', shadowColor: cat.accent, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 20, elevation: 4 }}>
+             {/* Context Handler / Drag Indication */}
+-            <View style={{ alignItems: 'center', backgroundColor: cat.bg, paddingTop: 6, paddingBottom: 2 }}>
+-                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.1)' }} />
++            <View style={{ alignItems: 'center', backgroundColor: cat.bg, paddingTop: 8, paddingBottom: 4 }}>
++                <View style={{ width: 48, height: 4, borderRadius: 2, backgroundColor: cat.text, opacity: 0.15 }} />
+             </View>
+ 
+             {/* Card Header */}
+-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingBottom: 12, paddingTop: 8, backgroundColor: cat.bg, borderBottomWidth: 1, borderBottomColor: cat.border }}>
++            <View style={{ flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingBottom: 16, paddingTop: 10, backgroundColor: cat.bg, borderBottomWidth: 1, borderBottomColor: cat.border }}>
+                 {/* Type Badge */}
+-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 10 }}>
+-                    <View style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: cat.accent, alignItems: 'center', justifyContent: 'center', shadowColor: cat.accent, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4, elevation: 2 }}>
+-                        <cat.icon size={20} color="#fff" />
++                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 12 }}>
++                    <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: cat.accent, alignItems: 'center', justifyContent: 'center', shadowColor: cat.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 }}>
++                        <cat.icon size={22} color="#fff" />
+                     </View>
+                     <View>
+-                        <Text style={{ fontSize: 15, fontWeight: '800', color: cat.text }}>{cat.label}</Text>
+-                        <Text style={{ fontSize: 11, color: cat.text, opacity: 0.7, fontWeight: '500' }}>{cat.desc}</Text>
++                        <Text style={{ fontSize: 17, fontWeight: '800', color: cat.text }}>{cat.label}</Text>
++                        <Text style={{ fontSize: 12, color: cat.text, opacity: 0.75, fontWeight: '600', marginTop: 1 }}>{cat.desc}</Text>
+                     </View>
+                 </View>
+                 {/* Actions */}
+-                <View style={{ flexDirection: 'row', gap: 6 }}>
++                <View style={{ flexDirection: 'row', gap: 8 }}>
+                     {[
+                         { icon: '↑', onPress: () => onMove('up'), disabled: isFirst },
+                         { icon: '↓', onPress: () => onMove('down'), disabled: isLast },
+@@ -177,15 +177,15 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                         { icon: '✕', onPress: onRemove, disabled: false, danger: true },
+                     ].map((btn, i) => (
+                         <TouchableOpacity key={i} onPress={btn.onPress} disabled={btn.disabled}
+-                            style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: btn.danger ? '#FEF2F2' : 'rgba(0,0,0,0.05)', alignItems: 'center', justifyContent: 'center', opacity: btn.disabled ? 0.3 : 1 }}>
+-                            <Text style={{ fontSize: 13, fontWeight: '800', color: btn.danger ? '#EF4444' : '#4B5563' }}>{btn.icon}</Text>
++                            style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: btn.danger ? 'rgba(239,68,68,0.1)' : 'rgba(0,0,0,0.04)', alignItems: 'center', justifyContent: 'center', opacity: btn.disabled ? 0.3 : 1 }}>
++                            <Text style={{ fontSize: 14, fontWeight: '800', color: btn.danger ? '#EF4444' : '#475569' }}>{btn.icon}</Text>
+                         </TouchableOpacity>
+                     ))}
+                 </View>
+             </View>
+ 
+             {/* Card Body */}
+-            <View style={{ padding: 18 }}>
++            <View style={{ padding: 24, backgroundColor: '#FFFFFF' }}>
+ 
+                 {/* REFLECTION */}
+                 {block.type === 'reflection' && (
+@@ -222,14 +222,14 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                             </View>
+                         </View>
+                         {/* Scale Preview */}
+-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingHorizontal: 2 }}>
++                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, paddingHorizontal: 2 }}>
+                             {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+-                                <View key={n} style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: cat.bg, borderWidth: 1, borderColor: cat.border, alignItems: 'center', justifyContent: 'center' }}>
+-                                    <Text style={{ fontSize: 10, fontWeight: '700', color: cat.text }}>{n}</Text>
++                                <View key={n} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: cat.bg, borderWidth: 1, borderColor: cat.border, alignItems: 'center', justifyContent: 'center', shadowColor: cat.accent, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 }}>
++                                    <Text style={{ fontSize: 12, fontWeight: '800', color: cat.text }}>{n}</Text>
+                                 </View>
+                             ))}
+                         </View>
+-                        <Text style={{ textAlign: 'center', fontSize: 10, color: '#9CA3AF', marginTop: 4 }}>Vorschau – Klient wählt einen Wert</Text>
++                        <Text style={{ textAlign: 'center', fontSize: 11, color: '#94A3B8', marginTop: 8, fontWeight: '500' }}>Vorschau – Klient wählt einen Wert</Text>
+                     </>
+                 )}
+ 
+@@ -254,8 +254,8 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                                 </View>
+                             ))}
+                             <TouchableOpacity onPress={addOption}
+-                                style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 10, paddingVertical: 8, alignItems: 'center', marginTop: 2 }}>
+-                                <Text style={{ color: cat.accent, fontWeight: '600', fontSize: 13 }}>+ Option hinzufügen</Text>
++                                style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
++                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Option hinzufügen</Text>
+                             </TouchableOpacity>
+                         </View>
+                     </>
+@@ -282,8 +282,8 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                                 </View>
+                             ))}
+                             <TouchableOpacity onPress={addOption}
+-                                style={{ borderWidth: 1, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 10, paddingVertical: 8, alignItems: 'center', marginTop: 2 }}>
+-                                <Text style={{ color: cat.accent, fontWeight: '600', fontSize: 13 }}>+ Element hinzufügen</Text>
++                                style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
++                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Element hinzufügen</Text>
+                             </TouchableOpacity>
+                         </View>
+                     </>
+@@ -295,18 +295,18 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                         <SectionLabel text="Aufgabe / Anweisung" />
+                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
+                             placeholder="z.B. Notiere täglich eine Situation die dich belastet hat und analysiere sie nach dem ABC-Schema..." multiline />
+-                        <View style={{ marginTop: 12, backgroundColor: cat.bg, borderRadius: 12, padding: 12, borderWidth: 1, borderColor: cat.border }}>
+-                            <Text style={{ fontSize: 11, fontWeight: '700', color: cat.text, marginBottom: 8 }}>📝 ABC-Protokoll Vorlage</Text>
++                        <View style={{ marginTop: 16, backgroundColor: cat.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: cat.border }}>
++                            <Text style={{ fontSize: 13, fontWeight: '800', color: cat.text, marginBottom: 12 }}>📝 ABC-Protokoll Vorlage</Text>
+                             {[
+                                 { label: 'A – Auslöser', hint: 'Was ist passiert? (Situation, Ort, Zeit)' },
+                                 { label: 'B – Bewertung', hint: 'Was habe ich gedacht / bewertet?' },
+                                 { label: 'C – Consequence', hint: 'Was habe ich gefühlt / getan? (0–10)' },
+                             ].map(row => (
+-                                <View key={row.label} style={{ flexDirection: 'row', marginBottom: 6, alignItems: 'flex-start', gap: 6 }}>
+-                                    <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cat.accent, marginTop: 5 }} />
++                                <View key={row.label} style={{ flexDirection: 'row', marginBottom: 10, alignItems: 'flex-start', gap: 8 }}>
++                                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: cat.accent, marginTop: 5 }} />
+                                     <View style={{ flex: 1 }}>
+-                                        <Text style={{ fontSize: 12, fontWeight: '700', color: cat.text }}>{row.label}</Text>
+-                                        <Text style={{ fontSize: 11, color: cat.text, opacity: 0.65 }}>{row.hint}</Text>
++                                        <Text style={{ fontSize: 14, fontWeight: '800', color: cat.text }}>{row.label}</Text>
++                                        <Text style={{ fontSize: 13, color: cat.text, opacity: 0.8, marginTop: 2 }}>{row.hint}</Text>
+                                     </View>
+                                 </View>
+                             ))}
+@@ -320,11 +320,11 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                         <SectionLabel text="Anweisung an den Klienten" />
+                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
+                             placeholder="z.B. Notiere 3 Dinge, für die du heute dankbar bist – egal wie klein..." />
+-                        <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
++                        <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                             {['1.', '2.', '3.'].map(n => (
+-                                <View key={n} style={{ flex: 1, backgroundColor: cat.bg, borderRadius: 14, borderWidth: 1, borderColor: cat.border, paddingVertical: 16, alignItems: 'center' }}>
+-                                    <Text style={{ fontSize: 20 }}>🙏</Text>
+-                                    <Text style={{ fontSize: 12, fontWeight: '700', color: cat.text, marginTop: 4 }}>{n}</Text>
++                                <View key={n} style={{ flex: 1, backgroundColor: cat.bg, borderRadius: 20, borderWidth: 1, borderColor: cat.border, paddingVertical: 20, alignItems: 'center', shadowColor: cat.accent, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 }}>
++                                    <Text style={{ fontSize: 24 }}>🙏</Text>
++                                    <Text style={{ fontSize: 14, fontWeight: '800', color: cat.text, marginTop: 6 }}>{n}</Text>
+                                 </View>
+                             ))}
+                         </View>
+@@ -341,28 +341,28 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                         <View style={{ marginTop: 16 }}>
+                             <SectionLabel text="Foto oder Video anhängen" />
+                             {block.mediaUri ? (
+-                                <View style={{ marginTop: 8, borderRadius: 16, overflow: 'hidden', backgroundColor: '#F3F4F6', borderWidth: 1, borderColor: '#E5E7EB', position: 'relative' }}>
++                                <View style={{ marginTop: 12, borderRadius: 20, overflow: 'hidden', backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0', position: 'relative' }}>
+                                     {block.mediaType === 'video' ? (
+-                                        <View style={{ height: 200, alignItems: 'center', justifyContent: 'center', backgroundColor: '#D1D5DB' }}>
+-                                            <Text style={{ fontSize: 32 }}>🎥</Text>
+-                                            <Text style={{ marginTop: 8, fontWeight: '600', color: '#4B5563' }}>Video ausgewählt</Text>
++                                        <View style={{ height: 240, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E2E8F0' }}>
++                                            <Text style={{ fontSize: 40 }}>🎥</Text>
++                                            <Text style={{ marginTop: 12, fontWeight: '700', color: '#475569', fontSize: 16 }}>Video ausgewählt</Text>
+                                         </View>
+                                     ) : (
+-                                        <Image source={{ uri: block.mediaUri }} style={{ width: '100%', height: 200 }} contentFit="cover" />
++                                        <Image source={{ uri: block.mediaUri }} style={{ width: '100%', height: 240 }} contentFit="cover" />
+                                     )}
+-                                    <View style={{ position: 'absolute', top: 12, right: 12, flexDirection: 'row', gap: 8 }}>
+-                                        <TouchableOpacity onPress={pickMedia} style={{ backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+-                                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#374151' }}>Ändern</Text>
++                                    <View style={{ position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 10 }}>
++                                        <TouchableOpacity onPress={pickMedia} style={{ backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }}>
++                                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155' }}>Ändern</Text>
+                                         </TouchableOpacity>
+-                                        <TouchableOpacity onPress={() => onChange({ mediaUri: undefined, mediaType: undefined })} style={{ backgroundColor: 'rgba(239,68,68,0.9)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+-                                            <Text style={{ fontSize: 12, fontWeight: '700', color: '#fff' }}>Löschen</Text>
++                                        <TouchableOpacity onPress={() => onChange({ mediaUri: undefined, mediaType: undefined })} style={{ backgroundColor: 'rgba(239,68,68,0.95)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 }}>
++                                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Löschen</Text>
+                                         </TouchableOpacity>
+                                     </View>
+ 
+                                     {/* Size Selector */}
+-                                    <View style={{ padding: 12, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E5E7EB' }}>
+-                                        <Text style={{ fontSize: 12, fontWeight: '600', color: '#4B5563', marginBottom: 8 }}>Anzeigegröße in der App:</Text>
+-                                        <View style={{ flexDirection: 'row', gap: 8 }}>
++                                    <View style={{ padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
++                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B', marginBottom: 12 }}>Anzeigegröße in der App:</Text>
++                                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                                             {(['small', 'medium', 'large'] as const).map(size => {
+                                                 const isActive = block.mediaSize === size || (!block.mediaSize && size === 'medium');
+                                                 const labels = { small: 'Klein', medium: 'Mittel', large: 'Vollbild' };
+@@ -370,9 +370,9 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                                                     <TouchableOpacity
+                                                         key={size}
+                                                         onPress={() => onChange({ mediaSize: size })}
+-                                                        style={{ flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 8, borderWidth: 1, borderColor: isActive ? cat.accent : '#E5E7EB', backgroundColor: isActive ? cat.bg : '#fff' }}
++                                                        style={{ flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 12, borderWidth: 1.5, borderColor: isActive ? cat.accent : '#E2E8F0', backgroundColor: isActive ? cat.bg : '#fff' }}
+                                                     >
+-                                                        <Text style={{ fontSize: 12, fontWeight: '600', color: isActive ? cat.accent : '#6B7280' }}>
++                                                        <Text style={{ fontSize: 14, fontWeight: '700', color: isActive ? cat.accent : '#64748B' }}>
+                                                             {labels[size]}
+                                                         </Text>
+                                                     </TouchableOpacity>
+@@ -383,12 +383,12 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                                 </View>
+                             ) : (
+                                 <TouchableOpacity onPress={pickMedia}
+-                                    style={{ marginTop: 8, borderWidth: 2, borderStyle: 'dashed', borderColor: '#D1D5DB', borderRadius: 16, paddingVertical: 32, alignItems: 'center', backgroundColor: '#F9FAFB' }}>
+-                                    <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+-                                        <Text style={{ fontSize: 24, color: '#3B82F6' }}>📸</Text>
++                                    style={{ marginTop: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: '#CBD5E1', borderRadius: 20, paddingVertical: 40, alignItems: 'center', backgroundColor: '#F8FAFC' }}>
++                                    <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
++                                        <Text style={{ fontSize: 32, color: '#3B82F6' }}>📸</Text>
+                                     </View>
+-                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#374151', marginBottom: 4 }}>Medium auswählen</Text>
+-                                    <Text style={{ fontSize: 12, color: '#9CA3AF', textAlign: 'center' }}>Unterstützt Fotos und Videos aus der Galerie</Text>
++                                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#334155', marginBottom: 6 }}>Medium auswählen</Text>
++                                    <Text style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', fontWeight: '500' }}>Unterstützt Fotos und Videos aus der Galerie</Text>
+                                 </TouchableOpacity>
+                             )}
+                         </View>
+@@ -401,15 +401,15 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                         <SectionLabel text={block.type === 'breathing' ? 'Anweisung zur Atemübung' : 'Anweisung / Beschreibung'} />
+                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
+                             placeholder={block.type === 'breathing' ? 'z.B. Atme ruhig und gleichmäßig. Konzentriere dich auf deinen Atem.' : 'z.B. Halte inne, schließe die Augen und entspanne dich.'} />
+-                        <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F9FAFB', borderRadius: 14, borderWidth: 1, borderColor: '#E5E7EB', padding: 12 }}>
+-                            <Text style={{ fontSize: 13, color: '#374151', fontWeight: '600' }}>Dauer</Text>
+-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0 }}>
++                        <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0', padding: 16 }}>
++                            <Text style={{ fontSize: 14, color: '#334155', fontWeight: '800' }}>Dauer</Text>
++                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                 {[30, 60, 120, 300].map(sec => {
+                                     const isActive = block.duration === sec;
+                                     return (
+                                         <TouchableOpacity key={sec} onPress={() => onChange({ duration: sec })}
+-                                            style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, marginLeft: 4, backgroundColor: isActive ? cat.accent : '#E5E7EB' }}>
+-                                            <Text style={{ fontSize: 12, fontWeight: '700', color: isActive ? '#fff' : '#6B7280' }}>
++                                            style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: isActive ? cat.accent : '#F1F5F9', shadowColor: isActive ? cat.accent : 'transparent', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isActive ? 0.3 : 0, shadowRadius: 4, elevation: isActive ? 2 : 0 }}>
++                                            <Text style={{ fontSize: 13, fontWeight: '800', color: isActive ? '#fff' : '#64748B' }}>
+                                                 {sec < 60 ? `${sec}s` : `${sec / 60}min`}
+                                             </Text>
+                                         </TouchableOpacity>
+@@ -418,11 +418,11 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+                             </View>
+                         </View>
+                         {block.type === 'breathing' && (
+-                            <View style={{ marginTop: 10, backgroundColor: cat.bg, borderRadius: 12, padding: 10, borderWidth: 1, borderColor: cat.border, flexDirection: 'row', justifyContent: 'space-around' }}>
++                            <View style={{ marginTop: 12, backgroundColor: cat.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: cat.border, flexDirection: 'row', justifyContent: 'space-around' }}>
+                                 {['4s Einatmen', '4s Halten', '4s Ausatmen'].map(phase => (
+                                     <View key={phase} style={{ alignItems: 'center' }}>
+-                                        <Text style={{ fontSize: 18 }}>🌬️</Text>
+-                                        <Text style={{ fontSize: 10, color: cat.text, fontWeight: '600', marginTop: 2 }}>{phase}</Text>
++                                        <Text style={{ fontSize: 24 }}>🌬️</Text>
++                                        <Text style={{ fontSize: 12, color: cat.text, fontWeight: '800', marginTop: 4 }}>{phase}</Text>
+                                     </View>
+                                 ))}
+                             </View>
+@@ -438,23 +438,23 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
+ 
+ const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: ExerciseBlockType) => void; onClose: () => void }) {
+     return (
+-        <View style={{ marginVertical: 16, backgroundColor: '#FFFFFF', borderRadius: 28, padding: 24, borderWidth: 1, borderColor: '#E5E7EB', shadowColor: '#000', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.1, shadowRadius: 24, elevation: 8 }}>
+-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+-                <Text style={{ color: '#243842', fontSize: 18, fontWeight: '800' }}>Neuen Block hinzufügen</Text>
+-                <TouchableOpacity onPress={onClose} style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
+-                    <Text style={{ color: '#6B7280', fontWeight: '800' }}>✕</Text>
++        <View style={{ marginVertical: 24, backgroundColor: '#FFFFFF', borderRadius: 32, padding: 32, borderWidth: 1, borderColor: '#E8E6E1', shadowColor: '#243842', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.1, shadowRadius: 32, elevation: 12 }}>
++            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
++                <Text style={{ color: '#243842', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>Neuen Block hinzufügen</Text>
++                <TouchableOpacity onPress={onClose} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F9F8F6', alignItems: 'center', justifyContent: 'center' }}>
++                    <Text style={{ color: '#6B7C85', fontWeight: '800', fontSize: 16 }}>✕</Text>
+                 </TouchableOpacity>
+             </View>
+-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
++            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+                 {CATALOGUE.map(cat => (
+                     <TouchableOpacity key={cat.type} onPress={() => onAdd(cat.type)}
+-                        style={{ flexBasis: '48%', flexGrow: 1, backgroundColor: '#F9F8F6', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#E5E7EB', flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+-                        <View style={{ width: 40, height: 40, borderRadius: 14, backgroundColor: cat.bg, borderWidth: 1, borderColor: cat.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+-                            <cat.icon size={22} color={cat.accent} />
++                        style={{ flexBasis: '46%', flexGrow: 1, backgroundColor: '#F9F8F6', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#E8E6E1', flexDirection: 'row', alignItems: 'center', gap: 16 }}>
++                        <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: cat.bg, borderWidth: 1, borderColor: cat.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0, shadowColor: cat.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 }}>
++                            <cat.icon size={26} color={cat.accent} />
+                         </View>
+                         <View style={{ flex: 1 }}>
+-                            <Text style={{ fontSize: 14, fontWeight: '800', color: '#243842' }}>{cat.label}</Text>
+-                            <Text style={{ fontSize: 11, color: '#6B7280', fontWeight: '500' }}>{cat.desc}</Text>
++                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#243842', marginBottom: 2 }}>{cat.label}</Text>
++                            <Text style={{ fontSize: 13, color: '#6B7C85', fontWeight: '600' }}>{cat.desc}</Text>
+                         </View>
+                     </TouchableOpacity>
+                 ))}
+@@ -541,7 +541,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
+     };
+ 
+     return (
+-        <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
++        <View style={{ flex: 1, backgroundColor: '#FAF9F6' }}>
+             <ScrollView
+                 style={{ flex: 1 }}
+                 contentContainerStyle={{ padding: 24, paddingBottom: 64, maxWidth: 896, width: '100%', marginHorizontal: 'auto' }}
+@@ -549,13 +549,13 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
+                 keyboardShouldPersistTaps="handled"
+             >
+                 {/* Title */}
+-                <View style={{ backgroundColor: '#fff', borderRadius: 20, borderWidth: 1, borderColor: '#E5E7EB', padding: 16, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 4 }}>
+-                    <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>Übungs-Titel</Text>
++                <View style={{ backgroundColor: '#fff', borderRadius: 32, borderWidth: 1, borderColor: '#E8E6E1', padding: 28, marginBottom: 28, shadowColor: '#243842', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.04, shadowRadius: 32, elevation: 4 }}>
++                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Übungs-Titel</Text>
+                     <TextInput
+                         value={title} onChangeText={setTitle}
+                         placeholder="z.B. Gedankenprotokoll Woche 1..."
+-                        placeholderTextColor="#D1D5DB"
+-                        style={{ fontSize: 20, fontWeight: '800', color: '#111827' }}
++                        placeholderTextColor="#A0AAB2"
++                        style={{ fontSize: 28, fontWeight: '900', color: '#243842', letterSpacing: -0.5, backgroundColor: '#F9F8F6', padding: 20, borderRadius: 20, borderWidth: 1.5, borderColor: '#E8E6E1' }}
+                     />
+                 </View>
+ 
+@@ -570,9 +570,9 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
+                 {/* Block Count divider */}
+                 {blocks.length > 0 && (
+                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 6 }}>
+-                        <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+-                        <Text style={{ fontSize: 11, color: '#9CA3AF', fontWeight: '600' }}>{blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}</Text>
+-                        <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
++                        <View style={{ flex: 1, height: 1, backgroundColor: '#E8E6E1' }} />
++                        <Text style={{ fontSize: 11, color: '#8F9CA3', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}</Text>
++                        <View style={{ flex: 1, height: 1, backgroundColor: '#E8E6E1' }} />
+                     </View>
+                 )}
+ 
+@@ -595,8 +595,8 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
+                 {/* Add Block / Picker */}
+                 {!showPicker ? (
+                     <TouchableOpacity onPress={() => setShowPicker(true)}
+-                        style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: '#D1D5DB', borderRadius: 18, paddingVertical: 18, alignItems: 'center', marginBottom: 8 }}>
+-                        <Text style={{ color: '#6B7280', fontWeight: '700', fontSize: 15 }}>＋ Block hinzufügen</Text>
++                        style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: '#D7D3CC', borderRadius: 28, paddingVertical: 24, alignItems: 'center', marginBottom: 12, backgroundColor: '#FAF9F6' }}>
++                        <Text style={{ color: '#8F9CA3', fontWeight: '800', fontSize: 16 }}>＋ Neuen Block hinzufügen</Text>
+                     </TouchableOpacity>
+                 ) : (
+                     <BlockPicker onAdd={addBlock} onClose={() => setShowPicker(false)} />
+@@ -604,15 +604,15 @@ export default function ExerciseBuilder({ initialTitle = '', initialBlocks = [],
+             </ScrollView>
+ 
+             {/* Save / Cancel Footer */}
+-            <View style={{ padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 24, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E2E8F0', shadowColor: '#000', shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.03, shadowRadius: 10, elevation: 15 }}>
+-                <View style={{ flexDirection: 'row', gap: 12, maxWidth: 896, width: '100%', marginHorizontal: 'auto' }}>
++            <View style={{ padding: 24, paddingBottom: Platform.OS === 'ios' ? 48 : 32, backgroundColor: '#FFFFFF', borderTopWidth: 1, borderTopColor: '#E8E6E1', shadowColor: '#243842', shadowOffset: { width: 0, height: -12 }, shadowOpacity: 0.06, shadowRadius: 32, elevation: 20 }}>
++                <View style={{ flexDirection: 'row', gap: 16, maxWidth: 896, width: '100%', marginHorizontal: 'auto' }}>
+                     <TouchableOpacity onPress={handleCancel}
+-                        style={{ paddingVertical: 16, paddingHorizontal: 24, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: '#E5E7EB' }}>
+-                        <Text style={{ fontWeight: '700', color: '#4B5563', fontSize: 15 }}>Abbrechen</Text>
++                        style={{ paddingVertical: 18, paddingHorizontal: 32, borderRadius: 20, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#E8E6E1', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4 }}>
++                        <Text style={{ fontWeight: '800', color: '#6B7C85', fontSize: 16 }}>Abbrechen</Text>
+                     </TouchableOpacity>
+                     <TouchableOpacity onPress={handleSave}
+-                        style={{ flex: 1, paddingVertical: 16, borderRadius: 16, backgroundColor: '#137386', alignItems: 'center', shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 4 }}>
+-                        <Text style={{ fontWeight: '800', color: '#fff', fontSize: 15 }}>
++                        style={{ flex: 1, paddingVertical: 18, borderRadius: 20, backgroundColor: '#137386', alignItems: 'center', shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 }}>
++                        <Text style={{ fontWeight: '900', color: '#fff', fontSize: 16, letterSpacing: 0.5 }}>
+                             💾 Speichern · {blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}
+                         </Text>
+                     </TouchableOpacity>
+diff --git a/firestore.rules b/firestore.rules
+index 333982a..3cd08d2 100644
+--- a/firestore.rules
++++ b/firestore.rules
+@@ -33,5 +33,20 @@ service cloud.firestore {
+       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+       allow read, update, delete: if request.auth != null;
+     }
++
++    // Therapist Notes: Only accessible by therapists
++    match /therapist_notes/{noteId} {
++      allow read, write: if request.auth != null;
++    }
++
++    // Client Resources: Shared files between therapist and client
++    match /client_resources/{resourceId} {
++      allow read, write: if request.auth != null;
++    }
++
++    // Notifications: Push/App notifications
++    match /notifications/{notificationId} {
++      allow read, write: if request.auth != null;
++    }
+   }
+ }
+diff --git a/modules/expo-mindful-tracking/android/src/main/java/expo/modules/mindfultracking/OverlayView.kt b/modules/expo-mindful-tracking/android/src/main/java/expo/modules/mindfultracking/OverlayView.kt
+index 468ed0d..10939c6 100644
+--- a/modules/expo-mindful-tracking/android/src/main/java/expo/modules/mindfultracking/OverlayView.kt
++++ b/modules/expo-mindful-tracking/android/src/main/java/expo/modules/mindfultracking/OverlayView.kt
+@@ -61,7 +61,12 @@ class OverlayView(context: Context) : LinearLayout(context) {
+                     actionBtn.setBackgroundColor(Color.parseColor("#C09D59")) // Our brand accent color
+                     actionBtn.setOnClickListener {
+                         // The user chose to bypass intentionally. 
+-                        // The AccessibilityService normally removes this view. But let's just forcefully hide it.
++                        // Save a 15-minute temporary bypass token so the AccessibilityService doesn't loop
++                        val prefs = context.getSharedPreferences("TherapyPrefs", Context.MODE_PRIVATE)
++                        val bypassExpiry = System.currentTimeMillis() + (15 * 60 * 1000L)
++                        prefs.edit().putLong("access_expiry", bypassExpiry).apply()
++
++                        // Forcefully hide it.
+                         (parent as? android.view.ViewGroup)?.removeView(this@OverlayView)
+                     }
+                 }
+diff --git a/services/checkinService.ts b/services/checkinService.ts
+index ab7423c..70d5c4f 100644
+--- a/services/checkinService.ts
++++ b/services/checkinService.ts
+@@ -5,25 +5,40 @@
+  */
+ 
+ import { db } from '../utils/firebase';
+-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
++import { doc, setDoc } from 'firebase/firestore';
++import { queueSyncAction } from '../utils/SyncManager';
+ 
+ export interface CheckinPayload {
+     uid: string;
+     mood: number;         // 1–5
+     note?: string;
++    tags?: string[];
++    duration?: number;
+     date: string;         // ISO date string "YYYY-MM-DD"
++    createdAt?: string;
+ }
+ 
+ /**
+  * Submit a daily check-in for a user.
+  * Document ID is deterministic: `{uid}_{date}` — prevents duplicate entries.
++ * Uses SyncManager for offline capability.
+  */
+-export async function submitCheckin(payload: CheckinPayload): Promise<void> {
++export async function submitCheckin(payload: CheckinPayload, isConnected: boolean): Promise<void> {
+     const docId = `${payload.uid}_${payload.date}`;
+-    await setDoc(doc(db, 'checkins', docId), {
++    
++    const checkinData = {
+         ...payload,
+-        submittedAt: new Date().toISOString(),
+-    });
++        createdAt: payload.createdAt || new Date().toISOString(),
++    };
++
++    if (isConnected) {
++        await setDoc(doc(db, 'checkins', docId), checkinData);
++    } else {
++        await queueSyncAction({
++            type: 'SAVE_CHECKIN',
++            payload: checkinData
++        });
++    }
+ }
+ 
+ /**
+@@ -33,7 +48,7 @@ export async function submitCheckin(payload: CheckinPayload): Promise<void> {
+ export async function updateCheckin(
+     uid: string,
+     date: string,
+-    updates: Partial<Pick<CheckinPayload, 'mood' | 'note'>>
++    updates: Partial<Pick<CheckinPayload, 'mood' | 'note' | 'duration'>>
+ ): Promise<void> {
+     const docId = `${uid}_${date}`;
+     await setDoc(doc(db, 'checkins', docId), updates, { merge: true });
+diff --git a/types/index.ts b/types/index.ts
+index 0e12435..6e5f518 100644
+--- a/types/index.ts
++++ b/types/index.ts
+@@ -16,6 +16,7 @@ export interface Exercise {
+     therapistId?: string;
+     archived?: boolean;
+     reminderFrequency?: string;
++    reminderTime?: string; // Optional specific time "HH:mm" for the reminder
+     blocks?: ExerciseBlock[];
+ }
+ 

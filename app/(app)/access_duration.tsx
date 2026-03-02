@@ -4,8 +4,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNetwork } from '../../contexts/NetworkContext';
-import { doc, setDoc } from 'firebase/firestore';
-import { db } from '../../utils/firebase';
+import { submitCheckin } from '../../services/checkinService';
 import i18n from '../../utils/i18n';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -44,7 +43,7 @@ export default function AccessDurationScreen() {
                 date: today,
                 mood: Number(params.mood),
                 tags: params.tags ? (params.tags as string).split(',') : [],
-                note: params.note || '',
+                note: (params.note as string) || '',
                 duration: selectedDuration,
                 createdAt: new Date().toISOString(),
             };
@@ -58,8 +57,8 @@ export default function AccessDurationScreen() {
                 }
             }
 
-            // Save to Firestore
-            await setDoc(doc(db, 'checkins', `${profile.id}_${today}`), checkinData);
+            // Save via CheckinService
+            await submitCheckin(checkinData, isConnected);
 
             if (!isConnected) {
                 Alert.alert(

@@ -27,7 +27,11 @@ const BLOCK_META: Record<ExerciseBlockType, { color: string; icon: string; short
     gratitude: { color: '#EC4899', icon: '🙏', short: 'Dank.' },
     breathing: { color: '#137386', icon: '🌬️', short: 'Atem' },
     timer: { color: '#8B5CF6', icon: '⏱️', short: 'Timer' },
-    media: { color: '#F43F5E', icon: '🖼️', short: 'Media' },
+    media: { color: '#F43F5E', icon: '📸', short: 'Medien' },
+    spider_chart: { color: '#F97316', icon: '🕸️', short: 'Netz' },
+    bar_chart: { color: '#0EA5E9', icon: '📈', short: 'Balken' },
+    pie_chart: { color: '#8B5CF6', icon: '🥧', short: 'Kreis' },
+    line_chart: { color: '#10B981', icon: '📉', short: 'Linie' },
 };
 
 // ─── Node Size Constants ───────────────────────────────────────────────────────

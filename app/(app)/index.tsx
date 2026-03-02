@@ -23,8 +23,7 @@ import { useCheckinStatus } from '../../hooks/useCheckinStatus';
 import { MoodChart } from '../../components/dashboard/MoodChart';
 import { DarkAmbientOrbs, LightAmbientOrbs } from '../../components/ui/AmbientOrbs';
 import { Skeleton } from '../../components/ui/Skeleton';
-
-
+import { markNotificationsAsRead } from '../../services/notificationService';
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
@@ -112,12 +111,11 @@ export default function ClientDashboard() {
     };
 
     const handleNotificationClick = async () => {
-        // Mark all as read
+        // Mark all as read using batch mutation
         try {
-            const promises = notifications.map(n => updateDoc(doc(db, 'notifications', n.id), { read: true }));
-            await Promise.all(promises);
+            await markNotificationsAsRead(notifications.map(n => n.id));
             setNotifications([]);
-            router.push('/(app)/resources');
+            router.push('/(app)/resources' as any);
         } catch (e) {
             console.error('Error updating notifications', e);
         }

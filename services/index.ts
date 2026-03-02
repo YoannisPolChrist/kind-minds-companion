@@ -5,3 +5,4 @@
 
 export * from './exerciseService';
 export * from './checkinService';
+export * from './invitationService';

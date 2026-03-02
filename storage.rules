@@ -1,0 +1,22 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Default rule: Allow read/write for all authenticated users during development
+    // In production, we should restrict to the user themselves or their therapist
+    match /{allPaths=**} {
+      allow read, write: if request.auth != null;
+    }
+    
+    // Specific rule for profile pictures (this is covered by the above rule, 
+    // but good practice to document)
+    match /profile_pictures/{userId}/{fileName} {
+      allow read: if request.auth != null; // Everyone can read profile pictures
+      allow write: if request.auth != null && (request.auth.uid == userId || 
+        // Or if it's a therapist uploading for an offline client
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'therapist'
+      );
+    }
+  }
+}

@@ -32,10 +32,14 @@ const COMPLEXITY_WEIGHT: Record<ExerciseBlockType, number> = {
     choice: 1.5,
     info: 1.0,
     checklist: 1.0,
+    spider_chart: 3,
+    bar_chart: 2,
+    pie_chart: 2,
+    line_chart: 2.5,
     gratitude: 0.5,
-    media: 0.5,
-    breathing: 0.5,
-    timer: 0.5,
+    media: 1.5,
+    breathing: 2,
+    timer: 1,
 };
 
 const GAUGE_ZONES = [

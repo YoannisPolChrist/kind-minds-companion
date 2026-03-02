@@ -2,6 +2,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Exercise } from '../../types';
 import i18n from '../../utils/i18n';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import { useState } from 'react';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
@@ -26,6 +27,11 @@ export function OpenExerciseCard({ exercise, onPress }: { exercise: Exercise; on
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
                 style={styles.card}
             >
+                {exercise.coverImage && (
+                    <View className="mb-5 rounded-[20px] overflow-hidden w-full h-32 bg-gray-100 border border-gray-100">
+                        <Image source={{ uri: exercise.coverImage }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                    </View>
+                )}
                 <View className="flex-row justify-between items-center gap-4">
                     <View className="flex-1 pr-5">
                         <Text className="text-[19px] font-black tracking-tight text-[#243842] mb-3 leading-snug">{exercise.title}</Text>
@@ -45,7 +51,7 @@ export function OpenExerciseCard({ exercise, onPress }: { exercise: Exercise; on
                     </View>
                     <View style={styles.iconContainer}>
                         <LinearGradient
-                            colors={['#137386', '#0d6474']}
+                            colors={exercise.themeColor ? [exercise.themeColor, exercise.themeColor + 'cc'] : ['#137386', '#0d6474']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
                             style={styles.gradientIcon}
