@@ -10,9 +10,8 @@ import { ExerciseRepository } from '../../../../utils/repositories/ExerciseRepos
 import { ClientRepository } from '../../../../utils/repositories/ClientRepository';
 import { NoteRepository } from '../../../../utils/repositories/NoteRepository';
 import ExerciseBuilder, { ExerciseBlock } from '../../../../components/therapist/ExerciseBuilder';
-import { VoiceNoteTaker } from '../../../../components/therapist/VoiceNoteTaker';
 import i18n from '../../../../utils/i18n';
-import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock, FileUp, FileText, Link as LinkIcon, Download, Clock } from 'lucide-react-native';
+import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock, FileUp, FileText, Link as LinkIcon, Download, Clock, Plus } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { generateDetailedClientSummary } from '../../../../utils/geminiAI';
@@ -65,8 +64,7 @@ export default function ClientView() {
     // Deep navigation state
     const [activeSection, setActiveSection] = useState<'dashboard' | 'exercises' | 'notes' | 'files'>('dashboard');
 
-    const [manualNote, setManualNote] = useState('');
-    const [savingNote, setSavingNote] = useState(false);
+    const [showNoteModal, setShowNoteModal] = useState(false);
 
     useEffect(() => {
         if (id) {
@@ -145,22 +143,17 @@ export default function ClientView() {
         setReminderFrequency('none');
     };
 
-    const handleSaveNote = async (text: string) => {
-        try {
-            await NoteRepository.create({ clientId: id as string, content: text });
-            Alert.alert('Erfolg', 'AI Note wurde erfolgreich gespeichert.');
-            fetchNotes();
-        } catch (err) {
-            Alert.alert('Fehler', 'Note konnte nicht gespeichert werden.');
-        }
-    };
-
-    const handleSaveManualNote = async () => {
-        if (!manualNote.trim()) return;
+    const handleSaveNewNote = async (text: string) => {
+        if (!text.trim()) return;
         setSavingNote(true);
         try {
-            await handleSaveNote(manualNote.trim());
+            await NoteRepository.create({ clientId: id as string, content: text.trim(), type: 'manual' });
+            Alert.alert('Erfolg', 'Notiz wurde erfolgreich gespeichert.');
             setManualNote('');
+            setShowNoteModal(false);
+            fetchNotes();
+        } catch (err) {
+            Alert.alert('Fehler', 'Notiz konnte nicht gespeichert werden.');
         } finally {
             setSavingNote(false);
         }
@@ -206,10 +199,15 @@ export default function ClientView() {
 
             setUploadingFile(true);
             const asset = result.assets[0];
-            const fileUri = asset.uri;
 
-            const response = await fetch(fileUri);
-            const blob = await response.blob();
+            let blob: Blob | Uint8Array;
+            if (Platform.OS === 'web' && asset.file) {
+                blob = asset.file;
+            } else {
+                const response = await fetch(asset.uri);
+                blob = await response.blob();
+            }
+
             const filename = `client_resources/${id}/${Date.now()}_${asset.name}`;
             const storageRef = ref(storage, filename);
 
@@ -457,55 +455,40 @@ export default function ClientView() {
 
                 {activeSection === 'notes' && (
                     <View className="flex-1 max-w-4xl mx-auto w-full">
-                        <Text className="text-[28px] font-black text-[#243842] mb-8 mt-4 tracking-tight">Session Notes</Text>
-
-                        <View className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm mb-6" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 3 }}>
-                            <Text className="text-[16px] font-bold text-[#243842] mb-4">Neue Notiz erfassen</Text>
-                            <TextInput
-                                value={manualNote}
-                                onChangeText={setManualNote}
-                                placeholder="Schreibe eine Notiz..."
-                                placeholderTextColor="#9CA3AF"
-                                multiline
-                                textAlignVertical="top"
-                                className="bg-[#F9F8F6] p-4 rounded-2xl border border-gray-200 text-[#243842] min-h-[120px] mb-4"
-                            />
-                            <View className="flex-row items-center justify-between">
-                                <View className="flex-1 mr-4">
-                                    <VoiceNoteTaker onTranscriptionComplete={handleSaveNote} />
-                                </View>
-                                <TouchableOpacity
-                                    onPress={handleSaveManualNote}
-                                    disabled={savingNote || !manualNote.trim()}
-                                    className={`px-6 py-3.5 rounded-2xl flex-row items-center justify-center ${savingNote || !manualNote.trim() ? 'bg-gray-200' : 'bg-[#137386]'}`}
-                                >
-                                    {savingNote ? (
-                                        <ActivityIndicator size="small" color="#fff" />
-                                    ) : (
-                                        <Text className="text-white font-bold text-[15px]">Speichern</Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
+                        <View className="flex-row justify-between items-center mb-8 mt-4">
+                            <Text className="text-[28px] font-black text-[#243842] tracking-tight">Session Notes</Text>
+                            <TouchableOpacity
+                                onPress={() => setShowNoteModal(true)}
+                                className="bg-[#137386] px-5 py-3 rounded-2xl flex-row items-center shadow-sm"
+                            >
+                                <Plus size={18} color="white" style={{ marginRight: 8 }} />
+                                <Text className="text-white font-bold text-[15px]">Neue Notiz</Text>
+                            </TouchableOpacity>
                         </View>
 
-                        {notes.length > 0 && (
-                            <View className="mb-10 mt-10">
-                                <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-6 ml-2">Letzte Session Notes</Text>
-                                <View className="gap-6">
-                                    {notes.map(note => (
-                                        <View key={note.id} className="bg-white p-6 rounded-[28px] border border-blue-100/60 shadow-sm" style={{ shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 3 }}>
-                                            <View className="flex-row items-center mb-4">
-                                                <View className="w-10 h-10 bg-blue-50 rounded-[16px] items-center justify-center mr-3 border border-blue-100/50">
-                                                    <Edit3 size={18} color="#3B82F6" />
-                                                </View>
-                                                <Text className="text-[14px] text-[#243842]/60 font-bold tracking-wide">
-                                                    {new Date(note.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'long', year: 'numeric' })}
-                                                </Text>
-                                            </View>
-                                            <Text className="text-[#243842] text-[16px] leading-relaxed font-medium">{note.content}</Text>
-                                        </View>
-                                    ))}
+                        {notes.length === 0 ? (
+                            <View className="bg-[#F9F8F6] border-2 border-dashed border-gray-200/80 py-16 px-8 rounded-[32px] items-center mt-4 mb-10">
+                                <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
+                                    <Edit3 size={40} color="#D1D5DB" />
                                 </View>
+                                <Text className="text-[#243842] text-[20px] mb-3 text-center font-black tracking-tight">Noch keine Notizen</Text>
+                                <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">Hier kannst du wichtige Notizen und Beobachtungen zu den Sessions festhalten.</Text>
+                            </View>
+                        ) : (
+                            <View className="gap-6 mb-10">
+                                {notes.map(note => (
+                                    <View key={note.id} className="bg-white p-6 rounded-[28px] border border-blue-100/60 shadow-sm" style={{ shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 3 }}>
+                                        <View className="flex-row items-center mb-4">
+                                            <View className="w-10 h-10 bg-blue-50 rounded-[16px] items-center justify-center mr-3 border border-blue-100/50">
+                                                <Edit3 size={18} color="#3B82F6" />
+                                            </View>
+                                            <Text className="text-[14px] text-[#243842]/60 font-bold tracking-wide">
+                                                {new Date(note.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                            </Text>
+                                        </View>
+                                        <Text className="text-[#243842] text-[16px] leading-relaxed font-medium">{note.content}</Text>
+                                    </View>
+                                ))}
                             </View>
                         )}
                     </View>
@@ -854,6 +837,40 @@ export default function ClientView() {
                     )}
                 </View>
             </Modal >
+
+            {/* Note Creation Modal */}
+            <Modal visible={showNoteModal} animationType="fade" transparent={true}>
+                <View className="flex-1 bg-black/50 justify-center items-center p-6">
+                    <View className="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl">
+                        <View className="flex-row justify-between items-center mb-6">
+                            <Text className="text-xl font-bold text-[#2C3E50]">Neue Notiz</Text>
+                            <TouchableOpacity onPress={() => setShowNoteModal(false)} className="bg-gray-100 p-2 rounded-full">
+                                <Text className="text-gray-600 font-bold">X</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <Text className="text-sm font-medium text-gray-700 mb-2">Inhalt der Notiz *</Text>
+                        <TextInput style={{ backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderWidth: 1, padding: 12, borderRadius: 12, marginBottom: 24, color: '#1F2937', minHeight: 120, textAlignVertical: 'top' }}
+                            placeholder="Schreibe eine Notiz..."
+                            value={manualNote}
+                            onChangeText={setManualNote}
+                            multiline
+                        />
+
+                        <TouchableOpacity
+                            onPress={() => handleSaveNewNote(manualNote)}
+                            disabled={savingNote || !manualNote.trim()}
+                            className={`py-4 rounded-xl items-center flex-row justify-center ${savingNote || !manualNote.trim() ? 'bg-[#137386]/60' : 'bg-[#137386]'}`}
+                        >
+                            {savingNote ? (
+                                <ActivityIndicator color="white" style={{ marginRight: 8 }} />
+                            ) : (
+                                <Text className="text-white font-bold text-lg">Speichern</Text>
+                            )}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
 
             {/* File Upload Modal */}
             < Modal visible={showUploadModal} animationType="fade" transparent={true} >

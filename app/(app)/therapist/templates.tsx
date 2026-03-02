@@ -400,8 +400,8 @@ export default function TherapistTemplates() {
                     <MotiView
                         from={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl p-6"
-                        style={{ backgroundColor: 'white' }}
+                        className="w-full max-w-sm shadow-2xl p-8"
+                        style={{ backgroundColor: 'white', borderRadius: 32, overflow: 'hidden' }}
                     >
                         <View className="items-center mb-6">
                             <View className="w-16 h-16 bg-red-50 rounded-full items-center justify-center mb-4">
@@ -442,10 +442,10 @@ export default function TherapistTemplates() {
                     <MotiView
                         from={{ opacity: 0, scale: 0.95, translateY: 20 }}
                         animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                        className="rounded-[32px] w-full max-w-sm overflow-hidden shadow-2xl p-6"
-                        style={{ backgroundColor: 'white' }}
+                        className="w-full max-w-sm shadow-2xl p-8"
+                        style={{ backgroundColor: 'white', borderRadius: 32, overflow: 'hidden' }}
                     >
-                        <View className="flex-row justify-between items-center mb-6">
+                        <View className="flex-row justify-between items-center mb-8">
                             <Text className="text-[20px] font-black text-[#243842]">Farbe auswählen</Text>
                             <TouchableOpacity onPress={() => setColorModalVisible(false)} className="bg-gray-100 p-2 rounded-full">
                                 <X size={20} color="#243842" />
@@ -457,8 +457,8 @@ export default function TherapistTemplates() {
                                     key={color}
                                     onPress={() => handleUpdateThemeColor(color)}
                                     style={{
-                                        width: 48, height: 48, borderRadius: 24, backgroundColor: color,
-                                        borderWidth: 3, borderColor: templateToColor?.themeColor === color ? '#243842' : 'transparent',
+                                        width: 56, height: 56, borderRadius: 28, backgroundColor: color,
+                                        borderWidth: 4, borderColor: templateToColor?.themeColor === color ? '#243842' : 'transparent',
                                         shadowColor: color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4
                                     }}
                                 />

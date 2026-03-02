@@ -1,7 +1,7 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform, useWindowDimensions, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MotiView } from 'moti';
-import { Settings, Calendar, BookOpen } from 'lucide-react-native';
+import { Settings, Calendar, BookOpen, Edit3 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '../../utils/useAppStore';
 import { useAuth } from '../../contexts/AuthContext';
@@ -318,7 +318,7 @@ export default function ClientDashboard() {
                         from={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: 'timing', duration: 300, delay: 150 }}
-                        style={{ marginBottom: 24 }}
+                        style={{ marginBottom: 16 }}
                     >
                         <TouchableOpacity
                             onPress={() => {
@@ -334,6 +334,34 @@ export default function ClientDashboard() {
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ color: '#243842', fontWeight: '800', fontSize: 16, marginBottom: 4 }}>{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
                                     <Text style={{ color: 'rgba(36,56,66,0.55)', fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
+                                </View>
+                            </View>
+                            <View style={{ backgroundColor: '#F9F8F6', padding: 10, borderRadius: 100 }}>
+                                <Text style={{ color: 'rgba(36,56,66,0.35)', fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    </MotiView>
+
+                    <MotiView
+                        from={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: 'timing', duration: 300, delay: 160 }}
+                        style={{ marginBottom: 24 }}
+                    >
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                router.push('/(app)/notes' as any);
+                            }}
+                            style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
+                                <View style={{ backgroundColor: 'rgba(59,130,246,0.1)', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                                    <Edit3 size={24} color="#3B82F6" />
+                                </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: '#243842', fontWeight: '800', fontSize: 16, marginBottom: 4 }}>Session Notes</Text>
+                                    <Text style={{ color: 'rgba(36,56,66,0.55)', fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>Deine persönlichen Notizen</Text>
                                 </View>
                             </View>
                             <View style={{ backgroundColor: '#F9F8F6', padding: 10, borderRadius: 100 }}>
