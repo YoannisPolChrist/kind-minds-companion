@@ -1,32 +1,86 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, ActivityIndicator, Share, Clipboard, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, TextInput, Modal, ActivityIndicator, Share, Alert, ScrollView } from 'react-native';
 import { MotiView } from 'moti';
-import { X, Copy, Share2, UserPlus, Link as LinkIcon } from 'lucide-react-native';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../utils/firebase';
+import { X, Copy, Share2, UserPlus, Link as LinkIcon, Mail, Key, CheckCircle2 } from 'lucide-react-native';
 import { createInvitation } from '../../services/invitationService';
+import { ClientService } from '../../services/clientService';
+import { ErrorHandler } from '../../utils/errors';
 
 interface AddClientModalProps {
     visible: boolean;
     onClose: () => void;
     therapistId: string;
     onClientAdded: () => void;
+    offlineProfile?: any | null;
 }
 
-export default function AddClientModal({ visible, onClose, therapistId, onClientAdded }: AddClientModalProps) {
+export default function AddClientModal({ visible, onClose, therapistId, onClientAdded, offlineProfile = null }: AddClientModalProps) {
     const [activeTab, setActiveTab] = useState<'manual' | 'invite'>('manual');
     const [loading, setLoading] = useState(false);
 
     // Manual Form State
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState(''); // Optional for offline profiles
-    const [birthDate, setBirthDate] = useState(''); // Simple string for now, could be improved with a date picker
+    const [email, setEmail] = useState('');
+    const [birthDate, setBirthDate] = useState('');
+
+    // Result State — shown after account is created
+    const [createdAccount, setCreatedAccount] = useState<{ email: string; resetSent: boolean } | null>(null);
 
     // Invite State
     const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
-    const handleManualCreate = async () => {
+    // Auto-switch to invite tab if an offline profile is passed
+    useEffect(() => {
+        if (visible) {
+            if (offlineProfile) {
+                setActiveTab('invite');
+            } else {
+                setActiveTab('manual');
+            }
+            setGeneratedCode(null);
+            setCreatedAccount(null);
+            setFirstName('');
+            setLastName('');
+            setEmail('');
+            setBirthDate('');
+        }
+    }, [visible, offlineProfile]);
+
+    /** Creates a full Firebase Auth + Firestore account for the client.
+     *  The therapist remains logged in throughout. */
+    const handleCreateWithAccount = async () => {
+        if (!firstName.trim() || !lastName.trim()) {
+            Alert.alert('Fehler', 'Bitte Vor- und Nachname eingeben.');
+            return;
+        }
+        if (!email.trim()) {
+            Alert.alert('Fehler', 'Bitte E-Mail-Adresse eingeben, um einen Zugang zu erstellen.');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            const { email: createdEmail, resetSent } = await ClientService.createClientAccount({
+                firstName,
+                lastName,
+                email,
+                birthDate,
+                therapistId
+            });
+
+            setCreatedAccount({ email: createdEmail, resetSent });
+            onClientAdded();
+        } catch (error: any) {
+            const { message } = ErrorHandler.handle(error, 'Create Client Account');
+            Alert.alert('Fehler', message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    /** Creates an offline profile WITHOUT a login account. */
+    const handleCreateOfflineProfile = async () => {
         if (!firstName.trim() || !lastName.trim()) {
             Alert.alert('Fehler', 'Bitte Vor- und Nachname eingeben.');
             return;
@@ -34,20 +88,17 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
 
         setLoading(true);
         try {
-            await addDoc(collection(db, 'users'), {
-                firstName: firstName.trim(),
-                lastName: lastName.trim(),
-                email: email.trim() || null,
-                birthDate: birthDate.trim() || null,
-                role: 'client',
-                therapistId,
-                isOfflineProfile: true,
-                createdAt: serverTimestamp()
+            await ClientService.createOfflineProfile({
+                firstName,
+                lastName,
+                email,
+                birthDate,
+                therapistId
             });
 
             Alert.alert('Erfolg', 'Offline-Akte wurde erfolgreich angelegt.');
             onClientAdded();
-            handleClose();
+            onClose();
         } catch (error) {
             console.error('Error creating offline client:', error);
             Alert.alert('Fehler', 'Klient konnte nicht angelegt werden.');
@@ -59,7 +110,8 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
     const handleGenerateLink = async () => {
         setLoading(true);
         try {
-            const code = await createInvitation(therapistId);
+            const profileId = offlineProfile ? offlineProfile.id : undefined;
+            const code = await createInvitation(therapistId, profileId);
             setGeneratedCode(code);
         } catch (error) {
             console.error('Error generating invitation:', error);
@@ -69,23 +121,16 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
         }
     };
 
-    const handleCopyCode = () => {
+    const handleShareCode = () => {
         if (generatedCode) {
-            // Note: In Expo, using expo-clipboard is preferred, but React Native Clipboard works for simple use cases
-            // Assuming Clipboard is available or we can just use Share
-            Share.share({
-                message: `Lade dir die Therapie-App herunter und nutze diesen Einladungscode, um dich mit mir zu verbinden: ${generatedCode}`
-            });
+            const message = offlineProfile
+                ? `Hallo ${offlineProfile.firstName},\nlade dir die App herunter und nutze diesen Einladungscode, um dich mit deiner Akte zu verbinden: ${generatedCode}`
+                : `Lade dir die Therapie-App herunter und nutze diesen Einladungscode, um dich mit mir zu verbinden: ${generatedCode}`;
+            Share.share({ message });
         }
     };
 
     const handleClose = () => {
-        setFirstName('');
-        setLastName('');
-        setEmail('');
-        setBirthDate('');
-        setGeneratedCode(null);
-        setActiveTab('manual');
         onClose();
     };
 
@@ -96,147 +141,208 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
             transparent={true}
             onRequestClose={handleClose}
         >
-            <View className="flex-1 justify-end bg-black/40">
+            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
                 <MotiView
                     from={{ translateY: 400 }}
                     animate={{ translateY: 0 }}
                     transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                    className="bg-white rounded-t-[32px] p-6 w-full max-w-2xl mx-auto h-[80%]"
+                    style={{ backgroundColor: 'white', borderTopLeftRadius: 32, borderTopRightRadius: 32, padding: 28, width: '100%', maxWidth: 640, alignSelf: 'center', maxHeight: '92%' }}
                 >
                     {/* Header */}
-                    <View className="flex-row justify-between items-center mb-6">
-                        <Text className="text-2xl font-black text-[#243842] tracking-tight">Neuer Klient</Text>
-                        <TouchableOpacity onPress={handleClose} className="bg-gray-100 p-2 rounded-full">
-                            <X size={24} color="#64748B" />
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#243842', letterSpacing: -0.5 }}>
+                            {offlineProfile ? 'Profil verknüpfen' : 'Neuer Klient'}
+                        </Text>
+                        <TouchableOpacity onPress={handleClose} style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 20 }}>
+                            <X size={22} color="#64748B" />
                         </TouchableOpacity>
                     </View>
 
-                    {/* Tabs */}
-                    <View className="flex-row bg-gray-100 p-1 rounded-2xl mb-8">
-                        <TouchableOpacity
-                            onPress={() => setActiveTab('manual')}
-                            className={`flex-1 py-3 rounded-xl flex-row justify-center items-center gap-2 ${activeTab === 'manual' ? 'bg-white shadow-sm' : ''}`}
-                        >
-                            <UserPlus size={18} color={activeTab === 'manual' ? '#137386' : '#64748B'} />
-                            <Text className={`font-bold ${activeTab === 'manual' ? 'text-[#137386]' : 'text-[#64748B]'}`}>Manuell anlegen</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setActiveTab('invite')}
-                            className={`flex-1 py-3 rounded-xl flex-row justify-center items-center gap-2 ${activeTab === 'invite' ? 'bg-white shadow-sm' : ''}`}
-                        >
-                            <LinkIcon size={18} color={activeTab === 'invite' ? '#137386' : '#64748B'} />
-                            <Text className={`font-bold ${activeTab === 'invite' ? 'text-[#137386]' : 'text-[#64748B]'}`}>Einladungscode</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Tab Content: Manual */}
-                    {activeTab === 'manual' && (
-                        <View className="flex-1">
-                            <Text className="text-[#64748B] font-medium mb-6">
-                                Lege eine Offline-Akte an, um Übungen und Notizen für einen Klienten zu verwalten, der die App (noch) nicht nutzt.
-                            </Text>
-
-                            <View className="gap-4">
-                                <View>
-                                    <Text className="text-[13px] font-bold text-[#64748B] uppercase tracking-wider mb-2 ml-1">Vorname *</Text>
-                                    <TextInput
-                                        className="bg-[#F8FAFC] border border-gray-200 p-4 rounded-2xl text-base font-medium text-[#243842]"
-                                        placeholder="Max"
-                                        placeholderTextColor="#94A3B8"
-                                        value={firstName}
-                                        onChangeText={setFirstName}
-                                    />
-                                </View>
-                                <View>
-                                    <Text className="text-[13px] font-bold text-[#64748B] uppercase tracking-wider mb-2 ml-1">Nachname *</Text>
-                                    <TextInput
-                                        className="bg-[#F8FAFC] border border-gray-200 p-4 rounded-2xl text-base font-medium text-[#243842]"
-                                        placeholder="Mustermann"
-                                        placeholderTextColor="#94A3B8"
-                                        value={lastName}
-                                        onChangeText={setLastName}
-                                    />
-                                </View>
-                                <View>
-                                    <Text className="text-[13px] font-bold text-[#64748B] uppercase tracking-wider mb-2 ml-1">E-Mail (Optional)</Text>
-                                    <TextInput
-                                        className="bg-[#F8FAFC] border border-gray-200 p-4 rounded-2xl text-base font-medium text-[#243842]"
-                                        placeholder="max@beispiel.de"
-                                        placeholderTextColor="#94A3B8"
-                                        keyboardType="email-address"
-                                        autoCapitalize="none"
-                                        value={email}
-                                        onChangeText={setEmail}
-                                    />
-                                </View>
-                                <View>
-                                    <Text className="text-[13px] font-bold text-[#64748B] uppercase tracking-wider mb-2 ml-1">Geburtsdatum (Optional)</Text>
-                                    <TextInput
-                                        className="bg-[#F8FAFC] border border-gray-200 p-4 rounded-2xl text-base font-medium text-[#243842]"
-                                        placeholder="TT.MM.JJJJ"
-                                        placeholderTextColor="#94A3B8"
-                                        value={birthDate}
-                                        onChangeText={setBirthDate}
-                                    />
-                                </View>
-                            </View>
-
-                            <View className="mt-auto pt-6">
-                                <TouchableOpacity
-                                    onPress={handleManualCreate}
-                                    disabled={loading || !firstName.trim() || !lastName.trim()}
-                                    className={`p-4 rounded-2xl items-center justify-center flex-row ${(!firstName.trim() || !lastName.trim()) ? 'bg-gray-200' : 'bg-[#137386]'}`}
-                                >
-                                    {loading ? (
-                                        <ActivityIndicator color="#fff" />
-                                    ) : (
-                                        <Text className={`font-bold text-lg ${(!firstName.trim() || !lastName.trim()) ? 'text-gray-400' : 'text-white'}`}>
-                                            Offline-Akte erstellen
-                                        </Text>
-                                    )}
-                                </TouchableOpacity>
-                            </View>
+                    {/* Tabs — only show if not linking an offline profile */}
+                    {!offlineProfile && (
+                        <View style={{ flexDirection: 'row', backgroundColor: '#F1F5F9', padding: 4, borderRadius: 20, marginBottom: 24 }}>
+                            <TouchableOpacity
+                                onPress={() => setActiveTab('manual')}
+                                style={{ flex: 1, paddingVertical: 12, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: activeTab === 'manual' ? 'white' : 'transparent' }}
+                            >
+                                <UserPlus size={16} color={activeTab === 'manual' ? '#137386' : '#64748B'} />
+                                <Text style={{ fontWeight: '700', color: activeTab === 'manual' ? '#137386' : '#64748B', fontSize: 14 }}>Klient anlegen</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setActiveTab('invite')}
+                                style={{ flex: 1, paddingVertical: 12, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: activeTab === 'invite' ? 'white' : 'transparent' }}
+                            >
+                                <LinkIcon size={16} color={activeTab === 'invite' ? '#137386' : '#64748B'} />
+                                <Text style={{ fontWeight: '700', color: activeTab === 'invite' ? '#137386' : '#64748B', fontSize: 14 }}>Einladungscode</Text>
+                            </TouchableOpacity>
                         </View>
                     )}
 
-                    {/* Tab Content: Invite */}
+                    {/* Tab Content: Manual Create */}
+                    {activeTab === 'manual' && !offlineProfile && (
+                        <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }}>
+                            {/* Success State */}
+                            {createdAccount ? (
+                                <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ alignItems: 'center', padding: 24 }}>
+                                    <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                                        <CheckCircle2 size={36} color="#10B981" />
+                                    </View>
+                                    <Text style={{ fontSize: 22, fontWeight: '900', color: '#243842', textAlign: 'center', marginBottom: 8 }}>Klient angelegt!</Text>
+                                    <Text style={{ fontSize: 15, color: '#64748B', textAlign: 'center', marginBottom: 16, lineHeight: 22 }}>
+                                        Der Account für{'\n'}
+                                        <Text style={{ fontWeight: '800', color: '#137386' }}>{createdAccount.email}</Text>
+                                        {'\n'}wurde erfolgreich erstellt.
+                                    </Text>
+                                    {createdAccount.resetSent ? (
+                                        <View style={{ backgroundColor: '#EFF6FF', borderRadius: 16, padding: 16, width: '100%', borderWidth: 1, borderColor: '#BFDBFE' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                                <Mail size={20} color="#2563EB" />
+                                                <Text style={{ flex: 1, color: '#1D4ED8', fontWeight: '700', fontSize: 14 }}>
+                                                    Eine E-Mail mit dem Link zum Passwort-Setzen wurde verschickt.
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    ) : (
+                                        <View style={{ backgroundColor: '#FEF3C7', borderRadius: 16, padding: 16, width: '100%', borderWidth: 1, borderColor: '#FDE68A' }}>
+                                            <Text style={{ color: '#92400E', fontWeight: '700', fontSize: 14 }}>
+                                                ⚠ Die Willkommens-E-Mail konnte nicht versendet werden. Bitte teile dem Klienten den Zugang manuell mit.
+                                            </Text>
+                                        </View>
+                                    )}
+                                    <TouchableOpacity
+                                        onPress={handleClose}
+                                        style={{ marginTop: 24, backgroundColor: '#137386', paddingVertical: 16, paddingHorizontal: 40, borderRadius: 20 }}
+                                    >
+                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Fertig</Text>
+                                    </TouchableOpacity>
+                                </MotiView>
+                            ) : (
+                                <>
+                                    {/* Info Banner */}
+                                    <View style={{ backgroundColor: '#EFF6FF', borderRadius: 16, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
+                                        <Key size={18} color="#2563EB" style={{ marginTop: 1 }} />
+                                        <Text style={{ flex: 1, color: '#1D4ED8', fontWeight: '600', fontSize: 13, lineHeight: 19 }}>
+                                            Mit E-Mail-Adresse: Klient erhält automatisch eine E-Mail zum Passwort setzen und kann sich sofort einloggen.{'\n'}
+                                            Ohne E-Mail: Es wird eine Offline-Akte angelegt.
+                                        </Text>
+                                    </View>
+
+                                    {/* Form Fields */}
+                                    <View style={{ gap: 16 }}>
+                                        <View>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Vorname *</Text>
+                                            <TextInput
+                                                style={{ backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#243842', fontWeight: '500' }}
+                                                placeholder="Max"
+                                                placeholderTextColor="#94A3B8"
+                                                value={firstName}
+                                                onChangeText={setFirstName}
+                                            />
+                                        </View>
+                                        <View>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Nachname *</Text>
+                                            <TextInput
+                                                style={{ backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#243842', fontWeight: '500' }}
+                                                placeholder="Mustermann"
+                                                placeholderTextColor="#94A3B8"
+                                                value={lastName}
+                                                onChangeText={setLastName}
+                                            />
+                                        </View>
+                                        <View>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>E-Mail (für App-Zugang)</Text>
+                                            <TextInput
+                                                style={{ backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#243842', fontWeight: '500' }}
+                                                placeholder="max@beispiel.de"
+                                                placeholderTextColor="#94A3B8"
+                                                keyboardType="email-address"
+                                                autoCapitalize="none"
+                                                value={email}
+                                                onChangeText={setEmail}
+                                            />
+                                        </View>
+                                        <View>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Geburtsdatum (Optional)</Text>
+                                            <TextInput
+                                                style={{ backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#243842', fontWeight: '500' }}
+                                                placeholder="TT.MM.JJJJ"
+                                                placeholderTextColor="#94A3B8"
+                                                value={birthDate}
+                                                onChangeText={setBirthDate}
+                                            />
+                                        </View>
+                                    </View>
+
+                                    {/* Action Buttons */}
+                                    <View style={{ marginTop: 24, gap: 12 }}>
+                                        {email.trim() ? (
+                                            <TouchableOpacity
+                                                onPress={handleCreateWithAccount}
+                                                disabled={loading || !firstName.trim() || !lastName.trim()}
+                                                style={{ backgroundColor: (!firstName.trim() || !lastName.trim()) ? '#E2E8F0' : '#137386', padding: 18, borderRadius: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
+                                            >
+                                                {loading ? (
+                                                    <ActivityIndicator color="white" />
+                                                ) : (
+                                                    <>
+                                                        <Mail size={20} color="white" />
+                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Account anlegen & E-Mail senden</Text>
+                                                    </>
+                                                )}
+                                            </TouchableOpacity>
+                                        ) : (
+                                            <TouchableOpacity
+                                                onPress={handleCreateOfflineProfile}
+                                                disabled={loading || !firstName.trim() || !lastName.trim()}
+                                                style={{ backgroundColor: (!firstName.trim() || !lastName.trim()) ? '#E2E8F0' : '#64748B', padding: 18, borderRadius: 18, alignItems: 'center' }}
+                                            >
+                                                {loading ? (
+                                                    <ActivityIndicator color="white" />
+                                                ) : (
+                                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Offline-Akte erstellen</Text>
+                                                )}
+                                            </TouchableOpacity>
+                                        )}
+                                    </View>
+                                </>
+                            )}
+                        </ScrollView>
+                    )}
+
+                    {/* Tab Content: Invite Code */}
                     {activeTab === 'invite' && (
-                        <View className="flex-1 items-center justify-center py-8">
-                            <View className="w-20 h-20 bg-sky-50 rounded-full items-center justify-center mb-6">
+                        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 24 }}>
+                            <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#F0F9FF', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
                                 <Share2 size={32} color="#0EA5E9" />
                             </View>
-                            <Text className="text-2xl font-black text-[#243842] text-center mb-4">Einladungscode generieren</Text>
-                            <Text className="text-[#64748B] text-center font-medium leading-relaxed max-w-[300px] mb-8">
-                                Generiere einen 6-stelligen Code. Dein Klient kann diesen bei der Registrierung in der App eingeben, um sich direkt mit dir zu verbinden.
+                            <Text style={{ fontSize: 22, fontWeight: '900', color: '#243842', textAlign: 'center', marginBottom: 8 }}>Einladungscode generieren</Text>
+                            <Text style={{ color: '#64748B', textAlign: 'center', fontWeight: '600', lineHeight: 22, maxWidth: 300, marginBottom: 28 }}>
+                                {offlineProfile
+                                    ? `Generiere einen Code für ${offlineProfile.firstName} ${offlineProfile.lastName}. Er verknüpft den neuen Account mit der bisherigen Akte.`
+                                    : 'Dein Klient gibt den Code bei der Registrierung ein und wird direkt mit dir verbunden.'}
                             </Text>
 
                             {generatedCode ? (
-                                <MotiView
-                                    from={{ opacity: 0, scale: 0.9 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    className="w-full items-center"
-                                >
-                                    <View className="bg-sky-50 border-2 border-sky-200 border-dashed px-8 py-6 rounded-3xl mb-6 w-full items-center">
-                                        <Text className="text-5xl font-black text-[#0EA5E9] tracking-[8px]">{generatedCode}</Text>
+                                <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ width: '100%', alignItems: 'center' }}>
+                                    <View style={{ backgroundColor: '#F0F9FF', borderWidth: 2, borderColor: '#BAE6FD', borderStyle: 'dashed', paddingHorizontal: 32, paddingVertical: 24, borderRadius: 24, marginBottom: 20, width: '100%', alignItems: 'center' }}>
+                                        <Text style={{ fontSize: 48, fontWeight: '900', color: '#0EA5E9', letterSpacing: 8 }}>{generatedCode}</Text>
                                     </View>
                                     <TouchableOpacity
-                                        onPress={handleCopyCode}
-                                        className="bg-[#137386] w-full p-4 rounded-2xl items-center justify-center flex-row gap-2"
+                                        onPress={handleShareCode}
+                                        style={{ backgroundColor: '#137386', width: '100%', padding: 18, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                                     >
-                                        <Copy size={20} color="#fff" />
-                                        <Text className="text-white font-bold text-lg">Code teilen / kopieren</Text>
+                                        <Copy size={20} color="white" />
+                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Code teilen / kopieren</Text>
                                     </TouchableOpacity>
                                 </MotiView>
                             ) : (
                                 <TouchableOpacity
                                     onPress={handleGenerateLink}
                                     disabled={loading}
-                                    className="bg-[#137386] w-full p-4 rounded-2xl items-center justify-center"
+                                    style={{ backgroundColor: '#137386', width: '100%', padding: 18, borderRadius: 18, alignItems: 'center' }}
                                 >
-                                    {loading ? (
-                                        <ActivityIndicator color="#fff" />
-                                    ) : (
-                                        <Text className="text-white font-bold text-lg">Code generieren</Text>
+                                    {loading ? <ActivityIndicator color="white" /> : (
+                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Code generieren</Text>
                                     )}
                                 </TouchableOpacity>
                             )}

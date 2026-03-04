@@ -9,8 +9,11 @@ export interface UserProfile {
     email: string;
     firstName?: string;
     lastName?: string;
+    photoURL?: string;
     bookingUrl?: string;
     createdAt?: string;
+    onboardingCompleted?: boolean;
+    birthDate?: string;
 }
 
 interface AuthState {

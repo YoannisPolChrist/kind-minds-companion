@@ -3,13 +3,15 @@ import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
 import { collection, addDoc, query, getDocs, deleteDoc, doc, serverTimestamp, where } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, deleteObject } from 'firebase/storage';
+import * as FileSystem from 'expo-file-system';
 import { db, storage } from '../../../utils/firebase';
 import i18n from '../../../utils/i18n';
 import { MotiView } from 'moti';
 import { FileText, Link as LinkIcon, Trash2, PlusCircle, UploadCloud, ChevronLeft, Send, X, FileVideo, FileImage } from 'lucide-react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
+import { uploadFile } from '../../../utils/uploadFile';
 
 export default function TherapistResources() {
     const router = useRouter();
@@ -97,14 +99,8 @@ export default function TherapistResources() {
             else if (mimeType.startsWith('video/')) fileIconType = 'video';
             else if (mimeType === 'application/pdf') fileIconType = 'pdf';
 
-            // Upload to Firebase Storage
-            const response = await fetch(fileUri);
-            const blob = await response.blob();
             const filename = `resources/${Date.now()}_${asset.name}`;
-            const storageRef = ref(storage, filename);
-
-            await uploadBytes(storageRef, blob);
-            const downloadUrl = await getDownloadURL(storageRef);
+            const downloadUrl = await uploadFile(fileUri, filename, mimeType);
 
             // Save to Firestore
             await addDoc(collection(db, "resources"), {
@@ -378,10 +374,10 @@ export default function TherapistResources() {
                         >
                             <View className="flex-1 pr-4 flex-row items-center">
                                 <View className={`w-12 h-12 rounded-[16px] items-center justify-center mr-4 ${item.type === 'link' ? 'bg-blue-50' : 'bg-red-50'}`}>
-                                    {item.type === 'link' ? <LinkIcon color="#3B82F6" size={24} /> : 
-                                     item.type === 'video' ? <FileVideo color="#EF4444" size={24} /> :
-                                     item.type === 'image' ? <FileImage color="#EF4444" size={24} /> :
-                                     <FileText color="#EF4444" size={24} />}
+                                    {item.type === 'link' ? <LinkIcon color="#3B82F6" size={24} /> :
+                                        item.type === 'video' ? <FileVideo color="#EF4444" size={24} /> :
+                                            item.type === 'image' ? <FileImage color="#EF4444" size={24} /> :
+                                                <FileText color="#EF4444" size={24} />}
                                 </View>
                                 <View className="flex-1">
                                     <Text className="font-bold text-[#243842] text-base">{item.title}</Text>

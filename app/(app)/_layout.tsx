@@ -1,9 +1,46 @@
 import { Redirect, Stack } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Platform } from 'react-native';
+import { useEffect } from 'react';
+import { doc, setDoc } from 'firebase/firestore';
+import { db } from '../../utils/firebase';
+import { registerForPushNotificationsAsync } from '../../utils/notifications';
 
 export default function AppLayout() {
     const { user, profile, loading } = useAuth();
+
+    useEffect(() => {
+        let isMounted = true;
+
+        async function updatePlatformAndToken() {
+            if (!user) return;
+
+            const platform = Platform.OS === 'web' ? 'web' : 'app';
+            let pushToken = null;
+
+            if (platform === 'app') {
+                pushToken = await registerForPushNotificationsAsync();
+            }
+
+            if (!isMounted) return;
+
+            const updateData: any = { lastActivePlatform: platform };
+            // Optional: You could update the timestamp here too, but just platform acts as a good indicator
+            if (pushToken) {
+                updateData.pushToken = pushToken;
+            }
+
+            try {
+                await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
+            } catch (error) {
+                console.error('Failed to update platform info in Firestore:', error);
+            }
+        }
+
+        updatePlatformAndToken();
+
+        return () => { isMounted = false; };
+    }, [user]);
 
     if (loading) {
         return (
@@ -29,6 +66,15 @@ export default function AppLayout() {
     }
 
     // Klient → Client-Dashboard mit allen Sub-Screens
+    // Onboarding check for clients
+    if (!profile?.onboardingCompleted) {
+        return (
+            <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
+                <Stack.Screen name="onboarding" />
+            </Stack>
+        );
+    }
+
     return (
         <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="index" />
@@ -36,6 +82,7 @@ export default function AppLayout() {
             <Stack.Screen name="checkin" />
             <Stack.Screen name="history" />
             <Stack.Screen name="settings" />
+            <Stack.Screen name="notes" />
         </Stack>
     );
 }

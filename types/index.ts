@@ -24,7 +24,7 @@ export interface Exercise {
 
 export interface ExerciseBlock {
     id: string;
-    type: 'text' | 'video' | 'reflection' | 'breathing' | 'timer' | 'info' | 'media' | 'scale' | 'choice' | 'checklist' | 'homework' | 'gratitude';
+    type: 'text' | 'video' | 'reflection' | 'breathing' | 'timer' | 'info' | 'media' | 'scale' | 'choice' | 'checklist' | 'homework' | 'gratitude' | 'spider_chart' | 'bar_chart' | 'pie_chart' | 'line_chart';
     content?: string;
     mediaUri?: string;
     videoUrl?: string; // fallback
@@ -44,13 +44,14 @@ export interface UserProfile {
     lastName?: string;
     phone?: string;
     bookingUrl?: string;
-    
+
     // Extended Client Profile Fields
     birthDate?: string;
     profilePictureUrl?: string;
     therapistId?: string;
     isOfflineProfile?: boolean;
     linkedAuthUid?: string;
+    onboardingCompleted?: boolean;
 }
 
 export interface Invitation {

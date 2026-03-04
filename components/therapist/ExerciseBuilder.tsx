@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform, KeyboardTypeOptions } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform, KeyboardTypeOptions, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Radar, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon } from 'lucide-react-native';
@@ -10,6 +10,7 @@ import ExerciseFlowTimeline from './ExerciseFlowTimeline';
 import ExerciseDifficultyGauge from './ExerciseDifficultyGauge';
 import Block3DTiltWrapper from './Block3DTiltWrapper';
 import Block3DEntrance from './Block3DEntrance';
+import { uploadFile, generateStoragePath, getExtension } from '../../utils/uploadFile';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -127,6 +128,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
 }) {
     const cat = getCat(block.type);
     const id = block.id;
+    const [mediaUploading, setMediaUploading] = useState(false);
 
     const onChange = useCallback((updates: Partial<ExerciseBlock>) => onUpdateBlock(id, updates), [id, onUpdateBlock]);
     const onRemove = useCallback(() => onRemoveBlock(id), [id, onRemoveBlock]);
@@ -148,17 +150,33 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images', 'videos'], // both images and videos
+            mediaTypes: ['images', 'videos'],
             allowsEditing: true,
             quality: 0.8,
         });
 
         if (!result.canceled && result.assets && result.assets.length > 0) {
             const asset = result.assets[0];
-            onChange({
-                mediaUri: asset.uri,
-                mediaType: asset.type === 'video' ? 'video' : 'image'
-            });
+            const isVideo = asset.type === 'video';
+            setMediaUploading(true);
+            try {
+                const ext = getExtension(asset.uri) || (isVideo ? 'mp4' : 'jpg');
+                const path = generateStoragePath('exercises/media', ext);
+                const downloadUrl = await uploadFile(
+                    asset.uri,
+                    path,
+                    isVideo ? 'video/mp4' : 'image/jpeg'
+                );
+                onChange({
+                    mediaUri: downloadUrl,
+                    mediaType: isVideo ? 'video' : 'image'
+                });
+            } catch (err) {
+                console.error('Media upload failed:', err);
+                Alert.alert('Upload fehlgeschlagen', 'Die Datei konnte nicht hochgeladen werden. Bitte versuche es erneut.');
+            } finally {
+                setMediaUploading(false);
+            }
         }
     };
 
@@ -413,13 +431,23 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                     </View>
                                 </View>
                             ) : (
-                                <TouchableOpacity onPress={pickMedia}
+                                <TouchableOpacity onPress={pickMedia} disabled={mediaUploading}
                                     style={{ marginTop: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: '#CBD5E1', borderRadius: 20, paddingVertical: 40, alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-                                    <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                                        <Text style={{ fontSize: 32, color: '#3B82F6' }}>📸</Text>
-                                    </View>
-                                    <Text style={{ fontSize: 16, fontWeight: '800', color: '#334155', marginBottom: 6 }}>Medium auswählen</Text>
-                                    <Text style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', fontWeight: '500' }}>Unterstützt Fotos und Videos aus der Galerie</Text>
+                                    {mediaUploading ? (
+                                        <>
+                                            <ActivityIndicator size="large" color="#3B82F6" style={{ marginBottom: 12 }} />
+                                            <Text style={{ fontSize: 15, fontWeight: '800', color: '#3B82F6' }}>Datei wird hochgeladen…</Text>
+                                            <Text style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>Bitte warten</Text>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                                                <Text style={{ fontSize: 32, color: '#3B82F6' }}>📸</Text>
+                                            </View>
+                                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#334155', marginBottom: 6 }}>Medium auswählen</Text>
+                                            <Text style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', fontWeight: '500' }}>Unterstützt Fotos und Videos aus der Galerie</Text>
+                                        </>
+                                    )}
                                 </TouchableOpacity>
                             )}
                         </View>
@@ -484,12 +512,12 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             transition={{ type: 'timing', duration: 300 }}
                                             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}
                                         >
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 onPress={() => {
                                                     const nextIdx = (CHART_PALETTE.indexOf(color) + 1) % CHART_PALETTE.length;
                                                     updateOption(i, `${label}:${val}:${CHART_PALETTE[nextIdx]}`);
                                                 }}
-                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: {width: 0, height: 1}, elevation: 1 }} 
+                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
                                             />
                                             <View style={{ flex: 2 }}>
                                                 <StyledInput value={label} onChangeText={t => updateOption(i, `${t}:${val}:${color}`)} placeholder={`Kategorie ${i + 1}...`} />
@@ -568,12 +596,12 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             transition={{ type: 'spring', delay: i * 50 }}
                                             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}
                                         >
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 onPress={() => {
                                                     const nextIdx = (CHART_PALETTE.indexOf(color) + 1) % CHART_PALETTE.length;
                                                     updateOption(i, `${label}:${val}:${CHART_PALETTE[nextIdx]}`);
                                                 }}
-                                                style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: {width: 0, height: 1}, elevation: 1 }} 
+                                                style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
                                             />
                                             <View style={{ flex: 2 }}>
                                                 <StyledInput value={label} onChangeText={t => updateOption(i, `${t}:${val}:${color}`)} placeholder={`Parameter ${i + 1}...`} />
@@ -602,7 +630,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             <BarChart
                                 data={{
                                     labels: (block.options ?? []).map(o => o.split(':')[0] || '?'),
-                                    datasets: [{ 
+                                    datasets: [{
                                         data: (block.options ?? []).map(o => parseFloat(o.split(':')[1] || '0') || 0),
                                         colors: (block.options ?? []).map((o, i) => {
                                             const c = o.split(':')[2] || CHART_PALETTE[i % CHART_PALETTE.length];
@@ -656,12 +684,12 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             transition={{ type: 'spring', delay: i * 50 }}
                                             style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}
                                         >
-                                            <TouchableOpacity 
+                                            <TouchableOpacity
                                                 onPress={() => {
                                                     const nextIdx = (CHART_PALETTE.indexOf(color) + 1) % CHART_PALETTE.length;
                                                     updateOption(i, `${label}:${val}:${CHART_PALETTE[nextIdx]}`);
                                                 }}
-                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: {width: 0, height: 1}, elevation: 1 }} 
+                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
                                             />
                                             <View style={{ flex: 2 }}>
                                                 <StyledInput value={label} onChangeText={t => updateOption(i, `${t}:${val}:${color}`)} placeholder={`Segment ${i + 1}...`} />
@@ -792,28 +820,118 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
 
 // ─── Block Picker ─────────────────────────────────────────────────────────────
 
+const BLOCK_CATEGORIES: { label: string; types: ExerciseBlockType[] }[] = [
+    { label: 'Schnellzugriff', types: ['reflection', 'checklist', 'scale', 'info'] },
+    { label: '📝 Interaktion', types: ['reflection', 'scale', 'choice', 'checklist', 'homework', 'gratitude'] },
+    { label: '📖 Inhalt', types: ['info', 'media'] },
+    { label: '⏱ Zeit & Achtsamkeit', types: ['timer', 'breathing'] },
+    { label: '📊 Visualisierung', types: ['spider_chart', 'bar_chart', 'pie_chart', 'line_chart'] },
+];
+
 const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: ExerciseBlockType) => void; onClose: () => void }) {
+    const [search, setSearch] = React.useState('');
+    const [activeCategory, setActiveCategory] = React.useState<string>('Schnellzugriff');
+
+    const filteredCatalogue = React.useMemo(() => {
+        if (search.trim()) {
+            const q = search.toLowerCase();
+            return CATALOGUE.filter(c => c.label.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q));
+        }
+        const cat = BLOCK_CATEGORIES.find(c => c.label === activeCategory);
+        if (!cat) return CATALOGUE;
+        return CATALOGUE.filter(c => cat.types.includes(c.type));
+    }, [search, activeCategory]);
+
+    const quickTypes: ExerciseBlockType[] = ['reflection', 'checklist', 'scale', 'info'];
+
     return (
         <View style={{ marginVertical: 24, backgroundColor: '#FFFFFF', borderRadius: 32, padding: 32, borderWidth: 1, borderColor: '#E8E6E1', shadowColor: '#243842', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.1, shadowRadius: 32, elevation: 12 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 28 }}>
-                <Text style={{ color: '#243842', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>Neuen Block hinzufügen</Text>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                <View>
+                    <Text style={{ color: '#243842', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>Block hinzufügen</Text>
+                    <Text style={{ color: '#94A3B8', fontSize: 13, fontWeight: '600', marginTop: 2 }}>{CATALOGUE.length} Blocktypen verfügbar</Text>
+                </View>
                 <TouchableOpacity onPress={onClose} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F9F8F6', alignItems: 'center', justifyContent: 'center' }}>
                     <Text style={{ color: '#6B7C85', fontWeight: '800', fontSize: 16 }}>✕</Text>
                 </TouchableOpacity>
             </View>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
-                {CATALOGUE.map(cat => (
+
+            {/* Quick-add Pills */}
+            <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Häufig verwendet</Text>
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
+                    {quickTypes.map(type => {
+                        const cat = getCat(type);
+                        return (
+                            <TouchableOpacity
+                                key={type}
+                                onPress={() => onAdd(type)}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: cat.bg, borderWidth: 1, borderColor: cat.border, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 20 }}
+                            >
+                                <cat.icon size={16} color={cat.accent} />
+                                <Text style={{ fontSize: 14, fontWeight: '800', color: cat.text }}>{cat.label}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            </View>
+
+            {/* Search Bar */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F8F6', borderWidth: 1.5, borderColor: '#E8E6E1', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 20 }}>
+                <Text style={{ fontSize: 16, marginRight: 10 }}>🔍</Text>
+                <TextInput
+                    value={search}
+                    onChangeText={setSearch}
+                    placeholder="Block suchen..."
+                    placeholderTextColor="#94A3B8"
+                    style={{ flex: 1, fontSize: 15, color: '#243842', fontWeight: '600' }}
+                />
+                {search.length > 0 && (
+                    <TouchableOpacity onPress={() => setSearch('')} style={{ paddingLeft: 8 }}>
+                        <Text style={{ color: '#94A3B8', fontWeight: '700', fontSize: 18 }}>×</Text>
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Category Tabs */}
+            {!search.trim() && (
+                <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+                    {BLOCK_CATEGORIES.filter(c => c.label !== 'Schnellzugriff').map(cat => {
+                        const isActive = activeCategory === cat.label;
+                        return (
+                            <TouchableOpacity
+                                key={cat.label}
+                                onPress={() => setActiveCategory(cat.label)}
+                                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: isActive ? '#137386' : '#F9F8F6', borderWidth: 1, borderColor: isActive ? '#137386' : '#E8E6E1' }}
+                            >
+                                <Text style={{ fontSize: 13, fontWeight: '800', color: isActive ? 'white' : '#6B7C85' }}>{cat.label}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </View>
+            )}
+
+            {/* Block Grid */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 12 }}>
+                {filteredCatalogue.map(cat => (
                     <TouchableOpacity key={cat.type} onPress={() => onAdd(cat.type)}
-                        style={{ flexBasis: '46%', flexGrow: 1, backgroundColor: '#F9F8F6', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#E8E6E1', flexDirection: 'row', alignItems: 'center', gap: 16 }}>
-                        <View style={{ width: 48, height: 48, borderRadius: 16, backgroundColor: cat.bg, borderWidth: 1, borderColor: cat.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0, shadowColor: cat.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 2 }}>
-                            <cat.icon size={26} color={cat.accent} />
+                        style={{ flexBasis: '46%', flexGrow: 1, backgroundColor: cat.bg, borderRadius: 20, padding: 18, borderWidth: 1.5, borderColor: cat.border, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                        <View style={{ width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFFFFF', borderWidth: 1, borderColor: cat.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0, shadowColor: cat.accent, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 8, elevation: 3 }}>
+                            <cat.icon size={24} color={cat.accent} />
                         </View>
                         <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#243842', marginBottom: 2 }}>{cat.label}</Text>
-                            <Text style={{ fontSize: 13, color: '#6B7C85', fontWeight: '600' }}>{cat.desc}</Text>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: cat.text, marginBottom: 1 }}>{cat.label}</Text>
+                            <Text style={{ fontSize: 12, color: cat.text, opacity: 0.7, fontWeight: '600' }}>{cat.desc}</Text>
                         </View>
                     </TouchableOpacity>
                 ))}
+                {filteredCatalogue.length === 0 && (
+                    <View style={{ flex: 1, alignItems: 'center', paddingVertical: 32 }}>
+                        <Text style={{ fontSize: 32, marginBottom: 8 }}>🔍</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: '#94A3B8' }}>Kein Block gefunden</Text>
+                    </View>
+                )}
             </View>
         </View>
     );
@@ -823,17 +941,21 @@ const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: E
 
 const THEME_COLORS = ['#137386', '#3B82F6', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#10B981', '#64748B'];
 
+import { SuccessAnimation } from '../ui/SuccessAnimation';
+
 export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, initialThemeColor, initialBlocks = [], onSave, onCancel }: ExerciseBuilderProps) {
     const [title, setTitle] = useState(initialTitle);
     const [coverImage, setCoverImage] = useState<string | undefined>(initialCoverImage);
+    const [coverImageUploading, setCoverImageUploading] = useState(false);
     const [themeColor, setThemeColor] = useState<string>(initialThemeColor || THEME_COLORS[0]);
     const [blocks, setBlocks] = useState<ExerciseBlock[]>(initialBlocks);
     const [showPicker, setShowPicker] = useState(false);
+    const [toast, setToast] = useState<{ visible: boolean, message: string, type: 'error' | 'success' | 'warning' }>({ visible: false, message: '', type: 'error' });
 
     const pickCoverImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
-            Alert.alert("Berechtigung verweigert", "Zugriff auf die Galerie wird benötigt.");
+            setToast({ visible: true, message: 'Zugriff auf die Galerie wird benötigt.', type: 'error' });
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -842,7 +964,23 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
             quality: 0.8,
         });
         if (!result.canceled && result.assets && result.assets.length > 0) {
-            setCoverImage(result.assets[0].uri);
+            const asset = result.assets[0];
+            setCoverImageUploading(true);
+            try {
+                const ext = getExtension(asset.uri) || 'jpg';
+                const path = generateStoragePath('exercises/covers', ext);
+                const downloadUrl = await uploadFile(
+                    asset.uri,
+                    path,
+                    'image/jpeg'
+                );
+                setCoverImage(downloadUrl);
+            } catch (err) {
+                console.error('Cover image upload failed:', err);
+                setToast({ visible: true, message: 'Titelbild konnte nicht hochgeladen werden.', type: 'error' });
+            } finally {
+                setCoverImageUploading(false);
+            }
         }
     };
 
@@ -883,13 +1021,11 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
 
     const handleSave = () => {
         if (!title.trim()) {
-            if (Platform.OS === 'web') window.alert('Bitte gib der Übung einen Titel.');
-            else Alert.alert('Fehler', 'Bitte gib der Übung einen Titel.');
+            setToast({ visible: true, message: 'Bitte gib der Übung einen Titel.', type: 'warning' });
             return;
         }
         if (blocks.length === 0) {
-            if (Platform.OS === 'web') window.alert('Füge mindestens einen Block hinzu.');
-            else Alert.alert('Fehler', 'Füge mindestens einen Block hinzu.');
+            setToast({ visible: true, message: 'Füge mindestens einen Block hinzu.', type: 'warning' });
             return;
         }
 
@@ -938,7 +1074,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
             >
-                {/* Title,                {/* Title */}
+                {/* Title */}
                 <View style={{ backgroundColor: '#fff', borderRadius: 36, borderWidth: 1, borderColor: '#E8E6E1', padding: 36, marginBottom: 36, shadowColor: '#243842', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.05, shadowRadius: 40, elevation: 6 }}>
                     <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Übungs-Titel</Text>
                     <TextInput
@@ -962,9 +1098,18 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             </View>
                         </View>
                     ) : (
-                        <TouchableOpacity onPress={pickCoverImage} style={{ backgroundColor: '#F9F8F6', borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#E8E6E1', borderRadius: 16, padding: 20, alignItems: 'center' }}>
-                            <Text style={{ fontSize: 28, marginBottom: 8 }}>🖼️</Text>
-                            <Text style={{ fontSize: 14, fontWeight: '700', color: '#6B7C85' }}>Bild auswählen</Text>
+                        <TouchableOpacity onPress={pickCoverImage} disabled={coverImageUploading} style={{ backgroundColor: '#F9F8F6', borderWidth: 1.5, borderStyle: 'dashed', borderColor: '#E8E6E1', borderRadius: 16, padding: 20, alignItems: 'center' }}>
+                            {coverImageUploading ? (
+                                <>
+                                    <ActivityIndicator size="large" color="#137386" style={{ marginBottom: 8 }} />
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#137386' }}>Bild wird hochgeladen…</Text>
+                                </>
+                            ) : (
+                                <>
+                                    <Text style={{ fontSize: 28, marginBottom: 8 }}>🖼️</Text>
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: '#6B7C85' }}>Bild auswählen</Text>
+                                </>
+                            )}
                         </TouchableOpacity>
                     )}
 
@@ -982,11 +1127,6 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
 
                 {/* Flow Timeline — horizontal journey view */}
                 <ExerciseFlowTimeline blocks={blocks} />
-
-                {/* Gauge + Composition side by side for compact analytics */}
-                {blocks.length > 0 && (
-                    <ExerciseDifficultyGauge blocks={blocks} />
-                )}
 
                 {/* Block Count divider */}
                 {blocks.length > 0 && (
@@ -1039,6 +1179,14 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                     </TouchableOpacity>
                 </View>
             </View>
+
+            <SuccessAnimation
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.type === 'error' ? 'Bitte versuche es erneut.' : ''}
+                onAnimationDone={() => setToast(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

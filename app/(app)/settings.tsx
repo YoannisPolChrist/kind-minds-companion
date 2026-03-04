@@ -1,30 +1,51 @@
-import { View, Text, TouchableOpacity, ScrollView as DefaultScrollView, Switch, Alert, TextInput, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView as DefaultScrollView, Switch, Alert, TextInput, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../utils/useAppStore';
 import { useState, useEffect } from 'react';
 import * as Calendar from 'expo-calendar';
 import * as Notifications from 'expo-notifications';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../contexts/AuthContext';
 import { syncExercisesToCalendar } from '../../utils/calendar';
 import { scheduleExerciseReminders } from '../../utils/notifications';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db, auth } from '../../utils/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { sendPasswordResetEmail, updateEmail } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
+import { uploadFile, generateStoragePath, getExtension } from '../../utils/uploadFile';
 import i18n from '../../utils/i18n';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { MotiView } from 'moti';
-import { ChevronRight, ChevronLeft } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, Camera, User } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { FlashList } from '@shopify/flash-list';
+import { useAuthStore } from '../../stores/authStore';
 
 export default function SettingsScreen() {
     const router = useRouter();
     const { profile, signOut } = useAuth();
+    const refreshProfile = useAuthStore(state => state.refreshProfile);
     const { reminderHour, setReminderHour, calendarSyncEnabled, setCalendarSyncEnabled, notificationsEnabled, setNotificationsEnabled } = useAppStore();
     const [bookingUrl, setBookingUrl] = useState<string>('');
     const { locale, setLanguage } = useLanguage();
+
+    // Profile editing state
+    const [firstName, setFirstName] = useState(profile?.firstName || '');
+    const [lastName, setLastName] = useState(profile?.lastName || '');
+    const [email, setEmail] = useState(profile?.email || '');
+    const [photoURL, setPhotoURL] = useState(profile?.photoURL || '');
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+
+    useEffect(() => {
+        if (profile) {
+            setFirstName(profile.firstName || '');
+            setLastName(profile.lastName || '');
+            setEmail(profile.email || '');
+            setPhotoURL(profile.photoURL || '');
+        }
+    }, [profile?.id]);
 
     useEffect(() => {
         if (profile?.bookingUrl) {
@@ -35,6 +56,66 @@ export default function SettingsScreen() {
     useEffect(() => {
         checkPermissions();
     }, []);
+
+    const pickProfilePhoto = async () => {
+        try {
+            const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (!perm.granted) {
+                Alert.alert('Berechtigung', 'Galerie-Zugriff wird benötigt.');
+                return;
+            }
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.8,
+            });
+            if (result.canceled || !result.assets?.length) return;
+
+            const asset = result.assets[0];
+            setUploadingPhoto(true);
+
+            const ext = getExtension(asset.uri) || 'jpg';
+            const path = generateStoragePath(`profile_pictures/${profile?.id}`, ext);
+            const downloadUrl = await uploadFile(asset.uri, path, 'image/jpeg');
+
+            // Save to Firestore
+            await updateDoc(doc(db, 'users', profile!.id), { photoURL: downloadUrl });
+            setPhotoURL(downloadUrl);
+            await refreshProfile();
+        } catch (e) {
+            console.error('Photo upload error:', e);
+            Alert.alert('Fehler', 'Foto konnte nicht hochgeladen werden.');
+        } finally {
+            setUploadingPhoto(false);
+        }
+    };
+
+    const saveProfile = async () => {
+        if (!profile?.id) return;
+        setSavingProfile(true);
+        try {
+            await updateDoc(doc(db, 'users', profile.id), {
+                firstName: firstName.trim(),
+                lastName: lastName.trim(),
+            });
+            // Update email in Firebase Auth if changed
+            if (email.trim() && email.trim() !== profile.email && auth.currentUser) {
+                try {
+                    await updateEmail(auth.currentUser, email.trim());
+                    await updateDoc(doc(db, 'users', profile.id), { email: email.trim() });
+                } catch (emailErr: any) {
+                    Alert.alert('Hinweis', 'Name gespeichert, aber E-Mail konnte nicht geändert werden. Du musst dich ggf. neu anmelden.');
+                }
+            }
+            await refreshProfile();
+            Alert.alert('Gespeichert', 'Dein Profil wurde aktualisiert.');
+        } catch (e) {
+            Alert.alert('Fehler', 'Profil konnte nicht gespeichert werden.');
+        } finally {
+            setSavingProfile(false);
+        }
+    };
 
     const saveReminderHour = async (hour: number) => {
         try {
@@ -179,6 +260,81 @@ export default function SettingsScreen() {
 
             <DefaultScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
                 <View className="px-6 pt-6 pb-10">
+
+                    {/* ─── Profile Section ────────────────────────────────── */}
+                    <MotiView
+                        from={{ opacity: 0, translateY: 20 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'timing', duration: 350, delay: 100 }}
+                    >
+                        <Text className="text-xl font-bold text-[#2C3E50] mb-4">Mein Profil</Text>
+                        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6">
+                            {/* Avatar */}
+                            <View className="items-center mb-6">
+                                <TouchableOpacity onPress={pickProfilePhoto} disabled={uploadingPhoto} activeOpacity={0.8}>
+                                    <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: '#E8F4F6', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#137386', overflow: 'hidden' }}>
+                                        {photoURL ? (
+                                            <Image source={{ uri: photoURL }} style={{ width: 96, height: 96, borderRadius: 48 }} />
+                                        ) : (
+                                            <User size={40} color="#137386" />
+                                        )}
+                                    </View>
+                                    <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#137386', borderRadius: 20, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'white' }}>
+                                        <Camera size={16} color="white" />
+                                    </View>
+                                </TouchableOpacity>
+                                <Text className="text-sm text-gray-500 mt-2">
+                                    {uploadingPhoto ? 'Wird hochgeladen...' : 'Foto ändern'}
+                                </Text>
+                            </View>
+
+                            {/* Name fields */}
+                            <View className="flex-row gap-3 mb-3">
+                                <View className="flex-1">
+                                    <Text className="text-sm font-bold text-[#2C3E50] mb-1.5">Vorname</Text>
+                                    <TextInput
+                                        value={firstName}
+                                        onChangeText={setFirstName}
+                                        placeholder="Vorname"
+                                        className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                    />
+                                </View>
+                                <View className="flex-1">
+                                    <Text className="text-sm font-bold text-[#2C3E50] mb-1.5">Nachname</Text>
+                                    <TextInput
+                                        value={lastName}
+                                        onChangeText={setLastName}
+                                        placeholder="Nachname"
+                                        className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                    />
+                                </View>
+                            </View>
+
+                            {/* Email */}
+                            <View className="mb-5">
+                                <Text className="text-sm font-bold text-[#2C3E50] mb-1.5">E-Mail-Adresse</Text>
+                                <TextInput
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    placeholder="E-Mail"
+                                    keyboardType="email-address"
+                                    autoCapitalize="none"
+                                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                />
+                            </View>
+
+                            <TouchableOpacity
+                                onPress={saveProfile}
+                                disabled={savingProfile}
+                                className="bg-[#137386] py-4 rounded-2xl items-center"
+                                style={{ opacity: savingProfile ? 0.7 : 1 }}
+                            >
+                                <Text className="text-white font-bold text-base">
+                                    {savingProfile ? 'Wird gespeichert...' : 'Profil speichern'}
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
+                    </MotiView>
 
                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 150 }}>
                         <Text className="text-xl font-bold text-[#2C3E50] mb-4">{i18n.t('settings.advanced')}</Text>

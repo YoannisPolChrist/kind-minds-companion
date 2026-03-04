@@ -1,20 +1,18 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert, Modal, ActivityIndicator, Dimensions, TextInput, Platform } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
+import { View, Text, TouchableOpacity, ScrollView, Alert, Modal, ActivityIndicator, TextInput, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import * as DocumentPicker from 'expo-document-picker';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { addDoc, collection, serverTimestamp, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { ref } from 'firebase/storage';
+import { uploadFile, getExtension } from '../../../../utils/uploadFile';
+import * as FileSystem from 'expo-file-system';
 import { storage, db } from '../../../../utils/firebase';
 import { ExerciseRepository } from '../../../../utils/repositories/ExerciseRepository';
 import { ClientRepository } from '../../../../utils/repositories/ClientRepository';
-import { NoteRepository } from '../../../../utils/repositories/NoteRepository';
 import ExerciseBuilder, { ExerciseBlock } from '../../../../components/therapist/ExerciseBuilder';
 import i18n from '../../../../utils/i18n';
-import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock, FileUp, FileText, Link as LinkIcon, Download, Clock, Plus } from 'lucide-react-native';
+import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock, FileText, Clock, ArrowLeft, Send } from 'lucide-react-native';
 import { MotiView } from 'moti';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { generateDetailedClientSummary } from '../../../../utils/geminiAI';
 import { SuccessAnimation } from '../../../../components/ui/SuccessAnimation';
 
 export default function ClientView() {
@@ -26,8 +24,7 @@ export default function ClientView() {
     const [exercises, setExercises] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [showBuilder, setShowBuilder] = useState(false);
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [successMessage, setSuccessMessage] = useState('');
+    const [toast, setToast] = useState<{ visible: boolean, message: string, subMessage?: string, type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
 
     const [templates, setTemplates] = useState<any[]>([]);
     const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
@@ -36,6 +33,15 @@ export default function ClientView() {
     const [reminderFrequency, setReminderFrequency] = useState<string>('none');
     const [reminderTime, setReminderTime] = useState<string>('18:00');
     const [builderMode, setBuilderMode] = useState<'select' | 'build'>('select');
+    const [showSuccess, setShowSuccess] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+
+    // Modals
+    const [deleteExerciseModalVisible, setDeleteExerciseModalVisible] = useState(false);
+    const [exerciseToDelete, setExerciseToDelete] = useState<{ id: string, title: string } | null>(null);
+
+    const [telegramModalVisible, setTelegramModalVisible] = useState(false);
+    const [exerciseToRemind, setExerciseToRemind] = useState<{ id: string, title: string } | null>(null);
 
     const toggleDay = (dayKey: string) => {
         setRecurrenceDays(prev =>
@@ -52,31 +58,14 @@ export default function ClientView() {
         { key: '6', label: 'Sa' },
         { key: '0', label: 'So' }
     ];
-    const [notes, setNotes] = useState<any[]>([]);
-
-    // File Upload State
-    const [clientFiles, setClientFiles] = useState<any[]>([]);
-    const [uploadingFile, setUploadingFile] = useState(false);
-    const [showUploadModal, setShowUploadModal] = useState(false);
-    const [newFileTitle, setNewFileTitle] = useState('');
-    const [newFileDesc, setNewFileDesc] = useState('');
-
-    // Deep navigation state
-    const [activeSection, setActiveSection] = useState<'dashboard' | 'exercises' | 'notes' | 'files'>('dashboard');
-
-    const [showNoteModal, setShowNoteModal] = useState(false);
 
     useEffect(() => {
         if (id) {
             fetchClientData();
             fetchExercises();
             fetchTemplates();
-            fetchNotes();
-            fetchClientFiles();
         }
     }, [id]);
-
-    // ─── Data Fetching (via Repositories) ────────────────────────────────────────
 
     const fetchClientData = async () => {
         try {
@@ -98,31 +87,6 @@ export default function ClientView() {
         }
     };
 
-    const fetchClientFiles = async () => {
-        try {
-            const q = query(
-                collection(db, 'client_resources'),
-                where('clientId', '==', id)
-            );
-            const snap = await getDocs(q);
-            const files = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            files.sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-            setClientFiles(files);
-        } catch (error) {
-            console.error('Error fetching client files', error);
-        }
-    };
-
-    const fetchNotes = async () => {
-        try {
-            const data = await NoteRepository.findByClientId(id as string);
-            setNotes(data);
-        } catch (error) {
-            console.error('Error fetching notes', error);
-        }
-    };
-
-
     const fetchTemplates = async () => {
         try {
             const { getDocs, query, collection, limit } = await import('firebase/firestore');
@@ -141,22 +105,6 @@ export default function ClientView() {
         setSelectedTemplate(null);
         setRecurrence('none');
         setReminderFrequency('none');
-    };
-
-    const handleSaveNewNote = async (text: string) => {
-        if (!text.trim()) return;
-        setSavingNote(true);
-        try {
-            await NoteRepository.create({ clientId: id as string, content: text.trim(), type: 'manual' });
-            Alert.alert('Erfolg', 'Notiz wurde erfolgreich gespeichert.');
-            setManualNote('');
-            setShowNoteModal(false);
-            fetchNotes();
-        } catch (err) {
-            Alert.alert('Fehler', 'Notiz konnte nicht gespeichert werden.');
-        } finally {
-            setSavingNote(false);
-        }
     };
 
     const deleteExercise = async (exerciseId: string, title: string) => {
@@ -181,118 +129,15 @@ export default function ClientView() {
         );
     };
 
-    const handleUploadClientFile = async () => {
-        if (!newFileTitle) {
-            Alert.alert("Fehler", "Bitte gib einen Titel für die Datei an.");
-            return;
-        }
-
-        try {
-            const result = await DocumentPicker.getDocumentAsync({
-                type: '*/*',
-                copyToCacheDirectory: true
-            });
-
-            if (result.canceled || !result.assets || result.assets.length === 0) {
-                return;
-            }
-
-            setUploadingFile(true);
-            const asset = result.assets[0];
-
-            let blob: Blob | Uint8Array;
-            if (Platform.OS === 'web' && asset.file) {
-                blob = asset.file;
-            } else {
-                const response = await fetch(asset.uri);
-                blob = await response.blob();
-            }
-
-            const filename = `client_resources/${id}/${Date.now()}_${asset.name}`;
-            const storageRef = ref(storage, filename);
-
-            await uploadBytes(storageRef, blob);
-            const downloadUrl = await getDownloadURL(storageRef);
-
-            // Save to Firestore client_resources
-            await addDoc(collection(db, "client_resources"), {
-                clientId: id,
-                therapistId: profile?.id || "unknown",
-                title: newFileTitle,
-                description: newFileDesc,
-                type: 'document',
-                url: downloadUrl,
-                originalName: asset.name,
-                storagePath: filename,
-                createdAt: serverTimestamp()
-            });
-
-            // Create Notification for the client
-            await addDoc(collection(db, "notifications"), {
-                clientId: id,
-                type: 'FILE_UPLOAD',
-                message: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, für dich wurde eine neue Datei hinterlegt!' }),
-                read: false,
-                createdAt: serverTimestamp()
-            });
-
-            Alert.alert("Erfolg", "Datei wurde erfolgreich hochgeladen und der Klient benachrichtigt.");
-            setNewFileTitle('');
-            setNewFileDesc('');
-            setShowUploadModal(false);
-            fetchClientFiles();
-        } catch (err) {
-            console.error("Upload error", err);
-            Alert.alert("Fehler", "Upload fehlgeschlagen.");
-        } finally {
-            setUploadingFile(false);
-        }
-    };
-
-    const deleteClientFile = async (item: any) => {
-        Alert.alert(
-            "Datei löschen",
-            `Möchtest du "${item.title}" wirklich löschen?`,
-            [
-                { text: "Abbrechen", style: "cancel" },
-                {
-                    text: "Löschen",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            if (item.storagePath) {
-                                const storageRef = ref(storage, item.storagePath);
-                                try {
-                                    await deleteObject(storageRef);
-                                } catch (e) {
-                                    console.warn("Storage deletion error", e);
-                                }
-                            }
-                            await deleteDoc(doc(db, "client_resources", item.id));
-                            setClientFiles(prev => prev.filter(f => f.id !== item.id));
-                        } catch (err) {
-                            Alert.alert("Fehler", "Konnte die Datei nicht löschen.");
-                        }
-                    }
-                }
-            ]
-        );
-    };
-
     const saveExercise = async (title: string, blocks: ExerciseBlock[]) => {
         try {
             // Upload media blocks first
             const processedBlocks = await Promise.all(blocks.map(async (block) => {
                 if (block.type === 'media' && block.mediaUri && !block.mediaUri.startsWith('http')) {
                     try {
-                        const response = await fetch(block.mediaUri);
-                        const blob = await response.blob();
-                        const filename = block.mediaUri.substring(block.mediaUri.lastIndexOf('/') + 1);
-                        const ext = filename.split('.').pop() || (block.mediaType === 'video' ? 'mp4' : 'jpg');
-                        const storageRef = ref(storage, `exercise_media/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`);
-
-                        await uploadBytes(storageRef, blob);
-                        const downloadUrl = await getDownloadURL(storageRef);
+                        const ext = getExtension(block.mediaUri);
+                        const filename = `exercise_media/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`;
+                        const downloadUrl = await uploadFile(block.mediaUri, filename);
                         return { ...block, mediaUri: downloadUrl };
                     } catch (uploadError) {
                         console.error("Error uploading media:", uploadError);
@@ -318,62 +163,73 @@ export default function ClientView() {
             setShowBuilder(false);
             setSelectedTemplate(null);
             fetchExercises(); // Refresh the list
-            setSuccessMessage(i18n.t('therapist.success_assigned'));
-            setShowSuccess(true);
+            setToast({ visible: true, message: "Erfolg", subMessage: i18n.t('therapist.success_assigned'), type: 'success' });
         } catch (error: any) {
             console.error("Error saving exercise", error);
-            if (Platform.OS === 'web') window.alert(error.message || "Übung konnte nicht gespeichert werden.");
-            else Alert.alert("Fehler", error.message || "Übung konnte nicht gespeichert werden.");
+            setToast({ visible: true, message: "Fehler", subMessage: error.message || "Übung konnte nicht gespeichert werden.", type: 'error' });
+        }
+    };
+
+    const promptDeleteExercise = (exerciseId: string, title: string) => {
+        setExerciseToDelete({ id: exerciseId, title });
+        setDeleteExerciseModalVisible(true);
+    };
+
+    const confirmDeleteExercise = async () => {
+        if (!exerciseToDelete) return;
+        setDeleteExerciseModalVisible(false);
+        try {
+            await ExerciseRepository.archive(exerciseToDelete.id);
+            setExercises(prev => prev.filter(ex => ex.id !== exerciseToDelete.id));
+        } catch {
+            setToast({ visible: true, message: 'Fehler', subMessage: i18n.t('therapist.delete_err'), type: 'error' });
+        } finally {
+            setExerciseToDelete(null);
         }
     };
 
     const confirmTemplateAssignment = () => {
         if (!selectedTemplate) {
-            Alert.alert("Fehler", "Bitte wähle eine Vorlage aus.");
+            setToast({ visible: true, message: "Fehler", subMessage: "Bitte wähle eine Vorlage aus.", type: 'warning' });
             return;
         }
         saveExercise(selectedTemplate.title, selectedTemplate.blocks);
     }
 
-    const triggerTelegramWebhook = async (exercise: any) => {
-        Alert.alert(
-            "Telegram Erinnerung senden",
-            `Möchtest du dem Klienten eine Erinnerung für "${exercise.title}" senden? (Dies löst den Activepieces Webhook aus)`,
-            [
-                { text: "Abbrechen", style: "cancel" },
-                {
-                    text: "Senden",
-                    onPress: async () => {
-                        try {
-                            // TODO: Replace with the actual Activepieces Webhook URL once created
-                            const webhookUrl = "https://cloud.activepieces.com/api/v1/webhooks/PLACEHOLDER";
-                            const response = await fetch(webhookUrl, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                },
-                                body: JSON.stringify({
-                                    clientId: id,
-                                    clientName: client?.firstName || 'Klient',
-                                    exerciseId: exercise.id,
-                                    exerciseTitle: exercise.title
-                                })
-                            });
+    const promptTelegramWebhook = (exercise: any) => {
+        setExerciseToRemind({ id: exercise.id, title: exercise.title });
+        setTelegramModalVisible(true);
+    };
 
-                            if (response.ok || response.type === 'opaque') {
-                                Alert.alert("Erfolg", "Erinnerung wurde gesendet.");
-                            } else {
-                                Alert.alert("Hinweis", "Webhook wurde angesprochen, aber Activepieces hat mit einem Fehler geantwortet. Bitte prüfe den Flow.");
-                            }
-                        } catch (error) {
-                            console.error("Error triggering webhook", error);
-                            // It's common for no-cors/fire-and-forget webhooks to throw CORS errors in web dev mode, so we treat it softly
-                            Alert.alert("Webhook gesendet", "Die Anfrage wurde verschickt. Bitte überprüfe Activepieces auf neue Runs.");
-                        }
-                    }
-                }
-            ]
-        );
+    const confirmTelegramWebhook = async () => {
+        if (!exerciseToRemind) return;
+        setTelegramModalVisible(false);
+        try {
+            const webhookUrl = "https://cloud.activepieces.com/api/v1/webhooks/PLACEHOLDER";
+            const response = await fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    clientId: id,
+                    clientName: client?.firstName || 'Klient',
+                    exerciseId: exerciseToRemind.id,
+                    exerciseTitle: exerciseToRemind.title
+                })
+            });
+
+            if (response.ok || response.type === 'opaque') {
+                setToast({ visible: true, message: "Erfolg", subMessage: "Erinnerung wurde gesendet.", type: 'success' });
+            } else {
+                setToast({ visible: true, message: "Hinweis", subMessage: "Webhook angesprochen, aber mit Fehler geantwortet.", type: 'warning' });
+            }
+        } catch (error) {
+            console.error("Error triggering webhook", error);
+            setToast({ visible: true, message: "Gesendet", subMessage: "Anfrage verschickt. Bitte Activepieces prüfen.", type: 'success' });
+        } finally {
+            setExerciseToRemind(null);
+        }
     };
 
     if (loading) {
@@ -387,22 +243,23 @@ export default function ClientView() {
     return (
         <View className="flex-1 bg-[#FAF9F6]">
             {/* Header Section */}
-            <View className="bg-[#2C3E50] pt-16 pb-8 px-6 rounded-b-3xl shadow-md z-10">
+            <View className="bg-[#137386] pt-16 pb-8 px-8 rounded-b-[40px] shadow-lg z-10">
                 <View className="flex-row items-center justify-between w-full max-w-5xl mx-auto">
-                    <TouchableOpacity onPress={() => activeSection === 'dashboard' ? router.back() : setActiveSection('dashboard')} className="bg-white/20 px-4 py-2 rounded-xl backdrop-blur-md">
-                        <Text className="text-white font-bold">{activeSection === 'dashboard' ? i18n.t('exercise.back') : 'Zurück zum Dashboard'}</Text>
+                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-3 rounded-2xl backdrop-blur-md flex-row items-center">
+                        <ArrowLeft size={20} color="white" style={{ marginRight: 8 }} />
+                        <Text className="text-white font-bold text-[16px]">Zurück</Text>
                     </TouchableOpacity>
                     <View className="flex-row items-center flex-1 justify-end ml-4">
-                        <View className="bg-white/10 w-10 h-10 rounded-full items-center justify-center mr-3 border border-white/20">
+                        <View className="bg-white/10 w-12 h-12 rounded-[16px] items-center justify-center mr-4 border border-white/20">
                             {client?.photoURL ? (
                                 <Text className="text-white text-xs">PIC</Text> // Placeholder if we get real images later
                             ) : (
-                                <Text className="text-white font-bold text-lg">
+                                <Text className="text-white font-black text-[20px]">
                                     {client?.firstName?.charAt(0)}{client?.lastName?.charAt(0)}
                                 </Text>
                             )}
                         </View>
-                        <Text className="text-xl font-extrabold text-white" numberOfLines={1}>
+                        <Text className="text-[24px] font-black text-white tracking-tight" numberOfLines={1}>
                             {client?.firstName ? `${client.firstName} ${client.lastName}` : i18n.t('therapist.client_details')}
                         </Text>
                     </View>
@@ -410,307 +267,201 @@ export default function ClientView() {
             </View>
 
             <ScrollView className="flex-1 w-full" contentContainerStyle={{ paddingHorizontal: 32, paddingTop: 32, paddingBottom: 120, maxWidth: 1024, marginHorizontal: 'auto' }}>
-                {activeSection === 'dashboard' && (
-                    <View className="flex-1 w-full max-w-4xl mx-auto">
-                        <Text className="text-[28px] font-black text-[#243842] mb-8 tracking-tight">Patienten-Akte</Text>
-                        <View className="flex-row flex-wrap gap-6">
-                            <TouchableOpacity
-                                onPress={() => setActiveSection('exercises')}
-                                className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(50%-12px)] aspect-square max-h-[280px]"
-                                style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
-                            >
-                                <View className="w-20 h-20 bg-[#F9F8F6] rounded-full items-center justify-center mb-5">
-                                    <Activity size={36} color="#137386" />
-                                </View>
-                                <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Übungen</Text>
-                                <Text className="text-[15px] text-[#243842]/60 font-medium text-center leading-relaxed">{exercises.filter(e => !e.completed).length} offen, {exercises.filter(e => e.completed).length} abgeschlossen</Text>
-                            </TouchableOpacity>
+                <View className="w-full max-w-4xl mx-auto">
+                    <Text className="text-[28px] font-black text-[#243842] mb-8 tracking-tight">Patienten-Akte</Text>
 
-                            <TouchableOpacity
-                                onPress={() => setActiveSection('notes')}
-                                className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(50%-12px)] aspect-square max-h-[280px]"
-                                style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
-                            >
-                                <View className="w-20 h-20 bg-[#F9F8F6] rounded-full items-center justify-center mb-5">
-                                    <Edit3 size={36} color="#3B82F6" />
-                                </View>
-                                <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Session Notes</Text>
-                                <Text className="text-[15px] text-[#243842]/60 font-medium text-center leading-relaxed">{notes.length} gespeicherte Notizen</Text>
-                            </TouchableOpacity>
-
-                            <TouchableOpacity
-                                onPress={() => setActiveSection('files')}
-                                className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(50%-12px)] aspect-square max-h-[280px]"
-                                style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
-                            >
-                                <View className="w-20 h-20 bg-[#F9F8F6] rounded-full items-center justify-center mb-5">
-                                    <FileText size={36} color="#C09D59" />
-                                </View>
-                                <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Dateien</Text>
-                                <Text className="text-[15px] text-[#243842]/60 font-medium text-center leading-relaxed">{clientFiles.length} Dokumente geteilt</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
-                )}
-
-                {activeSection === 'notes' && (
-                    <View className="flex-1 max-w-4xl mx-auto w-full">
-                        <View className="flex-row justify-between items-center mb-8 mt-4">
-                            <Text className="text-[28px] font-black text-[#243842] tracking-tight">Session Notes</Text>
-                            <TouchableOpacity
-                                onPress={() => setShowNoteModal(true)}
-                                className="bg-[#137386] px-5 py-3 rounded-2xl flex-row items-center shadow-sm"
-                            >
-                                <Plus size={18} color="white" style={{ marginRight: 8 }} />
-                                <Text className="text-white font-bold text-[15px]">Neue Notiz</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {notes.length === 0 ? (
-                            <View className="bg-[#F9F8F6] border-2 border-dashed border-gray-200/80 py-16 px-8 rounded-[32px] items-center mt-4 mb-10">
-                                <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
-                                    <Edit3 size={40} color="#D1D5DB" />
-                                </View>
-                                <Text className="text-[#243842] text-[20px] mb-3 text-center font-black tracking-tight">Noch keine Notizen</Text>
-                                <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">Hier kannst du wichtige Notizen und Beobachtungen zu den Sessions festhalten.</Text>
-                            </View>
-                        ) : (
-                            <View className="gap-6 mb-10">
-                                {notes.map(note => (
-                                    <View key={note.id} className="bg-white p-6 rounded-[28px] border border-blue-100/60 shadow-sm" style={{ shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 3 }}>
-                                        <View className="flex-row items-center mb-4">
-                                            <View className="w-10 h-10 bg-blue-50 rounded-[16px] items-center justify-center mr-3 border border-blue-100/50">
-                                                <Edit3 size={18} color="#3B82F6" />
-                                            </View>
-                                            <Text className="text-[14px] text-[#243842]/60 font-bold tracking-wide">
-                                                {new Date(note.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                            </Text>
-                                        </View>
-                                        <Text className="text-[#243842] text-[16px] leading-relaxed font-medium">{note.content}</Text>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                {activeSection === 'files' && (
-                    <View className="mb-8 flex-1 max-w-4xl mx-auto w-full">
-                        <View className="flex-row justify-between items-center mb-6 mt-2">
-                            <Text className="text-[24px] font-black text-[#243842]">Hinterlegte Dateien</Text>
-                            <TouchableOpacity
-                                onPress={() => setShowUploadModal(true)}
-                                className="bg-[#137386] px-5 py-3 rounded-2xl flex-row items-center shadow-sm"
-                            >
-                                <FileUp size={18} color="white" style={{ marginRight: 8 }} />
-                                <Text className="text-white font-bold text-[15px]">Datei hochladen</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {clientFiles.length === 0 ? (
-                            <View className="bg-[#F9F8F6] border-2 border-dashed border-gray-200/80 py-16 px-8 rounded-[32px] items-center mt-4 mb-10">
-                                <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
-                                    <FileText size={40} color="#D1D5DB" />
-                                </View>
-                                <Text className="text-[#243842] text-[20px] mb-3 text-center font-black tracking-tight">Noch keine Dateien hochgeladen</Text>
-                                <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">Hier kannst du PDFs, Arbeitsblätter oder Dokumente speziell für diesen Klienten ablegen.</Text>
-                            </View>
-                        ) : (
-                            <View className="flex-row flex-wrap gap-6">
-                                {clientFiles.map(file => (
-                                    <View
-                                        key={file.id}
-                                        className="bg-white p-6 rounded-[28px] border border-gray-100 shadow-sm flex-row justify-between items-center flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
-                                        style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.05, shadowRadius: 16, elevation: 2 }}
-                                    >
-                                        <View className="flex-1 pr-4 flex-row items-center">
-                                            <View className="w-14 h-14 rounded-[20px] bg-amber-50/80 items-center justify-center mr-4 border border-amber-100/50">
-                                                <FileText size={24} color="#C09D59" />
-                                            </View>
-                                            <View className="flex-1 justify-center">
-                                                <Text className="font-bold text-[16px] text-[#243842] mb-1">{file.title}</Text>
-                                                {file.description ? (
-                                                    <Text className="text-[#243842]/60 text-[13px] mb-1.5 font-medium" numberOfLines={1}>{file.description}</Text>
-                                                ) : null}
-                                                <Text className="text-[#243842]/40 text-[11px] font-bold tracking-wider uppercase">
-                                                    {new Date(file.createdAt?.seconds * 1000 || Date.now()).toLocaleDateString(i18n.locale)}
-                                                </Text>
-                                            </View>
-                                        </View>
-                                        <TouchableOpacity onPress={() => deleteClientFile(file)} className="bg-red-50/80 p-3 rounded-xl border border-red-100">
-                                            <Trash2 size={18} color="#EF4444" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                {activeSection === 'exercises' && (
-                    <View className="flex-1 max-w-4xl mx-auto w-full">
-                        <View className="flex-row justify-between items-center mb-8 mt-4">
-                            <Text className="text-[28px] font-black text-[#243842] tracking-tight">{i18n.t('therapist.exercises')}</Text>
-                            <View className="flex-row gap-3">
-                                <View className="bg-orange-50 px-4 py-2 rounded-[16px] border border-orange-100/50 shadow-sm">
-                                    <Text className="text-orange-600 text-[13px] font-black tracking-wide uppercase">{i18n.t('therapist.open_exercises', { count: exercises.filter(e => !e.completed).length })}</Text>
-                                </View>
-                                <View className="bg-emerald-50 px-4 py-2 rounded-[16px] border border-emerald-100/50 shadow-sm">
-                                    <Text className="text-emerald-600 text-[13px] font-black tracking-wide uppercase">{i18n.t('therapist.done_exercises', { count: exercises.filter(e => e.completed).length })}</Text>
-                                </View>
-                            </View>
-                        </View>
-
-                        {exercises.length === 0 ? (
-                            <View className="bg-[#F9F8F6] p-10 py-16 px-8 rounded-[32px] border-2 border-dashed border-gray-200/80 items-center mt-4 mb-10">
-                                <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
-                                    <ClipboardList size={40} color="#D1D5DB" />
-                                </View>
-                                <Text className="text-[#243842] text-[20px] text-center font-black mb-3 tracking-tight">{i18n.t('therapist.no_exercises_assigned')}</Text>
-                                <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">{i18n.t('therapist.tap_to_assign')}</Text>
-                            </View>
-                        ) : (
-                            <View className="mb-6">
-                                {/* Open Exercises Section */}
-                                {exercises.filter(e => !e.completed).length > 0 && (
-                                    <View className="mb-8">
-                                        <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">Offene Übungen</Text>
-                                        <View className="flex-row flex-wrap gap-6">
-                                            {exercises.filter(e => !e.completed).map((ex) => (
-                                                <View
-                                                    key={ex.id}
-                                                    className="bg-white p-6 rounded-[28px] border border-orange-100/60 shadow-sm flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
-                                                    style={{ shadowColor: '#F97316', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
-                                                >
-                                                    <View className="flex-row justify-between items-start mb-4">
-                                                        <View className="flex-1 pr-4">
-                                                            <Text className="text-[18px] font-bold text-[#243842] mb-2">{ex.title}</Text>
-                                                            <View className="flex-row flex-wrap gap-2 mt-1">
-                                                                <View className="px-3 py-1.5 rounded-xl self-start bg-orange-50 border border-orange-100/50">
-                                                                    <Text className="text-[13px] font-bold text-orange-600">
-                                                                        {i18n.t('therapist.status_open')}
-                                                                    </Text>
-                                                                </View>
-                                                                {ex.recurrence && ex.recurrence !== 'none' && (
-                                                                    <View className="bg-sky-50 px-3 py-1.5 rounded-xl self-start border border-sky-100/50">
-                                                                        <Text className="text-sky-600 text-[13px] font-bold">
-                                                                            {ex.recurrence === 'daily' ? i18n.t('therapist.recur_daily') : i18n.t('therapist.recur_weekly')}
-                                                                        </Text>
-                                                                    </View>
-                                                                )}
-                                                            </View>
-                                                        </View>
-                                                        <TouchableOpacity
-                                                            onPress={() => deleteExercise(ex.id, ex.title)}
-                                                            className="bg-red-50/80 w-11 h-11 rounded-full items-center justify-center ml-2 border border-red-100"
-                                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                                        >
-                                                            <Trash2 size={18} color="#EF4444" />
-                                                        </TouchableOpacity>
-                                                    </View>
-                                                    <View className="mt-auto pt-5 border-t border-gray-100">
-                                                        <TouchableOpacity
-                                                            onPress={() => triggerTelegramWebhook(ex)}
-                                                            className="bg-[#137386] py-3.5 rounded-2xl flex-row justify-center items-center shadow-sm"
-                                                        >
-                                                            <Text className="text-white font-bold text-[15px] mr-2">{i18n.t('therapist.send_reminder_telegram')}</Text>
-                                                        </TouchableOpacity>
-                                                        <Text className="text-[#243842]/40 text-[11px] text-center mt-2.5 font-medium">{i18n.t('therapist.telegram_desc')}</Text>
-                                                    </View>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </View>
-                                )}
-
-                                {/* Completed Exercises Section */}
-                                {exercises.filter(e => e.completed).length > 0 && (
-                                    <View className="mb-4">
-                                        <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">Abgeschlossene Übungen</Text>
-                                        <View className="flex-row flex-wrap gap-6">
-                                            {exercises.filter(e => e.completed).map((ex) => (
-                                                <View
-                                                    key={ex.id}
-                                                    className="bg-white p-6 rounded-[28px] border border-emerald-100/60 shadow-sm flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
-                                                    style={{ shadowColor: '#10B981', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 3 }}
-                                                >
-                                                    <View className="flex-row justify-between items-start mb-4">
-                                                        <View className="flex-1 pr-4">
-                                                            <Text className="text-[18px] font-bold text-[#243842] mb-2">{ex.title}</Text>
-                                                            <View className="flex-row flex-wrap gap-2 mt-1">
-                                                                <View className="px-3 py-1.5 rounded-xl self-start bg-emerald-50 border border-emerald-100/50">
-                                                                    <Text className="text-[13px] font-bold text-emerald-600">
-                                                                        {i18n.t('therapist.status_done')}
-                                                                    </Text>
-                                                                </View>
-                                                            </View>
-                                                        </View>
-                                                        <TouchableOpacity
-                                                            onPress={() => deleteExercise(ex.id, ex.title)}
-                                                            className="bg-red-50/80 w-11 h-11 rounded-full items-center justify-center ml-2 border border-red-100"
-                                                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                                                        >
-                                                            <Trash2 size={18} color="#EF4444" />
-                                                        </TouchableOpacity>
-                                                    </View>
-
-                                                    <View className="mt-auto pt-5 border-t border-gray-100">
-                                                        <Text className="text-[#243842]/50 font-bold text-[12px] uppercase tracking-wider mb-4">{i18n.t('therapist.client_answers')}</Text>
-
-                                                        {ex.sharedAnswers === false ? (
-                                                            <View className="bg-[#F9F8F6] p-6 rounded-[20px] items-center justify-center border border-gray-100 mt-2 flex-1">
-                                                                <Lock size={24} color="#C09D59" style={{ marginBottom: 12 }} />
-                                                                <Text className="text-[#243842]/70 text-[14px] font-medium text-center leading-relaxed">
-                                                                    Der Klient hat sich entschieden, die Antworten privat zu halten.
-                                                                </Text>
-                                                                <Text className="text-[#243842]/50 text-[12px] text-center mt-3 font-medium">
-                                                                    Abgeschlossen am: {new Date(ex.lastCompletedAt || ex.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                                                                </Text>
-                                                            </View>
-                                                        ) : (
-                                                            <View className="flex-1 gap-3">
-                                                                {ex.answers && Object.keys(ex.answers).length > 0 && ex.blocks?.map((block: any) => {
-                                                                    if (!ex.answers[block.id]) return null;
-                                                                    return (
-                                                                        <View key={block.id} className="mb-2 bg-[#F9F8F6] p-4 rounded-[20px] border border-gray-200/50">
-                                                                            <View className="flex-row items-center mb-2 mt-0.5">
-                                                                                {block.type === 'scale' ? <Activity size={16} color="#137386" style={{ marginRight: 6 }} /> : <Edit3 size={16} color="#137386" style={{ marginRight: 6 }} />}
-                                                                                <Text className="text-[13px] text-[#137386]/80 font-bold tracking-wide">
-                                                                                    {block.type === 'scale' ? (i18n.t('blocks.scale') || 'Skala') : (i18n.t('blocks.reflection') || 'Reflektion')}
-                                                                                </Text>
-                                                                            </View>
-                                                                            <Text className="text-[14px] text-[#243842]/70 mb-3 font-medium" numberOfLines={2}>{block.content}</Text>
-                                                                            <View className="bg-white px-4 py-3 rounded-2xl border border-gray-200 shadow-sm">
-                                                                                <Text className="text-[15px] text-[#243842] font-semibold">{ex.answers[block.id]}</Text>
-                                                                            </View>
-                                                                        </View>
-                                                                    );
-                                                                })}
-                                                            </View>
-                                                        )}
-                                                    </View>
-                                                </View>
-                                            ))}
-                                        </View>
-                                    </View>
-                                )}
-                            </View>
-                        )}
-                    </View>
-                )}
-
-                {activeSection === 'exercises' && (
-                    <View className="flex-1 max-w-4xl mx-auto w-full">
+                    <View className="flex-row flex-wrap gap-6 mb-12">
                         <TouchableOpacity
-                            className="bg-[#137386] py-5 rounded-[24px] items-center justify-center flex-row shadow-sm mb-12"
-                            style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 24, elevation: 6 }}
-                            onPress={handleOpenModal}
+                            onPress={() => router.push(`/(app)/therapist/client/${id}/notes` as any)}
+                            className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(33%-16px)] aspect-square max-h-[260px]"
+                            style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 4 }}
                         >
-                            <Activity size={20} color="white" style={{ marginRight: 10 }} />
-                            <Text className="text-white font-bold text-[18px]">{i18n.t('therapist.assign_exercise')}</Text>
+                            <View className="w-20 h-20 bg-blue-50 rounded-full items-center justify-center mb-5 border border-blue-100/50">
+                                <Edit3 size={36} color="#3B82F6" />
+                            </View>
+                            <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Session Notes</Text>
+                            <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">Verwalte Notizen</Text>
                         </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => router.push(`/(app)/therapist/client/${id}/files` as any)}
+                            className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(33%-16px)] aspect-square max-h-[260px]"
+                            style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 4 }}
+                        >
+                            <View className="w-20 h-20 bg-amber-50 rounded-full items-center justify-center mb-5 border border-amber-100/50">
+                                <FileText size={36} color="#C09D59" />
+                            </View>
+                            <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Dateien</Text>
+                            <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">Hinterlegte Dokumente</Text>
+                        </TouchableOpacity>
+
+                        <View className="flex-1 min-w-[240px] max-w-full md:max-w-[calc(33%-16px)]">
+                            {/* Placeholder to balance the flex wrap grid */}
+                        </View>
                     </View>
-                )}
+
+                    <View className="flex-row justify-between items-center mb-8 mt-4">
+                        <Text className="text-[28px] font-black text-[#243842] tracking-tight">{i18n.t('therapist.exercises')}</Text>
+                        <View className="flex-row gap-3">
+                            <View className="bg-orange-50 px-4 py-2 rounded-[16px] border border-orange-100/50 shadow-sm">
+                                <Text className="text-orange-600 text-[13px] font-black tracking-wide uppercase">{i18n.t('therapist.open_exercises', { count: exercises.filter(e => !e.completed).length })}</Text>
+                            </View>
+                            <View className="bg-emerald-50 px-4 py-2 rounded-[16px] border border-emerald-100/50 shadow-sm">
+                                <Text className="text-emerald-600 text-[13px] font-black tracking-wide uppercase">{i18n.t('therapist.done_exercises', { count: exercises.filter(e => e.completed).length })}</Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {exercises.length === 0 ? (
+                        <View className="bg-[#F9F8F6] p-10 py-16 px-8 rounded-[32px] border-2 border-dashed border-gray-200/80 items-center mt-4 mb-10">
+                            <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
+                                <ClipboardList size={40} color="#D1D5DB" />
+                            </View>
+                            <Text className="text-[#243842] text-[20px] text-center font-black mb-3 tracking-tight">{i18n.t('therapist.no_exercises_assigned')}</Text>
+                            <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">{i18n.t('therapist.tap_to_assign')}</Text>
+                        </View>
+                    ) : (
+                        <View className="mb-6">
+                            {/* Open Exercises Section */}
+                            {exercises.filter(e => !e.completed).length > 0 && (
+                                <View className="mb-8">
+                                    <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">Offene Übungen</Text>
+                                    <View className="flex-row flex-wrap gap-6">
+                                        {exercises.filter(e => !e.completed).map((ex) => (
+                                            <View
+                                                key={ex.id}
+                                                className="bg-white p-6 rounded-[28px] border border-orange-100/60 shadow-sm flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
+                                                style={{ shadowColor: '#F97316', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 24, elevation: 4 }}
+                                            >
+                                                <View className="flex-row justify-between items-start mb-4">
+                                                    <View className="flex-1 pr-4">
+                                                        <Text className="text-[18px] font-bold text-[#243842] mb-2">{ex.title}</Text>
+                                                        <View className="flex-row flex-wrap gap-2 mt-1">
+                                                            <View className="px-3 py-1.5 rounded-xl self-start bg-orange-50 border border-orange-100/50">
+                                                                <Text className="text-[13px] font-bold text-orange-600">
+                                                                    {i18n.t('therapist.status_open')}
+                                                                </Text>
+                                                            </View>
+                                                            {ex.recurrence && ex.recurrence !== 'none' && (
+                                                                <View className="bg-sky-50 px-3 py-1.5 rounded-xl self-start border border-sky-100/50">
+                                                                    <Text className="text-sky-600 text-[13px] font-bold">
+                                                                        {ex.recurrence === 'daily' ? i18n.t('therapist.recur_daily') : i18n.t('therapist.recur_weekly')}
+                                                                    </Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                    </View>
+                                                    <TouchableOpacity
+                                                        onPress={() => promptDeleteExercise(ex.id, ex.title)}
+                                                        className="bg-red-50/80 w-11 h-11 rounded-full items-center justify-center ml-2 border border-red-100"
+                                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                    >
+                                                        <Trash2 size={18} color="#EF4444" />
+                                                    </TouchableOpacity>
+                                                </View>
+                                                <View style={{ marginTop: 'auto', paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                    <Text className="text-[#243842]/50 text-[12px] font-medium leading-tight shrink pr-4">
+                                                        {i18n.t('therapist.telegram_desc')}
+                                                    </Text>
+                                                    <TouchableOpacity
+                                                        onPress={() => promptTelegramWebhook(ex)}
+                                                        className="bg-[#137386] w-12 h-12 rounded-full items-center justify-center shadow-sm"
+                                                        style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 3 }}
+                                                    >
+                                                        <Send size={18} color="white" style={{ marginLeft: -2 }} />
+                                                    </TouchableOpacity>
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Completed Exercises Section */}
+                            {exercises.filter(e => e.completed).length > 0 && (
+                                <View className="mb-4">
+                                    <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">Abgeschlossene Übungen</Text>
+                                    <View className="flex-row flex-wrap gap-6">
+                                        {exercises.filter(e => e.completed).map((ex) => (
+                                            <View
+                                                key={ex.id}
+                                                className="bg-white p-6 rounded-[28px] border border-emerald-100/60 shadow-sm flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
+                                                style={{ shadowColor: '#10B981', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 3 }}
+                                            >
+                                                <View className="flex-row justify-between items-start mb-4">
+                                                    <View className="flex-1 pr-4">
+                                                        <Text className="text-[18px] font-bold text-[#243842] mb-2">{ex.title}</Text>
+                                                        <View className="flex-row flex-wrap gap-2 mt-1">
+                                                            <View className="px-3 py-1.5 rounded-xl self-start bg-emerald-50 border border-emerald-100/50">
+                                                                <Text className="text-[13px] font-bold text-emerald-600">
+                                                                    {i18n.t('therapist.status_done')}
+                                                                </Text>
+                                                            </View>
+                                                        </View>
+                                                    </View>
+                                                    <TouchableOpacity
+                                                        onPress={() => promptDeleteExercise(ex.id, ex.title)}
+                                                        className="bg-red-50/80 w-11 h-11 rounded-full items-center justify-center ml-2 border border-red-100"
+                                                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                                                    >
+                                                        <Trash2 size={18} color="#EF4444" />
+                                                    </TouchableOpacity>
+                                                </View>
+
+                                                <View className="mt-auto pt-5 border-t border-gray-100">
+                                                    <Text className="text-[#243842]/50 font-bold text-[12px] uppercase tracking-wider mb-4">{i18n.t('therapist.client_answers')}</Text>
+
+                                                    {ex.sharedAnswers === false ? (
+                                                        <View className="bg-[#F9F8F6] p-6 rounded-[20px] items-center justify-center border border-gray-100 mt-2 flex-1">
+                                                            <Lock size={24} color="#C09D59" style={{ marginBottom: 12 }} />
+                                                            <Text className="text-[#243842]/70 text-[14px] font-medium text-center leading-relaxed">
+                                                                Der Klient hat sich entschieden, die Antworten privat zu halten.
+                                                            </Text>
+                                                            <Text className="text-[#243842]/50 text-[12px] text-center mt-3 font-medium">
+                                                                Abgeschlossen am: {new Date(ex.lastCompletedAt || ex.createdAt).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                            </Text>
+                                                        </View>
+                                                    ) : (
+                                                        <View className="flex-1 gap-3">
+                                                            {ex.answers && Object.keys(ex.answers).length > 0 && ex.blocks?.map((block: any) => {
+                                                                if (!ex.answers[block.id]) return null;
+                                                                return (
+                                                                    <View key={block.id} className="mb-2 bg-[#F9F8F6] p-4 rounded-[20px] border border-gray-200/50">
+                                                                        <View className="flex-row items-center mb-2 mt-0.5">
+                                                                            {block.type === 'scale' ? <Activity size={16} color="#137386" style={{ marginRight: 6 }} /> : <Edit3 size={16} color="#137386" style={{ marginRight: 6 }} />}
+                                                                            <Text className="text-[13px] text-[#137386]/80 font-bold tracking-wide">
+                                                                                {block.type === 'scale' ? (i18n.t('blocks.scale') || 'Skala') : (i18n.t('blocks.reflection') || 'Reflektion')}
+                                                                            </Text>
+                                                                        </View>
+                                                                        <Text className="text-[14px] text-[#243842]/70 mb-3 font-medium" numberOfLines={2}>{block.content}</Text>
+                                                                        <View className="bg-white px-4 py-3 rounded-2xl border border-gray-200 shadow-sm">
+                                                                            <Text className="text-[15px] text-[#243842] font-semibold">{ex.answers[block.id]}</Text>
+                                                                        </View>
+                                                                    </View>
+                                                                );
+                                                            })}
+                                                        </View>
+                                                    )}
+                                                </View>
+                                            </View>
+                                        ))}
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                    )}
+                </View>
+
+                <View className="max-w-4xl mx-auto w-full mt-8">
+                    <TouchableOpacity
+                        className="bg-[#137386] py-5 rounded-[24px] items-center justify-center flex-row shadow-sm mb-12"
+                        style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 24, elevation: 6 }}
+                        onPress={handleOpenModal}
+                    >
+                        <Activity size={20} color="white" style={{ marginRight: 10 }} />
+                        <Text className="text-white font-bold text-[18px]">{i18n.t('therapist.assign_exercise')}</Text>
+                    </TouchableOpacity>
+                </View>
             </ScrollView>
 
             {/* Exercise Assignment Modal */}
@@ -838,87 +589,85 @@ export default function ClientView() {
                 </View>
             </Modal >
 
-            {/* Note Creation Modal */}
-            <Modal visible={showNoteModal} animationType="fade" transparent={true}>
-                <View className="flex-1 bg-black/50 justify-center items-center p-6">
-                    <View className="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl">
-                        <View className="flex-row justify-between items-center mb-6">
-                            <Text className="text-xl font-bold text-[#2C3E50]">Neue Notiz</Text>
-                            <TouchableOpacity onPress={() => setShowNoteModal(false)} className="bg-gray-100 p-2 rounded-full">
-                                <Text className="text-gray-600 font-bold">X</Text>
+            {/* Delete Confirmation Modal */}
+            <Modal visible={deleteExerciseModalVisible} transparent animationType="fade">
+                <View className="flex-1 justify-center items-center bg-black/40 p-6">
+                    <MotiView
+                        from={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        style={{ width: '100%', maxWidth: 384, backgroundColor: 'white', borderRadius: 40, padding: 40, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
+                    >
+                        <View className="items-center mb-10">
+                            <View className="w-20 h-20 bg-red-50 rounded-full items-center justify-center mb-6">
+                                <Trash2 size={40} color="#EF4444" />
+                            </View>
+                            <Text className="text-[24px] font-black text-[#243842] mb-3 text-center tracking-tight">{i18n.t('therapist.delete_title')}</Text>
+                            <Text className="text-[#243842]/60 font-medium text-center text-[16px] leading-relaxed mb-8">
+                                Möchtest du diese Übung wirklich entfernen?
+                            </Text>
+                            {exerciseToDelete && (
+                                <View className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 flex-row items-center">
+                                    <View className="flex-1">
+                                        <Text className="font-bold text-[#243842] text-[17px] text-center" numberOfLines={1}>{exerciseToDelete.title}</Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 4 }}>
+                            <TouchableOpacity onPress={() => setDeleteExerciseModalVisible(false)} style={{ flex: 1, backgroundColor: '#F3F4F6', paddingVertical: 18, borderRadius: 20, alignItems: 'center' }}>
+                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#243842' }}>{i18n.t('therapist.cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={confirmDeleteExercise} style={{ flex: 1, backgroundColor: '#EF4444', paddingVertical: 18, borderRadius: 20, alignItems: 'center', shadowColor: '#EF4444', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 4 }}>
+                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: 'white' }}>Löschen</Text>
                             </TouchableOpacity>
                         </View>
-
-                        <Text className="text-sm font-medium text-gray-700 mb-2">Inhalt der Notiz *</Text>
-                        <TextInput style={{ backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderWidth: 1, padding: 12, borderRadius: 12, marginBottom: 24, color: '#1F2937', minHeight: 120, textAlignVertical: 'top' }}
-                            placeholder="Schreibe eine Notiz..."
-                            value={manualNote}
-                            onChangeText={setManualNote}
-                            multiline
-                        />
-
-                        <TouchableOpacity
-                            onPress={() => handleSaveNewNote(manualNote)}
-                            disabled={savingNote || !manualNote.trim()}
-                            className={`py-4 rounded-xl items-center flex-row justify-center ${savingNote || !manualNote.trim() ? 'bg-[#137386]/60' : 'bg-[#137386]'}`}
-                        >
-                            {savingNote ? (
-                                <ActivityIndicator color="white" style={{ marginRight: 8 }} />
-                            ) : (
-                                <Text className="text-white font-bold text-lg">Speichern</Text>
-                            )}
-                        </TouchableOpacity>
-                    </View>
+                    </MotiView>
                 </View>
             </Modal>
 
-            {/* File Upload Modal */}
-            < Modal visible={showUploadModal} animationType="fade" transparent={true} >
-                <View className="flex-1 bg-black/50 justify-center items-center p-6">
-                    <View className="bg-white w-full max-w-md rounded-3xl p-6 shadow-xl">
-                        <View className="flex-row justify-between items-center mb-6">
-                            <Text className="text-xl font-bold text-[#2C3E50]">Datei hochladen</Text>
-                            <TouchableOpacity onPress={() => setShowUploadModal(false)} className="bg-gray-100 p-2 rounded-full">
-                                <Text className="text-gray-600 font-bold">X</Text>
+            {/* Telegram Webhook Modal */}
+            <Modal visible={telegramModalVisible} transparent animationType="fade">
+                <View className="flex-1 justify-center items-center bg-black/40 p-6">
+                    <MotiView
+                        from={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        style={{ width: '100%', maxWidth: 384, backgroundColor: 'white', borderRadius: 40, padding: 40, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
+                    >
+                        <View className="items-center mb-10">
+                            <View className="w-20 h-20 bg-[#137386]/10 rounded-full items-center justify-center mb-6">
+                                <Activity size={40} color="#137386" />
+                            </View>
+                            <Text className="text-[24px] font-black text-[#243842] mb-3 text-center tracking-tight">Erinnerung senden</Text>
+                            <Text className="text-[#243842]/60 font-medium text-center text-[16px] leading-relaxed mb-8">
+                                Möchtest du dem Klienten eine Erinnerung senden?
+                            </Text>
+                            {exerciseToRemind && (
+                                <View className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 flex-row items-center">
+                                    <View className="flex-1">
+                                        <Text className="font-bold text-[#243842] text-[17px] text-center" numberOfLines={1}>{exerciseToRemind.title}</Text>
+                                    </View>
+                                </View>
+                            )}
+                        </View>
+                        <View style={{ flexDirection: 'row', gap: 12, paddingHorizontal: 4 }}>
+                            <TouchableOpacity onPress={() => setTelegramModalVisible(false)} style={{ flex: 1, backgroundColor: '#F3F4F6', paddingVertical: 18, borderRadius: 20, alignItems: 'center' }}>
+                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#243842' }}>{i18n.t('therapist.cancel')}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity onPress={confirmTelegramWebhook} style={{ flex: 1, backgroundColor: '#137386', paddingVertical: 18, borderRadius: 20, alignItems: 'center', shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 4 }}>
+                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: 'white' }}>Senden</Text>
                             </TouchableOpacity>
                         </View>
-
-                        <Text className="text-sm font-medium text-gray-700 mb-2">Titel der Datei *</Text>
-                        <TextInput style={{ backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderWidth: 1, padding: 12, borderRadius: 12, marginBottom: 16, color: '#1F2937' }}
-                            placeholder="z.B. Arbeitsblatt zur Angstbewältigung"
-                            value={newFileTitle}
-                            onChangeText={setNewFileTitle}
-                        />
-
-                        <Text className="text-sm font-medium text-gray-700 mb-2">Beschreibung (Optional)</Text>
-                        <TextInput style={{ backgroundColor: '#F9FAFB', borderColor: '#E5E7EB', borderWidth: 1, padding: 12, borderRadius: 12, marginBottom: 24, color: '#1F2937', minHeight: 80, textAlignVertical: 'top' }}
-                            placeholder="Kurze Anleitung oder Info für den Klienten..."
-                            value={newFileDesc}
-                            onChangeText={setNewFileDesc}
-                            multiline
-                        />
-
-                        <TouchableOpacity
-                            onPress={handleUploadClientFile}
-                            disabled={uploadingFile}
-                            className={`py-4 rounded-xl items-center flex-row justify-center ${uploadingFile ? 'bg-[#137386]/60' : 'bg-[#137386]'}`}
-                        >
-                            {uploadingFile ? (
-                                <>
-                                    <ActivityIndicator color="white" style={{ marginRight: 8 }} />
-                                    <Text className="text-white font-bold text-lg">Lädt hoch...</Text>
-                                </>
-                            ) : (
-                                <>
-                                    <FileUp size={20} color="white" style={{ marginRight: 8 }} />
-                                    <Text className="text-white font-bold text-lg">Datei auswählen & senden</Text>
-                                </>
-                            )}
-                        </TouchableOpacity>
-                        <Text className="text-center text-xs text-gray-400 mt-4">Der Klient wird über den Upload benachrichtigt.</Text>
-                    </View>
+                    </MotiView>
                 </View>
-            </Modal >
+            </Modal>
+
+            <SuccessAnimation
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.subMessage}
+                onAnimationDone={() => setToast(prev => ({ ...prev, visible: false }))}
+            />
         </View >
     );
 }

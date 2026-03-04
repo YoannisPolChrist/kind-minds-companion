@@ -117,10 +117,10 @@ export default function ResourcesScreen() {
                             from={{ opacity: 0, translateY: 20 }}
                             animate={{ opacity: 1, translateY: 0 }}
                             transition={{ delay: 100 + (index * 50) }}
-                            className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-4"
+                            style={{ backgroundColor: 'white', padding: 24, borderRadius: 28, borderWidth: 1, borderColor: '#F3F4F6', marginBottom: 16, shadowColor: '#1e293b', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }}
                         >
-                            <View className="flex-row items-start mb-3">
-                                <View className={`w-12 h-12 rounded-full items-center justify-center mr-4 ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : item.type === 'video' ? 'bg-purple-50' : item.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
+                            <View className="flex-row items-start mb-4">
+                                <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 flex-shrink-0 ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : item.type === 'video' ? 'bg-purple-50' : item.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
                                     {item.type === 'document' ? <FileText size={24} color="#6366F1" /> : item.type === 'pdf' ? <Text className="text-xl">📄</Text> : item.type === 'video' ? <Text className="text-xl">🎥</Text> : item.type === 'image' ? <Text className="text-xl">🖼️</Text> : <Text className="text-xl">🔗</Text>}
                                 </View>
                                 <View className="flex-1">
@@ -136,12 +136,13 @@ export default function ResourcesScreen() {
                             </View>
 
                             {item.description ? (
-                                <Text className="text-gray-500 text-sm mb-4 leading-5">{item.description}</Text>
+                                <Text className="text-gray-500 text-sm mb-5 leading-5">{item.description}</Text>
                             ) : null}
 
+                            {/* Button sits inside card padding — extra mx ensures it never kisses the card border */}
                             <TouchableOpacity
                                 onPress={() => handleOpenResource(item.url)}
-                                className={`py-3.5 rounded-xl items-center flex-row justify-center ${item.type === 'document' ? 'bg-indigo-500' : item.type === 'pdf' ? 'bg-red-500' : item.type === 'video' ? 'bg-purple-500' : item.type === 'image' ? 'bg-pink-500' : 'bg-[#137386]'}`}
+                                style={{ marginHorizontal: 0, paddingVertical: 14, borderRadius: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', backgroundColor: item.type === 'document' ? '#6366F1' : item.type === 'pdf' ? '#EF4444' : item.type === 'video' ? '#8B5CF6' : item.type === 'image' ? '#EC4899' : '#137386' }}
                             >
                                 {item.type !== 'link' ? <Download size={18} color="white" style={{ marginRight: 8 }} /> : null}
                                 <Text className="text-white font-bold">{item.type === 'document' || item.type === 'pdf' ? 'Dokument öffnen' : item.type === 'video' ? 'Video ansehen' : item.type === 'image' ? 'Bild öffnen' : i18n.t('resources.open_link', { defaultValue: 'Open Link' })}</Text>

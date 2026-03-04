@@ -1,14 +1,16 @@
 import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, Platform, Modal, ScrollView, useWindowDimensions, Image } from 'react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import React from 'react';
-import { collection, query, getDocs, deleteDoc, doc, limit, updateDoc, setDoc, where } from 'firebase/firestore';
-import { db } from '../../../utils/firebase';
 import { useRouter, useFocusEffect } from 'expo-router';
 import i18n from '../../../utils/i18n';
 import { MotiView } from 'moti';
 import { Search, Plus, Trash2, Send, X, FileText, Sparkles, LayoutTemplate, Palette } from 'lucide-react-native';
 import { DarkAmbientOrbs } from '../../../components/ui/AmbientOrbs';
 import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
+import { useDebounce } from '../../../hooks/useDebounce';
+import { TemplateRepository, ExerciseTemplate } from '../../../utils/repositories/TemplateRepository';
+import { ClientRepository } from '../../../utils/repositories/ClientRepository';
+import { ErrorHandler } from '../../../utils/errors';
 
 const THEME_COLORS = ['#137386', '#3B82F6', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#10B981', '#64748B'];
 
@@ -16,6 +18,7 @@ export default function TherapistTemplates() {
     const [templates, setTemplates] = useState<any[]>([]);
     const [filteredTemplates, setFilteredTemplates] = useState<any[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
+    const debouncedQuery = useDebounce(searchQuery, 300);
     const [loading, setLoading] = useState(true);
 
     // Assignment Mock State
@@ -26,12 +29,11 @@ export default function TherapistTemplates() {
     // Modals state
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [templateToDelete, setTemplateToDelete] = useState<any>(null);
-    
+
     const [colorModalVisible, setColorModalVisible] = useState(false);
     const [templateToColor, setTemplateToColor] = useState<any>(null);
 
-    const [showSuccess, setShowSuccess] = useState(false);
-    const [successMessage, setSuccessMessage] = useState('');
+    const [toast, setToast] = useState<{ visible: boolean, message: string, subMessage?: string, type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
 
     const router = useRouter();
     const { width } = useWindowDimensions();
@@ -46,62 +48,53 @@ export default function TherapistTemplates() {
 
     const fetchClientsForAssignment = async () => {
         try {
-            const q = query(collection(db, "users"), where("role", "==", "client"));
-            const querySnapshot = await getDocs(q);
-            const rawClients = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-            if (rawClients.length === 0) {
-                setClients([{ id: "mock_client_123", firstName: "Max", lastName: "Mustermann (Beispiel-Klient)" }]);
-            } else {
-                setClients(rawClients);
-            }
-        } catch (e) {
-            console.error("Error fetching clients for modal", e);
+            const rawClients = await ClientRepository.findAllClients();
+            setClients(rawClients);
+        } catch (error) {
+            const { message } = ErrorHandler.handle(error, 'Fetch Clients For Assignment');
+            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
         }
     };
 
     const fetchTemplates = async () => {
         try {
-            const q = query(collection(db, "exercise_templates"), limit(50));
-            const querySnapshot = await getDocs(q);
-            const templateData: any[] = [];
-            querySnapshot.forEach((doc) => {
-                templateData.push({ id: doc.id, ...doc.data() });
-            });
-            const activeTemplates = templateData.filter(t => !t.archived);
+            const activeTemplates = await TemplateRepository.findActiveTemplates(50);
             setTemplates(activeTemplates);
             setFilteredTemplates(activeTemplates);
         } catch (error) {
-            console.error("Error fetching templates:", error);
+            const { message } = ErrorHandler.handle(error, 'Fetch Templates');
+            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
         } finally {
             setLoading(false);
         }
     };
 
-    const handleSearch = (text: string) => {
-        setSearchQuery(text);
-        if (text.trim() === '') {
+    // Re-filter whenever the debounced query or template list changes
+    useEffect(() => {
+        if (!debouncedQuery.trim()) {
             setFilteredTemplates(templates);
         } else {
-            const lowercasedQuery = text.toLowerCase();
-            const filtered = templates.filter(t =>
-                t.title?.toLowerCase().includes(lowercasedQuery) ||
-                t.blocks?.some((b: any) => b.content?.toLowerCase().includes(lowercasedQuery))
-            );
-            setFilteredTemplates(filtered);
+            const q = debouncedQuery.toLowerCase();
+            setFilteredTemplates(templates.filter(t =>
+                t.title?.toLowerCase().includes(q) ||
+                t.blocks?.some((b: any) => b.content?.toLowerCase().includes(q))
+            ));
         }
-    };
+    }, [debouncedQuery, templates]);
 
     const confirmDeleteTemplate = async () => {
         if (!templateToDelete) return;
         try {
-            await updateDoc(doc(db, "exercise_templates", templateToDelete.id), { archived: true });
+            await TemplateRepository.archiveTemplate(templateToDelete.id);
             setTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
             setFilteredTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
             setDeleteModalVisible(false);
             setTemplateToDelete(null);
+            setToast({ visible: true, message: "Gelöscht", subMessage: "Vorlage wurde erfolgreich gelöscht.", type: 'success' });
         } catch (error) {
-            Alert.alert("Fehler", i18n.t('templates.delete_err'));
+            setDeleteModalVisible(false);
+            const { message } = ErrorHandler.handle(error, 'Archive Template');
+            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
         }
     };
 
@@ -113,13 +106,16 @@ export default function TherapistTemplates() {
     const handleUpdateThemeColor = async (color: string) => {
         if (!templateToColor) return;
         try {
-            await updateDoc(doc(db, "exercise_templates", templateToColor.id), { themeColor: color });
+            await TemplateRepository.updateThemeColor(templateToColor.id, color);
             setTemplates(prev => prev.map(t => t.id === templateToColor.id ? { ...t, themeColor: color } : t));
             setFilteredTemplates(prev => prev.map(t => t.id === templateToColor.id ? { ...t, themeColor: color } : t));
             setColorModalVisible(false);
             setTemplateToColor(null);
+            setToast({ visible: true, message: "Gespeichert", subMessage: "Farbe wurde erfolgreich aktualisiert.", type: 'success' });
         } catch (error) {
-            Alert.alert("Fehler", "Farbe konnte nicht aktualisiert werden.");
+            setColorModalVisible(false);
+            const { message } = ErrorHandler.handle(error, 'Update Template ThemeColor');
+            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
         }
     };
 
@@ -131,22 +127,13 @@ export default function TherapistTemplates() {
     const confirmAssignToClient = async (clientId: string) => {
         if (!selectedTemplateForAssign) return;
         try {
-            const newExerciseRef = doc(collection(db, "exercises"));
-            await setDoc(newExerciseRef, {
-                title: selectedTemplateForAssign.title,
-                blocks: selectedTemplateForAssign.blocks || [],
-                clientId: clientId,
-                completed: false,
-                assignedAt: new Date().toISOString(),
-            });
-
+            await TemplateRepository.assignToClient(selectedTemplateForAssign, clientId);
             setAssignModalVisible(false);
-            setSuccessMessage(`Die Vorlage "${selectedTemplateForAssign.title}" wurde zugewiesen.`);
-            setShowSuccess(true);
-        } catch (e) {
-            if (Platform.OS === 'web') window.alert("Zuweisung fehlgeschlagen.");
-            else Alert.alert("Fehler", "Zuweisung fehlgeschlagen.");
-            console.error(e);
+            setToast({ visible: true, message: "Erfolg", subMessage: `Die Vorlage "${selectedTemplateForAssign.title}" wurde zugewiesen.`, type: 'success' });
+        } catch (error) {
+            setAssignModalVisible(false);
+            const { message } = ErrorHandler.handle(error, 'Assign Template to Client');
+            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
         }
     };
 
@@ -161,8 +148,8 @@ export default function TherapistTemplates() {
                 transition={{ type: 'timing', duration: 350, delay: index * 50 }}
                 style={{
                     backgroundColor: '#ffffff',
-                    padding: 28,
-                    borderRadius: 32,
+                    padding: 32,
+                    borderRadius: 36,
                     borderWidth: 2,
                     borderColor: `${themeColor}40`,
                     shadowColor: '#243842',
@@ -197,61 +184,61 @@ export default function TherapistTemplates() {
                         <View
                             style={{
                                 backgroundColor: 'rgba(249, 248, 246, 0.9)',
-                                borderRadius: 20,
+                                borderRadius: 24,
                                 borderWidth: 1,
                                 borderColor: 'rgba(36, 56, 66, 0.07)',
-                                padding: 6,
-                                gap: 6,
+                                padding: 8,
+                                gap: 8,
                                 shadowColor: '#243842',
                                 shadowOffset: { width: 0, height: 4 },
                                 shadowOpacity: 0.06,
-                                shadowRadius: 12,
+                                shadowRadius: 16,
                                 elevation: 2,
                                 alignItems: 'center',
+                                flexDirection: 'row',
                             }}
                         >
                             <TouchableOpacity
                                 onPress={() => handleDelete(item)}
                                 style={{
-                                    width: 40, height: 40, borderRadius: 14,
+                                    width: 48, height: 48, borderRadius: 16,
                                     backgroundColor: '#FEF2F2',
                                     borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)',
                                     alignItems: 'center', justifyContent: 'center',
                                 }}
                             >
-                                <Trash2 size={18} color="#EF4444" />
+                                <Trash2 size={22} color="#EF4444" />
                             </TouchableOpacity>
-                            <View style={{ width: 28, height: 1, backgroundColor: 'rgba(36,56,66,0.06)' }} />
+                            <View style={{ width: 1, height: 32, backgroundColor: 'rgba(36,56,66,0.06)' }} />
                             <TouchableOpacity
                                 onPress={() => { setTemplateToColor(item); setColorModalVisible(true); }}
                                 style={{
-                                    width: 40, height: 40, borderRadius: 14,
+                                    width: 48, height: 48, borderRadius: 16,
                                     backgroundColor: `${themeColor}15`,
                                     borderWidth: 1, borderColor: `${themeColor}25`,
                                     alignItems: 'center', justifyContent: 'center',
                                 }}
                             >
-                                <Palette size={18} color={themeColor} />
+                                <Palette size={22} color={themeColor} />
                             </TouchableOpacity>
                         </View>
                     </View>
                 </View>
 
-                <View className="flex-row gap-3 pt-5 border-t border-gray-50">
+                <View style={{ flexDirection: 'row', gap: 14, paddingTop: 24, marginTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
                     <TouchableOpacity
-                        className="bg-[#F9F8F6] border border-gray-100 flex-1 py-4 rounded-[20px] items-center justify-center flex-row"
+                        style={{ flex: 1, backgroundColor: '#F9F8F6', borderWidth: 1, borderColor: '#E5E7EB', paddingVertical: 16, paddingHorizontal: 12, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
                         onPress={() => router.push(`/(app)/therapist/template/${item.id}` as any)}
                     >
-                        <Text className="text-[#243842] font-black text-[15px]">{i18n.t('templates.edit')}</Text>
+                        <Text style={{ color: '#243842', fontWeight: '900', fontSize: 16 }}>{i18n.t('templates.edit')}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
-                        className="bg-[#137386] flex-1 py-4 rounded-[20px] items-center justify-center flex-row"
-                        style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 4 }}
+                        style={{ flex: 1, backgroundColor: '#137386', paddingVertical: 16, paddingHorizontal: 12, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 4 }}
                         onPress={() => openAssignModal(item)}
                     >
-                        <Send size={18} color="white" className="mr-2" />
-                        <Text className="text-white font-black text-[15px]">Zuweisen</Text>
+                        <Send size={18} color="white" style={{ marginRight: 8 }} />
+                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>Zuweisen</Text>
                     </TouchableOpacity>
                 </View>
             </MotiView>
@@ -260,91 +247,93 @@ export default function TherapistTemplates() {
 
     return (
         <View className="flex-1 bg-[#F9F8F6]">
-            {/* Premium Header matching Dashboard */}
-            <MotiView
-                from={{ opacity: 0, translateY: -40 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: 'timing', duration: 350, delay: 50 }}
-                style={{
-                    backgroundColor: '#137386',
-                    paddingTop: Platform.OS === 'android' ? 48 : 56,
-                    paddingBottom: 40,
-                    paddingHorizontal: 24,
-                    borderBottomLeftRadius: 40,
-                    borderBottomRightRadius: 40,
-                    overflow: 'hidden',
-                    zIndex: 10,
-                    shadowColor: '#000',
-                    shadowOffset: { width: 0, height: 6 },
-                    shadowOpacity: 0.2,
-                    shadowRadius: 16,
-                    elevation: 10,
-                }}
+            <ScrollView
+                showsVerticalScrollIndicator={false}
+                style={{ flex: 1 }}
+                contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
+                bounces={false}
             >
-                <DarkAmbientOrbs />
+                {/* Premium Header matching Dashboard */}
+                <MotiView
+                    from={{ opacity: 0, translateY: -40 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    transition={{ type: 'timing', duration: 350, delay: 50 }}
+                    style={{
+                        backgroundColor: '#137386',
+                        paddingTop: Platform.OS === 'android' ? 48 : 56,
+                        paddingBottom: 40,
+                        paddingHorizontal: 24,
+                        borderBottomLeftRadius: 40,
+                        borderBottomRightRadius: 40,
+                        overflow: 'hidden',
+                        zIndex: 10,
+                        shadowColor: '#000',
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 16,
+                        elevation: 10,
+                    }}
+                >
+                    <DarkAmbientOrbs />
 
-                <View style={{ zIndex: 10, width: '100%', maxWidth: 1024, marginHorizontal: 'auto' }} pointerEvents="box-none">
-                    <View className="flex-row items-center justify-between mb-8">
-                        <TouchableOpacity onPress={() => router.back()} className="bg-white/10 px-4 py-3 rounded-[16px] backdrop-blur-md border border-white/10">
-                            <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="bg-white px-5 py-3 rounded-[16px] flex-row items-center shadow-lg">
-                            <Plus size={18} color="#137386" className="mr-1.5" strokeWidth={3} />
-                            <Text className="text-[#137386] font-black text-[15px]">{i18n.t('templates.new')}</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <Text className="text-[32px] font-black text-white tracking-tight mb-2">{i18n.t('templates.title')}</Text>
-                    <Text className="text-white/70 font-medium text-[15px] mb-8">Erstelle und verwalte interaktive Vorlagen für deine Klienten.</Text>
-
-                    {/* Search Bar - Glassmorphism */}
-                    <View className="flex-row items-center bg-white/10 border border-white/20 rounded-[20px] px-5 py-4 backdrop-blur-md">
-                        <Search size={22} color="rgba(255,255,255,0.7)" />
-                        <TextInput
-                            placeholder="Vorlagen durchsuchen..."
-                            placeholderTextColor="rgba(255,255,255,0.5)"
-                            className="flex-1 text-white font-bold ml-3 text-[16px]"
-                            value={searchQuery}
-                            onChangeText={handleSearch}
-                        />
-                        {searchQuery.length > 0 && (
-                            <TouchableOpacity onPress={() => handleSearch('')} className="bg-white/10 p-2 rounded-full">
-                                <X size={16} color="rgba(255,255,255,0.9)" />
+                    <View style={{ zIndex: 10, width: '100%', maxWidth: 1024, marginHorizontal: 'auto' }} pointerEvents="box-none">
+                        <View className="flex-row items-center justify-between mb-8">
+                            <TouchableOpacity onPress={() => router.back()} className="bg-white/10 px-5 py-3.5 rounded-[20px] backdrop-blur-md border border-white/10">
+                                <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
                             </TouchableOpacity>
-                        )}
-                    </View>
-                </View>
-            </MotiView>
-
-            <View className="flex-1 w-full max-w-5xl mx-auto pt-8">
-                {loading ? (
-                    <ActivityIndicator size="large" color="#137386" className="mt-12" />
-                ) : filteredTemplates.length === 0 ? (
-                    <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 200 }} className="bg-white p-10 rounded-[32px] border border-gray-100 shadow-sm items-center mx-8 mt-4" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 4 }}>
-                        <View className="w-20 h-20 bg-indigo-50 rounded-[28px] items-center justify-center mb-6 border border-indigo-100/50">
-                            <Sparkles size={32} color="#6366F1" />
+                            <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="bg-white px-6 py-3.5 rounded-[20px] flex-row items-center shadow-lg">
+                                <Plus size={20} color="#137386" className="mr-2" strokeWidth={3} />
+                                <Text className="text-[#137386] font-black text-[16px]">{i18n.t('templates.new')}</Text>
+                            </TouchableOpacity>
                         </View>
-                        <Text className="text-[#243842] font-black text-[22px] tracking-tight mb-2 text-center">Keine Vorlagen</Text>
-                        <Text className="text-[#243842]/50 text-[15px] text-center font-medium leading-relaxed max-w-[300px]">
-                            {searchQuery ? 'Es wurden keine Vorlagen für diese Suche gefunden.' : 'Erstelle jetzt deine erste Übungsvorlage für deine Klienten.'}
-                        </Text>
-                        {!searchQuery && (
-                            <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="mt-8 bg-[#137386] px-8 py-4 rounded-[20px] shadow-lg">
-                                <Text className="text-white font-black text-[16px]">Erste Vorlage erstellen</Text>
-                            </TouchableOpacity>
-                        )}
-                    </MotiView>
-                ) : (
-                    <ScrollView
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={{ paddingBottom: 120, paddingHorizontal: 32 }}
-                    >
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 24 }}>
+
+                        <Text className="text-[32px] font-black text-white tracking-tight mb-2">{i18n.t('templates.title')}</Text>
+                        <Text className="text-white/70 font-medium text-[16px] mb-8">Erstelle und verwalte interaktive Vorlagen für deine Klienten.</Text>
+
+                        {/* Search Bar - Glassmorphism */}
+                        <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 28, paddingHorizontal: 24, paddingVertical: 18, flexDirection: 'row', alignItems: 'center' } as any}>
+                            <Search size={24} color="rgba(255,255,255,0.85)" />
+                            <TextInput
+                                placeholder="Vorlagen durchsuchen..."
+                                placeholderTextColor="rgba(255,255,255,0.5)"
+                                style={{ flex: 1, color: 'white', fontWeight: '700', marginLeft: 16, fontSize: 18 } as any}
+                                value={searchQuery}
+                                onChangeText={setSearchQuery}
+                            />
+                            {searchQuery.length > 0 && (
+                                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: 8, borderRadius: 12 }}>
+                                    <X size={20} color="rgba(255,255,255,0.9)" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+                </MotiView>
+
+                <View className="w-full max-w-5xl mx-auto pt-10 px-6">
+                    {loading ? (
+                        <ActivityIndicator size="large" color="#137386" className="mt-12" />
+                    ) : filteredTemplates.length === 0 ? (
+                        <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 200 }} className="bg-white p-10 rounded-[32px] border border-gray-100 shadow-sm items-center mx-8 mt-4" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 4 }}>
+                            <View className="w-20 h-20 bg-indigo-50 rounded-[28px] items-center justify-center mb-6 border border-indigo-100/50">
+                                <Sparkles size={32} color="#6366F1" />
+                            </View>
+                            <Text className="text-[#243842] font-black text-[22px] tracking-tight mb-2 text-center">Keine Vorlagen</Text>
+                            <Text className="text-[#243842]/50 text-[15px] text-center font-medium leading-relaxed max-w-[300px]">
+                                {searchQuery ? 'Es wurden keine Vorlagen für diese Suche gefunden.' : 'Erstelle jetzt deine erste Übungsvorlage für deine Klienten.'}
+                            </Text>
+                            {!searchQuery && (
+                                <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="mt-8 bg-[#137386] px-8 py-4 rounded-[20px] shadow-lg">
+                                    <Text className="text-white font-black text-[16px]">Erste Vorlage erstellen</Text>
+                                </TouchableOpacity>
+                            )}
+                        </MotiView>
+                    ) : (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 24, paddingBottom: 120 }}>
                             {filteredTemplates.map((item, index) => renderTemplateItem({ item, index }))}
                         </View>
-                    </ScrollView>
-                )}
-            </View>
+                    )}
+                </View>
+            </ScrollView>
 
             {/* Assignment Modal (Premium Style) */}
             <Modal visible={assignModalVisible} transparent animationType="fade">
@@ -396,40 +385,39 @@ export default function TherapistTemplates() {
 
             {/* Delete Confirmation Modal */}
             <Modal visible={deleteModalVisible} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/40 p-4">
+                <View className="flex-1 justify-center items-center bg-black/40 p-6">
                     <MotiView
                         from={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="w-full max-w-sm shadow-2xl p-8"
-                        style={{ backgroundColor: 'white', borderRadius: 32, overflow: 'hidden' }}
+                        style={{ width: '100%', maxWidth: 384, backgroundColor: 'white', borderRadius: 40, padding: 40, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
                     >
-                        <View className="items-center mb-6">
-                            <View className="w-16 h-16 bg-red-50 rounded-full items-center justify-center mb-4">
-                                <Trash2 size={32} color="#EF4444" />
+                        <View className="items-center mb-10">
+                            <View className="w-20 h-20 bg-red-50 rounded-full items-center justify-center mb-6">
+                                <Trash2 size={40} color="#EF4444" />
                             </View>
-                            <Text className="text-[20px] font-black text-[#243842] mb-2 text-center">{i18n.t('templates.delete_title')}</Text>
-                            <Text className="text-[#243842]/60 font-medium text-center text-[15px] leading-relaxed mb-4">
+                            <Text className="text-[24px] font-black text-[#243842] mb-3 text-center tracking-tight">{i18n.t('templates.delete_title')}</Text>
+                            <Text className="text-[#243842]/60 font-medium text-center text-[16px] leading-relaxed mb-8">
                                 {i18n.t('templates.delete_confirm')}
                             </Text>
-                            
+
                             {templateToDelete && (
-                                <View className="w-full bg-gray-50 border border-gray-100 rounded-2xl p-4 flex-row items-center">
-                                    <View className="w-10 h-10 rounded-xl items-center justify-center mr-3" style={{ backgroundColor: `${templateToDelete.themeColor || '#6366F1'}15` }}>
-                                        <LayoutTemplate size={20} color={templateToDelete.themeColor || '#6366F1'} />
+                                <View className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 flex-row items-center">
+                                    <View className="w-12 h-12 rounded-2xl items-center justify-center mr-4" style={{ backgroundColor: `${templateToDelete.themeColor || '#6366F1'}15` }}>
+                                        <LayoutTemplate size={24} color={templateToDelete.themeColor || '#6366F1'} />
                                     </View>
                                     <View className="flex-1">
-                                        <Text className="font-bold text-[#243842] text-[15px]" numberOfLines={1}>{templateToDelete.title}</Text>
-                                        <Text className="text-gray-500 text-[12px] mt-0.5">{templateToDelete.blocks?.length || 0} Module</Text>
+                                        <Text className="font-bold text-[#243842] text-[17px]" numberOfLines={1}>{templateToDelete.title}</Text>
+                                        <Text className="text-gray-500 text-[13px] mt-1">{templateToDelete.blocks?.length || 0} Module</Text>
                                     </View>
                                 </View>
                             )}
                         </View>
-                        <View className="flex-row gap-3">
-                            <TouchableOpacity onPress={() => setDeleteModalVisible(false)} className="flex-1 bg-gray-100 py-3.5 rounded-xl items-center">
-                                <Text className="font-bold text-[#243842]">{i18n.t('therapist.cancel')}</Text>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <TouchableOpacity onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, backgroundColor: '#F3F4F6', paddingVertical: 18, borderRadius: 20, alignItems: 'center' }}>
+                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#243842' }}>{i18n.t('therapist.cancel')}</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={confirmDeleteTemplate} className="flex-1 bg-red-500 py-3.5 rounded-xl items-center shadow-sm" style={{ shadowColor: '#EF4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 }}>
-                                <Text className="font-bold text-white">{i18n.t('templates.delete_btn')}</Text>
+                            <TouchableOpacity onPress={confirmDeleteTemplate} style={{ flex: 1, backgroundColor: '#EF4444', paddingVertical: 18, borderRadius: 20, alignItems: 'center', shadowColor: '#EF4444', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 4 }}>
+                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: 'white' }}>{i18n.t('templates.delete_btn')}</Text>
                             </TouchableOpacity>
                         </View>
                     </MotiView>
@@ -438,28 +426,27 @@ export default function TherapistTemplates() {
 
             {/* Color Picker Modal */}
             <Modal visible={colorModalVisible} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/40 p-4">
+                <View className="flex-1 justify-center items-center bg-black/40 p-6">
                     <MotiView
                         from={{ opacity: 0, scale: 0.95, translateY: 20 }}
                         animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                        className="w-full max-w-sm shadow-2xl p-8"
-                        style={{ backgroundColor: 'white', borderRadius: 32, overflow: 'hidden' }}
+                        style={{ width: '100%', maxWidth: 384, backgroundColor: 'white', borderRadius: 40, padding: 40, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
                     >
-                        <View className="flex-row justify-between items-center mb-8">
-                            <Text className="text-[20px] font-black text-[#243842]">Farbe auswählen</Text>
-                            <TouchableOpacity onPress={() => setColorModalVisible(false)} className="bg-gray-100 p-2 rounded-full">
-                                <X size={20} color="#243842" />
+                        <View className="flex-row justify-between items-center mb-10">
+                            <Text className="text-[24px] font-black text-[#243842] tracking-tight">Farbe wählen</Text>
+                            <TouchableOpacity onPress={() => setColorModalVisible(false)} className="bg-gray-100 p-2.5 rounded-full">
+                                <X size={22} color="#243842" />
                             </TouchableOpacity>
                         </View>
-                        <View className="flex-row flex-wrap gap-4 justify-center mb-4">
+                        <View className="flex-row flex-wrap gap-7 justify-center mb-4">
                             {THEME_COLORS.map(color => (
                                 <TouchableOpacity
                                     key={color}
                                     onPress={() => handleUpdateThemeColor(color)}
                                     style={{
-                                        width: 56, height: 56, borderRadius: 28, backgroundColor: color,
+                                        width: 68, height: 68, borderRadius: 34, backgroundColor: color,
                                         borderWidth: 4, borderColor: templateToColor?.themeColor === color ? '#243842' : 'transparent',
-                                        shadowColor: color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4
+                                        shadowColor: color, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6
                                     }}
                                 />
                             ))}
@@ -469,9 +456,11 @@ export default function TherapistTemplates() {
             </Modal>
 
             <SuccessAnimation
-                visible={showSuccess}
-                message={successMessage}
-                onAnimationDone={() => setShowSuccess(false)}
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.subMessage}
+                onAnimationDone={() => setToast(prev => ({ ...prev, visible: false }))}
             />
         </View>
     );

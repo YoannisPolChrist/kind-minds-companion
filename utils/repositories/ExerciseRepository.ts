@@ -57,6 +57,22 @@ export class ExerciseRepository {
             archived: false,
             assignedAt: serverTimestamp(),
         });
+
+        // Trigger notification for the client
+        try {
+            await addDoc(collection(db, 'notifications'), {
+                userId: data.clientId,
+                type: 'exercise_assigned',
+                title: 'Neue Übung',
+                body: `Dein Therapeut hat dir eine neue Übung zugewiesen: "${data.title}"`,
+                exerciseId: ref.id,
+                read: false,
+                createdAt: serverTimestamp(),
+            });
+        } catch (err) {
+            console.error('Failed to create notification for new exercise:', err);
+        }
+
         return ref.id;
     }
 

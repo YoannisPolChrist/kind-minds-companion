@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, updateDoc, getDocs, query, collection, where } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
 import { router } from 'expo-router';
 import i18n from '../utils/i18n';
@@ -74,6 +74,7 @@ export function useAuthActions(): AuthResponse {
                 email: user.email,
                 role: 'client', // Default to client for open registration
                 createdAt: serverTimestamp(),
+                onboardingCompleted: false
             };
 
             if (therapistId) {
@@ -82,10 +83,39 @@ export function useAuthActions(): AuthResponse {
 
             if (targetOfflineProfileId) {
                 userProfile.linkedOfflineProfileId = targetOfflineProfileId;
-                // Note: Actual merging of offline profile data and exercises would ideally happen via a Cloud Function
-                // triggered by this update, or via a separate explicit action after registration.
+
+                try {
+                    // Update the offline profile to become the primary profile, or mark it as claimed
+                    await updateDoc(doc(db, 'users', targetOfflineProfileId), {
+                        isOfflineProfile: false,
+                        linkedAuthUid: user.uid,
+                        email: user.email,
+                        updatedAt: serverTimestamp()
+                    });
+
+                    // Transfer Exercises
+                    const exQuery = query(collection(db, 'exercises'), where('clientId', '==', targetOfflineProfileId));
+                    const exSnap = await getDocs(exQuery);
+                    const exPromises = exSnap.docs.map(exDoc =>
+                        updateDoc(doc(db, 'exercises', exDoc.id), { clientId: user.uid })
+                    );
+
+                    // Transfer Checkins
+                    const chkQuery = query(collection(db, 'checkins'), where('uid', '==', targetOfflineProfileId));
+                    const chkSnap = await getDocs(chkQuery);
+                    const chkPromises = chkSnap.docs.map(chkDoc =>
+                        updateDoc(doc(db, 'checkins', chkDoc.id), { uid: user.uid })
+                    );
+
+                    await Promise.all([...exPromises, ...chkPromises]);
+
+                } catch (mergeError) {
+                    console.error('Failed to merge offline profile data:', mergeError);
+                    // Non-fatal error, user is still registered
+                }
             }
 
+            // Create initial user profile in Firestore (will contain auth uid)
             await setDoc(doc(db, 'users', user.uid), userProfile);
 
             // Mark invitation as used
@@ -93,7 +123,8 @@ export function useAuthActions(): AuthResponse {
                 await markInvitationAsUsed(invitationId);
             }
 
-            router.replace('/(app)/'); // Could also push to an onboarding screen
+            // Let AppLayout handle redirection based on onboardingCompleted state
+            router.replace('/(app)/');
         } catch (err: any) {
             console.error('Registration error:', err);
             let message = 'Registrierung fehlgeschlagen.';
@@ -124,5 +155,5 @@ export function useAuthActions(): AuthResponse {
         }
     }, [clearMessages]);
 
-    return { loading, error, success, login, resetPassword, clearMessages };
+    return { loading, error, success, login, register, resetPassword, clearMessages };
 }

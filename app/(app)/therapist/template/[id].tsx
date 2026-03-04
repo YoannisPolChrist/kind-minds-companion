@@ -3,7 +3,10 @@ import i18n from '../../../../utils/i18n';
 import { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc, updateDoc, collection } from 'firebase/firestore';
 import { db, storage } from '../../../../utils/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadString, getDownloadURL } from 'firebase/storage';
+import * as FileSystem from 'expo-file-system';
+import { uploadFile, generateStoragePath, getExtension } from '../../../../utils/uploadFile';
+
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ExerciseBuilder from '../../../../components/therapist/ExerciseBuilder';
 import { useAuth } from '../../../../contexts/AuthContext';
@@ -53,6 +56,7 @@ export default function TemplateDetail() {
         }
     };
 
+    // Removed inline import for uploadFile
     const handleSave = async (title: string, blocks: any[], coverImage?: string, themeColor?: string) => {
         if (!title) {
             if (Platform.OS === 'web') window.alert(i18n.t('templates.title_req'));
@@ -66,35 +70,25 @@ export default function TemplateDetail() {
             let processedCoverImage = coverImage;
             if (coverImage && !coverImage.startsWith('http')) {
                 try {
-                    const response = await fetch(coverImage);
-                    const blob = await response.blob();
-                    const filename = coverImage.substring(coverImage.lastIndexOf('/') + 1);
-                    const ext = filename.split('.').pop() || 'jpg';
-                    const storageRef = ref(storage, `template_covers/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`);
-
-                    await uploadBytes(storageRef, blob);
-                    processedCoverImage = await getDownloadURL(storageRef);
+                    const ext = getExtension(coverImage) || 'jpg';
+                    const path = generateStoragePath('template_covers', ext);
+                    processedCoverImage = await uploadFile(coverImage, path);
                 } catch (uploadError) {
                     console.error("Error uploading cover image:", uploadError);
-                    if (Platform.OS === 'web') window.alert("Fehler beim Hochladen des Titelbilds.");
+                    if (Platform.OS === 'web') window.alert("Fehler beim Hochladen des Titelbilds. Bitte versuche es erneut.");
                     else Alert.alert(i18n.t('templates.error'), "Fehler beim Hochladen des Titelbilds.");
                     setSaving(false);
                     return;
                 }
             }
 
-            // Upload media blocks first
+            // Upload media blocks
             const processedBlocks = await Promise.all(blocks.map(async (block) => {
                 if (block.type === 'media' && block.mediaUri && !block.mediaUri.startsWith('http')) {
                     try {
-                        const response = await fetch(block.mediaUri);
-                        const blob = await response.blob();
-                        const filename = block.mediaUri.substring(block.mediaUri.lastIndexOf('/') + 1);
-                        const ext = filename.split('.').pop() || (block.mediaType === 'video' ? 'mp4' : 'jpg');
-                        const storageRef = ref(storage, `exercise_media/${Date.now()}_${Math.random().toString(36).substring(7)}.${ext}`);
-
-                        await uploadBytes(storageRef, blob);
-                        const downloadUrl = await getDownloadURL(storageRef);
+                        const ext = getExtension(block.mediaUri) || 'jpg';
+                        const path = generateStoragePath('exercise_media', ext);
+                        const downloadUrl = await uploadFile(block.mediaUri, path);
                         return { ...block, mediaUri: downloadUrl };
                     } catch (uploadError) {
                         console.error("Error uploading media:", uploadError);
@@ -114,7 +108,6 @@ export default function TemplateDetail() {
                     therapistId: profile?.id, // Fix #18: track ownership
                     createdAt: new Date().toISOString()
                 });
-                setShowSuccess(true);
             } else {
                 const docRef = doc(db, 'exercise_templates', id as string);
                 await updateDoc(docRef, {
@@ -123,8 +116,10 @@ export default function TemplateDetail() {
                     themeColor: themeColor || null,
                     blocks: processedBlocks
                 });
-                setShowSuccess(true);
             }
+
+            setSaving(false);
+            setShowSuccess(true);
         } catch (error: any) {
             console.error("Error saving template", error);
             if (Platform.OS === 'web') window.alert(error.message || i18n.t('templates.save_err'));

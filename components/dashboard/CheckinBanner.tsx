@@ -68,10 +68,11 @@ const styles = StyleSheet.create({
         marginBottom: 24,
     },
     gradientCard: {
-        padding: 24,
+        padding: 28,
         borderRadius: 32,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: 16,
     }
 });

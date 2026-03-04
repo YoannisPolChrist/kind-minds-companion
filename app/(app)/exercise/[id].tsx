@@ -338,7 +338,7 @@ function InteractiveChartBlock({ block, value, onChange }: { block: ExerciseBloc
 
     const data = (block.options ?? []).map((opt, i) => {
         const parts = opt.split(':');
-        const label = parts[0] || `Option ${i+1}`;
+        const label = parts[0] || `Option ${i + 1}`;
         const defaultVal = parseFloat(parts[1] || '0');
         const color = parts[2] || CHART_PALETTE[i % CHART_PALETTE.length];
         const currentVal = currentValues[label] !== undefined ? currentValues[label] : defaultVal;
@@ -355,7 +355,7 @@ function InteractiveChartBlock({ block, value, onChange }: { block: ExerciseBloc
             className="items-center"
         >
             {block.content ? <Text style={{ fontSize: 16, color: '#2C3E50', marginBottom: 20, textAlign: 'center', fontWeight: '600' }}>{block.content}</Text> : null}
-            
+
             <View className="bg-white rounded-[32px] p-4 shadow-sm border border-gray-100 items-center justify-center overflow-hidden w-full mb-6">
                 {block.type === 'spider_chart' && (
                     <ProgressChart
@@ -447,20 +447,20 @@ function InteractiveChartBlock({ block, value, onChange }: { block: ExerciseBloc
                     />
                 )}
             </View>
-            
+
             <View className="w-full gap-3">
                 <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Deine Werte eintragen</Text>
                 {data.map((item, i) => (
-                    <MotiView 
-                        key={i} 
-                        from={{ opacity: 0, translateX: -10 }} 
-                        animate={{ opacity: 1, translateX: 0 }} 
+                    <MotiView
+                        key={i}
+                        from={{ opacity: 0, translateX: -10 }}
+                        animate={{ opacity: 1, translateX: 0 }}
                         transition={{ delay: i * 100 }}
                         className="flex-row items-center bg-gray-50 p-3 rounded-2xl border border-gray-100"
                     >
                         <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: item.color, marginRight: 12 }} />
                         <Text className="flex-1 font-bold text-[#2C3E50] text-base">{item.label}</Text>
-                        <TextInput 
+                        <TextInput
                             keyboardType="numeric"
                             value={currentValues[item.label] !== undefined ? String(currentValues[item.label]) : ''}
                             onChangeText={(t) => updateValue(item.label, t)}
@@ -603,7 +603,7 @@ export default function ExerciseExecutionView() {
     return (
         <View className="flex-1 bg-[#FAF9F6]">
             <View className="bg-[#2C3E50] pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center">
-                <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2 rounded-xl">
+                <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}>
                     <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
                 </TouchableOpacity>
                 <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4" numberOfLines={1}>
@@ -653,15 +653,15 @@ export default function ExerciseExecutionView() {
                     </View>
                 )}
 
-                <View className="mt-4 mb-8 gap-4">
+                <View style={{ marginTop: 16, marginBottom: 32, gap: 14 }}>
                     <TouchableOpacity onPress={handleComplete} disabled={exercise?.completed}
-                        className={`py-5 rounded-2xl items-center shadow-sm ${exercise?.completed ? 'bg-gray-200' : 'bg-[#2C3E50]'}`}>
-                        <Text className={`font-bold text-lg tracking-wide ${exercise?.completed ? 'text-gray-500' : 'text-white'}`}>
+                        style={{ paddingVertical: 18, borderRadius: 20, alignItems: 'center', backgroundColor: exercise?.completed ? '#E5E7EB' : '#2C3E50', shadowColor: '#2C3E50', shadowOffset: { width: 0, height: 8 }, shadowOpacity: exercise?.completed ? 0 : 0.2, shadowRadius: 16, elevation: exercise?.completed ? 0 : 4 }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: 18, letterSpacing: 0.3, color: exercise?.completed ? '#9CA3AF' : 'white' }}>
                             {exercise?.completed ? `${i18n.t('exercise.completed') || 'Bereits abgeschlossen'}` : i18n.t('exercise.complete')}
                         </Text>
                     </TouchableOpacity>
-                    <TouchableOpacity onPress={handleExportPdf} className="bg-white border-2 border-gray-100 py-4 rounded-2xl items-center">
-                        <Text className="font-bold text-gray-600 text-lg">{i18n.t('exercise.export_pdf')}</Text>
+                    <TouchableOpacity onPress={handleExportPdf} style={{ paddingVertical: 18, borderRadius: 20, alignItems: 'center', backgroundColor: 'white', borderWidth: 2, borderColor: '#F3F4F6' }}>
+                        <Text style={{ fontWeight: 'bold', fontSize: 18, color: '#6B7280' }}>{i18n.t('exercise.export_pdf')}</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>

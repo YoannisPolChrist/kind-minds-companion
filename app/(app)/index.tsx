@@ -1,5 +1,7 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform, useWindowDimensions, Image } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import { Settings, Calendar, BookOpen, Edit3 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +27,15 @@ import { DarkAmbientOrbs, LightAmbientOrbs } from '../../components/ui/AmbientOr
 import { Skeleton } from '../../components/ui/Skeleton';
 import { markNotificationsAsRead } from '../../services/notificationService';
 
+const HOME_BACKGROUNDS = [
+    require('../../assets/HomeUi1.webp'),
+    require('../../assets/HomeUi2.webp'),
+    require('../../assets/HomeUi3.webp'),
+    require('../../assets/HomeUi4.webp'),
+    require('../../assets/HomeUi5.webp'),
+    require('../../assets/HomeUi6.webp')
+];
+
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function ClientDashboard() {
@@ -45,6 +56,8 @@ export default function ClientDashboard() {
     const contentMaxWidth = screenWidth < 600 ? undefined : screenWidth < 1024 ? 600 : 720;
     // Scale horizontal padding: 16px mobile, 24px tablet, 32px desktop
     const horizPadding = screenWidth < 600 ? 16 : screenWidth < 1024 ? 24 : 32;
+
+    const randomBg = useMemo(() => HOME_BACKGROUNDS[Math.floor(Math.random() * HOME_BACKGROUNDS.length)], []);
 
     useEffect(() => {
         const task = InteractionManager.runAfterInteractions(() => {
@@ -173,51 +186,51 @@ export default function ClientDashboard() {
                         marginBottom: 24,
                     }}
                 >
-                    <LinearGradient
-                        colors={['#0d6474', '#137386', '#1a8fa5']}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
+                    <Image
+                        source={randomBg}
                         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        contentFit="cover"
                     />
-                    {/* Ambient 3D depth orbs */}
-                    <DarkAmbientOrbs />
 
                     {/* Foreground Content — max-width 680px for web readability */}
                     <View style={{ zIndex: 10, maxWidth: 680, width: '100%', alignSelf: 'center' }} pointerEvents="box-none">
-                        {/* Logo */}
-                        <View style={{ alignItems: 'center', marginBottom: 16 }}>
-                            <Image
-                                source={require('../../assets/logo-transparent.png')}
-                                style={{ width: 180, height: 50, resizeMode: 'contain', tintColor: '#ffffff' }}
-                            />
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                            <View style={{ flex: 1, paddingRight: 16 }}>
-                                <Text
-                                    style={{ fontSize: 34, fontWeight: '900', color: 'white', letterSpacing: -1, lineHeight: 40 }}
-                                    adjustsFontSizeToFit
-                                    minimumFontScale={0.8}
-                                    numberOfLines={2}
-                                >
-                                    Hi {profile?.firstName || ''} 👋
-                                </Text>
+                        <BlurView intensity={Platform.OS === 'android' ? 100 : 60} tint="light" style={{ borderRadius: 36, overflow: 'hidden', padding: 24, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', backgroundColor: 'rgba(255,255,255,0.75)' }}>
+                            {/* Logo */}
+                            <View style={{ alignItems: 'center', marginBottom: 20 }}>
+                                <Image
+                                    source={require('../../assets/logo-transparent.png')}
+                                    style={{ width: 180, height: 60 }}
+                                    contentFit="contain"
+                                />
                             </View>
-                            {/* Settings button — 48px hit target (6 × 8pt) */}
-                            <TouchableOpacity
-                                onPress={() => {
-                                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                    router.push('/(app)/settings' as any);
-                                }}
-                                style={{ backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
-                            >
-                                <Settings size={22} color="white" />
-                            </TouchableOpacity>
-                        </View>
-                        <View style={{ marginTop: 4 }}>
-                            {exercises.length > 0 && (
-                                <ProgressBar completed={completedExercises.length} total={exercises.length} />
-                            )}
-                        </View>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+                                <View style={{ flex: 1, paddingRight: 16 }}>
+                                    <Text
+                                        style={{ fontSize: 34, fontWeight: '900', color: '#243842', letterSpacing: -1, lineHeight: 40 }}
+                                        adjustsFontSizeToFit
+                                        minimumFontScale={0.8}
+                                        numberOfLines={2}
+                                    >
+                                        Hi {profile?.firstName || ''} 👋
+                                    </Text>
+                                </View>
+                                {/* Settings button — 48px hit target (6 × 8pt) */}
+                                <TouchableOpacity
+                                    onPress={() => {
+                                        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                        router.push('/(app)/settings' as any);
+                                    }}
+                                    style={{ backgroundColor: 'rgba(0,0,0,0.04)', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' }}
+                                >
+                                    <Settings size={22} color="#243842" />
+                                </TouchableOpacity>
+                            </View>
+                            <View style={{ marginTop: 4 }}>
+                                {exercises.length > 0 && (
+                                    <ProgressBar completed={completedExercises.length} total={exercises.length} />
+                                )}
+                            </View>
+                        </BlurView>
                     </View>
                 </View>
 
