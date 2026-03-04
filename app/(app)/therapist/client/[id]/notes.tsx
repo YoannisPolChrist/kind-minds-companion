@@ -131,13 +131,11 @@ export default function TherapistClientNotesScreen() {
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images'],
                 allowsEditing: true,
-                quality: 0.8,
-                base64: true, // Fix for web blob hanging
+                quality: 0.8
             });
             if (!result.canceled && result.assets?.[0]) {
                 setNewNoteImage({
-                    uri: result.assets[0].uri,
-                    base64: result.assets[0].base64
+                    uri: result.assets[0].uri
                 });
             }
         } catch (error) {
@@ -158,28 +156,10 @@ export default function TherapistClientNotesScreen() {
                 const ext = getExtension(newNoteImage.uri) || 'jpg';
                 const path = generateStoragePath(`client_notes/${id}`, ext);
 
-                let rawBase64 = newNoteImage.base64
-                    ? (newNoteImage.base64.includes(',') ? newNoteImage.base64.split(',')[1] : newNoteImage.base64)
-                    : undefined;
-
-                // Handle web File drop
-                if (!rawBase64 && newNoteImage.file && Platform.OS === 'web') {
-                    const reader = new FileReader();
-                    rawBase64 = await new Promise<string>((resolve, reject) => {
-                        reader.onload = () => {
-                            const res = reader.result as string;
-                            resolve(res.split(',')[1]);
-                        };
-                        reader.onerror = reject;
-                        reader.readAsDataURL(newNoteImage.file);
-                    });
-                }
-
                 uploadedImageUrl = await uploadFile(
                     newNoteImage.uri,
                     path,
-                    `image/${ext === 'png' ? 'png' : 'jpeg'}`,
-                    rawBase64
+                    `image/${ext === 'png' ? 'png' : 'jpeg'}`
                 );
             }
 
