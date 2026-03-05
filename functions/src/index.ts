@@ -1,10 +1,12 @@
 import { onDocumentCreated } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import { Expo } from "expo-server-sdk";
+import { Resend } from "resend";
 
 admin.initializeApp();
 const db = admin.firestore();
 const expo = new Expo();
+const resend = new Resend("re_CUA2weaM_FhRyT7CzpA9RK6jE3vnC2aNL");
 
 export const onNotificationCreated = onDocumentCreated(
     "notifications/{notificationId}",
@@ -62,13 +64,27 @@ export const onNotificationCreated = onDocumentCreated(
             // Condition 2: Use email if active platform is 'web' or missing push token
             else if (email) {
                 console.log(`Sending email notification to user ${userId} (${email})`);
-                // We write to the 'mail' collection, which triggers the Firebase "Trigger Email" extension
+
+                try {
+                    const resendData = await resend.emails.send({
+                        from: "Therapie-App <noreply@johanneschrist.com>",
+                        to: [email],
+                        subject: title || "Neue Benachrichtigung von deiner Therapie-App",
+                        html: `<p>Hallo,</p><p>${body || "Du hast eine neue Benachrichtigung."}</p>`
+                    });
+                    console.log(`Successfully sent email with Resend. ID: ${resendData.data?.id}`);
+                } catch (err) {
+                    console.error("Failed to send email with Resend:", err);
+                }
+
+                // Keep log in 'mail' collection for history
                 await db.collection("mail").add({
                     to: email,
                     message: {
                         subject: title || "Neue Benachrichtigung von deiner Therapie-App",
                         html: `<p>Hallo,</p><p>${body || "Du hast eine neue Benachrichtigung."}</p>`,
                     },
+                    status: "sent-via-resend"
                 });
             } else {
                 console.warn(`User ${userId} has no pushToken and no email. Cannot send notification.`);
