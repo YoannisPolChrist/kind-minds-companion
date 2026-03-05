@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { User, onIdTokenChanged } from 'firebase/auth';
 import { auth, db } from '../utils/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { registerForPushNotificationsAsync } from '../utils/notifications';
+import { Platform } from 'react-native';
 
 export interface UserProfile {
     id: string;
@@ -14,6 +16,8 @@ export interface UserProfile {
     createdAt?: string;
     onboardingCompleted?: boolean;
     birthDate?: string;
+    pushToken?: string;
+    lastActivePlatform?: string;
 }
 
 interface AuthState {
@@ -72,6 +76,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                     // Aktualisiere Firestore, damit Rolle auf Therapeut steht
                     await setDoc(docRef, { role: 'therapist' }, { merge: true });
                 }
+            }
+
+            // Register Push Token & Platform after successfully getting the document
+            try {
+                const pushToken = await registerForPushNotificationsAsync();
+                const lastActivePlatform = Platform.OS;
+
+                await setDoc(docRef, {
+                    lastActivePlatform,
+                    ...(pushToken ? { pushToken } : {})
+                }, { merge: true });
+
+                profile.pushToken = pushToken;
+                profile.lastActivePlatform = lastActivePlatform;
+            } catch (tokenErr) {
+                console.warn("Failed to register push token during auth refresh:", tokenErr);
             }
 
             set({ profile });
