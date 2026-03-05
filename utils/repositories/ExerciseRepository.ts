@@ -65,6 +65,7 @@ export class ExerciseRepository {
                 type: 'exercise_assigned',
                 title: 'Neue Übung',
                 body: `Dein Therapeut hat dir eine neue Übung zugewiesen: "${data.title}"`,
+                exerciseTitle: data.title,
                 exerciseId: ref.id,
                 read: false,
                 createdAt: serverTimestamp(),
