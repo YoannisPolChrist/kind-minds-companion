@@ -15,8 +15,12 @@ import { ref, uploadBytes, getDownloadURL, uploadString } from 'firebase/storage
 import { storage } from './firebase';
 import { Platform } from 'react-native';
 
+import * as FileSystem from 'expo-file-system';
+
 /**
- * Uploads a file to Firebase Storage reliably using raw Blobs (no base64 overhead).
+ * Uploads a file to Firebase Storage reliably.
+ * Native: Uses expo-file-system to read as base64.
+ * Web: Uses fetch to convert to Blob.
  *
  * @param localUri    - The local file URI from expo-image-picker.
  * @param storagePath - The destination path inside Firebase Storage.
@@ -39,24 +43,24 @@ export async function uploadFile(
         return await getDownloadURL(fileRef);
     }
 
-    // Convert local file URI into a Blob using XMLHttpRequest
-    // This is the most reliable method for both Expo Native and Web
-    const blob: Blob = await new Promise((resolve, reject) => {
-        const xhr = new XMLHttpRequest();
-        xhr.onload = function () {
-            resolve(xhr.response);
-        };
-        xhr.onerror = function (e) {
-            console.error("XHR Blob conversion error:", e);
-            reject(new TypeError("Network request failed"));
-        };
-        xhr.responseType = "blob";
-        xhr.open("GET", localUri, true);
-        xhr.send(null);
-    });
-
-    // Upload the blob
-    await uploadBytes(fileRef, blob, { contentType: finalMimeType });
+    if (Platform.OS === 'web') {
+        const response = await fetch(localUri);
+        const blob = await response.blob();
+        await uploadBytes(fileRef, blob, { contentType: finalMimeType });
+    } else {
+        // Native: Try using fetch to create a Blob to avoid OOM with large files
+        try {
+            const response = await fetch(localUri);
+            const blob = await response.blob();
+            await uploadBytes(fileRef, blob, { contentType: finalMimeType });
+        } catch (err) {
+            // Fallback: Read file as base64 using expo-file-system and upload via uploadString
+            const base64 = await FileSystem.readAsStringAsync(localUri, {
+                encoding: 'base64', // Fallback string literal to bypass enum ts error
+            });
+            await uploadString(fileRef, base64, 'base64', { contentType: finalMimeType });
+        }
+    }
 
     // Return download URL
     return await getDownloadURL(fileRef);

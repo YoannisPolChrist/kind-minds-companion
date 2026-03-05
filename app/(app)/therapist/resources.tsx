@@ -1,17 +1,21 @@
-import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, FlatList, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, FlatList, Platform, Linking, KeyboardAvoidingView } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
+import { Video, ResizeMode } from 'expo-av';
 import { useState, useEffect } from 'react';
 import * as DocumentPicker from 'expo-document-picker';
-import { collection, addDoc, query, getDocs, deleteDoc, doc, serverTimestamp, where } from 'firebase/firestore';
+import { collection, addDoc, query, getDocs, deleteDoc, doc, serverTimestamp, where, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
-import * as FileSystem from 'expo-file-system';
 import { db, storage } from '../../../utils/firebase';
 import i18n from '../../../utils/i18n';
 import { MotiView } from 'moti';
-import { FileText, Link as LinkIcon, Trash2, PlusCircle, UploadCloud, ChevronLeft, Send, X, FileVideo, FileImage } from 'lucide-react-native';
+import { FileText, Link as LinkIcon, Trash2, PlusCircle, UploadCloud, ArrowLeft, Send, X, FileVideo, Search, Star, Tag, Check, Clock, Plus, Library } from 'lucide-react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
+import { ConfirmModal } from '../../../components/ui/ConfirmModal';
 import { uploadFile } from '../../../utils/uploadFile';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 
 export default function TherapistResources() {
     const router = useRouter();
@@ -25,13 +29,42 @@ export default function TherapistResources() {
     const [description, setDescription] = useState('');
     const [linkUrl, setLinkUrl] = useState('');
     const [resourceType, setResourceType] = useState<'file' | 'link'>('file');
+    const [tagsInput, setTagsInput] = useState('');
+    const [addModalVisible, setAddModalVisible] = useState(false);
+
+    // Filter & Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [activeFilter, setActiveFilter] = useState<'all' | 'documents' | 'media' | 'links'>('all');
 
     // Assignment State
     const [assignModalVisible, setAssignModalVisible] = useState(false);
-    const [selectedResourceForAssign, setSelectedResourceForAssign] = useState<any>(null);
+    const [selectedResourcesForAssign, setSelectedResourcesForAssign] = useState<any[]>([]);
+
+    const [toast, setToast] = useState<{ visible: boolean, message: string, subMessage?: string, type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
+    const [confirmModal, setConfirmModal] = useState<{ visible: boolean, title: string, message: string, confirmText?: string, isDestructive?: boolean, onConfirm: () => void | Promise<void> }>({ visible: false, title: '', message: '', onConfirm: () => { } });
+
+    const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' = 'error') => {
+        setToast({ visible: true, message: title, subMessage: message, type });
+    };
+
+    const [selectedClientsForAssign, setSelectedClientsForAssign] = useState<string[]>([]);
     const [clients, setClients] = useState<any[]>([]);
     const [showSuccess, setShowSuccess] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+
+    // Bulk Selection State
+    const [selectionMode, setSelectionMode] = useState(false);
+    const [selectedResourceIds, setSelectedResourceIds] = useState<string[]>([]);
+
+    // History State
+    const [historyModalVisible, setHistoryModalVisible] = useState(false);
+    const [historyData, setHistoryData] = useState<any[]>([]);
+    const [loadingHistory, setLoadingHistory] = useState(false);
+    const [selectedResourceForHistory, setSelectedResourceForHistory] = useState<any>(null);
+
+    // Preview State
+    const [previewModalVisible, setPreviewModalVisible] = useState(false);
+    const [selectedResourceForPreview, setSelectedResourceForPreview] = useState<any>(null);
 
     useEffect(() => {
         fetchResources();
@@ -42,7 +75,9 @@ export default function TherapistResources() {
         try {
             const q = query(collection(db, "users"), where("role", "==", "client"));
             const querySnapshot = await getDocs(q);
-            const rawClients = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const rawClients = querySnapshot.docs
+                .map(doc => ({ id: doc.id, ...doc.data() }))
+                .filter((c: any) => !c.isArchived);
             setClients(rawClients);
         } catch (e) {
             console.error("Error fetching clients for modal", e);
@@ -73,8 +108,7 @@ export default function TherapistResources() {
 
     const handleUploadFile = async () => {
         if (!title) {
-            if (Platform.OS === 'web') window.alert("Bitte gib einen Titel an.");
-            else Alert.alert("Fehler", "Bitte gib einen Titel an.");
+            showAlert("Fehler", "Bitte gib einen Titel an.", "error");
             return;
         }
 
@@ -102,6 +136,8 @@ export default function TherapistResources() {
             const filename = `resources/${Date.now()}_${asset.name}`;
             const downloadUrl = await uploadFile(fileUri, filename, mimeType);
 
+            const tagsArray = tagsInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
             // Save to Firestore
             await addDoc(collection(db, "resources"), {
                 title,
@@ -110,17 +146,18 @@ export default function TherapistResources() {
                 url: downloadUrl,
                 storagePath: filename,
                 originalName: asset.name,
+                isPinned: false,
+                tags: tagsArray,
                 createdAt: serverTimestamp()
             });
 
-            if (Platform.OS === 'web') window.alert("Datei wurde erfolgreich hochgeladen.");
-            else Alert.alert("Erfolg", "Datei wurde erfolgreich hochgeladen.");
+            showAlert("Erfolg", "Datei wurde erfolgreich hochgeladen.", "success");
             resetForm();
+            setAddModalVisible(false);
             fetchResources();
         } catch (err) {
             console.error(err);
-            if (Platform.OS === 'web') window.alert("Upload fehlgeschlagen.");
-            else Alert.alert("Fehler", "Upload fehlgeschlagen.");
+            showAlert("Fehler", "Upload fehlgeschlagen.", "error");
         } finally {
             setUploading(false);
         }
@@ -128,75 +165,141 @@ export default function TherapistResources() {
 
     const handleAddLink = async () => {
         if (!title || !linkUrl) {
-            if (Platform.OS === 'web') window.alert("Bitte gib Titel und Link an.");
-            else Alert.alert("Fehler", "Bitte gib Titel und Link an.");
+            showAlert("Fehler", "Bitte gib Titel und Link an.", "error");
             return;
         }
 
         setUploading(true);
         try {
+            const tagsArray = tagsInput.split(',').map(t => t.trim()).filter(t => t.length > 0);
+
             await addDoc(collection(db, "resources"), {
                 title,
                 description,
                 type: 'link',
                 url: linkUrl,
+                isPinned: false,
+                tags: tagsArray,
                 createdAt: serverTimestamp()
             });
 
-            if (Platform.OS === 'web') window.alert("Link wurde erfolgreich hinzugefügt.");
-            else Alert.alert("Erfolg", "Link wurde erfolgreich hinzugefügt.");
+            showAlert("Erfolg", "Link wurde erfolgreich hinzugefügt.", "success");
             resetForm();
+            setAddModalVisible(false);
             fetchResources();
         } catch (err) {
             console.error(err);
-            if (Platform.OS === 'web') window.alert("Speichern fehlgeschlagen.");
-            else Alert.alert("Fehler", "Speichern fehlgeschlagen.");
+            showAlert("Fehler", "Speichern fehlgeschlagen.", "error");
         } finally {
             setUploading(false);
         }
     };
 
-    const openAssignModal = (resource: any) => {
-        setSelectedResourceForAssign(resource);
+    const openAssignModal = (resourcesToAssign: any[]) => {
+        setSelectedResourcesForAssign(resourcesToAssign);
+        setSelectedClientsForAssign([]);
         setAssignModalVisible(true);
     };
 
-    const confirmAssignToClient = async (clientId: string) => {
-        if (!selectedResourceForAssign) return;
-        try {
-            await addDoc(collection(db, "client_resources"), {
-                clientId: clientId,
-                therapistId: profile?.id || "unknown",
-                title: selectedResourceForAssign.title,
-                description: selectedResourceForAssign.description || '',
-                type: selectedResourceForAssign.type,
-                url: selectedResourceForAssign.url,
-                originalName: selectedResourceForAssign.originalName || null,
-                storagePath: selectedResourceForAssign.storagePath || null,
-                createdAt: serverTimestamp()
-            });
+    const toggleClientSelection = (clientId: string) => {
+        setSelectedClientsForAssign(prev =>
+            prev.includes(clientId) ? prev.filter(id => id !== clientId) : [...prev, clientId]
+        );
+    };
 
-            await addDoc(collection(db, "notifications"), {
-                clientId: clientId,
-                type: 'FILE_UPLOAD',
-                message: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, für dich wurde eine neue Datei hinterlegt!' }),
-                read: false,
-                createdAt: serverTimestamp()
-            });
+    const confirmBulkAssign = async () => {
+        if (selectedResourcesForAssign.length === 0 || selectedClientsForAssign.length === 0) return;
+
+        try {
+            const promises = [];
+
+            for (const client of selectedClientsForAssign) {
+                for (const resource of selectedResourcesForAssign) {
+                    promises.push(
+                        addDoc(collection(db, "client_resources"), {
+                            clientId: client,
+                            therapistId: profile?.id || "unknown",
+                            title: resource.title,
+                            description: resource.description || '',
+                            type: resource.type,
+                            url: resource.url,
+                            originalName: resource.originalName || null,
+                            storagePath: resource.storagePath || null,
+                            originalResourceId: resource.id,
+                            createdAt: serverTimestamp()
+                        })
+                    );
+                }
+
+                promises.push(
+                    addDoc(collection(db, "notifications"), {
+                        clientId: client,
+                        type: 'FILE_UPLOAD',
+                        message: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, für dich wurde neues Material hinterlegt!' }),
+                        read: false,
+                        createdAt: serverTimestamp()
+                    })
+                );
+            }
+
+            await Promise.all(promises);
 
             setAssignModalVisible(false);
-            setSuccessMessage(`"${selectedResourceForAssign.title}" wurde erfolgreich zugewiesen.`);
-            setShowSuccess(true);
+            setSelectionMode(false);
+            setSelectedResourceIds([]);
+            let msg = '';
+            if (selectedResourcesForAssign.length === 1 && selectedClientsForAssign.length === 1) {
+                msg = `Erfolgreich an 1 Klient zugewiesen.`;
+            } else {
+                msg = `${selectedResourcesForAssign.length} Ressource(n) erfolgreich an ${selectedClientsForAssign.length} Klient(en) zugewiesen.`;
+            }
+            showAlert("Erfolg", msg, "success");
         } catch (e) {
-            if (Platform.OS === 'web') window.alert("Zuweisung fehlgeschlagen.");
-            else Alert.alert("Fehler", "Zuweisung fehlgeschlagen.");
+            showAlert("Fehler", "Zuweisung fehlgeschlagen.", "error");
             console.error(e);
         }
     };
 
+    const openHistoryModal = async (resource: any) => {
+        setSelectedResourceForHistory(resource);
+        setHistoryModalVisible(true);
+        setLoadingHistory(true);
+
+        try {
+            const q = query(collection(db, "client_resources"), where("originalResourceId", "==", resource.id));
+            const querySnapshot = await getDocs(q);
+
+            const history: any[] = [];
+            querySnapshot.forEach(doc => {
+                const data = doc.data();
+                // Find client info from our loaded clients state
+                const client = clients.find(c => c.id === data.clientId);
+                if (client) {
+                    history.push({
+                        id: doc.id,
+                        clientName: `${client.firstName} ${client.lastName}`,
+                        assignedAt: data.createdAt?.toDate() || new Date()
+                    });
+                }
+            });
+
+            history.sort((a, b) => b.assignedAt.getTime() - a.assignedAt.getTime());
+            setHistoryData(history);
+        } catch (error) {
+            console.error("Error fetching history:", error);
+        } finally {
+            setLoadingHistory(false);
+        }
+    };
+
     const handleDelete = async (item: any) => {
-        if (Platform.OS === 'web') {
-            if (window.confirm(`Möchtest du "${item.title}" wirklich löschen?`)) {
+        setConfirmModal({
+            visible: true,
+            title: 'Ressource löschen',
+            message: `Möchtest du "${item.title}" wirklich löschen?`,
+            confirmText: 'Löschen',
+            isDestructive: true,
+            onConfirm: async () => {
                 try {
                     if (item.type !== 'link' && item.storagePath) {
                         const storageRef = ref(storage, item.storagePath);
@@ -208,196 +311,459 @@ export default function TherapistResources() {
                     }
                     await deleteDoc(doc(db, "resources", item.id));
                     setResources(prev => prev.filter(r => r.id !== item.id));
-                } catch (err) {
-                    window.alert("Konnte nicht gelöscht werden.");
+                    setSelectedResourcesForAssign(prev => prev.filter(id => id !== item.id));
+                } catch (error) {
+                    console.error("Error deleting resource:", error);
+                    showAlert("Fehler", "Konnte nicht gelöscht werden.", "error");
+                } finally {
+                    setConfirmModal(prev => ({ ...prev, visible: false }));
                 }
             }
-            return;
-        }
-
-        Alert.alert(
-            "Löschen",
-            `Möchtest du "${item.title}" wirklich löschen?`,
-            [
-                { text: "Abbrechen", style: "cancel" },
-                {
-                    text: "Löschen",
-                    style: "destructive",
-                    onPress: async () => {
-                        try {
-                            if (item.type !== 'link' && item.storagePath) {
-                                const storageRef = ref(storage, item.storagePath);
-                                try {
-                                    await deleteObject(storageRef);
-                                } catch (e) {
-                                    console.warn("Konnte Datei im Storage nicht löschen", e);
-                                }
-                            }
-                            await deleteDoc(doc(db, "resources", item.id));
-                            setResources(prev => prev.filter(r => r.id !== item.id));
-                        } catch (err) {
-                            Alert.alert("Fehler", "Konnte nicht gelöscht werden.");
-                        }
-                    }
-                }
-            ]
-        );
+        });
     };
 
     const resetForm = () => {
         setTitle('');
         setDescription('');
         setLinkUrl('');
+        setTagsInput('');
     };
 
-    return (
-        <View className="flex-1 bg-[#F9F8F6]">
-            {/* Header */}
-            <View className="bg-[#137386] pt-16 pb-8 px-6 rounded-b-[40px] shadow-md z-10 flex-row items-center justify-between">
-                <TouchableOpacity onPress={() => router.back()} className="bg-white/20 p-3 rounded-2xl backdrop-blur-md">
-                    <ChevronLeft color="#fff" size={24} />
-                </TouchableOpacity>
-                <Text className="text-2xl font-extrabold text-white flex-1 text-right ml-4">
-                    Ressourcen
-                </Text>
-            </View>
+    const handleTogglePin = async (item: any) => {
+        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        try {
+            await updateDoc(doc(db, "resources", item.id), {
+                isPinned: !item.isPinned
+            });
+            // Optimistic UI update
+            setResources(prev => prev.map(r => r.id === item.id ? { ...r, isPinned: !r.isPinned } : r));
+        } catch (e) {
+            console.error("Error pinning", e);
+        }
+    };
 
-            <ScrollView className="flex-1 px-6 pt-6" contentContainerStyle={{ paddingBottom: 60 }}>
-                {/* Add Resource */}
-                <MotiView
-                    from={{ opacity: 0, translateY: 20 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'timing', duration: 300, delay: 100 }}
-                    className="bg-white p-6 rounded-[32px] border border-[#E8E6E1] mb-8"
-                    style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 24, elevation: 6 }}
+    const handlePressAssign = (item: any) => {
+        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        openAssignModal([item]);
+    };
+
+    const handlePressDelete = (item: any) => {
+        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        handleDelete(item);
+    };
+
+    const handlePressPreview = (item: any) => {
+        if (['image', 'video'].includes(item.type)) {
+            setSelectedResourceForPreview(item);
+            setPreviewModalVisible(true);
+        } else if (item.url) {
+            Linking.openURL(item.url).catch(err => {
+                console.error("Couldn't load page", err);
+                showAlert("Fehler", "Ressource konnte nicht geöffnet werden.", "error");
+            });
+        }
+    };
+
+    // Derived filtered resources
+    let filteredResources = resources.filter(res => {
+        const matchesSearch = res.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            res.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (res.tags && res.tags.some((t: string) => t.toLowerCase().includes(searchQuery.toLowerCase())));
+
+        let matchesFilter = true;
+        if (activeFilter === 'documents') {
+            matchesFilter = ['document', 'pdf', 'file'].includes(res.type);
+        } else if (activeFilter === 'media') {
+            matchesFilter = ['image', 'video'].includes(res.type);
+        } else if (activeFilter === 'links') {
+            matchesFilter = res.type === 'link';
+        }
+
+        return matchesSearch && matchesFilter;
+    });
+
+    // Sort pinned to top, then by newer
+    filteredResources.sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        const aTime = a.createdAt?.seconds || 0;
+        const bTime = b.createdAt?.seconds || 0;
+        return bTime - aTime;
+    });
+
+    const toggleResourceSelection = (id: string) => {
+        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        setSelectedResourceIds(prev =>
+            prev.includes(id) ? prev.filter(rid => rid !== id) : [...prev, id]
+        );
+    };
+
+    const TYPE_CONFIG: Record<string, { bg: string; border: string; text: string; label: string; icon: string }> = {
+        document: { bg: '#EEF2FF', border: '#C7D2FE', text: '#4F46E5', label: 'Dokument', icon: '📄' },
+        file: { bg: '#EEF2FF', border: '#C7D2FE', text: '#4F46E5', label: 'Datei', icon: '📄' },
+        pdf: { bg: '#FEF2F2', border: '#FECACA', text: '#DC2626', label: 'PDF', icon: '📋' },
+        video: { bg: '#F5F3FF', border: '#DDD6FE', text: '#7C3AED', label: 'Video', icon: '🎥' },
+        image: { bg: '#FDF2F8', border: '#FBCFE8', text: '#DB2777', label: 'Bild', icon: '🖼️' },
+        link: { bg: '#EFF6FF', border: '#BFDBFE', text: '#2563EB', label: 'Web Link', icon: '🔗' },
+    };
+
+    const renderResourceItem = ({ item, index }: { item: any, index: number }) => {
+        const isSelected = selectedResourceIds.includes(item.id);
+        const cfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG['file'];
+
+        return (
+            <MotiView
+                from={{ opacity: 0, translateY: 20 }}
+                animate={{ opacity: 1, translateY: 0 }}
+                transition={{ type: 'spring', damping: 20, stiffness: 120, delay: Math.min(index * 40, 400) }}
+                style={{
+                    backgroundColor: isSelected ? '#FAF7F0' : 'white',
+                    borderRadius: 28,
+                    borderWidth: 1.5,
+                    borderColor: isSelected ? '#C09D59' : 'rgba(0,0,0,0.06)',
+                    marginBottom: 16,
+                    shadowColor: isSelected ? '#C09D59' : '#0F172A',
+                    shadowOffset: { width: 0, height: isSelected ? 8 : 4 },
+                    shadowOpacity: isSelected ? 0.15 : 0.05,
+                    shadowRadius: 20,
+                    elevation: isSelected ? 5 : 3,
+                    overflow: 'hidden',
+                }}
+            >
+                <TouchableOpacity
+                    onPress={() => selectionMode ? toggleResourceSelection(item.id) : handlePressPreview(item)}
+                    onLongPress={() => { setSelectionMode(true); toggleResourceSelection(item.id); }}
+                    activeOpacity={0.75}
                 >
-                    <View className="flex-row items-center mb-6">
-                        <View className="w-10 h-10 rounded-full bg-teal-50 items-center justify-center mr-3">
-                            <PlusCircle color="#137386" size={22} />
-                        </View>
-                        <Text className="text-xl font-black text-[#243842]">Ressource hinzufügen</Text>
-                    </View>
-
-                    {/* Tabs */}
-                    <View className="flex-row gap-3 mb-6 bg-[#F9F8F6] p-1.5 rounded-2xl border border-[#E8E6E1]">
-                        <TouchableOpacity
-                            onPress={() => setResourceType('file')}
-                            className={`flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2 ${resourceType === 'file' ? 'bg-white shadow-sm border border-[#E8E6E1]' : 'border border-transparent'}`}
+                    {/* Pinned indicator */}
+                    {item.isPinned && (
+                        <LinearGradient
+                            colors={['#FFFBEB', '#FEF3C7']}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 0 }}
+                            style={{ paddingHorizontal: 16, paddingVertical: 6, flexDirection: 'row', alignItems: 'center', gap: 6, borderBottomWidth: 1, borderBottomColor: '#FDE68A' }}
                         >
-                            <FileText size={18} color={resourceType === 'file' ? '#137386' : '#9CA3AF'} />
-                            <Text className={`font-bold ${resourceType === 'file' ? 'text-[#137386]' : 'text-gray-500'}`}>Datei</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            onPress={() => setResourceType('link')}
-                            className={`flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2 ${resourceType === 'link' ? 'bg-white shadow-sm border border-[#E8E6E1]' : 'border border-transparent'}`}
-                        >
-                            <LinkIcon size={18} color={resourceType === 'link' ? '#137386' : '#9CA3AF'} />
-                            <Text className={`font-bold ${resourceType === 'link' ? 'text-[#137386]' : 'text-gray-500'}`}>Web Link</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <View className="mb-4">
-                        <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Titel der Ressource</Text>
-                        <TextInput
-                            placeholder="Z.B. Arbeitsblatt Entspannung"
-                            placeholderTextColor="#9CA3AF"
-                            value={title}
-                            onChangeText={setTitle}
-                            className="bg-[#F9F8F6] border border-[#E8E6E1] p-4 rounded-2xl font-bold text-[#243842] text-base"
-                        />
-                    </View>
-
-                    <View className="mb-4">
-                        <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Kurze Beschreibung (optional)</Text>
-                        <TextInput
-                            placeholder="Z.B. Eine einfache Atemübung für den Alltag"
-                            placeholderTextColor="#9CA3AF"
-                            value={description}
-                            onChangeText={setDescription}
-                            multiline
-                            className="bg-[#F9F8F6] border border-[#E8E6E1] p-4 rounded-2xl text-[#6B7C85] text-base min-h-[80px]"
-                            textAlignVertical="top"
-                        />
-                    </View>
-
-                    {resourceType === 'link' && (
-                        <View className="mb-4">
-                            <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">URL</Text>
-                            <TextInput
-                                placeholder="https://..."
-                                placeholderTextColor="#9CA3AF"
-                                value={linkUrl}
-                                onChangeText={setLinkUrl}
-                                autoCapitalize="none"
-                                keyboardType="url"
-                                className="bg-[#F9F8F6] border border-[#E8E6E1] p-4 rounded-2xl text-[#243842] text-base font-medium"
-                            />
-                        </View>
+                            <Star size={12} color="#D97706" fill="#D97706" />
+                            <Text style={{ fontSize: 11, fontWeight: '800', color: '#B45309', letterSpacing: 0.5 }}>ANGEHEFTET</Text>
+                        </LinearGradient>
                     )}
 
-                    <TouchableOpacity
-                        onPress={resourceType === 'file' ? handleUploadFile : handleAddLink}
-                        disabled={uploading}
-                        className={`py-4 mt-2 rounded-2xl flex-row justify-center items-center ${uploading ? 'bg-gray-300' : 'bg-[#137386]'}`}
-                        style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 4 }, shadowOpacity: uploading ? 0 : 0.3, shadowRadius: 8, elevation: uploading ? 0 : 4 }}
-                    >
-                        {uploading ? (
-                            <ActivityIndicator color="#fff" className="mr-2" />
-                        ) : (
-                            resourceType === 'file' ? <UploadCloud color="#fff" size={20} className="mr-2" /> : <LinkIcon color="#fff" size={20} className="mr-2" />
+                    <View style={{ padding: 20 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 14 }}>
+                            {/* Selection checkbox */}
+                            {selectionMode && (
+                                <View style={{ justifyContent: 'center', paddingTop: 4 }}>
+                                    <View style={{ width: 24, height: 24, borderRadius: 8, backgroundColor: isSelected ? '#C09D59' : 'transparent', borderWidth: isSelected ? 0 : 2, borderColor: '#CBD5E1', alignItems: 'center', justifyContent: 'center' }}>
+                                        {isSelected && <Check size={14} color="#fff" />}
+                                    </View>
+                                </View>
+                            )}
+
+                            {/* Icon Box */}
+                            <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: cfg.bg, borderWidth: 1, borderColor: cfg.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Text style={{ fontSize: 24 }}>{cfg.icon}</Text>
+                            </View>
+
+                            {/* Content */}
+                            <View style={{ flex: 1 }}>
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                                    <Text style={{ fontSize: 17, fontWeight: '800', color: '#0F172A', flex: 1, lineHeight: 22, marginRight: 8 }} numberOfLines={2}>{item.title}</Text>
+                                    <TouchableOpacity onPress={() => handleTogglePin(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                        <Star size={20} color={item.isPinned ? '#F59E0B' : '#CBD5E1'} fill={item.isPinned ? '#F59E0B' : 'transparent'} />
+                                    </TouchableOpacity>
+                                </View>
+                                {/* Type badge */}
+                                <View style={{ backgroundColor: cfg.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: cfg.border, alignSelf: 'flex-start' }}>
+                                    <Text style={{ fontSize: 11, fontWeight: '800', color: cfg.text, letterSpacing: 0.5 }}>{cfg.label.toUpperCase()}</Text>
+                                </View>
+                            </View>
+                        </View>
+
+                        {/* Description */}
+                        {item.description ? (
+                            <View style={{ marginTop: 14, backgroundColor: '#F8FAFC', borderRadius: 14, padding: 12, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                                <Text style={{ fontSize: 14, color: '#475569', lineHeight: 20, fontWeight: '500' }}>{item.description}</Text>
+                            </View>
+                        ) : null}
+
+                        {/* Tags */}
+                        {item.tags && item.tags.length > 0 && (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 12 }}>
+                                {item.tags.map((tag: string, idx: number) => (
+                                    <View key={idx} style={{ backgroundColor: '#F1F5F9', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                                        <Tag size={11} color="#94A3B8" />
+                                        <Text style={{ fontSize: 12, fontWeight: '700', color: '#64748B' }}>{tag}</Text>
+                                    </View>
+                                ))}
+                            </View>
                         )}
-                        <Text className="text-white font-black text-base tracking-wide">
-                            {uploading ? 'Speichern...' : resourceType === 'file' ? 'Datei Auswählen & Hochladen' : 'Link Speichern'}
-                        </Text>
-                    </TouchableOpacity>
-                </MotiView>
 
-                {/* Resource List */}
-                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-4 ml-2">Verfügbare Ressourcen</Text>
-
-                {loading ? (
-                    <ActivityIndicator size="large" color="#137386" className="mt-8" />
-                ) : resources.length === 0 ? (
-                    <View className="items-center justify-center py-12 bg-white rounded-[32px] border-2 border-[#E8E6E1] border-dashed mb-8">
-                        <FileText size={48} color="#CBD5E1" strokeWidth={1.5} />
-                        <Text className="text-gray-400 font-bold mt-4 text-center px-8">Noch keine Ressourcen vorhanden.{'\n'}Füge Arbeitsblätter oder Links hinzu.</Text>
+                        {/* Action buttons */}
+                        {!selectionMode && (
+                            <View style={{ flexDirection: 'row', gap: 8, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', alignItems: 'center', justifyContent: 'flex-end' }}>
+                                <TouchableOpacity
+                                    onPress={() => handlePressDelete(item)}
+                                    style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#FEF2F2', borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#FECACA' }}
+                                >
+                                    <Trash2 size={15} color="#EF4444" />
+                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 13 }}>Löschen</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => openHistoryModal(item)}
+                                    style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#F8FAFC', borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' }}
+                                >
+                                    <Clock size={16} color="#64748B" />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => handlePressAssign(item)}
+                                    style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#2C3E50', borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, shadowColor: '#2C3E50', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                                >
+                                    <Send size={15} color="#C09D59" />
+                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>Zuweisen</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
                     </View>
-                ) : (
-                    resources.map((item, index) => (
-                        <MotiView
-                            key={item.id}
-                            from={{ opacity: 0, translateY: 10 }}
-                            animate={{ opacity: 1, translateY: 0 }}
-                            transition={{ delay: 200 + (index * 50) }}
-                            className="bg-white p-5 rounded-[24px] border border-[#E8E6E1] mb-4 flex-row justify-between items-center"
-                            style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }}
+                </TouchableOpacity>
+            </MotiView>
+        );
+    };
+
+    const FILTER_OPTIONS = [
+        { key: 'all', label: 'Alle', icon: null, color: '#2C3E50' },
+        { key: 'documents', label: 'Dokumente', icon: <FileText size={14} color="inherit" />, color: '#2C3E50' },
+        { key: 'media', label: 'Medien', icon: <FileVideo size={14} color="inherit" />, color: '#C09D59' },
+        { key: 'links', label: 'Links', icon: <LinkIcon size={14} color="inherit" />, color: '#8B7355' },
+    ] as const;
+
+    const listHeaderElement = (
+        <View style={{ paddingTop: 8 }}>
+            {/* Search bar */}
+            <MotiView from={{ opacity: 0, translateY: 8 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 280, delay: 80 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 16, borderWidth: 1.5, borderColor: 'rgba(0,0,0,0.06)', shadowColor: '#0F172A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.04, shadowRadius: 8, elevation: 2 }}>
+                    <Search color="#94A3B8" size={20} style={{ marginRight: 10 }} />
+                    <TextInput
+                        placeholder="Bibliothek durchsuchen..."
+                        placeholderTextColor="#94A3B8"
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        style={{ flex: 1, color: '#0F172A', fontWeight: '600', fontSize: 16 } as any}
+                    />
+                    {searchQuery.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchQuery('')} style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <X color="#64748B" size={14} />
+                        </TouchableOpacity>
+                    )}
+                </View>
+
+                {/* Filter chips */}
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingRight: 8, gap: 8, paddingBottom: 4 }} style={{ marginBottom: 20 }}>
+                    {FILTER_OPTIONS.map(opt => {
+                        const isActive = activeFilter === opt.key;
+                        return (
+                            <TouchableOpacity
+                                key={opt.key}
+                                onPress={() => setActiveFilter(opt.key as any)}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                    paddingHorizontal: 16,
+                                    paddingVertical: 9,
+                                    borderRadius: 20,
+                                    backgroundColor: isActive ? opt.color : 'white',
+                                    borderWidth: 1.5,
+                                    borderColor: isActive ? opt.color : 'rgba(0,0,0,0.07)',
+                                    shadowColor: isActive ? opt.color : 'transparent',
+                                    shadowOffset: { width: 0, height: 4 },
+                                    shadowOpacity: 0.25,
+                                    shadowRadius: 8,
+                                    elevation: isActive ? 4 : 0,
+                                }}
+                            >
+                                <Text style={{ fontSize: 14, fontWeight: '800', color: isActive ? 'white' : '#64748B', letterSpacing: 0.2 }}>{opt.label}</Text>
+                            </TouchableOpacity>
+                        );
+                    })}
+                </ScrollView>
+            </MotiView>
+
+            {/* Section heading */}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 12, fontWeight: '900', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 1.5 }}>
+                    Bibliothek · {filteredResources.length} {filteredResources.length === 1 ? 'Eintrag' : 'Einträge'}
+                </Text>
+                <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginLeft: 12 }} />
+            </View>
+
+            {loading ? (
+                <ActivityIndicator size="large" color="#2C3E50" style={{ marginTop: 40 }} />
+            ) : filteredResources.length === 0 ? (
+                <MotiView from={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} style={{ alignItems: 'center', paddingVertical: 56, backgroundColor: 'white', borderRadius: 28, borderWidth: 2, borderColor: '#E2E8F0', borderStyle: 'dashed', marginBottom: 16 }}>
+                    <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: '#F8FAFC', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                        <Library size={36} color="#CBD5E1" strokeWidth={1.5} />
+                    </View>
+                    <Text style={{ fontSize: 20, fontWeight: '900', color: '#0F172A', marginBottom: 8 }}>Nichts gefunden</Text>
+                    <Text style={{ fontSize: 14, color: '#94A3B8', fontWeight: '500', textAlign: 'center', paddingHorizontal: 40, lineHeight: 20 }}>Ändere die Suchkriterien oder füge eine neue Ressource hinzu.</Text>
+                </MotiView>
+            ) : null}
+        </View>
+    );
+
+    return (
+        <View style={{ flex: 1, backgroundColor: '#F8FAFC' }}>
+            {/* Premium Header */}
+            <MotiView from={{ opacity: 0, translateY: -20 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 350 }}>
+                <LinearGradient
+                    colors={['#2C3E50', '#3D5166']}
+                    style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 28, paddingHorizontal: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8, zIndex: 10 }}
+                >
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <TouchableOpacity
+                            onPress={() => router.replace('/therapist')}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
                         >
-                            <View className="flex-1 pr-4 flex-row items-center">
-                                <View className={`w-12 h-12 rounded-[16px] items-center justify-center mr-4 ${item.type === 'link' ? 'bg-blue-50' : 'bg-red-50'}`}>
-                                    {item.type === 'link' ? <LinkIcon color="#3B82F6" size={24} /> :
-                                        item.type === 'video' ? <FileVideo color="#EF4444" size={24} /> :
-                                            item.type === 'image' ? <FileImage color="#EF4444" size={24} /> :
-                                                <FileText color="#EF4444" size={24} />}
+                            <ArrowLeft size={18} color="rgba(255,255,255,0.9)" />
+                            <Text style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '700', fontSize: 14 }}>Zurück</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ flex: 1, alignItems: 'center' }}>
+                            <Text style={{ fontSize: 20, fontWeight: '900', color: 'white', letterSpacing: -0.3 }}>Bibliothek</Text>
+                        </View>
+
+                        <TouchableOpacity
+                            onPress={() => {
+                                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                setAddModalVisible(true);
+                            }}
+                            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#C09D59', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, shadowColor: '#C09D59', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 6, elevation: 3 }}
+                        >
+                            <Plus size={17} color="white" />
+                            <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>Hinzufügen</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Subtitle stats */}
+                    <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600', marginTop: 8 }}>
+                        {resources.length} {resources.length === 1 ? 'Ressource' : 'Ressourcen'} · Gemeinsames Material
+                    </Text>
+                </LinearGradient>
+            </MotiView>
+
+            <FlatList
+                data={filteredResources}
+                keyExtractor={item => item.id}
+                renderItem={renderResourceItem}
+                ListHeaderComponent={listHeaderElement}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxWidth: 860, alignSelf: 'center', width: '100%' }}
+            />
+
+            {/* Add Resource Modal */}
+            <Modal visible={addModalVisible} transparent animationType="slide">
+                <KeyboardAvoidingView
+                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                    style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}
+                >
+                    <TouchableOpacity className="flex-1" onPress={() => setAddModalVisible(false)} />
+                    <View className="bg-white rounded-t-[32px] p-6 pb-10" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 20 }}>
+                        <View className="flex-row justify-between items-center mb-6">
+                            <View className="flex-row items-center">
+                                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0F4F8', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: '#C5D2DC' }}>
+                                    <PlusCircle color="#2C3E50" size={22} />
                                 </View>
-                                <View className="flex-1">
-                                    <Text className="font-bold text-[#243842] text-base">{item.title}</Text>
-                                    {item.description ? (
-                                        <Text className="text-[#6B7C85] text-sm mt-1" numberOfLines={2}>{item.description}</Text>
-                                    ) : null}
-                                </View>
+                                <Text className="text-xl font-black text-[#243842]">Ressource hinzufügen</Text>
                             </View>
-                            <View className="flex-col gap-2">
-                                <TouchableOpacity onPress={() => handleDelete(item)} className="bg-red-50 w-11 h-11 rounded-[16px] items-center justify-center border border-red-100/50">
-                                    <Trash2 color="#EF4444" size={20} />
-                                </TouchableOpacity>
-                                <TouchableOpacity onPress={() => openAssignModal(item)} className="bg-[#137386] w-11 h-11 rounded-[16px] items-center justify-center shadow-sm" style={{ shadowColor: '#137386', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 2 }}>
-                                    <Send size={16} color="white" style={{ marginLeft: -2 }} />
-                                </TouchableOpacity>
+                            <TouchableOpacity onPress={() => setAddModalVisible(false)} className="bg-gray-100 p-2.5 rounded-full" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                <X size={20} color="#243842" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Tabs */}
+                        <View className="flex-row gap-3 mb-6 bg-[#F9F8F6] p-1.5 rounded-2xl border border-[#E8E6E1]">
+                            <TouchableOpacity
+                                onPress={() => setResourceType('file')}
+                                className={`flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2 ${resourceType === 'file' ? 'bg-white shadow-sm border border-[#E8E6E1]' : 'border border-transparent'}`}
+                            >
+                                <FileText size={18} color={resourceType === 'file' ? '#2C3E50' : '#9CA3AF'} />
+                                <Text style={{ fontWeight: '700', color: resourceType === 'file' ? '#2C3E50' : '#9CA3AF' }}>Datei</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={() => setResourceType('link')}
+                                className={`flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2 ${resourceType === 'link' ? 'bg-white shadow-sm border border-[#E8E6E1]' : 'border border-transparent'}`}
+                            >
+                                <LinkIcon size={18} color={resourceType === 'link' ? '#C09D59' : '#9CA3AF'} />
+                                <Text style={{ fontWeight: '700', color: resourceType === 'link' ? '#C09D59' : '#9CA3AF' }}>Web Link</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="mb-4">
+                            <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Titel der Ressource</Text>
+                            <TextInput
+                                placeholder="Z.B. Arbeitsblatt Entspannung"
+                                placeholderTextColor="#9CA3AF"
+                                value={title}
+                                onChangeText={setTitle}
+                                className="bg-[#F9F8F6] border border-[#E8E6E1] p-4 rounded-2xl font-bold text-[#243842] text-base"
+                            />
+                        </View>
+
+                        <View className="mb-4">
+                            <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Kurze Beschreibung (optional)</Text>
+                            <TextInput
+                                placeholder="Z.B. Eine einfache Atemübung für den Alltag"
+                                placeholderTextColor="#9CA3AF"
+                                value={description}
+                                onChangeText={setDescription}
+                                multiline
+                                className="bg-[#F9F8F6] border border-[#E8E6E1] p-4 rounded-2xl text-[#6B7C85] text-base min-h-[80px]"
+                                textAlignVertical="top"
+                            />
+                        </View>
+
+                        <View className="mb-4">
+                            <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Tags (Komma getrennt, optional)</Text>
+                            <TextInput
+                                placeholder="Z.B. Angst, Achtsamkeit, Übung"
+                                placeholderTextColor="#9CA3AF"
+                                value={tagsInput}
+                                onChangeText={setTagsInput}
+                                className="bg-[#F9F8F6] border border-[#E8E6E1] p-4 rounded-2xl font-bold text-[#243842] text-base"
+                            />
+                        </View>
+
+                        {resourceType === 'link' && (
+                            <View className="mb-6">
+                                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">URL</Text>
+                                <TextInput
+                                    placeholder="https://..."
+                                    placeholderTextColor="#9CA3AF"
+                                    value={linkUrl}
+                                    onChangeText={setLinkUrl}
+                                    autoCapitalize="none"
+                                    keyboardType="url"
+                                    className="bg-[#F9F8F6] border border-[#E8E6E1] p-4 rounded-2xl text-[#243842] text-base font-medium"
+                                />
                             </View>
-                        </MotiView>
-                    ))
-                )}
-            </ScrollView>
+                        )}
+
+                        <TouchableOpacity
+                            onPress={resourceType === 'file' ? handleUploadFile : handleAddLink}
+                            disabled={uploading}
+                            style={{ paddingVertical: 16, marginTop: 8, borderRadius: 18, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: uploading ? '#E5E7EB' : '#2C3E50', shadowColor: '#2C3E50', shadowOffset: { width: 0, height: 4 }, shadowOpacity: uploading ? 0 : 0.3, shadowRadius: 8, elevation: uploading ? 0 : 4 }}
+                        >
+                            {uploading ? (
+                                <ActivityIndicator color="#C09D59" style={{ marginRight: 8 }} />
+                            ) : (
+                                resourceType === 'file' ? <UploadCloud color="#C09D59" size={20} style={{ marginRight: 8 }} /> : <LinkIcon color="#C09D59" size={20} style={{ marginRight: 8 }} />
+                            )}
+                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 }}>
+                                {uploading ? 'Speichern...' : resourceType === 'file' ? 'Datei Auswählen & Hochladen' : 'Link Speichern'}
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </KeyboardAvoidingView>
+            </Modal>
 
             {/* Assignment Modal */}
             <Modal visible={assignModalVisible} transparent animationType="fade">
@@ -409,49 +775,169 @@ export default function TherapistResources() {
                         style={{ backgroundColor: 'white' }}
                     >
                         <View className="bg-gray-50/50 p-6 border-b border-gray-100 flex-row justify-between items-center">
-                            <Text className="text-[20px] font-black text-[#243842] tracking-tight">Ressource Zuweisen</Text>
-                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100">
+                            <Text className="text-[20px] font-black text-[#243842] tracking-tight">An Klienten Senden</Text>
+                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={20} color="#243842" />
                             </TouchableOpacity>
                         </View>
 
                         <View className="p-6">
-                            <Text className="text-[#243842]/60 font-medium text-[15px] mb-6 leading-relaxed">
-                                Wem möchtest du die Ressource <Text className="font-bold text-[#137386]">"{selectedResourceForAssign?.title}"</Text> zuweisen?
+                            <Text style={{ color: 'rgba(36,56,66,0.6)', fontWeight: '500', fontSize: 15, marginBottom: 16, lineHeight: 22 }}>
+                                {selectedResourcesForAssign.length === 1
+                                    ? <Text>An wen möchtest du <Text style={{ fontWeight: '700', color: '#2C3E50' }}>"{selectedResourcesForAssign[0]?.title}"</Text> zuweisen?</Text>
+                                    : <Text>An wen möchtest du die <Text style={{ fontWeight: '700', color: '#2C3E50' }}>{selectedResourcesForAssign.length} markierten Ressourcen</Text> zuweisen?</Text>
+                                }
                             </Text>
 
                             <FlatList
                                 data={clients}
                                 keyExtractor={(c) => c.id}
-                                renderItem={({ item }) => (
-                                    <TouchableOpacity
-                                        onPress={() => confirmAssignToClient(item.id)}
-                                        className="bg-white p-5 rounded-[20px] border border-gray-100 mb-3 flex-row items-center justify-between"
-                                        style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 1 }}
-                                    >
-                                        <View className="flex-row items-center">
-                                            <View className="w-10 h-10 bg-[#137386]/10 rounded-full items-center justify-center mr-3">
-                                                <Text className="text-[#137386] font-bold">{item.firstName?.charAt(0)}{item.lastName?.charAt(0)}</Text>
+                                renderItem={({ item }) => {
+                                    const isClientSelected = selectedClientsForAssign.includes(item.id);
+                                    return (
+                                        <TouchableOpacity
+                                            onPress={() => toggleClientSelection(item.id)}
+                                            style={{ padding: 16, borderRadius: 20, borderWidth: 1.5, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: isClientSelected ? '#FAF7F0' : 'white', borderColor: isClientSelected ? '#C09D59' : '#F3F4F6' }}
+                                        >
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: isClientSelected ? 'rgba(192, 157, 89, 0.1)' : '#F0F4F8', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: isClientSelected ? 'rgba(192, 157, 89, 0.3)' : '#C5D2DC' }}>
+                                                    <Text style={{ color: isClientSelected ? '#C09D59' : '#2C3E50', fontWeight: '800' }}>{item.firstName?.charAt(0)}{item.lastName?.charAt(0)}</Text>
+                                                </View>
+                                                <Text style={{ fontWeight: '800', color: '#243842', fontSize: 16 }}>{item.firstName} {item.lastName}</Text>
                                             </View>
-                                            <Text className="font-black text-[#243842] text-[16px]">{item.firstName} {item.lastName}</Text>
-                                        </View>
-                                        <View className="bg-[#137386] w-9 h-9 rounded-full items-center justify-center opacity-90">
-                                            <Send size={14} color="#ffffff" style={{ marginLeft: -2 }} />
-                                        </View>
-                                    </TouchableOpacity>
-                                )}
-                                style={{ maxHeight: 300 }}
+                                            <View style={{ width: 24, height: 24, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: isClientSelected ? '#C09D59' : 'white', borderWidth: isClientSelected ? 0 : 2, borderColor: '#E8E6E1' }}>
+                                                {isClientSelected && <Check size={14} color="#fff" />}
+                                            </View>
+                                        </TouchableOpacity>
+                                    );
+                                }}
+                                style={{ maxHeight: 250 }}
                                 showsVerticalScrollIndicator={false}
                             />
+
+                            <TouchableOpacity
+                                onPress={confirmBulkAssign}
+                                disabled={selectedClientsForAssign.length === 0}
+                                style={{ marginTop: 20, paddingVertical: 16, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedClientsForAssign.length > 0 ? '#2C3E50' : '#E5E7EB', shadowColor: '#2C3E50', shadowOffset: { width: 0, height: 4 }, shadowOpacity: selectedClientsForAssign.length > 0 ? 0.3 : 0, shadowRadius: 8, elevation: selectedClientsForAssign.length > 0 ? 4 : 0 }}
+                            >
+                                <Send size={18} color={selectedClientsForAssign.length > 0 ? '#C09D59' : '#9CA3AF'} style={{ marginRight: 8 }} />
+                                <Text style={{ color: selectedClientsForAssign.length > 0 ? 'white' : '#9CA3AF', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 }}>
+                                    An {selectedClientsForAssign.length} Klient(en) senden
+                                </Text>
+                            </TouchableOpacity>
                         </View>
                     </MotiView>
                 </View>
             </Modal>
 
+            {/* Preview Modal */}
+            <Modal visible={previewModalVisible} transparent animationType="fade" onRequestClose={() => setPreviewModalVisible(false)}>
+                <View className="flex-1 bg-black/95 justify-center items-center">
+                    <TouchableOpacity
+                        className="absolute top-12 right-6 p-4 bg-white/10 rounded-full z-50"
+                        onPress={() => setPreviewModalVisible(false)}
+                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                        <X color="white" size={24} />
+                    </TouchableOpacity>
+
+                    {selectedResourceForPreview?.type === 'image' && (
+                        <Image
+                            source={{ uri: selectedResourceForPreview.url }}
+                            style={{ width: '100%', height: '70%' }}
+                            contentFit="contain"
+                        />
+                    )}
+
+                    {selectedResourceForPreview?.type === 'video' && (
+                        <Video
+                            source={{ uri: selectedResourceForPreview.url }}
+                            style={{ width: '100%', height: '70%' }}
+                            useNativeControls
+                            resizeMode={ResizeMode.CONTAIN}
+                            isLooping={false}
+                            shouldPlay
+                        />
+                    )}
+                    <Text className="text-white/90 text-2xl font-bold mt-8 px-6 text-center">{selectedResourceForPreview?.title}</Text>
+                    {selectedResourceForPreview?.description ? (
+                        <Text className="text-white/60 text-base mt-3 px-8 text-center">{selectedResourceForPreview.description}</Text>
+                    ) : null}
+                </View>
+            </Modal>
+
+            {/* History Modal */}
+            <Modal visible={historyModalVisible} transparent animationType="fade">
+                <View className="flex-1 justify-center items-center bg-black/40 p-4">
+                    <MotiView
+                        from={{ opacity: 0, scale: 0.95, translateY: 20 }}
+                        animate={{ opacity: 1, scale: 1, translateY: 0 }}
+                        className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl"
+                        style={{ backgroundColor: 'white' }}
+                    >
+                        <View className="bg-gray-50/50 p-6 border-b border-gray-100 flex-row justify-between items-center">
+                            <Text className="text-[20px] font-black text-[#243842] tracking-tight">Verlauf</Text>
+                            <TouchableOpacity onPress={() => setHistoryModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                <X size={20} color="#243842" />
+                            </TouchableOpacity>
+                        </View>
+
+                        <View className="p-6">
+                            <Text style={{ color: 'rgba(36,56,66,0.6)', fontWeight: '500', fontSize: 15, marginBottom: 16 }}>
+                                Bisherige Zuweisungen für <Text style={{ fontWeight: '700', color: '#2C3E50' }}>"{selectedResourceForHistory?.title}"</Text>
+                            </Text>
+
+                            {loadingHistory ? (
+                                <ActivityIndicator size="small" color="#2C3E50" style={{ marginVertical: 32 }} />
+                            ) : historyData.length === 0 ? (
+                                <View style={{ paddingVertical: 32, alignItems: 'center', backgroundColor: '#F9F8F6', borderRadius: 18, borderWidth: 1.5, borderColor: '#E8E6E1', borderStyle: 'dashed' }}>
+                                    <Clock size={32} color="#CBD5E1" style={{ marginBottom: 12 }} />
+                                    <Text style={{ color: '#6B7C85', textAlign: 'center', fontWeight: '500' }}>Noch nicht zugewiesen.</Text>
+                                </View>
+                            ) : (
+                                <FlatList
+                                    data={historyData}
+                                    keyExtractor={(h) => h.id}
+                                    renderItem={({ item }) => (
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderWidth: 1, borderColor: '#F0F4F8', borderRadius: 16, marginBottom: 8, backgroundColor: 'white' }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#F0F4F8', justifyContent: 'center', alignItems: 'center', marginRight: 12, borderWidth: 1, borderColor: '#C5D2DC' }}>
+                                                    <Text style={{ color: '#2C3E50', fontWeight: '800', fontSize: 12 }}>{item.clientName.charAt(0)}</Text>
+                                                </View>
+                                                <Text style={{ fontWeight: '800', color: '#243842' }}>{item.clientName}</Text>
+                                            </View>
+                                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#9CA3AF' }}>
+                                                {item.assignedAt.toLocaleDateString('de-DE')}
+                                            </Text>
+                                        </View>
+                                    )}
+                                    style={{ maxHeight: 300 }}
+                                    showsVerticalScrollIndicator={false}
+                                />
+                            )}
+                        </View>
+                    </MotiView>
+                </View>
+            </Modal>
+
+
+            <ConfirmModal
+                visible={confirmModal.visible}
+                title={confirmModal.title}
+                message={confirmModal.message}
+                confirmText={confirmModal.confirmText}
+                cancelText="Abbrechen"
+                isDestructive={confirmModal.isDestructive}
+                onConfirm={confirmModal.onConfirm}
+                onCancel={() => setConfirmModal(prev => ({ ...prev, visible: false }))}
+            />
+
             <SuccessAnimation
-                visible={showSuccess}
-                message={successMessage}
-                onAnimationDone={() => setShowSuccess(false)}
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.subMessage}
+                onAnimationDone={() => setToast(prev => ({ ...prev, visible: false }))}
             />
         </View>
     );

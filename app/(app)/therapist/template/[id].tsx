@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, Alert, ActivityIndicator, Platform, KeyboardAvoidingView } from 'react-native';
 import i18n from '../../../../utils/i18n';
 import { useEffect, useState } from 'react';
 import { doc, getDoc, setDoc, updateDoc, collection } from 'firebase/firestore';
@@ -11,6 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import ExerciseBuilder from '../../../../components/therapist/ExerciseBuilder';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { SuccessAnimation } from '../../../../components/ui/SuccessAnimation';
+import { ChevronLeft } from 'lucide-react-native';
 
 export default function TemplateDetail() {
     const { id } = useLocalSearchParams();
@@ -21,6 +22,7 @@ export default function TemplateDetail() {
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [toast, setToast] = useState<{ visible: boolean, message: string, subMessage?: string, type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
     const [template, setTemplate] = useState<{ title: string, blocks: any[], coverImage?: string, themeColor?: string }>({
         title: '',
         blocks: []
@@ -45,12 +47,12 @@ export default function TemplateDetail() {
                     themeColor: data.themeColor
                 });
             } else {
-                Alert.alert(i18n.t('templates.error'), i18n.t('templates.not_found'));
+                setToast({ visible: true, message: i18n.t('templates.error'), subMessage: i18n.t('templates.not_found'), type: 'error' });
                 router.back();
             }
         } catch (error) {
             console.error("Error loading template", error);
-            Alert.alert(i18n.t('templates.error'), i18n.t('templates.load_err'));
+            setToast({ visible: true, message: i18n.t('templates.error'), subMessage: i18n.t('templates.load_err'), type: 'error' });
         } finally {
             setLoading(false);
         }
@@ -59,8 +61,7 @@ export default function TemplateDetail() {
     // Removed inline import for uploadFile
     const handleSave = async (title: string, blocks: any[], coverImage?: string, themeColor?: string) => {
         if (!title) {
-            if (Platform.OS === 'web') window.alert(i18n.t('templates.title_req'));
-            else Alert.alert(i18n.t('templates.error'), i18n.t('templates.title_req'));
+            setToast({ visible: true, message: i18n.t('templates.error'), subMessage: i18n.t('templates.title_req'), type: 'error' });
             return;
         }
 
@@ -75,8 +76,7 @@ export default function TemplateDetail() {
                     processedCoverImage = await uploadFile(coverImage, path);
                 } catch (uploadError) {
                     console.error("Error uploading cover image:", uploadError);
-                    if (Platform.OS === 'web') window.alert("Fehler beim Hochladen des Titelbilds. Bitte versuche es erneut.");
-                    else Alert.alert(i18n.t('templates.error'), "Fehler beim Hochladen des Titelbilds.");
+                    setToast({ visible: true, message: i18n.t('templates.error'), subMessage: "Fehler beim Hochladen des Titelbilds.", type: 'error' });
                     setSaving(false);
                     return;
                 }
@@ -122,8 +122,7 @@ export default function TemplateDetail() {
             setShowSuccess(true);
         } catch (error: any) {
             console.error("Error saving template", error);
-            if (Platform.OS === 'web') window.alert(error.message || i18n.t('templates.save_err'));
-            else Alert.alert(i18n.t('templates.error'), error.message || i18n.t('templates.save_err'));
+            setToast({ visible: true, message: i18n.t('templates.error'), subMessage: error.message || i18n.t('templates.save_err'), type: 'error' });
             setSaving(false);
         }
     };
@@ -137,30 +136,15 @@ export default function TemplateDetail() {
     }
 
     return (
-        <View className="flex-1 bg-[#F9F8F6]">
-            {/* Header */}
-            <View
-                className="bg-[#137386] pt-16 pb-8 px-8 rounded-b-[40px] z-10 shadow-lg flex-row items-center justify-between"
-                style={{ paddingTop: Platform.OS === 'android' ? 48 : 56 }}
-            >
-                <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2.5 rounded-2xl backdrop-blur-md">
-                    <Text className="text-white font-bold">{i18n.t('templates.back')}</Text>
-                </TouchableOpacity>
-                <Text className="text-[22px] font-black text-white flex-1 text-right ml-4 tracking-tight">
-                    {isNew ? i18n.t('templates.new_title') : i18n.t('templates.edit_title')}
-                </Text>
-            </View>
-
-            <View className="flex-1">
-                <ExerciseBuilder
-                    initialTitle={template.title}
-                    initialBlocks={template.blocks}
-                    initialCoverImage={template.coverImage}
-                    initialThemeColor={template.themeColor}
-                    onSave={handleSave}
-                    onCancel={() => router.back()}
-                />
-            </View>
+        <View style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+            <ExerciseBuilder
+                initialTitle={template.title}
+                initialBlocks={template.blocks}
+                initialCoverImage={template.coverImage}
+                initialThemeColor={template.themeColor}
+                onSave={handleSave}
+                onCancel={() => router.back()}
+            />
 
             {saving && (
                 <View className="absolute inset-0 bg-black/30 justify-center items-center">
@@ -175,6 +159,14 @@ export default function TemplateDetail() {
                     setShowSuccess(false);
                     router.back();
                 }}
+            />
+
+            <SuccessAnimation
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.subMessage}
+                onAnimationDone={() => setToast(prev => ({ ...prev, visible: false }))}
             />
         </View>
     );

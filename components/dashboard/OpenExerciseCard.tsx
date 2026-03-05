@@ -7,9 +7,11 @@ import { useState } from 'react';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { CalendarDays, Play } from 'lucide-react-native';
+import { useTheme } from '../../contexts/ThemeContext';
 
 export function OpenExerciseCard({ exercise, onPress }: { exercise: Exercise; onPress: () => void }) {
     const [pressed, setPressed] = useState(false);
+    const { colors, isDark } = useTheme();
 
     const handlePressIn = () => {
         setPressed(true);
@@ -25,24 +27,24 @@ export function OpenExerciseCard({ exercise, onPress }: { exercise: Exercise; on
             <MotiView
                 animate={{ scale: pressed ? 0.96 : 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                style={styles.card}
+                style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}
             >
                 {exercise.coverImage && (
-                    <View className="mb-5 rounded-[20px] overflow-hidden w-full h-32 bg-gray-100 border border-gray-100">
+                    <View style={{ marginBottom: 20, borderRadius: 20, overflow: 'hidden', width: '100%', height: 128, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6' }}>
                         <Image source={{ uri: exercise.coverImage }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                     </View>
                 )}
-                <View className="flex-row justify-between items-center gap-4">
-                    <View className="flex-1 pr-5">
-                        <Text className="text-[19px] font-black tracking-tight text-[#243842] mb-3 leading-snug">{exercise.title}</Text>
-                        <View className="flex-row flex-wrap gap-2.5">
-                            <View className="bg-[#F9F8F6] px-3.5 py-1.5 rounded-full border border-gray-100">
-                                <Text className="text-[#243842]/70 text-xs font-bold tracking-wide uppercase">{i18n.t('dashboard.exercises.modules', { count: exercise.blocks?.length ?? 0 })}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+                    <View style={{ flex: 1, paddingRight: 20 }}>
+                        <Text style={{ fontSize: 19, fontWeight: '900', color: colors.text, letterSpacing: -0.5, marginBottom: 12 }}>{exercise.title}</Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, borderWidth: 1, borderColor: isDark ? 'transparent' : colors.border }}>
+                                <Text style={{ color: colors.textSubtle, fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' }}>{i18n.t('dashboard.exercises.modules', { count: exercise.blocks?.length ?? 0 })}</Text>
                             </View>
                             {exercise.recurrence && exercise.recurrence !== 'none' && (
-                                <View className="bg-[#C09D59]/10 px-3.5 py-1.5 rounded-full flex-row items-center">
-                                    <CalendarDays size={14} color="#C09D59" style={{ marginRight: 6 }} />
-                                    <Text className="text-[#C09D59] text-xs font-bold tracking-wide uppercase">
+                                <View style={{ backgroundColor: `${exercise.themeColor || colors.primary}1A`, paddingHorizontal: 14, paddingVertical: 6, borderRadius: 16, flexDirection: 'row', alignItems: 'center' }}>
+                                    <CalendarDays size={14} color={exercise.themeColor || colors.primary} style={{ marginRight: 6 }} />
+                                    <Text style={{ color: exercise.themeColor || colors.primary, fontSize: 12, fontWeight: '800', letterSpacing: 0.5, textTransform: 'uppercase' }}>
                                         {exercise.recurrence === 'daily' ? i18n.t('dashboard.exercises.daily') : i18n.t('dashboard.exercises.weekly')}
                                     </Text>
                                 </View>

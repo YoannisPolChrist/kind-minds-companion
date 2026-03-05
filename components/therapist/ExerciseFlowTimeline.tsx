@@ -13,7 +13,7 @@ import React, { useMemo, useEffect, useRef } from 'react';
 import { View, Text, Animated, ScrollView } from 'react-native';
 import Svg, { Path, Circle, G, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import * as d3 from 'd3';
-import { ExerciseBlock, ExerciseBlockType } from './ExerciseBuilder';
+import { ExerciseBlock, ExerciseBlockType } from './blocks/exerciseRegistry';
 
 // ─── Category Palette ─────────────────────────────────────────────────────────
 
@@ -28,6 +28,7 @@ const BLOCK_META: Record<ExerciseBlockType, { color: string; icon: string; short
     breathing: { color: '#137386', icon: '🌬️', short: 'Atem' },
     timer: { color: '#8B5CF6', icon: '⏱️', short: 'Timer' },
     media: { color: '#F43F5E', icon: '📸', short: 'Medien' },
+    video: { color: '#E11D48', icon: '🎥', short: 'Video' },
     spider_chart: { color: '#F97316', icon: '🕸️', short: 'Netz' },
     bar_chart: { color: '#0EA5E9', icon: '📈', short: 'Balken' },
     pie_chart: { color: '#8B5CF6', icon: '🥧', short: 'Kreis' },

@@ -1,8 +1,10 @@
 import "../global.css";
 import { Stack, Slot } from "expo-router";
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider } from "../contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "../contexts/LanguageContext";
 import { NetworkProvider } from "../contexts/NetworkContext";
+import { ThemeProvider } from "../contexts/ThemeContext";
 import { OfflineBanner } from "../components/ui/OfflineBanner";
 import { ErrorBoundary } from "../components/ErrorBoundary";
 
@@ -14,15 +16,19 @@ function RootApp() {
 
 export default function Layout() {
     return (
-        <ErrorBoundary>
-            <LanguageProvider>
-                <NetworkProvider>
-                    <OfflineBanner />
-                    <AuthProvider>
-                        <RootApp />
-                    </AuthProvider>
-                </NetworkProvider>
-            </LanguageProvider>
-        </ErrorBoundary>
+        <SafeAreaProvider>
+            <ErrorBoundary>
+                <ThemeProvider>
+                    <LanguageProvider>
+                        <NetworkProvider>
+                            <OfflineBanner />
+                            <AuthProvider>
+                                <RootApp />
+                            </AuthProvider>
+                        </NetworkProvider>
+                    </LanguageProvider>
+                </ThemeProvider>
+            </ErrorBoundary>
+        </SafeAreaProvider>
     );
 }

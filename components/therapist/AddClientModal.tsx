@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, ActivityIndicator, Share, Alert, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, Modal, ActivityIndicator, Share, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { MotiView } from 'moti';
-import { X, Copy, Share2, UserPlus, Link as LinkIcon, Mail, Key, CheckCircle2 } from 'lucide-react-native';
+import { X, Copy, Share2, UserPlus, Link as LinkIcon, Mail, Key, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { createInvitation } from '../../services/invitationService';
 import { ClientService } from '../../services/clientService';
 import { ErrorHandler } from '../../utils/errors';
@@ -30,6 +30,9 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
     // Invite State
     const [generatedCode, setGeneratedCode] = useState<string | null>(null);
 
+    // Error state for inline feedback
+    const [formError, setFormError] = useState<string | null>(null);
+
     // Auto-switch to invite tab if an offline profile is passed
     useEffect(() => {
         if (visible) {
@@ -40,6 +43,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
             }
             setGeneratedCode(null);
             setCreatedAccount(null);
+            setFormError(null);
             setFirstName('');
             setLastName('');
             setEmail('');
@@ -51,15 +55,16 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
      *  The therapist remains logged in throughout. */
     const handleCreateWithAccount = async () => {
         if (!firstName.trim() || !lastName.trim()) {
-            Alert.alert('Fehler', 'Bitte Vor- und Nachname eingeben.');
+            setFormError('Bitte Vor- und Nachname eingeben.');
             return;
         }
         if (!email.trim()) {
-            Alert.alert('Fehler', 'Bitte E-Mail-Adresse eingeben, um einen Zugang zu erstellen.');
+            setFormError('Bitte E-Mail-Adresse eingeben, um einen Zugang zu erstellen.');
             return;
         }
 
         setLoading(true);
+        setFormError(null);
         try {
             const { email: createdEmail, resetSent } = await ClientService.createClientAccount({
                 firstName,
@@ -73,7 +78,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
             onClientAdded();
         } catch (error: any) {
             const { message } = ErrorHandler.handle(error, 'Create Client Account');
-            Alert.alert('Fehler', message);
+            setFormError(message);
         } finally {
             setLoading(false);
         }
@@ -82,11 +87,12 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
     /** Creates an offline profile WITHOUT a login account. */
     const handleCreateOfflineProfile = async () => {
         if (!firstName.trim() || !lastName.trim()) {
-            Alert.alert('Fehler', 'Bitte Vor- und Nachname eingeben.');
+            setFormError('Bitte Vor- und Nachname eingeben.');
             return;
         }
 
         setLoading(true);
+        setFormError(null);
         try {
             await ClientService.createOfflineProfile({
                 firstName,
@@ -96,12 +102,11 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                 therapistId
             });
 
-            Alert.alert('Erfolg', 'Offline-Akte wurde erfolgreich angelegt.');
             onClientAdded();
             onClose();
         } catch (error) {
             console.error('Error creating offline client:', error);
-            Alert.alert('Fehler', 'Klient konnte nicht angelegt werden.');
+            setFormError('Klient konnte nicht angelegt werden.');
         } finally {
             setLoading(false);
         }
@@ -109,13 +114,14 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
 
     const handleGenerateLink = async () => {
         setLoading(true);
+        setFormError(null);
         try {
             const profileId = offlineProfile ? offlineProfile.id : undefined;
             const code = await createInvitation(therapistId, profileId);
             setGeneratedCode(code);
         } catch (error) {
             console.error('Error generating invitation:', error);
-            Alert.alert('Fehler', 'Einladungscode konnte nicht generiert werden.');
+            setFormError('Einladungscode konnte nicht generiert werden.');
         } finally {
             setLoading(false);
         }
@@ -141,7 +147,10 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
             transparent={true}
             onRequestClose={handleClose}
         >
-            <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
+            <KeyboardAvoidingView
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}
+            >
                 <MotiView
                     from={{ translateY: 400 }}
                     animate={{ translateY: 0 }}
@@ -153,7 +162,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                         <Text style={{ fontSize: 24, fontWeight: '900', color: '#243842', letterSpacing: -0.5 }}>
                             {offlineProfile ? 'Profil verknüpfen' : 'Neuer Klient'}
                         </Text>
-                        <TouchableOpacity onPress={handleClose} style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 20 }}>
+                        <TouchableOpacity onPress={handleClose} style={{ backgroundColor: '#F1F5F9', padding: 8, borderRadius: 20 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                             <X size={22} color="#64748B" />
                         </TouchableOpacity>
                     </View>
@@ -226,6 +235,14 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                             Ohne E-Mail: Es wird eine Offline-Akte angelegt.
                                         </Text>
                                     </View>
+
+                                    {/* Error Banner */}
+                                    {formError && (
+                                        <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 16, gap: 10 }}>
+                                            <AlertCircle size={18} color="#DC2626" />
+                                            <Text style={{ color: '#DC2626', fontWeight: '600', flex: 1 }}>{formError}</Text>
+                                        </MotiView>
+                                    )}
 
                                     {/* Form Fields */}
                                     <View style={{ gap: 16 }}>
@@ -349,7 +366,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                         </View>
                     )}
                 </MotiView>
-            </View>
+            </KeyboardAvoidingView>
         </Modal>
     );
 }

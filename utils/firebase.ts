@@ -40,11 +40,11 @@ export const auth = getAuth(app);
 // On subsequent hot reloads, getFirestore() returns the already-existing instance.
 if (getApps().length === 1 && getApps()[0] === app) {
     try {
-        // Force memory cache on web to prevent catastrophic IndexedDB lag during hot reloads
-        // and slow "first-load" issues in development.
+        // Force memory cache on web development to prevent IndexedDB lock lags during hot reloads.
+        // Otherwise, use persistent cache for offline-first functionality.
         const isWeb = Platform.OS === 'web';
         initializeFirestore(app, {
-            localCache: memoryLocalCache(),
+            localCache: (isWeb && __DEV__) ? memoryLocalCache() : persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
             experimentalForceLongPolling: isWeb
         });
     } catch {

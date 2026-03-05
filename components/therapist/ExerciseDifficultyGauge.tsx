@@ -21,7 +21,7 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, Animated } from 'react-native';
 import Svg, { Path, G, Circle, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
 import * as d3 from 'd3';
-import { ExerciseBlock, ExerciseBlockType } from './ExerciseBuilder';
+import { ExerciseBlock, ExerciseBlockType } from './blocks/exerciseRegistry';
 
 // ─── Complexity Weights ───────────────────────────────────────────────────────
 
@@ -38,6 +38,7 @@ const COMPLEXITY_WEIGHT: Record<ExerciseBlockType, number> = {
     line_chart: 2.5,
     gratitude: 0.5,
     media: 1.5,
+    video: 1.0,
     breathing: 2,
     timer: 1,
 };

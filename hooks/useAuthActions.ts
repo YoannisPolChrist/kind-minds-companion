@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, updateDoc, getDocs, query, collection, where } from 'firebase/firestore';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, updateDoc, getDocs, query, collection, where, addDoc } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
 import { router } from 'expo-router';
 import i18n from '../utils/i18n';
@@ -11,7 +11,7 @@ interface AuthResponse {
     error: string;
     success: string;
     login: (email: string, password: string) => Promise<void>;
-    register: (email: string, password: string, inviteCode?: string) => Promise<void>;
+    register: (email: string, password: string, options?: { inviteCode?: string; firstName?: string; lastName?: string; birthDate?: string }) => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     clearMessages: () => void;
 }
@@ -30,7 +30,16 @@ export function useAuthActions(): AuthResponse {
         clearMessages();
         setLoading(true);
         try {
-            await signInWithEmailAndPassword(auth, email, password);
+            const credential = await signInWithEmailAndPassword(auth, email, password);
+            const user = credential.user;
+
+            // Block login for unverified users (skip check for therapist-created accounts via createdByTherapist flag)
+            if (!user.emailVerified) {
+                await signOut(auth);
+                setError('Bitte verifiziere zuerst deine E-Mail-Adresse. Wir haben dir bei der Registrierung einen Link gesendet.');
+                return;
+            }
+
             router.replace('/(app)/');
         } catch (err: any) {
             let message = i18n.t('login.error_default');
@@ -45,9 +54,10 @@ export function useAuthActions(): AuthResponse {
         }
     }, [clearMessages]);
 
-    const register = useCallback(async (email: string, password: string, inviteCode?: string) => {
+    const register = useCallback(async (email: string, password: string, options?: { inviteCode?: string; firstName?: string; lastName?: string; birthDate?: string }) => {
         clearMessages();
         setLoading(true);
+        const { inviteCode, firstName, lastName, birthDate } = options || {};
         try {
             let therapistId = null;
             let targetOfflineProfileId = null;
@@ -69,9 +79,24 @@ export function useAuthActions(): AuthResponse {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
 
+            // Send email verification – via backend to get the custom Resend template
+            try {
+                await addDoc(collection(db, 'mail_requests'), {
+                    email: user.email,
+                    type: 'VERIFY_EMAIL',
+                    status: 'pending',
+                    requestedAt: serverTimestamp()
+                });
+            } catch (verifyErr) {
+                console.warn('Could not send verification email request', verifyErr);
+            }
+
             // Create initial user profile in Firestore
             const userProfile: any = {
                 email: user.email,
+                firstName: firstName?.trim() || '',
+                lastName: lastName?.trim() || '',
+                birthDate: birthDate?.trim() || null,
                 role: 'client', // Default to client for open registration
                 createdAt: serverTimestamp(),
                 onboardingCompleted: false
@@ -85,7 +110,6 @@ export function useAuthActions(): AuthResponse {
                 userProfile.linkedOfflineProfileId = targetOfflineProfileId;
 
                 try {
-                    // Update the offline profile to become the primary profile, or mark it as claimed
                     await updateDoc(doc(db, 'users', targetOfflineProfileId), {
                         isOfflineProfile: false,
                         linkedAuthUid: user.uid,
@@ -111,20 +135,23 @@ export function useAuthActions(): AuthResponse {
 
                 } catch (mergeError) {
                     console.error('Failed to merge offline profile data:', mergeError);
-                    // Non-fatal error, user is still registered
                 }
             }
 
-            // Create initial user profile in Firestore (will contain auth uid)
             await setDoc(doc(db, 'users', user.uid), userProfile);
 
-            // Mark invitation as used
             if (invitationId) {
                 await markInvitationAsUsed(invitationId);
             }
 
-            // Let AppLayout handle redirection based on onboardingCompleted state
-            router.replace('/(app)/');
+            // Set success message BEFORE signing out, so it renders before auth state changes
+            setSuccess('Registrierung erfolgreich! Bitte prüfe dein Postfach und klicke auf den Bestätigungs-Link, bevor du dich anmeldest.');
+
+            // Small delay so the success banner renders before Firebase auth state listener fires
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Sign user out – they must verify their email before logging in
+            await signOut(auth);
         } catch (err: any) {
             console.error('Registration error:', err);
             let message = 'Registrierung fehlgeschlagen.';
@@ -143,14 +170,16 @@ export function useAuthActions(): AuthResponse {
         clearMessages();
         setLoading(true);
         try {
-            await sendPasswordResetEmail(auth, email);
+            await addDoc(collection(db, 'mail_requests'), {
+                email: email.trim().toLowerCase(),
+                type: 'PASSWORD_RESET',
+                status: 'pending',
+                requestedAt: serverTimestamp()
+            });
         } catch (err: any) {
-            // Intentionally do nothing on error — same feedback regardless,
-            // so attackers cannot enumerate registered email addresses.
-            console.warn('Password reset attempt:', err.code);
+            console.warn('Password reset attempt:', err.message);
         } finally {
             setLoading(false);
-            // Always show success to prevent user enumeration (OWASP A07)
             setSuccess(i18n.t('login.reset_sent'));
         }
     }, [clearMessages]);

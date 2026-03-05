@@ -1,5 +1,6 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, TextInput, Modal, Platform, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, TextInput, Modal, Platform, Linking } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useSafeBack } from '../../../../../hooks/useSafeBack';
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, where, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
@@ -39,8 +40,9 @@ function formatFileSize(bytes?: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const FileCard = React.memo(({ file, index, setFileToDelete, setDeleteModalVisible }: any) => {
+const FileCard = React.memo(({ file, index, onDeletePrompt }: any) => {
     const info = getFileInfo(file);
+    const handleDelete = React.useCallback(() => onDeletePrompt(file), [file, onDeletePrompt]);
     return (
         <MotiView
             from={{ opacity: 0, translateY: 16 }}
@@ -88,7 +90,7 @@ const FileCard = React.memo(({ file, index, setFileToDelete, setDeleteModalVisib
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity
-                        onPress={() => { setFileToDelete(file); setDeleteModalVisible(true); }}
+                        onPress={handleDelete}
                         style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' }}
                     >
                         <Trash2 size={18} color="#EF4444" />
@@ -101,6 +103,7 @@ const FileCard = React.memo(({ file, index, setFileToDelete, setDeleteModalVisib
 
 export default function TherapistClientFilesScreen() {
     const router = useRouter();
+    const goBack = useSafeBack();
     const { id } = useLocalSearchParams();
     const { profile } = useAuth();
 
@@ -119,6 +122,11 @@ export default function TherapistClientFilesScreen() {
     // Delete
     const [deleteModalVisible, setDeleteModalVisible] = useState(false);
     const [fileToDelete, setFileToDelete] = useState<any>(null);
+
+    const handleDeletePrompt = React.useCallback((file: any) => {
+        setFileToDelete(file);
+        setDeleteModalVisible(true);
+    }, []);
 
     const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
 
@@ -230,7 +238,7 @@ export default function TherapistClientFilesScreen() {
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
                 <View style={{ backgroundColor: '#C09D59', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                        <TouchableOpacity onPress={() => router.back()} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
+                        <TouchableOpacity onPress={goBack} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
                             <ArrowLeft size={18} color="white" />
                             <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurück</Text>
                         </TouchableOpacity>
@@ -257,7 +265,7 @@ export default function TherapistClientFilesScreen() {
                                 placeholderTextColor="rgba(255,255,255,0.5)"
                                 style={{ flex: 1, marginLeft: 10, color: 'white', fontSize: 15, fontWeight: '600' } as any}
                             />
-                            {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')}><X size={18} color="rgba(255,255,255,0.7)" /></TouchableOpacity>}
+                            {search.length > 0 && <TouchableOpacity onPress={() => setSearch('')} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}><X size={18} color="rgba(255,255,255,0.7)" /></TouchableOpacity>}
                         </View>
                     )}
                 </View>
@@ -288,25 +296,25 @@ export default function TherapistClientFilesScreen() {
                     </MotiView>
                 </View>
             ) : (
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 120, maxWidth: 860, alignSelf: 'center', width: '100%' }}>
-                    {filteredFiles.length === 0 ? (
+                <FlatList
+                    data={filteredFiles}
+                    keyExtractor={item => item.id}
+                    contentContainerStyle={{ padding: 24, paddingBottom: 120, maxWidth: 860, alignSelf: 'center', width: '100%' }}
+                    ListEmptyComponent={
                         <View style={{ alignItems: 'center', paddingVertical: 60 }}>
                             <Text style={{ fontSize: 15, color: '#94A3B8', fontWeight: '600' }}>Keine Dateien gefunden für „{search}"</Text>
                         </View>
-                    ) : (
-                        <View style={{ gap: 14 }}>
-                            {filteredFiles.map((file, index) => (
-                                <FileCard
-                                    key={file.id}
-                                    file={file}
-                                    index={index}
-                                    setFileToDelete={setFileToDelete}
-                                    setDeleteModalVisible={setDeleteModalVisible}
-                                />
-                            ))}
-                        </View>
+                    }
+                    renderItem={({ item, index }) => (
+                        <FileCard
+                            file={item}
+                            index={index}
+                            onDeletePrompt={handleDeletePrompt}
+                        />
                     )}
-                </ScrollView>
+                    ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+                    showsVerticalScrollIndicator={false}
+                />
             )}
 
             {/* Upload Modal — Bottom sheet style */}
@@ -320,7 +328,7 @@ export default function TherapistClientFilesScreen() {
                     >
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                             <Text style={{ fontSize: 24, fontWeight: '900', color: '#243842', letterSpacing: -0.5 }}>Datei hochladen</Text>
-                            <TouchableOpacity onPress={() => { setShowUploadModal(false); setSelectedAsset(null); setNewFileTitle(''); setNewFileDesc(''); }} style={{ backgroundColor: '#F1F5F9', padding: 10, borderRadius: 20 }}>
+                            <TouchableOpacity onPress={() => { setShowUploadModal(false); setSelectedAsset(null); setNewFileTitle(''); setNewFileDesc(''); }} style={{ backgroundColor: '#F1F5F9', padding: 10, borderRadius: 20 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={20} color="#64748B" />
                             </TouchableOpacity>
                         </View>

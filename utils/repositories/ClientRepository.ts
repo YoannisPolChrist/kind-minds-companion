@@ -23,18 +23,23 @@ export interface UserProfile {
 }
 
 export class ClientRepository {
-    /** Single user by ID */
+    /** Single user by ID (ignores if archived) */
     static async findById(id: string): Promise<UserProfile | null> {
         const snap = await getDoc(doc(db, 'users', id));
         if (!snap.exists()) return null;
-        return { id: snap.id, ...snap.data() } as UserProfile;
+        const data = snap.data();
+        if (data.isArchived) return null;
+        return { id: snap.id, ...data } as UserProfile;
     }
 
-    /** All clients */
+    /** All clients (filters out archived) */
     static async findAllClients(): Promise<UserProfile[]> {
         const q = query(collection(db, 'users'), where('role', '==', 'client'));
         const snap = await getDocs(q);
-        return snap.docs.map(d => ({ id: d.id, ...d.data() } as UserProfile));
+        // Filter in memory to avoid requiring a composite index on role + isArchived
+        return snap.docs
+            .map(d => ({ id: d.id, ...d.data() } as UserProfile))
+            .filter((c: any) => !c.isArchived);
     }
 
     /** First therapist — used by client dashboard to fetch bookingUrl */

@@ -1,4 +1,5 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Linking, RefreshControl } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Linking, RefreshControl, Platform } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useState, useEffect, useCallback } from 'react';
 import { collection, query, getDocs, orderBy, where } from 'firebase/firestore';
@@ -73,33 +74,36 @@ export default function ResourcesScreen() {
 
     return (
         <View className="flex-1 bg-[#F9F8F6]">
-            {/* Animated Header */}
+            {/* Animated Premium Header */}
             <MotiView
                 from={{ opacity: 0, translateY: -40 }}
                 animate={{ opacity: 1, translateY: 0 }}
                 transition={{ type: 'timing', duration: 400, delay: 50 }}
             >
-                <View className="bg-[#137386] pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between">
-                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-2.5 rounded-2xl backdrop-blur-md">
-                        <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
+                <LinearGradient
+                    colors={['#2C3E50', '#3D5166']}
+                    style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 24, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                >
+                    <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}>
+                        <Text style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '700' }}>Zurück</Text>
                     </TouchableOpacity>
-                    <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4">
-                        {i18n.t('resources.title', { defaultValue: 'Resource Library' })}
+                    <Text style={{ fontSize: 20, fontWeight: '900', color: 'white', flex: 1, textAlign: 'right', marginLeft: 16 }}>
+                        {i18n.t('resources.title', { defaultValue: 'Bibliothek' })}
                     </Text>
-                </View>
+                </LinearGradient>
             </MotiView>
 
             <ScrollView
                 className="flex-1 px-6 pt-6"
                 contentContainerStyle={{ paddingBottom: 60 }}
-                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#137386" />}
+                refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#2C3E50" />}
             >
                 <Text className="text-gray-500 font-medium mb-6 leading-5">
                     Hier findest du hilfreiche Dokumente, Arbeitsblätter und Links, die dir von deinem Therapeuten zur Verfügung gestellt wurden.
                 </Text>
 
                 {loading ? (
-                    <ActivityIndicator size="large" color="#137386" className="mt-10" />
+                    <ActivityIndicator size="large" color="#2C3E50" className="mt-10" />
                 ) : resources.length === 0 ? (
                     <MotiView
                         from={{ opacity: 0, scale: 0.95 }}
@@ -142,7 +146,7 @@ export default function ResourcesScreen() {
                             {/* Button sits inside card padding — extra mx ensures it never kisses the card border */}
                             <TouchableOpacity
                                 onPress={() => handleOpenResource(item.url)}
-                                style={{ marginHorizontal: 0, paddingVertical: 14, borderRadius: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', backgroundColor: item.type === 'document' ? '#6366F1' : item.type === 'pdf' ? '#EF4444' : item.type === 'video' ? '#8B5CF6' : item.type === 'image' ? '#EC4899' : '#137386' }}
+                                style={{ marginHorizontal: 0, paddingVertical: 14, borderRadius: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', backgroundColor: item.type === 'document' ? '#2C3E50' : item.type === 'pdf' ? '#DC2626' : item.type === 'video' ? '#C09D59' : item.type === 'image' ? '#DB2777' : '#8B7355' }}
                             >
                                 {item.type !== 'link' ? <Download size={18} color="white" style={{ marginRight: 8 }} /> : null}
                                 <Text className="text-white font-bold">{item.type === 'document' || item.type === 'pdf' ? 'Dokument öffnen' : item.type === 'video' ? 'Video ansehen' : item.type === 'image' ? 'Bild öffnen' : i18n.t('resources.open_link', { defaultValue: 'Open Link' })}</Text>

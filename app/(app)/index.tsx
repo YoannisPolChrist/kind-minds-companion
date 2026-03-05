@@ -7,7 +7,7 @@ import { Settings, Calendar, BookOpen, Edit3 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useAppStore } from '../../utils/useAppStore';
 import { useAuth } from '../../contexts/AuthContext';
-import { useEffect, useCallback, useMemo, useState } from 'react';
+import { useEffect, useCallback, useMemo, useState, lazy, Suspense } from 'react';
 import { useRouter, useFocusEffect, Redirect } from 'expo-router';
 import { collection, query, where, limit, getDocs, updateDoc, doc, orderBy } from 'firebase/firestore';
 import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
@@ -22,10 +22,13 @@ import { OpenExerciseCard } from '../../components/dashboard/OpenExerciseCard';
 import { CompletedExerciseCard } from '../../components/dashboard/CompletedExerciseCard';
 import { EmptyState } from '../../components/dashboard/EmptyState';
 import { useCheckinStatus } from '../../hooks/useCheckinStatus';
-import { MoodChart } from '../../components/dashboard/MoodChart';
+// Lazy load heavy charting libraries to reduce initial JS bundle size
+const MoodChart = lazy(() => import('../../components/dashboard/MoodChart').then(m => ({ default: m.MoodChart })));
 import { DarkAmbientOrbs, LightAmbientOrbs } from '../../components/ui/AmbientOrbs';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { markNotificationsAsRead } from '../../services/notificationService';
+import { useTheme } from '../../contexts/ThemeContext';
+import { PressableScale } from '../../components/ui/PressableScale';
 
 const HOME_BACKGROUNDS = [
     require('../../assets/HomeUi1.webp'),
@@ -45,6 +48,7 @@ export default function ClientDashboard() {
     const { checkedInToday, recentCheckins, fetchCheckinStatus } = useCheckinStatus(profile?.id);
 
     const [notifications, setNotifications] = useState<any[]>([]);
+    const { colors, isDark } = useTheme();
 
     // Replace context-bound state with Zustand global store state
     const bookingUrl = useAppStore(state => profile?.id ? state.therapistBookingUrls[profile.id] : null);
@@ -52,6 +56,8 @@ export default function ClientDashboard() {
 
     // ── Responsive layout ─────────────────────────────────────────────────────
     const { width: screenWidth } = useWindowDimensions();
+    const isTablet = screenWidth > 768;
+    const isDesktop = screenWidth > 1024;
     // Mobile: natural width | Tablet: cap at 600px | Desktop: cap at 720px
     const contentMaxWidth = screenWidth < 600 ? undefined : screenWidth < 1024 ? 600 : 720;
     // Scale horizontal padding: 16px mobile, 24px tablet, 32px desktop
@@ -145,8 +151,8 @@ export default function ClientDashboard() {
 
     if (loading && exercises.length === 0) {
         return (
-            <View className="flex-1 bg-[#F9F8F6]">
-                <View style={{ backgroundColor: '#2C3E50', paddingTop: Platform.OS === 'android' ? 64 : 72, paddingBottom: 56, paddingHorizontal: 24, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 }}>
+            <View style={{ flex: 1, backgroundColor: colors.background }}>
+                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#2C3E50', paddingTop: Platform.OS === 'android' ? 64 : 72, paddingBottom: 56, paddingHorizontal: 24, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 }}>
                     <Skeleton width={200} height={34} borderRadius={8} />
                     <Skeleton width={140} height={16} borderRadius={4} style={{ marginTop: 12 }} />
                 </View>
@@ -161,7 +167,7 @@ export default function ClientDashboard() {
     }
 
     return (
-        <View className="flex-1 bg-[#F9F8F6]">
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <Animated.ScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{ paddingBottom: 56 }}
@@ -171,8 +177,8 @@ export default function ClientDashboard() {
                 {/* ── Header ────────────────────────────────── */}
                 <View
                     style={{
-                        paddingTop: Platform.OS === 'android' ? 64 : 72,
-                        paddingBottom: 56,
+                        paddingTop: Platform.OS === 'android' ? 80 : 88,
+                        paddingBottom: 80,
                         paddingHorizontal: 24,
                         borderBottomLeftRadius: 48,
                         borderBottomRightRadius: 48,
@@ -194,19 +200,19 @@ export default function ClientDashboard() {
 
                     {/* Foreground Content — max-width 680px for web readability */}
                     <View style={{ zIndex: 10, maxWidth: 680, width: '100%', alignSelf: 'center' }} pointerEvents="box-none">
-                        <BlurView intensity={Platform.OS === 'android' ? 100 : 60} tint="light" style={{ borderRadius: 36, overflow: 'hidden', padding: 24, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', backgroundColor: 'rgba(255,255,255,0.75)' }}>
+                        <BlurView intensity={Platform.OS === 'android' ? 100 : 60} tint={isDark ? 'dark' : 'light'} style={{ borderRadius: 36, overflow: 'hidden', padding: 24, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', backgroundColor: isDark ? 'rgba(15,23,42,0.6)' : 'rgba(255,255,255,0.75)' }}>
                             {/* Logo */}
                             <View style={{ alignItems: 'center', marginBottom: 20 }}>
                                 <Image
                                     source={require('../../assets/logo-transparent.png')}
-                                    style={{ width: 180, height: 60 }}
+                                    style={{ width: 260, height: 85, tintColor: isDark ? '#FFF' : undefined }}
                                     contentFit="contain"
                                 />
                             </View>
                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
                                 <View style={{ flex: 1, paddingRight: 16 }}>
                                     <Text
-                                        style={{ fontSize: 34, fontWeight: '900', color: '#243842', letterSpacing: -1, lineHeight: 40 }}
+                                        style={{ fontSize: 34, fontWeight: '900', color: colors.text, letterSpacing: -1, lineHeight: 40 }}
                                         adjustsFontSizeToFit
                                         minimumFontScale={0.8}
                                         numberOfLines={2}
@@ -220,9 +226,9 @@ export default function ClientDashboard() {
                                         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                         router.push('/(app)/settings' as any);
                                     }}
-                                    style={{ backgroundColor: 'rgba(0,0,0,0.04)', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 22, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' }}
+                                    style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 22, borderWidth: 1, borderColor: isDark ? 'transparent' : 'rgba(0,0,0,0.05)' }}
                                 >
-                                    <Settings size={22} color="#243842" />
+                                    <Settings size={22} color={colors.text} />
                                 </TouchableOpacity>
                             </View>
                             <View style={{ marginTop: 4 }}>
@@ -247,31 +253,31 @@ export default function ClientDashboard() {
                             <TouchableOpacity
                                 onPress={handleNotificationClick}
                                 style={{
-                                    backgroundColor: '#E0F2FE',
+                                    backgroundColor: isDark ? 'rgba(14, 165, 233, 0.15)' : '#E0F2FE',
                                     borderWidth: 1,
-                                    borderColor: '#BAE6FD',
+                                    borderColor: isDark ? 'rgba(14, 165, 233, 0.3)' : '#BAE6FD',
                                     borderRadius: 16,
                                     padding: 16,
                                     flexDirection: 'row',
                                     alignItems: 'center',
-                                    shadowColor: '#0284C7',
+                                    shadowColor: isDark ? '#000' : '#0284C7',
                                     shadowOffset: { width: 0, height: 4 },
                                     shadowOpacity: 0.1,
                                     shadowRadius: 8,
                                     elevation: 2
                                 }}
                             >
-                                <View style={{ backgroundColor: '#0284C7', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                                <View style={{ backgroundColor: isDark ? '#0EA5E9' : '#0284C7', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
                                     <BookOpen size={20} color="white" />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: '#0369A1', fontWeight: 'bold', fontSize: 16, marginBottom: 2 }}>{notifications.length} neue Nachricht{notifications.length > 1 ? 'en' : ''}</Text>
-                                    <Text style={{ color: '#0284C7', fontSize: 13 }} numberOfLines={2}>
+                                    <Text style={{ color: isDark ? '#38BDF8' : '#0369A1', fontWeight: 'bold', fontSize: 16, marginBottom: 2 }}>{notifications.length} neue Nachricht{notifications.length > 1 ? 'en' : ''}</Text>
+                                    <Text style={{ color: isDark ? '#7DD3FC' : '#0284C7', fontSize: 13 }} numberOfLines={2}>
                                         {notifications[0]?.message || 'Dein Therapeut hat neue Ressourcen für dich freigeschaltet.'}
                                     </Text>
                                 </View>
-                                <View style={{ backgroundColor: 'rgba(2,132,199,0.1)', padding: 8, borderRadius: 100 }}>
-                                    <Text style={{ color: '#0369A1', fontWeight: 'bold' }}>{'>'}</Text>
+                                <View style={{ backgroundColor: isDark ? 'rgba(56,189,248,0.2)' : 'rgba(2,132,199,0.1)', padding: 8, borderRadius: 100 }}>
+                                    <Text style={{ color: isDark ? '#38BDF8' : '#0369A1', fontWeight: 'bold' }}>{'>'}</Text>
                                 </View>
                             </TouchableOpacity>
                         </MotiView>
@@ -282,7 +288,13 @@ export default function ClientDashboard() {
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ type: 'spring', damping: 22, stiffness: 120, delay: 100 }}
                     >
-                        <CheckinBanner done={checkedInToday} onPress={() => router.push('/(app)/checkin' as any)} />
+                        <CheckinBanner
+                            done={checkedInToday}
+                            onPress={() => checkedInToday
+                                ? router.push('/(app)/checkins_overview' as any)
+                                : router.push('/(app)/checkin' as any)
+                            }
+                        />
                     </MotiView>
 
                     {recentCheckins && recentCheckins.length > 0 && (
@@ -291,7 +303,9 @@ export default function ClientDashboard() {
                             animate={{ opacity: 1, translateY: 0 }}
                             transition={{ type: 'timing', duration: 350, delay: 120 }}
                         >
-                            <MoodChart checkins={recentCheckins} />
+                            <Suspense fallback={<View style={{ height: 200, justifyContent: 'center', alignItems: 'center' }}><ActivityIndicator color={colors.primary} /></View>}>
+                                <MoodChart checkins={recentCheckins} />
+                            </Suspense>
                         </MotiView>
                     )}
 
@@ -299,31 +313,30 @@ export default function ClientDashboard() {
                         <MotiView
                             from={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            transition={{ type: 'timing', duration: 300, delay: 140 }}
+                            transition={{ type: 'timing', duration: 300, delay: 100 }}
                             style={{ marginBottom: 16 }}
                         >
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => {
-                                    if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     if (bookingUrl.startsWith('https://') || bookingUrl.startsWith('http://')) {
                                         Linking.openURL(bookingUrl);
                                     }
                                 }}
-                                style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
-                                    <View style={{ backgroundColor: 'rgba(19,115,134,0.1)', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
-                                        <Calendar size={24} color="#137386" />
+                                    <View style={{ backgroundColor: `${colors.primary}1A`, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                                        <Calendar size={24} color={colors.primary} />
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <Text style={{ color: '#243842', fontWeight: '800', fontSize: 16, marginBottom: 4 }}>{i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}</Text>
-                                        <Text style={{ color: 'rgba(36,56,66,0.55)', fontSize: 13, fontWeight: '500', lineHeight: 18 }}>{i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}</Text>
+                                        <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>{i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}</Text>
+                                        <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '500', lineHeight: 18 }}>{i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}</Text>
                                     </View>
                                 </View>
-                                <View style={{ backgroundColor: '#F9F8F6', padding: 10, borderRadius: 100 }}>
-                                    <Text style={{ color: 'rgba(36,56,66,0.35)', fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
+                                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', padding: 10, borderRadius: 100 }}>
+                                    <Text style={{ color: colors.textSubtle, fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
                                 </View>
-                            </TouchableOpacity>
+                            </PressableScale>
                         </MotiView>
                     )}
 
@@ -333,26 +346,25 @@ export default function ClientDashboard() {
                         transition={{ type: 'timing', duration: 300, delay: 150 }}
                         style={{ marginBottom: 16 }}
                     >
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => {
-                                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 router.push('/(app)/resources');
                             }}
-                            style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                         >
                             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
-                                <View style={{ backgroundColor: 'rgba(192,157,89,0.12)', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
-                                    <BookOpen size={24} color="#C09D59" />
+                                <View style={{ backgroundColor: `${colors.secondary}1A`, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                                    <BookOpen size={24} color={colors.secondary} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: '#243842', fontWeight: '800', fontSize: 16, marginBottom: 4 }}>{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
-                                    <Text style={{ color: 'rgba(36,56,66,0.55)', fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
+                                    <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
+                                    <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
                                 </View>
                             </View>
-                            <View style={{ backgroundColor: '#F9F8F6', padding: 10, borderRadius: 100 }}>
-                                <Text style={{ color: 'rgba(36,56,66,0.35)', fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
+                            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', padding: 10, borderRadius: 100 }}>
+                                <Text style={{ color: colors.textSubtle, fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
                             </View>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </MotiView>
 
                     <MotiView
@@ -361,26 +373,25 @@ export default function ClientDashboard() {
                         transition={{ type: 'timing', duration: 300, delay: 160 }}
                         style={{ marginBottom: 24 }}
                     >
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => {
-                                if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 router.push('/(app)/notes' as any);
                             }}
-                            style={{ backgroundColor: 'white', borderWidth: 1, borderColor: '#E5E7EB', padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
                         >
                             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
                                 <View style={{ backgroundColor: 'rgba(59,130,246,0.1)', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
-                                    <Edit3 size={24} color="#3B82F6" />
+                                    <Edit3 size={24} color={isDark ? '#60A5FA' : '#3B82F6'} />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: '#243842', fontWeight: '800', fontSize: 16, marginBottom: 4 }}>Session Notes</Text>
-                                    <Text style={{ color: 'rgba(36,56,66,0.55)', fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>Deine persönlichen Notizen</Text>
+                                    <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>Session Notes</Text>
+                                    <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>Deine persönlichen Notizen</Text>
                                 </View>
                             </View>
-                            <View style={{ backgroundColor: '#F9F8F6', padding: 10, borderRadius: 100 }}>
-                                <Text style={{ color: 'rgba(36,56,66,0.35)', fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
+                            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', padding: 10, borderRadius: 100 }}>
+                                <Text style={{ color: colors.textSubtle, fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
                             </View>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </MotiView>
 
                     {exercises.length > 0 && (
@@ -404,41 +415,53 @@ export default function ClientDashboard() {
                     ) : (
                         <>
                             {openExercises.length > 0 && (
-                                <View className="mb-6">
+                                <View style={{ marginBottom: 24 }}>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 200 }}>
-                                        <Text className="text-xl font-black text-[#243842] mb-4 tracking-tight">{i18n.t('dashboard.exercises.title')}</Text>
+                                        <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text, marginBottom: 16, letterSpacing: -0.5 }}>{i18n.t('dashboard.exercises.title')}</Text>
                                     </MotiView>
-                                    {openExercises.map((ex, idx) => (
-                                        <MotiView
-                                            key={ex.id}
-                                            from={{ opacity: 0, translateX: -30 }}
-                                            animate={{ opacity: 1, translateX: 0 }}
-                                            transition={{ type: 'timing', duration: 350, delay: 250 + (idx * 50) }}
-                                        >
-                                            <OpenExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
-                                        </MotiView>
-                                    ))}
+                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
+                                        {openExercises.map((ex, idx) => {
+                                            const itemWidth = isDesktop ? '33.33%' : isTablet ? '50%' : '100%';
+                                            return (
+                                                <MotiView
+                                                    key={ex.id}
+                                                    from={{ opacity: 0, translateY: 30 }}
+                                                    animate={{ opacity: 1, translateY: 0 }}
+                                                    transition={{ type: 'timing', duration: 350, delay: 250 + ((idx % 10) * 50) }}
+                                                    style={{ width: itemWidth as any, paddingHorizontal: 8, paddingBottom: 16 }}
+                                                >
+                                                    <OpenExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
+                                                </MotiView>
+                                            );
+                                        })}
+                                    </View>
                                 </View>
                             )}
                             {completedExercises.length > 0 && (
                                 <View>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 300 }}>
-                                        <View className="flex-row items-center mt-4 mb-4">
-                                            <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
-                                            <Text className="px-4 text-sm font-bold text-[#243842]/40 tracking-wider uppercase">{i18n.t('dashboard.completed.title')}</Text>
-                                            <View className="h-[1px] flex-1 bg-[#E5E7EB]" />
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 16 }}>
+                                            <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
+                                            <Text style={{ paddingHorizontal: 16, fontSize: 12, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1, textTransform: 'uppercase' }}>{i18n.t('dashboard.completed.title')}</Text>
+                                            <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
                                         </View>
                                     </MotiView>
-                                    {completedExercises.map((ex, idx) => (
-                                        <MotiView
-                                            key={ex.id}
-                                            from={{ opacity: 0, translateX: 30 }}
-                                            animate={{ opacity: 1, translateX: 0 }}
-                                            transition={{ type: 'timing', duration: 350, delay: 350 + (idx * 50) }}
-                                        >
-                                            <CompletedExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
-                                        </MotiView>
-                                    ))}
+                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
+                                        {completedExercises.map((ex, idx) => {
+                                            const itemWidth = isDesktop ? '33.33%' : isTablet ? '50%' : '100%';
+                                            return (
+                                                <MotiView
+                                                    key={ex.id}
+                                                    from={{ opacity: 0, translateY: 30 }}
+                                                    animate={{ opacity: 1, translateY: 0 }}
+                                                    transition={{ type: 'timing', duration: 350, delay: 350 + ((idx % 10) * 50) }}
+                                                    style={{ width: itemWidth as any, paddingHorizontal: 8, paddingBottom: 16 }}
+                                                >
+                                                    <CompletedExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
+                                                </MotiView>
+                                            );
+                                        })}
+                                    </View>
                                 </View>
                             )}
                         </>

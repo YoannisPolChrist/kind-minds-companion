@@ -1,16 +1,10 @@
 import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Image, ScrollView } from 'react-native';
 import i18n from '../../utils/i18n';
 import { MotiView } from 'moti';
 import { useAuthActions } from '../../hooks/useAuthActions';
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
-// 8-pt grid: 8, 16, 24, 32, 40, 48, 64px
-// Max form width: 480px (premium web convention — Notion, Linear, Superhuman)
-// Input height: 52px (14px top/bottom padding + 24px line height)
-// CTA height: 56px (18px top/bottom padding + 20px line height)
-
-// ─── Pure Components ───────────────────────────────────────────────────────────
 
 const DecorativeBackground = () => (
     <>
@@ -26,7 +20,6 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
         transition={{ type: 'timing', duration: 900 }}
         style={{ alignItems: 'center', marginBottom: isKeyboardVisible ? 24 : 40 }}
     >
-        {/* Logo */}
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <Image
                 source={require('../../assets/logo-transparent.png')}
@@ -48,6 +41,61 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
     </MotiView>
 );
 
+// ─── Password Strength ─────────────────────────────────────────────────────────
+
+function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
+    if (!pw) return { score: 0, label: '', color: '#e5e7eb' };
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+
+    if (score <= 1) return { score, label: 'Schwach', color: '#EF4444' };
+    if (score === 2) return { score, label: 'Mittel', color: '#F59E0B' };
+    if (score === 3) return { score, label: 'Gut', color: '#3B82F6' };
+    return { score, label: 'Stark', color: '#10B981' };
+}
+
+function validatePassword(pw: string): string | undefined {
+    if (pw.length < 8) return 'Mindestens 8 Zeichen erforderlich.';
+    if (!/[A-Z]/.test(pw)) return 'Mindestens ein Großbuchstabe erforderlich.';
+    if (!/[0-9]/.test(pw)) return 'Mindestens eine Zahl erforderlich.';
+    if (!/[^A-Za-z0-9]/.test(pw)) return 'Mindestens ein Sonderzeichen erforderlich.';
+    return undefined;
+}
+
+// ─── Input Field Component ─────────────────────────────────────────────────────────────
+
+function FormField({
+    label, value, onChange, placeholder, secureTextEntry = false,
+    autoCapitalize = 'none', keyboardType = 'default', error, maxLength
+}: {
+    label: string; value: string; onChange: (t: string) => void;
+    placeholder: string; secureTextEntry?: boolean; autoCapitalize?: any;
+    keyboardType?: any; error?: string; maxLength?: number;
+}) {
+    return (
+        <View style={{ marginBottom: 20 }}>
+            <Text style={{ color: 'rgba(36,56,66,0.5)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8, marginLeft: 4 }}>
+                {label}
+            </Text>
+            <TextInput
+                style={{ backgroundColor: '#F9F8F6', paddingHorizontal: 20, paddingVertical: 14, borderRadius: 16, borderWidth: 1.5, borderColor: error ? '#FCA5A5' : 'rgba(36,56,66,0.1)', color: '#243842', fontSize: 16, fontWeight: '500' }}
+                placeholder={placeholder}
+                value={value}
+                onChangeText={onChange}
+                autoCapitalize={autoCapitalize}
+                keyboardType={keyboardType}
+                secureTextEntry={secureTextEntry}
+                placeholderTextColor="rgba(36,56,66,0.3)"
+                maxLength={maxLength}
+            />
+            {error && <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{error}</Text>}
+        </View>
+    );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Login() {
@@ -58,46 +106,50 @@ export default function Login() {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        inviteCode: ''
+        inviteCode: '',
+        firstName: '',
+        lastName: '',
+        birthDate: '',
     });
 
-    const [errors, setErrors] = useState<{ email?: string; password?: string; inviteCode?: string }>({});
+    const [errors, setErrors] = useState<Record<string, string | undefined>>({});
     const [isKeyboardVisible, setKeyboardVisible] = useState(false);
 
     useEffect(() => {
-        const keyboardDidShowListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
-            () => setKeyboardVisible(true)
-        );
-        const keyboardDidHideListener = Keyboard.addListener(
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
-            () => setKeyboardVisible(false)
-        );
-
-        return () => {
-            keyboardDidHideListener.remove();
-            keyboardDidShowListener.remove();
-        };
+        const show = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow', () => setKeyboardVisible(true));
+        const hide = Keyboard.addListener(Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide', () => setKeyboardVisible(false));
+        return () => { show.remove(); hide.remove(); };
     }, []);
 
     const handleChange = (field: keyof typeof formData, value: string) => {
         setFormData(prev => ({ ...prev, [field]: value }));
-        if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: undefined }));
-        }
+        if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
     };
 
-    const validateForm = (isReset: boolean = false): boolean => {
-        const newErrors: { email?: string; password?: string; inviteCode?: string } = {};
+    const validateForm = (isReset = false): boolean => {
+        const newErrors: Record<string, string | undefined> = {};
 
         if (!formData.email.trim()) {
-            newErrors.email = i18n.t('login.error_fields');
+            newErrors.email = 'E-Mail ist erforderlich.';
         } else if (!formData.email.includes('@') || !formData.email.includes('.')) {
-            newErrors.email = 'Ungültiges E-Mail Format';
+            newErrors.email = 'Ungültiges E-Mail Format.';
         }
 
-        if (!isReset && !formData.password) {
-            newErrors.password = i18n.t('login.error_fields');
+        if (!isReset && !isLoginMode) {
+            // Register-specific validation
+            if (!formData.firstName.trim()) newErrors.firstName = 'Vorname ist erforderlich.';
+            if (!formData.lastName.trim()) newErrors.lastName = 'Nachname ist erforderlich.';
+            if (!formData.birthDate.trim()) newErrors.birthDate = 'Geburtsdatum ist erforderlich.';
+
+            if (!formData.password) {
+                newErrors.password = 'Passwort ist erforderlich.';
+            } else {
+                const pwError = validatePassword(formData.password);
+                if (pwError) newErrors.password = pwError;
+            }
+        } else if (!isReset) {
+            // Login validation
+            if (!formData.password) newErrors.password = 'Passwort ist erforderlich.';
         }
 
         setErrors(newErrors);
@@ -109,189 +161,122 @@ export default function Login() {
             if (isLoginMode) {
                 login(formData.email, formData.password);
             } else {
-                register(formData.email, formData.password, formData.inviteCode.trim() || undefined);
+                register(formData.email, formData.password, {
+                    inviteCode: formData.inviteCode.trim() || undefined,
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    birthDate: formData.birthDate,
+                });
             }
         }
     };
 
     const handleResetPasswordSubmit = () => {
-        if (validateForm(true)) {
-            resetPassword(formData.email);
-        }
+        if (validateForm(true)) resetPassword(formData.email);
+    };
+
+    const passwordStrength = !isLoginMode ? getPasswordStrength(formData.password) : null;
+
+    const inputStyle = {
+        backgroundColor: 'rgba(255, 255, 255, 0.85)',
+        padding: 40,
+        borderRadius: 28,
+        shadowColor: '#243842',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.07,
+        shadowRadius: 24,
+        elevation: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.6)',
     };
 
     return (
-        <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1, backgroundColor: '#F9F8F6' }}
-        >
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, position: 'relative', overflow: 'hidden' }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 48, position: 'relative' }} showsVerticalScrollIndicator={false}>
                 <DecorativeBackground />
 
-                {/* ── Centered content column (max 480px like premium web) ── */}
                 <View style={{ width: '100%', maxWidth: 480 }}>
                     <BrandHeader isKeyboardVisible={isKeyboardVisible} />
 
-                    {/* ── Form Card ── */}
                     <MotiView
                         from={{ opacity: 0, translateY: 40 }}
                         animate={{ opacity: 1, translateY: 0 }}
                         transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 300 }}
-                        style={{
-                            backgroundColor: 'rgba(255, 255, 255, 0.85)',
-                            // 40px padding (8pt × 5) — premium web standard
-                            padding: 40,
-                            borderRadius: 28,
-                            shadowColor: '#243842',
-                            shadowOffset: { width: 0, height: 8 },
-                            shadowOpacity: 0.07,
-                            shadowRadius: 24,
-                            elevation: 6,
-                            borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.6)',
-                        }}
+                        style={inputStyle}
                     >
-                        {/* Error / Success alerts */}
+                        {/* Error / Success banners */}
                         {globalError ? (
-                            <MotiView
-                                from={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                style={{ backgroundColor: '#FEF2F2', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: '#FEE2E2' }}
-                            >
+                            <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ backgroundColor: '#FEF2F2', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: '#FEE2E2' }}>
                                 <Text style={{ color: '#DC2626', fontSize: 14, textAlign: 'center', fontWeight: '500' }}>{globalError}</Text>
                             </MotiView>
                         ) : null}
 
                         {success ? (
-                            <MotiView
-                                from={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                style={{ backgroundColor: '#F0FDF4', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: '#DCFCE7' }}
-                            >
+                            <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ backgroundColor: '#F0FDF4', padding: 16, borderRadius: 16, marginBottom: 24, borderWidth: 1, borderColor: '#DCFCE7' }}>
                                 <Text style={{ color: '#16A34A', fontSize: 14, textAlign: 'center', fontWeight: '500' }}>{success}</Text>
                             </MotiView>
                         ) : null}
 
-                        {/* ── Email Field ── */}
-                        <View style={{ marginBottom: 20 }}>
-                            <Text style={{
-                                color: 'rgba(36,56,66,0.5)',
-                                fontSize: 11,
-                                fontWeight: '700',
-                                textTransform: 'uppercase',
-                                letterSpacing: 2,
-                                marginBottom: 8,
-                                marginLeft: 4,
-                            }}>E-Mail</Text>
-                            <TextInput
-                                style={{
-                                    backgroundColor: '#F9F8F6',
-                                    paddingHorizontal: 20,
-                                    paddingVertical: 14, // → 52px total height
-                                    borderRadius: 16,
-                                    borderWidth: 1.5,
-                                    borderColor: errors.email ? '#FCA5A5' : 'rgba(36,56,66,0.1)',
-                                    color: '#243842',
-                                    fontSize: 16,
-                                    fontWeight: '500',
-                                }}
-                                placeholder={i18n.t('login.email')}
-                                value={formData.email}
-                                onChangeText={(text) => handleChange('email', text)}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                                placeholderTextColor="rgba(36,56,66,0.3)"
-                            />
-                            {errors.email && (
-                                <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{errors.email}</Text>
-                            )}
-                        </View>
+                        {/* Registration-only fields */}
+                        {!isLoginMode && (
+                            <>
+                                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 0 }}>
+                                    <View style={{ flex: 1 }}>
+                                        <FormField label="Vorname" value={formData.firstName} onChange={t => handleChange('firstName', t)} placeholder="Max" autoCapitalize="words" error={errors.firstName} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <FormField label="Nachname" value={formData.lastName} onChange={t => handleChange('lastName', t)} placeholder="Mustermann" autoCapitalize="words" error={errors.lastName} />
+                                    </View>
+                                </View>
 
-                        {/* ── Password Field ── */}
+                                <FormField
+                                    label="Geburtsdatum"
+                                    value={formData.birthDate}
+                                    onChange={t => handleChange('birthDate', t)}
+                                    placeholder="TT.MM.JJJJ"
+                                    keyboardType="numbers-and-punctuation"
+                                    error={errors.birthDate}
+                                    maxLength={10}
+                                />
+                            </>
+                        )}
+
+                        {/* Email */}
+                        <FormField label="E-Mail" value={formData.email} onChange={t => handleChange('email', t)} placeholder={i18n.t('login.email')} keyboardType="email-address" error={errors.email} />
+
+                        {/* Password */}
                         <View style={{ marginBottom: 32 }}>
-                            <Text style={{
-                                color: 'rgba(36,56,66,0.5)',
-                                fontSize: 11,
-                                fontWeight: '700',
-                                textTransform: 'uppercase',
-                                letterSpacing: 2,
-                                marginBottom: 8,
-                                marginLeft: 4,
-                            }}>Passwort</Text>
-                            <TextInput
-                                style={{
-                                    backgroundColor: '#F9F8F6',
-                                    paddingHorizontal: 20,
-                                    paddingVertical: 14, // → 52px total
-                                    borderRadius: 16,
-                                    borderWidth: 1.5,
-                                    borderColor: errors.password ? '#FCA5A5' : 'rgba(36,56,66,0.1)',
-                                    color: '#243842',
-                                    fontSize: 16,
-                                    fontWeight: '500',
-                                }}
-                                placeholder={i18n.t('login.password')}
-                                value={formData.password}
-                                onChangeText={(text) => handleChange('password', text)}
-                                secureTextEntry
-                                placeholderTextColor="rgba(36,56,66,0.3)"
-                            />
-                            {errors.password && (
-                                <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{errors.password}</Text>
+                            <FormField label="Passwort" value={formData.password} onChange={t => handleChange('password', t)} placeholder={i18n.t('login.password')} secureTextEntry error={errors.password} />
+
+                            {/* Password strength bar */}
+                            {passwordStrength && formData.password.length > 0 && (
+                                <View style={{ marginTop: -12, marginBottom: 4 }}>
+                                    <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
+                                        {[1, 2, 3, 4].map(i => (
+                                            <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= passwordStrength.score ? passwordStrength.color : '#E5E7EB' }} />
+                                        ))}
+                                    </View>
+                                    <Text style={{ color: passwordStrength.color, fontSize: 11, fontWeight: '700', marginLeft: 4 }}>{passwordStrength.label}</Text>
+                                </View>
+                            )}
+
+                            {!isLoginMode && (
+                                <Text style={{ fontSize: 11, color: 'rgba(36,56,66,0.45)', marginLeft: 4, marginTop: 6, lineHeight: 16 }}>
+                                    Mind. 8 Zeichen, 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen
+                                </Text>
                             )}
                         </View>
 
-                        {/* ── Invite Code Field (Register Mode Only) ── */}
+                        {/* Invite Code (Register only) */}
                         {!isLoginMode && (
                             <View style={{ marginBottom: 32 }}>
-                                <Text style={{
-                                    color: 'rgba(36,56,66,0.5)',
-                                    fontSize: 11,
-                                    fontWeight: '700',
-                                    textTransform: 'uppercase',
-                                    letterSpacing: 2,
-                                    marginBottom: 8,
-                                    marginLeft: 4,
-                                }}>Einladungscode (Optional)</Text>
-                                <TextInput
-                                    style={{
-                                        backgroundColor: '#F9F8F6',
-                                        paddingHorizontal: 20,
-                                        paddingVertical: 14,
-                                        borderRadius: 16,
-                                        borderWidth: 1.5,
-                                        borderColor: errors.inviteCode ? '#FCA5A5' : 'rgba(36,56,66,0.1)',
-                                        color: '#243842',
-                                        fontSize: 16,
-                                        fontWeight: '500',
-                                        textTransform: 'uppercase',
-                                    }}
-                                    placeholder="ABCDEF"
-                                    value={formData.inviteCode}
-                                    onChangeText={(text) => handleChange('inviteCode', text)}
-                                    autoCapitalize="characters"
-                                    maxLength={6}
-                                    placeholderTextColor="rgba(36,56,66,0.3)"
-                                />
-                                {errors.inviteCode && (
-                                    <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{errors.inviteCode}</Text>
-                                )}
+                                <FormField label="Einladungscode (Optional)" value={formData.inviteCode} onChange={t => handleChange('inviteCode', t)} placeholder="ABCDEF" autoCapitalize="characters" maxLength={6} error={errors.inviteCode} />
                             </View>
                         )}
 
-                        {/* ── Primary CTA Button (56px height — premium standard) ── */}
+                        {/* Primary CTA */}
                         <TouchableOpacity
-                            style={{
-                                backgroundColor: '#137386',
-                                paddingVertical: 18,   // → 56px total with 20px text
-                                borderRadius: 16,
-                                alignItems: 'center',
-                                shadowColor: '#137386',
-                                shadowOffset: { width: 0, height: 8 },
-                                shadowOpacity: 0.3,
-                                shadowRadius: 20,
-                                elevation: 6,
-                            }}
+                            style={{ backgroundColor: '#137386', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 6 }}
                             onPress={handleAuthSubmit}
                             disabled={loading}
                         >
@@ -304,34 +289,30 @@ export default function Login() {
                             )}
                         </TouchableOpacity>
 
-                        {/* ── Toggle Mode ── */}
+                        {/* Toggle Mode */}
                         <TouchableOpacity
                             style={{ paddingVertical: 16, marginTop: 12, alignItems: 'center' }}
                             onPress={() => {
                                 setIsLoginMode(!isLoginMode);
                                 setErrors({});
-                                setFormData(prev => ({ ...prev, inviteCode: '' }));
+                                setFormData(prev => ({ ...prev, inviteCode: '', firstName: '', lastName: '', birthDate: '' }));
                             }}
                             disabled={loading}
                         >
                             <Text style={{ color: 'rgba(36,56,66,0.6)', fontWeight: '600', fontSize: 14 }}>
-                                {isLoginMode ? 'Noch kein Account? Registrieren' : 'Bereits einen Account? Anmelden'}
+                                {isLoginMode ? 'Noch kein Konto? Registrieren' : 'Bereits einen Account? Anmelden'}
                             </Text>
                         </TouchableOpacity>
 
-                        {/* ── Forgot Password ── */}
+                        {/* Forgot Password */}
                         {isLoginMode && (
-                            <TouchableOpacity
-                                style={{ paddingVertical: 8, alignItems: 'center' }}
-                                onPress={handleResetPasswordSubmit}
-                                disabled={loading}
-                            >
+                            <TouchableOpacity style={{ paddingVertical: 8, alignItems: 'center' }} onPress={handleResetPasswordSubmit} disabled={loading}>
                                 <Text style={{ color: 'rgba(19,115,134,0.75)', fontWeight: '600', fontSize: 14, letterSpacing: 0.3 }}>{i18n.t('login.forgot')}</Text>
                             </TouchableOpacity>
                         )}
                     </MotiView>
                 </View>
-            </View>
+            </ScrollView>
         </KeyboardAvoidingView>
     );
 }

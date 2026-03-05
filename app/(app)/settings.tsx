@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { FlashList } from '@shopify/flash-list';
 import { useAuthStore } from '../../stores/authStore';
+import { SuccessAnimation } from '../../components/ui/SuccessAnimation';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -37,6 +38,11 @@ export default function SettingsScreen() {
     const [photoURL, setPhotoURL] = useState(profile?.photoURL || '');
     const [savingProfile, setSavingProfile] = useState(false);
     const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
+
+    const showToast = (message: string, subMessage?: string, type: 'success' | 'error' | 'warning' = 'success') => {
+        setToast({ visible: true, message, subMessage, type });
+    };
 
     useEffect(() => {
         if (profile) {
@@ -61,7 +67,7 @@ export default function SettingsScreen() {
         try {
             const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!perm.granted) {
-                Alert.alert('Berechtigung', 'Galerie-Zugriff wird benötigt.');
+                showToast('Berechtigung', 'Galerie-Zugriff wird benötigt.', 'warning');
                 return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -85,7 +91,7 @@ export default function SettingsScreen() {
             await refreshProfile();
         } catch (e) {
             console.error('Photo upload error:', e);
-            Alert.alert('Fehler', 'Foto konnte nicht hochgeladen werden.');
+            showToast('Fehler', 'Foto konnte nicht hochgeladen werden.', 'error');
         } finally {
             setUploadingPhoto(false);
         }
@@ -105,13 +111,13 @@ export default function SettingsScreen() {
                     await updateEmail(auth.currentUser, email.trim());
                     await updateDoc(doc(db, 'users', profile.id), { email: email.trim() });
                 } catch (emailErr: any) {
-                    Alert.alert('Hinweis', 'Name gespeichert, aber E-Mail konnte nicht geändert werden. Du musst dich ggf. neu anmelden.');
+                    showToast('Hinweis', 'Name gespeichert, aber E-Mail konnte nicht geändert werden.', 'warning');
                 }
             }
             await refreshProfile();
-            Alert.alert('Gespeichert', 'Dein Profil wurde aktualisiert.');
+            showToast('Gespeichert', 'Dein Profil wurde erfolgreich aktualisiert.');
         } catch (e) {
-            Alert.alert('Fehler', 'Profil konnte nicht gespeichert werden.');
+            showToast('Fehler', 'Profil konnte nicht gespeichert werden.', 'error');
         } finally {
             setSavingProfile(false);
         }
@@ -129,7 +135,7 @@ export default function SettingsScreen() {
             } catch (scheduleErr) {
                 console.warn('Could not reschedule reminders immediately:', scheduleErr);
             }
-            Alert.alert(i18n.t('settings.saved'), i18n.t('settings.reminder_saved', { hour }));
+            showToast(i18n.t('settings.saved'), i18n.t('settings.reminder_saved', { hour }));
         } catch (e) {
             console.error("Failed to save settings", e);
         }
@@ -139,9 +145,9 @@ export default function SettingsScreen() {
         if (!profile?.id) return;
         try {
             await updateDoc(doc(db, 'users', profile.id), { bookingUrl });
-            Alert.alert(i18n.t('settings.saved', { defaultValue: 'Gespeichert' }), i18n.t('settings.booking_url_saved', { defaultValue: 'Dein Buchungs-Link wurde aktualisiert.' }));
+            showToast(i18n.t('settings.saved', { defaultValue: 'Gespeichert' }), i18n.t('settings.booking_url_saved', { defaultValue: 'Dein Buchungs-Link wurde aktualisiert.' }));
         } catch (e) {
-            Alert.alert(i18n.t('settings.error', { defaultValue: 'Fehler' }), 'Link konnte nicht gespeichert werden.');
+            showToast(i18n.t('settings.error', { defaultValue: 'Fehler' }), 'Link konnte nicht gespeichert werden.', 'error');
         }
     };
 
@@ -171,7 +177,7 @@ export default function SettingsScreen() {
                     console.error("Failed to fetch exercises for calendar sync", e);
                 }
             } else {
-                Alert.alert(i18n.t('settings.error'), i18n.t('settings.cal_denied'));
+                showToast(i18n.t('settings.error'), i18n.t('settings.cal_denied'), 'error');
             }
         } else {
             setCalendarSyncEnabled(false);
@@ -194,10 +200,9 @@ export default function SettingsScreen() {
                     }
                 } catch (e) { console.error('Error scheduling on toggle', e); }
             } else {
-                Alert.alert(i18n.t('settings.error'), i18n.t('settings.notif_denied'));
+                showToast(i18n.t('settings.error'), i18n.t('settings.notif_denied'), 'error');
             }
         } else {
-            // Fix #13: Actually cancel all pending reminders when user turns off notifications
             await Notifications.cancelAllScheduledNotificationsAsync();
             setNotificationsEnabled(false);
         }
@@ -205,15 +210,15 @@ export default function SettingsScreen() {
 
     const handleResetPassword = async () => {
         if (!profile?.id || !auth.currentUser?.email) {
-            Alert.alert(i18n.t('settings.error'), i18n.t('settings.pw_no_email'));
+            showToast(i18n.t('settings.error'), i18n.t('settings.pw_no_email'), 'error');
             return;
         }
 
         try {
             await sendPasswordResetEmail(auth, auth.currentUser.email);
-            Alert.alert(i18n.t('settings.success'), i18n.t('settings.pw_sent'));
+            showToast(i18n.t('settings.success'), i18n.t('settings.pw_sent'));
         } catch (error: any) {
-            Alert.alert(i18n.t('settings.error'), i18n.t('settings.pw_error'));
+            showToast(i18n.t('settings.error'), i18n.t('settings.pw_error'), 'error');
         }
     };
 
@@ -474,7 +479,7 @@ export default function SettingsScreen() {
                                     const botUrl = `tg://resolve?domain=TherapieAppBot&start=${profile.id}`;
                                     import('react-native').then(rn => {
                                         rn.Linking.openURL(botUrl).catch(() => {
-                                            Alert.alert(i18n.t('settings.error'), i18n.t('settings.telegram_error'));
+                                            showToast(i18n.t('settings.error'), i18n.t('settings.telegram_error'), 'error');
                                         });
                                     });
                                 }}
@@ -541,6 +546,14 @@ export default function SettingsScreen() {
 
                 </View>
             </DefaultScrollView>
+
+            <SuccessAnimation
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.subMessage}
+                onAnimationDone={() => setToast(prev => ({ ...prev, visible: false }))}
+            />
         </View>
     );
 }

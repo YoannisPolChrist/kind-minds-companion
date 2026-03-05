@@ -260,8 +260,8 @@ export default function TherapistTemplates() {
                     transition={{ type: 'timing', duration: 350, delay: 50 }}
                     style={{
                         backgroundColor: '#137386',
-                        paddingTop: Platform.OS === 'android' ? 48 : 56,
-                        paddingBottom: 40,
+                        paddingTop: Platform.OS === 'android' ? 84 : 100,
+                        paddingBottom: 80,
                         paddingHorizontal: 24,
                         borderBottomLeftRadius: 40,
                         borderBottomRightRadius: 40,
@@ -277,13 +277,17 @@ export default function TherapistTemplates() {
                     <DarkAmbientOrbs />
 
                     <View style={{ zIndex: 10, width: '100%', maxWidth: 1024, marginHorizontal: 'auto' }} pointerEvents="box-none">
-                        <View className="flex-row items-center justify-between mb-8">
-                            <TouchableOpacity onPress={() => router.back()} className="bg-white/10 px-5 py-3.5 rounded-[20px] backdrop-blur-md border border-white/10">
-                                <Text className="text-white font-bold">{i18n.t('exercise.back')}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+                            <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
+                                <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>{i18n.t('exercise.back')}</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="bg-white px-6 py-3.5 rounded-[20px] flex-row items-center shadow-lg">
-                                <Plus size={20} color="#137386" className="mr-2" strokeWidth={3} />
-                                <Text className="text-[#137386] font-black text-[16px]">{i18n.t('templates.new')}</Text>
+                            <TouchableOpacity
+                                onPress={() => router.push('/(app)/therapist/template/new')}
+                                activeOpacity={0.8}
+                                style={{ backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', height: 48, paddingHorizontal: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}
+                            >
+                                <Plus size={18} color="#FFF" />
+                                <Text style={{ color: 'white', fontWeight: '900', fontSize: 14 }}>Neue Vorlage</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -301,7 +305,7 @@ export default function TherapistTemplates() {
                                 onChangeText={setSearchQuery}
                             />
                             {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: 8, borderRadius: 12 }}>
+                                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: 8, borderRadius: 12 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                     <X size={20} color="rgba(255,255,255,0.9)" />
                                 </TouchableOpacity>
                             )}
@@ -321,11 +325,6 @@ export default function TherapistTemplates() {
                             <Text className="text-[#243842]/50 text-[15px] text-center font-medium leading-relaxed max-w-[300px]">
                                 {searchQuery ? 'Es wurden keine Vorlagen für diese Suche gefunden.' : 'Erstelle jetzt deine erste Übungsvorlage für deine Klienten.'}
                             </Text>
-                            {!searchQuery && (
-                                <TouchableOpacity onPress={() => router.push('/(app)/therapist/template/new')} className="mt-8 bg-[#137386] px-8 py-4 rounded-[20px] shadow-lg">
-                                    <Text className="text-white font-black text-[16px]">Erste Vorlage erstellen</Text>
-                                </TouchableOpacity>
-                            )}
                         </MotiView>
                     ) : (
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 24, paddingBottom: 120 }}>
@@ -334,6 +333,8 @@ export default function TherapistTemplates() {
                     )}
                 </View>
             </ScrollView>
+
+
 
             {/* Assignment Modal (Premium Style) */}
             <Modal visible={assignModalVisible} transparent animationType="fade">
@@ -345,7 +346,7 @@ export default function TherapistTemplates() {
                     >
                         <View className="bg-gray-50/50 p-6 border-b border-gray-100 flex-row justify-between items-center">
                             <Text className="text-[20px] font-black text-[#243842] tracking-tight">Klient Zuweisen</Text>
-                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100">
+                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={20} color="#243842" />
                             </TouchableOpacity>
                         </View>
@@ -434,7 +435,7 @@ export default function TherapistTemplates() {
                     >
                         <View className="flex-row justify-between items-center mb-10">
                             <Text className="text-[24px] font-black text-[#243842] tracking-tight">Farbe wählen</Text>
-                            <TouchableOpacity onPress={() => setColorModalVisible(false)} className="bg-gray-100 p-2.5 rounded-full">
+                            <TouchableOpacity onPress={() => setColorModalVisible(false)} className="bg-gray-100 p-2.5 rounded-full" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={22} color="#243842" />
                             </TouchableOpacity>
                         </View>

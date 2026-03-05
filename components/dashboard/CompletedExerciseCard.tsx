@@ -6,6 +6,7 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { CheckCircle2 } from 'lucide-react-native';
 import { Image } from 'expo-image';
+import { useTheme } from '../../contexts/ThemeContext';
 
 function formatShortDate(dateStr: string | undefined): string {
     if (!dateStr) return '';
@@ -14,6 +15,7 @@ function formatShortDate(dateStr: string | undefined): string {
 
 export function CompletedExerciseCard({ exercise, onPress }: { exercise: Exercise; onPress: () => void }) {
     const [pressed, setPressed] = useState(false);
+    const { colors, isDark } = useTheme();
 
     const handlePressIn = () => {
         setPressed(true);
@@ -29,25 +31,26 @@ export function CompletedExerciseCard({ exercise, onPress }: { exercise: Exercis
             <MotiView
                 animate={{ scale: pressed ? 0.97 : 1 }}
                 transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                style={styles.card}
+                style={[styles.card, { backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9F8F6', borderColor: colors.border }]}
             >
                 {exercise.coverImage && (
-                    <View className="mb-5 rounded-[20px] overflow-hidden w-full h-24 bg-gray-100 opacity-50 border border-gray-100">
+                    <View style={{ marginBottom: 20, borderRadius: 20, overflow: 'hidden', width: '100%', height: 96, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6', opacity: 0.5, borderColor: isDark ? 'transparent' : colors.border, borderWidth: 1 }}>
                         <Image source={{ uri: exercise.coverImage }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                     </View>
                 )}
-                <View className="flex-row justify-between items-center opacity-80 gap-4">
-                    <View className="flex-1">
-                        <Text className="text-lg font-bold text-gray-500 line-through mb-1.5 flex-wrap" numberOfLines={2}>{exercise.title}</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', opacity: 0.8, gap: 16 }}>
+                    <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textSubtle, textDecorationLine: 'line-through', marginBottom: 6 }} numberOfLines={2}>{exercise.title}</Text>
                         {exercise.lastCompletedAt && (
-                            <Text className="text-gray-400 text-xs font-medium flex-wrap" numberOfLines={1}>{i18n.t('dashboard.completed.done_on', { date: formatShortDate(exercise.lastCompletedAt), defaultValue: `Erledigt am ${formatShortDate(exercise.lastCompletedAt)}` })}</Text>
+                            <Text style={{ color: isDark ? 'rgba(255,255,255,0.3)' : '#9CA3AF', fontSize: 12, fontWeight: '500' }} numberOfLines={1}>
+                                {i18n.t('dashboard.completed.done_on', { date: formatShortDate(exercise.lastCompletedAt), defaultValue: `Erledigt am ${formatShortDate(exercise.lastCompletedAt)}` })}
+                            </Text>
                         )}
                     </View>
                     <View
-                        className="w-14 h-14 border rounded-full items-center justify-center"
-                        style={{ backgroundColor: `${exercise.themeColor || '#10b981'}15`, borderColor: `${exercise.themeColor || '#10b981'}33` }}
+                        style={{ width: 56, height: 56, borderWidth: 1, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: `${exercise.themeColor || colors.primary}15`, borderColor: `${exercise.themeColor || colors.primary}33` }}
                     >
-                        <CheckCircle2 size={28} color={exercise.themeColor || "#10b981"} />
+                        <CheckCircle2 size={28} color={exercise.themeColor || colors.primary} />
                     </View>
                 </View>
             </MotiView>
@@ -57,11 +60,9 @@ export function CompletedExerciseCard({ exercise, onPress }: { exercise: Exercis
 
 const styles = StyleSheet.create({
     card: {
-        backgroundColor: '#F9F8F6',
         padding: 24,
         borderRadius: 32,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
         marginBottom: 16,
     }
 });

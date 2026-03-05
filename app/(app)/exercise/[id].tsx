@@ -11,10 +11,12 @@ import * as Sharing from 'expo-sharing';
 import * as Haptics from 'expo-haptics';
 import i18n from '../../../utils/i18n';
 import { useAuth } from '../../../contexts/AuthContext';
+import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
 import { MotiView, AnimatePresence } from 'moti';
 import { ProgressChart, BarChart, PieChart, LineChart } from 'react-native-chart-kit';
+import { WebView } from 'react-native-webview';
 
-import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Lock, Unlock, Radar, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon } from 'lucide-react-native';
+import { Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Lock, Unlock, Radar, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon, Film } from 'lucide-react-native';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,6 +37,7 @@ function blockTypeLabel(type: string): string {
         breathing: i18n.t('blocks.breathing') || 'Atemübung',
         info: i18n.t('blocks.info') || 'Information',
         media: 'Medium',
+        video: 'Video-Link',
         spider_chart: 'Netzdiagramm',
         bar_chart: 'Balkendiagramm',
         pie_chart: 'Kreisdiagramm',
@@ -54,6 +57,7 @@ function getBlockIcon(type: string) {
         case 'gratitude': return Heart;
         case 'info': return BookOpen;
         case 'media': return ImageIcon;
+        case 'video': return Film;
         case 'timer': return Clock;
         case 'breathing': return Wind;
         case 'spider_chart': return Radar;
@@ -161,6 +165,42 @@ function MediaBlock({ block }: { block: ExerciseBlock }) {
                         contentFit={block.mediaSize === 'large' ? 'contain' : 'cover'}
                     />
                 )}
+            </View>
+        </View>
+    );
+}
+
+function VideoBlock({ block }: { block: ExerciseBlock }) {
+    if (!block.videoUrl && !block.content) return null;
+
+    // Attempt to extract YouTube Video ID for embed URL
+    const getEmbedUrl = (url?: string) => {
+        if (!url) return '';
+        const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+        if (match && match[1]) {
+            return `https://www.youtube.com/embed/${match[1]}?rel=0`;
+        }
+        return url;
+    };
+
+    const embedUrl = getEmbedUrl(block.videoUrl || block.content);
+    if (!embedUrl) return null;
+
+    return (
+        <View className="mb-4">
+            {block.content && block.content !== block.videoUrl && (
+                <Text style={{ fontSize: 16, color: '#2C3E50', marginBottom: 12, lineHeight: 24, fontWeight: '500' }}>
+                    {block.content}
+                </Text>
+            )}
+            <View style={{ height: 220, borderRadius: 16, overflow: 'hidden', backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                <WebView
+                    source={{ uri: embedUrl }}
+                    style={{ flex: 1 }}
+                    allowsFullscreenVideo
+                    javaScriptEnabled
+                    mediaPlaybackRequiresUserAction={false}
+                />
             </View>
         </View>
     );
@@ -370,9 +410,9 @@ function InteractiveChartBlock({ block, value, onChange }: { block: ExerciseBloc
                         radius={32}
                         hideLegend={false}
                         chartConfig={{
-                            backgroundColor: '#ffffff',
-                            backgroundGradientFrom: '#ffffff',
-                            backgroundGradientTo: '#ffffff',
+                            backgroundColor: 'transparent',
+                            backgroundGradientFrom: '#F8FAFC',
+                            backgroundGradientTo: '#F1F5F9',
                             color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
                             labelColor: (opacity = 1) => `#6B7C85`,
                         }}
@@ -396,9 +436,9 @@ function InteractiveChartBlock({ block, value, onChange }: { block: ExerciseBloc
                         withCustomBarColorFromData={true}
                         flatColor={true}
                         chartConfig={{
-                            backgroundColor: '#ffffff',
-                            backgroundGradientFrom: '#ffffff',
-                            backgroundGradientTo: '#ffffff',
+                            backgroundColor: 'transparent',
+                            backgroundGradientFrom: '#F8FAFC',
+                            backgroundGradientTo: '#F1F5F9',
                             color: (opacity = 1) => `rgba(0,0,0, ${opacity})`,
                             labelColor: (opacity = 1) => `#6B7C85`,
                             barPercentage: 0.6,
@@ -435,9 +475,9 @@ function InteractiveChartBlock({ block, value, onChange }: { block: ExerciseBloc
                         height={220}
                         bezier
                         chartConfig={{
-                            backgroundColor: '#ffffff',
-                            backgroundGradientFrom: '#ffffff',
-                            backgroundGradientTo: '#ffffff',
+                            backgroundColor: 'transparent',
+                            backgroundGradientFrom: '#F8FAFC',
+                            backgroundGradientTo: '#F1F5F9',
                             decimalPlaces: 0,
                             color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
                             labelColor: (opacity = 1) => `#6B7C85`,
@@ -492,6 +532,8 @@ function ExerciseBlockRenderer({ block, answers, onAnswerChange }: {
             return <ReflectionBlock block={block} value={value} onChange={onChange} />;
         case 'media':
             return <MediaBlock block={block} />;
+        case 'video':
+            return <VideoBlock block={block} />;
         case 'scale':
             return <ScaleBlock block={block} value={value} onChange={onChange} />;
         case 'choice':
@@ -525,6 +567,11 @@ export default function ExerciseExecutionView() {
     const [loading, setLoading] = useState(true);
     const [answers, setAnswers] = useState<Answers>({});
     const [sharedAnswers, setSharedAnswers] = useState(true);
+    const [toast, setToast] = useState<{ visible: boolean, message: string, subMessage?: string, type: 'success' | 'error' | 'warning', onDone?: () => void }>({ visible: false, message: '', type: 'success' });
+
+    const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' = 'error', onDone?: () => void) => {
+        setToast({ visible: true, message: title, subMessage: message, type, onDone });
+    };
 
     useEffect(() => { if (id) loadExercise(); }, [id]);
 
@@ -581,10 +628,11 @@ export default function ExerciseExecutionView() {
                 console.log("Failed to send completion webhook", webhookErr);
             }
 
-            Alert.alert(i18n.t('exercise.complete_success'), i18n.t('exercise.complete_success_msg'));
-            router.back();
+            showAlert(i18n.t('exercise.complete_success') || 'Erfolg', i18n.t('exercise.complete_success_msg') || 'Abgeschlossen', 'success', () => {
+                router.back();
+            });
         } catch {
-            Alert.alert('Fehler', 'Konnte den Fortschritt nicht speichern.');
+            showAlert('Fehler', 'Konnte den Fortschritt nicht speichern.', 'error');
         }
     };
 
@@ -594,7 +642,7 @@ export default function ExerciseExecutionView() {
             const { uri } = await Print.printToFileAsync({ html: formatPdfHtml(exercise, answers) });
             await Sharing.shareAsync(uri);
         } catch {
-            Alert.alert('Fehler', 'PDF konnte nicht generiert werden.');
+            showAlert('Fehler', 'PDF konnte nicht generiert werden.', 'error');
         }
     };
 
@@ -665,6 +713,17 @@ export default function ExerciseExecutionView() {
                     </TouchableOpacity>
                 </View>
             </ScrollView>
+
+            <SuccessAnimation
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.subMessage}
+                onAnimationDone={() => {
+                    setToast(prev => ({ ...prev, visible: false }));
+                    if (toast.onDone) toast.onDone();
+                }}
+            />
         </View>
     );
 }

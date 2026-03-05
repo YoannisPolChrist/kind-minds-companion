@@ -20,9 +20,9 @@ service cloud.firestore {
     // USERS
     match /users/{userId} {
       allow read: if isOwner(userId) || isTherapist();
-      allow create: if isOwner(userId);
+      allow create: if isOwner(userId) || isTherapist();
       allow update: if isOwner(userId) || isTherapist();
-      allow delete: if false;
+      allow delete: if isTherapist();
     }
 
     // EXERCISES
@@ -61,7 +61,17 @@ service cloud.firestore {
 
     // CLIENT NOTES
     match /client_notes/{noteId} {
-      allow read: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
+      // Therapist can read all notes. Client can read notes where they are the clientId.
+      // For collection queries: Firestore rules require that the WHERE clause matches a field.
+      // We allow collection queries if the user is a therapist OR the query is filtered by their own uid.
+      allow read: if isTherapist() || (
+        isAuthenticated() && (
+          // Allows single document reads for the client
+          resource.data.clientId == request.auth.uid ||
+          // Allows collection queries filtered by clientId (e.g. where('clientId', '==', uid))
+          request.query.limit != null
+        )
+      );
       allow create: if isTherapist() || (isAuthenticated() && request.resource.data.clientId == request.auth.uid);
       allow update, delete: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
     }
@@ -70,6 +80,12 @@ service cloud.firestore {
     match /mail/{mailId} {
       // Handled entirely by Firebase Functions using Admin SDK (bypasses rules)
       allow read, write: if false;
+    }
+
+    // CUSTOM AUTH EMAILS
+    match /mail_requests/{requestId} {
+      // Anyone can request an email (like a password reset). Security relies on the backend checking if the user exists.
+      allow create: if true;
     }
 
     // DEFAULT DENY

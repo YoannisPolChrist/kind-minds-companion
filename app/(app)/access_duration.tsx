@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
 import { useState } from 'react';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNetwork } from '../../contexts/NetworkContext';
 import { submitCheckin } from '../../services/checkinService';
 import i18n from '../../utils/i18n';
+import { SuccessAnimation } from '../../components/ui/SuccessAnimation';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Clock, CheckCircle2 } from 'lucide-react-native';
@@ -26,6 +27,12 @@ export default function AccessDurationScreen() {
 
     const [selectedDuration, setSelectedDuration] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+    const [toast, setToast] = useState<{ visible: boolean, message: string, subMessage?: string, type: 'success' | 'error' | 'warning', onDone?: () => void }>({ visible: false, message: '', type: 'success' });
+
+    const showAlert = (title: string, message: string, type: 'success' | 'error' | 'warning' = 'error', onDone?: () => void) => {
+        setToast({ visible: true, message: title, subMessage: message, type, onDone });
+    };
 
     const handleFinish = async () => {
         if (!selectedDuration) return;
@@ -60,28 +67,53 @@ export default function AccessDurationScreen() {
             // Save via CheckinService
             await submitCheckin(checkinData, isConnected);
 
-            if (!isConnected) {
-                Alert.alert(
-                    'Offline gespeichert',
-                    'Dein Check-in wurde lokal gesichert und wird synchronisiert, sobald du wieder online bist.',
-                    [{ text: 'OK', onPress: () => router.dismissAll() }]
-                );
-            } else {
-                Alert.alert(i18n.t('checkin.saved_title'), i18n.t('checkin.saved_msg'), [
-                    { text: 'OK', onPress: () => router.dismissAll() }
-                ]);
-            }
-
-            if (Platform.OS === 'web') {
-                router.dismissAll();
-            }
+            setSaved(true);
         } catch (e: any) {
             console.error("Final Save Error:", e);
-            Alert.alert('Fehler', i18n.t('checkin.error_save'));
+            showAlert('Fehler', i18n.t('checkin.error_save') || 'Speichern fehlgeschlagen.', 'error');
         } finally {
             setSaving(false);
         }
     };
+
+    if (saved) {
+        return (
+            <View style={{ flex: 1, backgroundColor: '#F9F8F6', justifyContent: 'center', alignItems: 'center', padding: 32 }}>
+                <MotiView
+                    from={{ opacity: 0, scale: 0.85 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', damping: 16, stiffness: 100 }}
+                    style={{ alignItems: 'center', width: '100%', maxWidth: 480 }}
+                >
+                    {/* Success Icon */}
+                    <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: '#ECFDF5', alignItems: 'center', justifyContent: 'center', marginBottom: 32, borderWidth: 2, borderColor: '#A7F3D0' }}>
+                        <CheckCircle2 size={60} color="#10B981" />
+                    </View>
+
+                    <Text style={{ fontSize: 28, fontWeight: '900', color: '#243842', textAlign: 'center', marginBottom: 12, letterSpacing: -0.5 }}>
+                        Check-in gespeichert! 🎉
+                    </Text>
+                    <Text style={{ fontSize: 16, color: '#64748B', textAlign: 'center', lineHeight: 24, fontWeight: '500', maxWidth: 320, marginBottom: 40 }}>
+                        Dein heutiger Eintrag wurde erfolgreich gesichert. Schau dir jetzt deine Auswertung an!
+                    </Text>
+
+                    <TouchableOpacity
+                        onPress={() => router.replace('/(app)/checkins_overview' as any)}
+                        style={{ backgroundColor: '#137386', borderRadius: 24, paddingVertical: 18, paddingHorizontal: 36, alignItems: 'center', width: '100%', marginBottom: 16, shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 4 }}
+                    >
+                        <Text style={{ color: 'white', fontSize: 17, fontWeight: '900' }}>📊 Auswertung öffnen</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                        onPress={() => router.dismissAll()}
+                        style={{ paddingVertical: 14, paddingHorizontal: 24 }}
+                    >
+                        <Text style={{ color: '#94A3B8', fontSize: 15, fontWeight: '700' }}>Zurück zur App</Text>
+                    </TouchableOpacity>
+                </MotiView>
+            </View>
+        );
+    }
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
@@ -182,6 +214,17 @@ export default function AccessDurationScreen() {
                     </TouchableOpacity>
                 </MotiView>
             </View>
+
+            <SuccessAnimation
+                visible={toast.visible}
+                type={toast.type}
+                message={toast.message}
+                subMessage={toast.subMessage}
+                onAnimationDone={() => {
+                    setToast(prev => ({ ...prev, visible: false }));
+                    if (toast.onDone) toast.onDone();
+                }}
+            />
         </View>
     );
 }

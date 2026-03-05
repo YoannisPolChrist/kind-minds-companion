@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { updateDoc, doc } from 'firebase/firestore';
@@ -6,12 +6,13 @@ import { db } from '../../utils/firebase';
 import { useAuth } from '../../contexts/AuthContext';
 import { MotiView } from 'moti';
 import i18n from '../../utils/i18n';
-import { Check } from 'lucide-react-native';
+import { Check, AlertCircle } from 'lucide-react-native';
 
 export default function OnboardingScreen() {
     const { user, profile } = useAuth();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+    const [saveError, setSaveError] = useState<string | null>(null);
 
     // We only need to ask for first name, last name, and birth date in this MVP
     const [formData, setFormData] = useState({
@@ -41,6 +42,7 @@ export default function OnboardingScreen() {
         if (!validateForm() || !user?.uid) return;
 
         setLoading(true);
+        setSaveError(null);
         try {
             await updateDoc(doc(db, 'users', user.uid), {
                 firstName: formData.firstName.trim(),
@@ -52,7 +54,7 @@ export default function OnboardingScreen() {
             router.replace('/(app)/');
         } catch (error) {
             console.error('Error saving onboarding data:', error);
-            Alert.alert('Fehler', 'Profil konnte nicht gespeichert werden.');
+            setSaveError('Profil konnte nicht gespeichert werden. Bitte versuche es erneut.');
         } finally {
             setLoading(false);
         }
@@ -72,6 +74,13 @@ export default function OnboardingScreen() {
                         <Text style={{ fontSize: 24, fontWeight: '900', color: '#243842', textAlign: 'center', marginBottom: 8 }}>Willkommen!</Text>
                         <Text style={{ fontSize: 16, color: '#64748B', textAlign: 'center', marginBottom: 32 }}>Lass uns dein Profil vervollständigen.</Text>
                     </View>
+
+                    {saveError && (
+                        <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 10 }}>
+                            <AlertCircle size={18} color="#DC2626" />
+                            <Text style={{ color: '#DC2626', fontWeight: '600', flex: 1 }}>{saveError}</Text>
+                        </MotiView>
+                    )}
 
                     <View style={{ gap: 20 }}>
                         <View>

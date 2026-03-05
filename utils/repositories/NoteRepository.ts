@@ -13,19 +13,23 @@ import { logger } from '../errors';
 export interface ClientNote {
     id: string;
     clientId: string;
+    authorRole?: 'therapist' | 'client';
+    isShared?: boolean;
     title?: string;
     content: string;
     imageUrl?: string;
-    type: 'ai-session-summary' | 'manual';
+    type: 'session' | 'journal' | 'ai-session-summary' | 'manual';
     createdAt: string;
 }
 
 export interface CreateNoteDto {
     clientId: string;
+    authorRole?: 'therapist' | 'client';
+    isShared?: boolean;
     title?: string;
     content: string;
     imageUrl?: string;
-    type?: 'ai-session-summary' | 'manual';
+    type?: 'session' | 'journal' | 'ai-session-summary' | 'manual';
 }
 
 export class NoteRepository {
@@ -50,11 +54,14 @@ export class NoteRepository {
                 type: data.type ?? 'ai-session-summary',
                 title: data.title || null,
                 imageUrl: data.imageUrl || null,
+                authorRole: data.authorRole || 'therapist',
+                isShared: data.isShared || false,
                 createdAt: new Date().toISOString(),
             });
             logger.info('Created new client note', { noteId: ref.id, clientId: data.clientId });
             return ref.id;
-        } catch (error) {
+        } catch (error: any) {
+            console.error('Note creation error inner details:', error?.code, error?.message, error);
             logger.error('Failed to create note', error, { clientId: data.clientId });
             throw error;
         }

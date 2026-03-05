@@ -14,10 +14,12 @@ import { ClipboardList, Trash2, Sparkles, Activity, Edit3, Lock, FileText, Clock
 import { MotiView } from 'moti';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { SuccessAnimation } from '../../../../components/ui/SuccessAnimation';
+import { useSafeBack } from '../../../../hooks/useSafeBack';
 
 export default function ClientView() {
     const { id } = useLocalSearchParams();
     const router = useRouter();
+    const goBack = useSafeBack();
     const { profile } = useAuth();
 
     const [client, setClient] = useState<any>(null);
@@ -107,27 +109,7 @@ export default function ClientView() {
         setReminderFrequency('none');
     };
 
-    const deleteExercise = async (exerciseId: string, title: string) => {
-        Alert.alert(
-            i18n.t('therapist.delete_title'),
-            i18n.t('therapist.delete_msg', { title }),
-            [
-                { text: i18n.t('therapist.cancel'), style: 'cancel' },
-                {
-                    text: i18n.t('exercise.complete') || 'Löschen',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            await ExerciseRepository.archive(exerciseId);
-                            setExercises(prev => prev.filter(ex => ex.id !== exerciseId));
-                        } catch {
-                            Alert.alert('Fehler', i18n.t('therapist.delete_err'));
-                        }
-                    }
-                }
-            ]
-        );
-    };
+
 
     const saveExercise = async (title: string, blocks: ExerciseBlock[]) => {
         try {
@@ -245,7 +227,7 @@ export default function ClientView() {
             {/* Header Section */}
             <View className="bg-[#137386] pt-16 pb-8 px-8 rounded-b-[40px] shadow-lg z-10">
                 <View className="flex-row items-center justify-between w-full max-w-5xl mx-auto">
-                    <TouchableOpacity onPress={() => router.back()} className="bg-white/20 px-4 py-3 rounded-2xl backdrop-blur-md flex-row items-center">
+                    <TouchableOpacity onPress={goBack} className="bg-white/20 px-4 py-3 rounded-2xl backdrop-blur-md flex-row items-center">
                         <ArrowLeft size={20} color="white" style={{ marginRight: 8 }} />
                         <Text className="text-white font-bold text-[16px]">Zurück</Text>
                     </TouchableOpacity>
@@ -295,9 +277,17 @@ export default function ClientView() {
                             <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">Hinterlegte Dokumente</Text>
                         </TouchableOpacity>
 
-                        <View className="flex-1 min-w-[240px] max-w-full md:max-w-[calc(33%-16px)]">
-                            {/* Placeholder to balance the flex wrap grid */}
-                        </View>
+                        <TouchableOpacity
+                            onPress={() => router.push(`/(app)/therapist/client/${id}/checkins` as any)}
+                            className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(33%-16px)] aspect-square max-h-[260px]"
+                            style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 4 }}
+                        >
+                            <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-5 border border-emerald-100/50">
+                                <Activity size={36} color="#10B981" />
+                            </View>
+                            <Text className="text-[22px] font-bold text-[#243842] mb-1.5">Check-ins</Text>
+                            <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">Stimmungs-Tagebuch</Text>
+                        </TouchableOpacity>
                     </View>
 
                     <View className="flex-row justify-between items-center mb-8 mt-4">
@@ -581,10 +571,12 @@ export default function ClientView() {
                             />
                         </>
                     ) : (
-                        <ExerciseBuilder
-                            onSave={saveExercise}
-                            onCancel={() => setBuilderMode('select')}
-                        />
+                        <View style={{ flex: 1 }}>
+                            <ExerciseBuilder
+                                onSave={saveExercise}
+                                onCancel={() => setBuilderMode('select')}
+                            />
+                        </View>
                     )}
                 </View>
             </Modal >

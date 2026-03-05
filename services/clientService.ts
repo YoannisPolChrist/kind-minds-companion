@@ -1,4 +1,4 @@
-import { addDoc, collection, serverTimestamp, doc, setDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, setDoc, deleteDoc, updateDoc, getDocs, query, where } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { db, auth } from '../utils/firebase';
 import { logger, AppError } from '../utils/errors';
@@ -48,11 +48,6 @@ export class ClientService {
         return { uid: data.localId, email: data.email };
     }
 
-    /**
-     * Creates a full Firebase Auth + Firestore account for the client.
-     * The therapist remains logged in throughout.
-     * Automatically sends a password reset email.
-     */
     static async createClientAccount(params: CreateClientParams): Promise<{ email: string; resetSent: boolean }> {
         const { firstName, lastName, email, birthDate, therapistId } = params;
         const normalizedEmail = email.trim().toLowerCase();
@@ -73,20 +68,26 @@ export class ClientService {
                 role: 'client',
                 therapistId,
                 isOfflineProfile: false,
+                isArchived: false, // New property
                 onboardingCompleted: true, // Profile already filled by therapist
                 createdAt: serverTimestamp(),
                 createdByTherapist: true,
             });
             logger.info('Created Firestore profile for new client', { uid, therapistId });
 
-            // 4. Send password reset email so the client can set their own password immediately
+            // 4. Send welcome email so the client can set their own password immediately
             let resetSent = false;
             try {
-                await sendPasswordResetEmail(auth, normalizedEmail);
+                await addDoc(collection(db, 'mail_requests'), {
+                    email: normalizedEmail,
+                    type: 'WELCOME_CLIENT',
+                    status: 'pending',
+                    requestedAt: serverTimestamp()
+                });
                 resetSent = true;
-                logger.info('Sent password reset email to new client', { email: normalizedEmail });
+                logger.info('Requested welcome email for new client', { email: normalizedEmail });
             } catch (resetErr) {
-                logger.warn('Initial password reset email failed', { error: resetErr, email: normalizedEmail });
+                logger.warn('Initial welcome email request failed', { error: resetErr, email: normalizedEmail });
             }
 
             return { email: normalizedEmail, resetSent };
@@ -118,4 +119,16 @@ export class ClientService {
             throw error;
         }
     }
+    static async deleteClient(clientId: string): Promise<void> {
+        try {
+            // Hard delete: deletes the profile which triggers Cloud Function 
+            // `onClientDocumentDeleted` to delete the Auth account.
+            await deleteDoc(doc(db, 'users', clientId));
+            logger.info('Deleted client profile', { clientId });
+        } catch (error) {
+            logger.error('Failed to delete client profile', error, { clientId });
+            throw error;
+        }
+    }
 }
+
