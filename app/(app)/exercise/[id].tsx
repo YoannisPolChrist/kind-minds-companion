@@ -738,20 +738,23 @@ function ReflectionBlock({
   block,
   value,
   onChange,
+  cat,
 }: {
   block: ExerciseBlock;
   value: string;
   onChange: (v: string) => void;
+  cat?: ReturnType<typeof getCat>;
 }) {
+
   return (
     <View>
       {block.content ? (
         <Text
           style={{
             fontSize: 16,
-            color: "#2C3E50",
+            color: "#243842",
             marginBottom: 16,
-            lineHeight: 24,
+            lineHeight: 26,
             fontWeight: "500",
           }}
         >
@@ -759,16 +762,27 @@ function ReflectionBlock({
         </Text>
       ) : null}
       {block.type !== "info" && (
-        <View className="bg-gray-50 rounded-2xl p-1 border border-gray-100">
-          <Text className="text-gray-400 font-bold text-xs uppercase tracking-wider mx-3 mt-3 mb-2">
+        <View>
+          <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 8 }}>
             Deine Reflektion
           </Text>
           <TextInput
             multiline
             placeholder="Schreibe deine Gedanken hier auf..."
-            placeholderTextColor="#9CA3AF"
-            className="p-3 min-h-[110px] text-[#2C3E50] text-base"
-            textAlignVertical="top"
+            placeholderTextColor="#8F9CA3"
+            style={{
+              backgroundColor: '#F9F8F6',
+              borderWidth: 1.5,
+              borderColor: '#E8E6E1',
+              borderRadius: 20,
+              paddingHorizontal: 20,
+              paddingVertical: 18,
+              fontSize: 16,
+              color: '#243842',
+              minHeight: 120,
+              fontWeight: '500',
+              textAlignVertical: 'top',
+            }}
             value={value}
             onChangeText={onChange}
           />
@@ -782,34 +796,42 @@ function ScaleBlock({
   block,
   value,
   onChange,
+  cat,
 }: {
   block: ExerciseBlock;
   value: string;
   onChange: (v: string) => void;
+  cat?: ReturnType<typeof getCat>;
 }) {
+  const accent = cat?.accent ?? '#F59E0B';
+  const bg = cat?.bg ?? '#FFFBEB';
+  const border = cat?.border ?? '#FDE68A';
+  const textC = cat?.text ?? '#92400E';
   return (
     <View>
-      <Text
-        style={{
-          fontSize: 16,
-          color: "#2C3E50",
-          marginBottom: 16,
-          lineHeight: 24,
-          fontWeight: "600",
-          textAlign: "center",
-        }}
-      >
-        {block.content || "Bitte bewerte auf einer Skala von 1 bis 10:"}
-      </Text>
-      <View className="flex-row justify-between mb-2">
-        <Text className="text-xs text-gray-400">
+      {block.content ? (
+        <Text
+          style={{
+            fontSize: 16,
+            color: '#243842',
+            marginBottom: 16,
+            lineHeight: 26,
+            fontWeight: '600',
+            textAlign: 'center',
+          }}
+        >
+          {block.content}
+        </Text>
+      ) : null}
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 14, paddingHorizontal: 4 }}>
+        <Text style={{ fontSize: 12, color: textC, fontWeight: '600', opacity: 0.8 }}>
           {block.minLabel ?? "Gar nicht"}
         </Text>
-        <Text className="text-xs text-gray-400">
+        <Text style={{ fontSize: 12, color: textC, fontWeight: '600', opacity: 0.8 }}>
           {block.maxLabel ?? "Sehr stark"}
         </Text>
       </View>
-      <View className="flex-row flex-wrap justify-center gap-2">
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
           const selected = value === String(num);
           return (
@@ -820,18 +842,24 @@ function ScaleBlock({
                 width: 44,
                 height: 44,
                 borderRadius: 22,
-                alignItems: "center",
-                justifyContent: "center",
-                borderWidth: 2,
-                backgroundColor: selected ? "#A855F7" : "#fff",
-                borderColor: selected ? "#A855F7" : "#E5E7EB",
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderWidth: 1.5,
+                backgroundColor: selected ? accent : bg,
+                borderColor: selected ? accent : border,
+                shadowColor: selected ? accent : 'transparent',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: selected ? 0.25 : 0,
+                shadowRadius: 4,
+                elevation: selected ? 2 : 0,
+                marginBottom: 8,
               }}
             >
               <Text
                 style={{
-                  fontWeight: "700",
-                  fontSize: 16,
-                  color: selected ? "#fff" : "#2C3E50",
+                  fontWeight: '800',
+                  fontSize: 15,
+                  color: selected ? '#fff' : textC,
                 }}
               >
                 {num}
@@ -840,6 +868,11 @@ function ScaleBlock({
           );
         })}
       </View>
+      {value ? (
+        <Text style={{ textAlign: 'center', fontSize: 13, color: accent, fontWeight: '700', marginTop: 8 }}>
+          Gewählt: {value} / 10
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -848,21 +881,27 @@ function ChoiceBlock({
   block,
   value,
   onChange,
+  cat,
 }: {
   block: ExerciseBlock;
   value: string;
   onChange: (v: string) => void;
+  cat?: ReturnType<typeof getCat>;
 }) {
+  const accent = cat?.accent ?? '#6366F1';
+  const bg = cat?.bg ?? '#EEF2FF';
+  const border = cat?.border ?? '#C7D2FE';
+  const textC = cat?.text ?? '#4338CA';
   return (
     <View>
       {block.content ? (
         <Text
           style={{
             fontSize: 16,
-            color: "#2C3E50",
-            marginBottom: 14,
-            lineHeight: 24,
-            fontWeight: "600",
+            color: '#243842',
+            marginBottom: 16,
+            lineHeight: 26,
+            fontWeight: '600',
           }}
         >
           {block.content}
@@ -875,36 +914,41 @@ function ChoiceBlock({
             key={i}
             onPress={() => onChange(opt)}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 14,
               marginBottom: 10,
-              backgroundColor: selected ? "#EEF2FF" : "#F9FAFB",
+              backgroundColor: selected ? bg : '#F9F8F6',
               borderWidth: 1.5,
-              borderColor: selected ? "#6366F1" : "#E5E7EB",
-              borderRadius: 14,
-              padding: 14,
+              borderColor: selected ? accent : '#E8E6E1',
+              borderRadius: 16,
+              padding: 16,
+              shadowColor: selected ? accent : 'transparent',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: selected ? 0.12 : 0,
+              shadowRadius: 6,
+              elevation: selected ? 2 : 0,
             }}
           >
             <View
               style={{
-                width: 20,
-                height: 20,
-                borderRadius: 10,
+                width: 22,
+                height: 22,
+                borderRadius: 11,
                 borderWidth: 2,
-                borderColor: selected ? "#6366F1" : "#D1D5DB",
-                backgroundColor: selected ? "#6366F1" : "transparent",
-                alignItems: "center",
-                justifyContent: "center",
+                borderColor: selected ? accent : '#C9D4DB',
+                backgroundColor: selected ? accent : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               {selected && (
                 <View
                   style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    backgroundColor: "#fff",
+                    width: 9,
+                    height: 9,
+                    borderRadius: 4.5,
+                    backgroundColor: '#fff',
                   }}
                 />
               )}
@@ -912,9 +956,10 @@ function ChoiceBlock({
             <Text
               style={{
                 fontSize: 15,
-                color: selected ? "#4338CA" : "#374151",
-                fontWeight: selected ? "700" : "500",
+                color: selected ? textC : '#374151',
+                fontWeight: selected ? '700' : '500',
                 flex: 1,
+                lineHeight: 22,
               }}
             >
               {opt}
@@ -930,11 +975,17 @@ function ChecklistBlock({
   block,
   value,
   onChange,
+  cat,
 }: {
   block: ExerciseBlock;
   value: string;
   onChange: (v: string) => void;
+  cat?: ReturnType<typeof getCat>;
 }) {
+  const accent = cat?.accent ?? '#10B981';
+  const bg = cat?.bg ?? '#ECFDF5';
+  const border = cat?.border ?? '#A7F3D0';
+  const textC = cat?.text ?? '#065F46';
   const checked: string[] = (() => {
     try {
       const parsed = JSON.parse(value || "[]");
@@ -955,9 +1006,10 @@ function ChecklistBlock({
         <Text
           style={{
             fontSize: 16,
-            color: "#2C3E50",
-            marginBottom: 14,
-            fontWeight: "600",
+            color: '#243842',
+            marginBottom: 16,
+            fontWeight: '600',
+            lineHeight: 26,
           }}
         >
           {block.content}
@@ -970,32 +1022,37 @@ function ChecklistBlock({
             key={i}
             onPress={() => toggle(opt)}
             style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 12,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 14,
               marginBottom: 10,
-              backgroundColor: isChecked ? "#ECFDF5" : "#F9FAFB",
+              backgroundColor: isChecked ? bg : '#F9F8F6',
               borderWidth: 1.5,
-              borderColor: isChecked ? "#10B981" : "#E5E7EB",
-              borderRadius: 14,
-              padding: 14,
+              borderColor: isChecked ? accent : '#E8E6E1',
+              borderRadius: 16,
+              padding: 16,
+              shadowColor: isChecked ? accent : 'transparent',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: isChecked ? 0.12 : 0,
+              shadowRadius: 6,
+              elevation: isChecked ? 2 : 0,
             }}
           >
             <View
               style={{
-                width: 20,
-                height: 20,
-                borderRadius: 5,
+                width: 22,
+                height: 22,
+                borderRadius: 6,
                 borderWidth: 2,
-                borderColor: isChecked ? "#10B981" : "#D1D5DB",
-                backgroundColor: isChecked ? "#10B981" : "transparent",
-                alignItems: "center",
-                justifyContent: "center",
+                borderColor: isChecked ? accent : '#C9D4DB',
+                backgroundColor: isChecked ? accent : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
               {isChecked && (
                 <Text
-                  style={{ color: "#fff", fontSize: 12, fontWeight: "800" }}
+                  style={{ color: '#fff', fontSize: 13, fontWeight: '900' }}
                 >
                   ✓
                 </Text>
@@ -1004,9 +1061,10 @@ function ChecklistBlock({
             <Text
               style={{
                 fontSize: 15,
-                color: isChecked ? "#065F46" : "#374151",
-                fontWeight: isChecked ? "700" : "500",
+                color: isChecked ? textC : '#374151',
+                fontWeight: isChecked ? '700' : '500',
                 flex: 1,
+                lineHeight: 22,
               }}
             >
               {opt}
@@ -1017,10 +1075,10 @@ function ChecklistBlock({
       {checked.length > 0 && (
         <Text
           style={{
-            fontSize: 12,
-            color: "#10B981",
-            fontWeight: "600",
-            marginTop: 4,
+            fontSize: 13,
+            color: accent,
+            fontWeight: '700',
+            marginTop: 8,
           }}
         >
           {checked.length}/{block.options?.length} erledigt
@@ -1052,57 +1110,71 @@ function HomeworkBlock({
   block,
   answers,
   onChange,
+  cat,
 }: {
   block: ExerciseBlock;
   answers: Answers;
   onChange: (key: string, val: string) => void;
+  cat?: ReturnType<typeof getCat>;
 }) {
+  const accent = cat?.accent ?? '#C09D59';
+  const bg = cat?.bg ?? '#F9F8F6';
+  const border = cat?.border ?? '#E8E6E1';
+  const textC = cat?.text ?? '#243842';
   return (
     <View>
       {block.content ? (
         <Text
           style={{
-            fontSize: 15,
-            color: "#374151",
+            fontSize: 16,
+            color: '#243842',
             marginBottom: 16,
-            lineHeight: 22,
+            lineHeight: 26,
+            fontWeight: '500',
           }}
         >
           {block.content}
         </Text>
       ) : null}
-      {ABC_FIELDS.map((field) => (
-        <View key={field.key} style={{ marginBottom: 12 }}>
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: "700",
-              color: "#92400E",
-              marginBottom: 4,
-            }}
-          >
-            {field.label}
-          </Text>
-          <TextInput
-            multiline
-            placeholder={field.hint}
-            placeholderTextColor="#9CA3AF"
-            value={answers[`${block.id}_${field.key}`] ?? ""}
-            onChangeText={(t) => onChange(`${block.id}_${field.key}`, t)}
-            style={{
-              backgroundColor: "#FFFBEB",
-              borderWidth: 1,
-              borderColor: "#FDE68A",
-              borderRadius: 12,
-              padding: 12,
-              fontSize: 14,
-              color: "#111827",
-              minHeight: 70,
-              textAlignVertical: "top",
-            }}
-          />
-        </View>
-      ))}
+      <View style={{ backgroundColor: bg, borderRadius: 20, padding: 16, borderWidth: 1, borderColor: border, marginBottom: 16 }}>
+        <Text style={{ fontSize: 13, fontWeight: '800', color: textC, marginBottom: 12 }}>📝 ABC-Protokoll</Text>
+        {ABC_FIELDS.map((field) => (
+          <View key={field.key} style={{ marginBottom: 14 }}>
+            <Text
+              style={{
+                fontSize: 11,
+                fontWeight: '700',
+                color: '#9CA3AF',
+                letterSpacing: 1,
+                textTransform: 'uppercase',
+                marginBottom: 8,
+              }}
+            >
+              {field.label}
+            </Text>
+            <TextInput
+              multiline
+              placeholder={field.hint}
+              placeholderTextColor="#8F9CA3"
+              value={answers[`${block.id}_${field.key}`] ?? ""}
+              onChangeText={(t) => onChange(`${block.id}_${field.key}`, t)}
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderWidth: 1.5,
+                borderColor: '#E8E6E1',
+                borderRadius: 16,
+                paddingHorizontal: 16,
+                paddingVertical: 14,
+                fontSize: 15,
+                color: '#243842',
+                minHeight: 80,
+                textAlignVertical: 'top',
+                fontWeight: '500',
+              }}
+            />
+          </View>
+        ))}
+      </View>
     </View>
   );
 }
@@ -1111,50 +1183,69 @@ function GratitudeBlock({
   block,
   answers,
   onChange,
+  cat,
 }: {
   block: ExerciseBlock;
   answers: Answers;
   onChange: (key: string, val: string) => void;
+  cat?: ReturnType<typeof getCat>;
 }) {
+  const accent = cat?.accent ?? '#EC4899';
+  const bg = cat?.bg ?? '#FDF2F8';
+  const border = cat?.border ?? '#FBCFE8';
+  const textC = cat?.text ?? '#9D174D';
   return (
     <View>
       {block.content ? (
         <Text
           style={{
-            fontSize: 15,
-            color: "#374151",
+            fontSize: 16,
+            color: '#243842',
             marginBottom: 16,
-            lineHeight: 22,
+            lineHeight: 26,
+            fontWeight: '500',
           }}
         >
           {block.content}
         </Text>
       ) : null}
+      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
+        {['1.', '2.', '3.'].map((n) => (
+          <View key={n} style={{ flex: 1, backgroundColor: bg, borderRadius: 20, borderWidth: 1, borderColor: border, paddingVertical: 20, alignItems: 'center' }}>
+            <Text style={{ fontSize: 22 }}>🙏</Text>
+            <Text style={{ fontSize: 14, fontWeight: '800', color: textC, marginTop: 6 }}>{n}</Text>
+          </View>
+        ))}
+      </View>
       {[1, 2, 3].map((n) => (
-        <View key={n} style={{ marginBottom: 10 }}>
+        <View key={n} style={{ marginBottom: 12 }}>
           <Text
             style={{
-              fontSize: 12,
-              fontWeight: "700",
-              color: "#9D174D",
-              marginBottom: 4,
+              fontSize: 11,
+              fontWeight: '700',
+              color: '#9CA3AF',
+              letterSpacing: 1,
+              textTransform: 'uppercase',
+              marginBottom: 8,
             }}
           >
             {n}. Ich bin dankbar für...
           </Text>
           <TextInput
-            placeholder="..."
-            placeholderTextColor="#9CA3AF"
+            placeholder="Schreibe hier..."
+            placeholderTextColor="#8F9CA3"
             value={answers[`${block.id}_${n}`] ?? ""}
             onChangeText={(t) => onChange(`${block.id}_${n}`, t)}
             style={{
-              backgroundColor: "#FDF2F8",
-              borderWidth: 1,
-              borderColor: "#FBCFE8",
-              borderRadius: 12,
-              padding: 12,
-              fontSize: 14,
-              color: "#111827",
+              backgroundColor: '#F9F8F6',
+              borderWidth: 1.5,
+              borderColor: '#E8E6E1',
+              borderRadius: 16,
+              paddingHorizontal: 16,
+              paddingVertical: 14,
+              fontSize: 15,
+              color: '#243842',
+              fontWeight: '500',
             }}
           />
         </View>
@@ -1298,34 +1389,36 @@ function ExerciseBlockRenderer({
   const { colors } = useTheme();
   const onChange = (val: string) => onAnswerChange(block.id, val);
   const value = answers[block.id] ?? "";
+  const cat = getCat(block.type as any);
 
   switch (block.type) {
     case "info":
       if (scrollY && globalIndex !== undefined) {
         return <CinematicInfoBlock block={block} scrollY={scrollY} index={globalIndex} />;
       }
-      return <ReflectionBlock block={block} value={value} onChange={onChange} />;
+      return <ReflectionBlock block={block} value={value} onChange={onChange} cat={cat} />;
     case "text":
     case "reflection":
       return (
-        <ReflectionBlock block={block} value={value} onChange={onChange} />
+        <ReflectionBlock block={block} value={value} onChange={onChange} cat={cat} />
       );
     case "media":
       return <MediaBlock block={block} />;
     case "video":
       return <VideoBlock block={block} />;
     case "scale":
-      return <ScaleBlock block={block} value={value} onChange={onChange} />;
+      return <ScaleBlock block={block} value={value} onChange={onChange} cat={cat} />;
     case "choice":
-      return <ChoiceBlock block={block} value={value} onChange={onChange} />;
+      return <ChoiceBlock block={block} value={value} onChange={onChange} cat={cat} />;
     case "checklist":
-      return <ChecklistBlock block={block} value={value} onChange={onChange} />;
+      return <ChecklistBlock block={block} value={value} onChange={onChange} cat={cat} />;
     case "homework":
       return (
         <HomeworkBlock
           block={block}
           answers={answers}
           onChange={onAnswerChange}
+          cat={cat}
         />
       );
     case "gratitude":
@@ -1334,6 +1427,7 @@ function ExerciseBlockRenderer({
           block={block}
           answers={answers}
           onChange={onAnswerChange}
+          cat={cat}
         />
       );
     case "timer":
