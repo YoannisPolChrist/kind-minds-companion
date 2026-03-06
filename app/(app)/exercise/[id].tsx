@@ -22,6 +22,7 @@ import * as Sharing from "expo-sharing";
 import * as Haptics from "expo-haptics";
 import i18n from "../../../utils/i18n";
 import { useAuth } from "../../../contexts/AuthContext";
+import { useSafeBack } from "../../../hooks/useSafeBack";
 import { SuccessAnimation } from "../../../components/ui/SuccessAnimation";
 import { MotiView, AnimatePresence } from "moti";
 import Animated, { useSharedValue, useAnimatedScrollHandler, SharedValue } from "react-native-reanimated";
@@ -1257,6 +1258,7 @@ export default function ExerciseScreen() {
   const { id: rawId } = useLocalSearchParams();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
+  const goBack = useSafeBack('/(app)/dashboard');
   const { profile } = useAuth();
   const { colors } = useTheme();
   const [exercise, setExercise] = useState<Exercise | null>(null);
@@ -1420,7 +1422,7 @@ export default function ExerciseScreen() {
           accessibilityLabel="Zurück"
           onPress={() => {
             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.back();
+            goBack();
           }}
           className="bg-white/20 px-4 py-3 rounded-xl backdrop-blur-md flex-row items-center z-50"
           style={{ zIndex: 50, elevation: 50 }}
