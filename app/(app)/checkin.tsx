@@ -10,7 +10,8 @@ import { useCheckin } from '../../hooks/firebase/useCheckin';
 import { useTheme } from '../../contexts/ThemeContext';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
-import { CheckCircle2, TrendingUp, AlertCircle } from 'lucide-react-native';
+import { CheckCircle2, TrendingUp, AlertCircle, Mic, MicOff } from 'lucide-react-native';
+import { speechRecognizer } from '../../utils/voice';
 import i18n from '../../utils/i18n';
 
 const getQuickTags = () => {
@@ -29,6 +30,50 @@ export default function CheckinScreen() {
         loadingCheckin, inlineError, setInlineError,
         handleSave
     } = useCheckin();
+
+    const [isListening, setIsListening] = useState(false);
+    const [interimText, setInterimText] = useState("");
+
+    const toggleListening = () => {
+        if (isListening) {
+            speechRecognizer.stop();
+            setIsListening(false);
+            setInterimText("");
+        } else {
+            // Append a space if there's already text and it doesn't end with whitespace
+            const currentNote = note.trim();
+            const prefix = currentNote.length > 0 ? currentNote + " " : "";
+
+            speechRecognizer.start(
+                (text, isFinal) => {
+                    if (isFinal) {
+                        setNote(prefix + text);
+                        setInterimText("");
+                        // Stop automatically after final result usually good for dictation chunks
+                    } else {
+                        setInterimText(text);
+                    }
+                },
+                (error) => {
+                    console.error('Speech error:', error);
+                    setIsListening(false);
+                    setInterimText("");
+                },
+                () => {
+                    setIsListening(false);
+                    setInterimText("");
+                }
+            );
+            setIsListening(true);
+        }
+    };
+
+    // Cleanup when component unmounts
+    useEffect(() => {
+        return () => {
+            if (isListening) speechRecognizer.stop();
+        };
+    }, [isListening]);
 
     const QUICK_TAGS = getQuickTags();
     const activeEmotion = EMOTION_PRESETS.find(e => e.id === selectedEmotionId);
@@ -245,13 +290,44 @@ export default function CheckinScreen() {
                             <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 16 }}>
                                 Möchtest du noch etwas ergänzen? (Optional)
                             </Text>
-                            <TextInput
-                                multiline value={note} onChangeText={setNote}
-                                placeholder={alreadyCompleted ? '' : "Gedanken, Notizen..."}
-                                placeholderTextColor={colors.textSubtle + '80'} textAlignVertical="top"
-                                editable={!alreadyCompleted}
-                                style={{ fontSize: 15, color: colors.text, minHeight: 120, lineHeight: 24, backgroundColor: isDark ? 'rgba(0,0,0,0.15)' : '#F8FAFC', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.05)' : colors.border, opacity: alreadyCompleted ? 0.7 : 1 }}
-                            />
+
+                            <View style={{ position: 'relative' }}>
+                                <TextInput
+                                    multiline value={note + (interimText ? " " + interimText : "")} onChangeText={setNote}
+                                    placeholder={alreadyCompleted ? '' : (isListening ? "Höre zu..." : "Gedanken, Notizen...")}
+                                    placeholderTextColor={colors.textSubtle + '80'} textAlignVertical="top"
+                                    editable={!alreadyCompleted && !isListening}
+                                    style={{ fontSize: 15, color: isListening ? '#64748B' : colors.text, minHeight: 120, lineHeight: 24, backgroundColor: isDark ? 'rgba(0,0,0,0.15)' : '#F8FAFC', borderRadius: 20, padding: 16, paddingBottom: 50, borderWidth: 1, borderColor: isListening ? activeEmotion?.color || '#10B981' : (isDark ? 'rgba(255,255,255,0.05)' : colors.border), opacity: alreadyCompleted ? 0.7 : 1 }}
+                                />
+
+                                {speechRecognizer.isSupported && !alreadyCompleted && (
+                                    <View style={{ position: 'absolute', bottom: 12, right: 12, flexDirection: 'row', alignItems: 'center' }}>
+                                        {isListening && (
+                                            <MotiView
+                                                from={{ opacity: 0.4, scale: 0.8 }}
+                                                animate={{ opacity: 1, scale: 1.1 }}
+                                                transition={{ type: 'timing', duration: 800, loop: true }}
+                                                style={{ position: 'absolute', width: 36, height: 36, borderRadius: 18, backgroundColor: '#EF4444', opacity: 0.2 }}
+                                            />
+                                        )}
+                                        <TouchableOpacity
+                                            onPress={toggleListening}
+                                            style={{
+                                                width: 36, height: 36, borderRadius: 18,
+                                                backgroundColor: isListening ? '#FEF2F2' : (isDark ? '#334155' : '#E2E8F0'),
+                                                alignItems: 'center', justifyContent: 'center',
+                                                borderWidth: 1, borderColor: isListening ? '#FCA5A5' : 'transparent'
+                                            }}
+                                        >
+                                            {isListening ? (
+                                                <MicOff size={16} color="#DC2626" />
+                                            ) : (
+                                                <Mic size={16} color={colors.textSubtle} />
+                                            )}
+                                        </TouchableOpacity>
+                                    </View>
+                                )}
+                            </View>
                         </View>
                     </MotiView>
 

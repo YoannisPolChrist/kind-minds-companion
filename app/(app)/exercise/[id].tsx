@@ -37,7 +37,6 @@ import {
 } from "react-native-chart-kit";
 import { WebView } from "react-native-webview";
 import { CinematicBreathingBlock } from "../../../components/client/CinematicBreathingBlock";
-import { evaluateCondition } from "../../../utils/conditionEvaluator";
 
 import { Video, ResizeMode } from "expo-av";
 
@@ -1453,7 +1452,7 @@ export default function ExerciseScreen() {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
       >
-        {(exercise?.blocks ?? []).filter(block => evaluateCondition(block.condition, answers)).map((block, index) => (
+        {(exercise?.blocks ?? []).map((block, index) => (
           <View
             key={block.id}
             className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6"

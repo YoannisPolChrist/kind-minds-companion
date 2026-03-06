@@ -22,16 +22,6 @@ export interface Exercise {
     blocks?: ExerciseBlock[];
 }
 
-/** Specifies when a block should be shown, based on a prior block's answer */
-export interface BlockCondition {
-    /** ID of the block whose answer is evaluated */
-    sourceBlockId: string;
-    /** Operator to test against the threshold */
-    operator: '>=' | '<=' | '==' | '>' | '<' | '!=';
-    /** Value to compare against (numeric for scale, string for choice) */
-    value: string;
-}
-
 export interface ExerciseBlock {
     id: string;
     type: 'text' | 'video' | 'reflection' | 'breathing' | 'timer' | 'info' | 'media' | 'scale' | 'choice' | 'checklist' | 'homework' | 'gratitude' | 'spider_chart' | 'bar_chart' | 'pie_chart' | 'line_chart';
@@ -44,8 +34,6 @@ export interface ExerciseBlock {
     mediaType?: 'image' | 'video';
     minLabel?: string;
     maxLabel?: string;
-    /** Optional: only show this block when the condition evaluates to true */
-    condition?: BlockCondition;
 }
 
 export interface UserProfile {
