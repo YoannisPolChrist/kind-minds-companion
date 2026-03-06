@@ -71,7 +71,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 await setDoc(docRef, profile);
             }
 
-            // Fallback/Override für ps.johanneschrist -> Automatisch Therapeut (User Request)
             // Register Push Token & Platform after successfully getting the document
             try {
                 const pushToken = await registerForPushNotificationsAsync();
@@ -124,3 +123,4 @@ export function initializeAuthListener() {
 
     return unsubscribe;
 }
+

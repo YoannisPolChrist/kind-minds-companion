@@ -209,7 +209,7 @@ function verifyEmailTemplate(verifyLink: string): string {
 // ────────────────────────────────────────────────────────────
 
 export const onNotificationCreated = onDocumentCreated(
-  "notifications/{notificationId}",
+  { document: "notifications/{notificationId}", retry: true },
   async (event) => {
     const snapshot = event.data;
     if (!snapshot) {
@@ -218,18 +218,34 @@ export const onNotificationCreated = onDocumentCreated(
     }
 
     const data = snapshot.data();
+    if (data?.status === "processed") {
+      return;
+    }
+
     const { userId, title, body, type, exerciseTitle, resourceTitle, resourceType } = data;
 
     if (!userId) {
       console.error("Missing userId in notification document");
-      return;
+      await snapshot.ref.update({
+        status: "error",
+        error: "Missing userId",
+        processedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      throw new Error("Missing userId in notification document");
     }
+
+    await snapshot.ref.set({
+      status: "processing",
+      processingStartedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+
+    let delivered = false;
+    let deliveryChannel: "push" | "email" | null = null;
 
     try {
       const userDoc = await db.collection("users").doc(userId).get();
       if (!userDoc.exists) {
-        console.error(`User document not found for userId: ${userId}`);
-        return;
+        throw new Error(`User document not found for userId: ${userId}`);
       }
 
       const userData = userDoc.data();
@@ -237,34 +253,28 @@ export const onNotificationCreated = onDocumentCreated(
       const pushToken = userData?.pushToken;
       const email = userData?.email;
 
-      await snapshot.ref.update({ status: "processed", processedAt: admin.firestore.FieldValue.serverTimestamp() });
-
-      // Push Notification (native app users)
+      // Push notification for active app users with valid Expo token.
       if (lastActivePlatform === "app" && pushToken && Expo.isExpoPushToken(pushToken)) {
         console.log(`Sending push notification to user ${userId}`);
-        const messages = [];
-        messages.push({
+        const messages = [{
           to: pushToken,
-          sound: "default",
+          sound: "default" as const,
           title: title || "Neue Benachrichtigung",
           body: body || "Du hast eine neue Benachrichtigung in der App.",
           data: { type, withSome: "data" },
-        });
+        }];
 
         const chunks = expo.chunkPushNotifications(messages);
         for (const chunk of chunks) {
-          try {
-            await expo.sendPushNotificationsAsync(chunk);
-          } catch (error) {
-            console.error("Error sending chunk of push notifications", error);
-          }
+          await expo.sendPushNotificationsAsync(chunk);
         }
-      }
-      // Email (web users or users without push token)
-      else if (email) {
+
+        delivered = true;
+        deliveryChannel = "push";
+      } else if (email) {
+        // Email fallback for web users / users without push token.
         console.log(`Sending email notification to user ${userId} (${email}), type: ${type}`);
 
-        // Build the right template based on notification type
         let html: string;
         let subject: string;
 
@@ -282,21 +292,20 @@ export const onNotificationCreated = onDocumentCreated(
             subject = "🌅 Dein täglicher Check-in wartet auf dich";
             break;
           default:
-            html = generalTemplate(title || "Neue Benachrichtigung", body || "Du hast eine neue Benachrichtigung erhalten.");
+            html = generalTemplate(
+              title || "Neue Benachrichtigung",
+              body || "Du hast eine neue Benachrichtigung erhalten."
+            );
             subject = title || "Neue Benachrichtigung von deiner Therapie-App";
         }
 
-        try {
-          const resendData = await resend.emails.send({
-            from: "Therapie-App <noreply@johanneschrist.com>",
-            to: [email],
-            subject,
-            html,
-          });
-          console.log(`Successfully sent email (type: ${type}). ID: ${resendData.data?.id}`);
-        } catch (err) {
-          console.error("Failed to send email with Resend:", err);
-        }
+        const resendData = await resend.emails.send({
+          from: "Therapie-App <noreply@johanneschrist.com>",
+          to: [email],
+          subject,
+          html,
+        });
+        console.log(`Successfully sent email (type: ${type}). ID: ${resendData.data?.id}`);
 
         await db.collection("mail").add({
           to: email,
@@ -305,21 +314,34 @@ export const onNotificationCreated = onDocumentCreated(
           status: "sent-via-resend",
           sentAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+
+        delivered = true;
+        deliveryChannel = "email";
       } else {
-        console.warn(`User ${userId} has no pushToken and no email. Cannot send notification.`);
+        throw new Error(`User ${userId} has no pushToken and no email`);
       }
 
+      if (!delivered) {
+        throw new Error(`Notification ${snapshot.id} was not delivered`);
+      }
+
+      await snapshot.ref.update({
+        status: "processed",
+        deliveryChannel,
+        processedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
     } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown notification processing error";
       console.error("Error processing notification:", error);
+      await snapshot.ref.update({
+        status: "error",
+        error: message,
+        processedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      throw error;
     }
   }
 );
-
-// ────────────────────────────────────────────────────────────
-// When a user/client document is deleted, also remove their
-// Firebase Auth account so the email address can be reused.
-// ────────────────────────────────────────────────────────────
-
 export const onClientDocumentDeleted = onDocumentDeleted(
   "users/{userId}",
   async (event) => {

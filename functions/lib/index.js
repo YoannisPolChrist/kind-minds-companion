@@ -221,7 +221,7 @@ function verifyEmailTemplate(verifyLink) {
 // ────────────────────────────────────────────────────────────
 // Cloud Function
 // ────────────────────────────────────────────────────────────
-exports.onNotificationCreated = (0, firestore_1.onDocumentCreated)("notifications/{notificationId}", async (event) => {
+exports.onNotificationCreated = (0, firestore_1.onDocumentCreated)({ document: "notifications/{notificationId}", retry: true }, async (event) => {
     var _a;
     const snapshot = event.data;
     if (!snapshot) {
@@ -229,47 +229,54 @@ exports.onNotificationCreated = (0, firestore_1.onDocumentCreated)("notification
         return;
     }
     const data = snapshot.data();
+    if ((data === null || data === void 0 ? void 0 : data.status) === "processed") {
+        return;
+    }
     const { userId, title, body, type, exerciseTitle, resourceTitle, resourceType } = data;
     if (!userId) {
         console.error("Missing userId in notification document");
-        return;
+        await snapshot.ref.update({
+            status: "error",
+            error: "Missing userId",
+            processedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        throw new Error("Missing userId in notification document");
     }
+    await snapshot.ref.set({
+        status: "processing",
+        processingStartedAt: admin.firestore.FieldValue.serverTimestamp()
+    }, { merge: true });
+    let delivered = false;
+    let deliveryChannel = null;
     try {
         const userDoc = await db.collection("users").doc(userId).get();
         if (!userDoc.exists) {
-            console.error(`User document not found for userId: ${userId}`);
-            return;
+            throw new Error(`User document not found for userId: ${userId}`);
         }
         const userData = userDoc.data();
         const lastActivePlatform = (userData === null || userData === void 0 ? void 0 : userData.lastActivePlatform) || "web";
         const pushToken = userData === null || userData === void 0 ? void 0 : userData.pushToken;
         const email = userData === null || userData === void 0 ? void 0 : userData.email;
-        await snapshot.ref.update({ status: "processed", processedAt: admin.firestore.FieldValue.serverTimestamp() });
-        // Push Notification (native app users)
+        // Push notification for active app users with valid Expo token.
         if (lastActivePlatform === "app" && pushToken && expo_server_sdk_1.Expo.isExpoPushToken(pushToken)) {
             console.log(`Sending push notification to user ${userId}`);
-            const messages = [];
-            messages.push({
-                to: pushToken,
-                sound: "default",
-                title: title || "Neue Benachrichtigung",
-                body: body || "Du hast eine neue Benachrichtigung in der App.",
-                data: { type, withSome: "data" },
-            });
+            const messages = [{
+                    to: pushToken,
+                    sound: "default",
+                    title: title || "Neue Benachrichtigung",
+                    body: body || "Du hast eine neue Benachrichtigung in der App.",
+                    data: { type, withSome: "data" },
+                }];
             const chunks = expo.chunkPushNotifications(messages);
             for (const chunk of chunks) {
-                try {
-                    await expo.sendPushNotificationsAsync(chunk);
-                }
-                catch (error) {
-                    console.error("Error sending chunk of push notifications", error);
-                }
+                await expo.sendPushNotificationsAsync(chunk);
             }
+            delivered = true;
+            deliveryChannel = "push";
         }
-        // Email (web users or users without push token)
         else if (email) {
+            // Email fallback for web users / users without push token.
             console.log(`Sending email notification to user ${userId} (${email}), type: ${type}`);
-            // Build the right template based on notification type
             let html;
             let subject;
             switch (type) {
@@ -289,18 +296,13 @@ exports.onNotificationCreated = (0, firestore_1.onDocumentCreated)("notification
                     html = generalTemplate(title || "Neue Benachrichtigung", body || "Du hast eine neue Benachrichtigung erhalten.");
                     subject = title || "Neue Benachrichtigung von deiner Therapie-App";
             }
-            try {
-                const resendData = await resend.emails.send({
-                    from: "Therapie-App <noreply@johanneschrist.com>",
-                    to: [email],
-                    subject,
-                    html,
-                });
-                console.log(`Successfully sent email (type: ${type}). ID: ${(_a = resendData.data) === null || _a === void 0 ? void 0 : _a.id}`);
-            }
-            catch (err) {
-                console.error("Failed to send email with Resend:", err);
-            }
+            const resendData = await resend.emails.send({
+                from: "Therapie-App <noreply@johanneschrist.com>",
+                to: [email],
+                subject,
+                html,
+            });
+            console.log(`Successfully sent email (type: ${type}). ID: ${(_a = resendData.data) === null || _a === void 0 ? void 0 : _a.id}`);
             await db.collection("mail").add({
                 to: email,
                 type: type || "general",
@@ -308,19 +310,32 @@ exports.onNotificationCreated = (0, firestore_1.onDocumentCreated)("notification
                 status: "sent-via-resend",
                 sentAt: admin.firestore.FieldValue.serverTimestamp(),
             });
+            delivered = true;
+            deliveryChannel = "email";
         }
         else {
-            console.warn(`User ${userId} has no pushToken and no email. Cannot send notification.`);
+            throw new Error(`User ${userId} has no pushToken and no email`);
         }
+        if (!delivered) {
+            throw new Error(`Notification ${snapshot.id} was not delivered`);
+        }
+        await snapshot.ref.update({
+            status: "processed",
+            deliveryChannel,
+            processedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
     }
     catch (error) {
+        const message = error instanceof Error ? error.message : "Unknown notification processing error";
         console.error("Error processing notification:", error);
+        await snapshot.ref.update({
+            status: "error",
+            error: message,
+            processedAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+        throw error;
     }
 });
-// ────────────────────────────────────────────────────────────
-// When a user/client document is deleted, also remove their
-// Firebase Auth account so the email address can be reused.
-// ────────────────────────────────────────────────────────────
 exports.onClientDocumentDeleted = (0, firestore_1.onDocumentDeleted)("users/{userId}", async (event) => {
     var _a;
     const userId = event.params.userId;

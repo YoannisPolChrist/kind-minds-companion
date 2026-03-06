@@ -20,6 +20,7 @@ export interface Exercise {
     reminderFrequency?: string;
     reminderTime?: string; // Optional specific time "HH:mm" for the reminder
     blocks?: ExerciseBlock[];
+    answers?: Record<string, string>;
 }
 
 export interface ExerciseBlock {

@@ -37,6 +37,7 @@ import {
 } from "react-native-chart-kit";
 import { WebView } from "react-native-webview";
 import { CinematicBreathingBlock } from "../../../components/client/CinematicBreathingBlock";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { Video, ResizeMode } from "expo-av";
 
@@ -89,6 +90,29 @@ function blockTypeLabel(type: string): string {
   return labels[type] ?? "Block";
 }
 
+// Per-block-type accent – mirrors CATALOGUE in exerciseRegistry.ts
+function getBlockAccent(type: string): { accent: string; bg: string; text: string } {
+  const map: Record<string, { accent: string; bg: string; text: string }> = {
+    reflection: { accent: "#3B82F6", bg: "#EFF6FF", text: "#1D4ED8" },
+    text: { accent: "#3B82F6", bg: "#EFF6FF", text: "#1D4ED8" },
+    scale: { accent: "#F59E0B", bg: "#FFFBEB", text: "#92400E" },
+    choice: { accent: "#6366F1", bg: "#EEF2FF", text: "#4338CA" },
+    checklist: { accent: "#10B981", bg: "#ECFDF5", text: "#065F46" },
+    homework: { accent: "#C09D59", bg: "#F9F8F6", text: "#243842" },
+    gratitude: { accent: "#EC4899", bg: "#FDF2F8", text: "#9D174D" },
+    info: { accent: "#14B8A6", bg: "#F0FDFA", text: "#134E4A" },
+    media: { accent: "#F43F5E", bg: "#FEF2F2", text: "#991B1B" },
+    video: { accent: "#E11D48", bg: "#FFF1F2", text: "#9F1239" },
+    timer: { accent: "#8B5CF6", bg: "#F5F3FF", text: "#5B21B6" },
+    breathing: { accent: "#137386", bg: "#F0FDFA", text: "#134E4A" },
+    spider_chart: { accent: "#F97316", bg: "#FFF7ED", text: "#C2410C" },
+    bar_chart: { accent: "#0EA5E9", bg: "#F0F9FF", text: "#0369A1" },
+    pie_chart: { accent: "#8B5CF6", bg: "#F5F3FF", text: "#5B21B6" },
+    line_chart: { accent: "#10B981", bg: "#ECFDF5", text: "#065F46" },
+  };
+  return map[type] ?? { accent: "#64748B", bg: "#F1F5F9", text: "#475569" };
+}
+
 function getBlockIcon(type: string) {
   switch (type) {
     case "text":
@@ -128,143 +152,477 @@ function getBlockIcon(type: string) {
 }
 
 function formatPdfHtml(exercise: Exercise, answers: Answers): string {
+  const customDate = exercise.lastCompletedAt
+    ? new Date(exercise.lastCompletedAt).toLocaleDateString("de-DE", {
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+    })
+    : new Date().toLocaleDateString("de-DE", {
+      day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"
+    });
+
   const rows = (exercise.blocks ?? [])
     .map((b, index) => {
       let answerHtml = "";
       const blockLabel = blockTypeLabel(b.type);
 
-      // Check for interactive blocks and build answer HTML or empty boxes for printing
       if (b.type === "text" || b.type === "reflection") {
         const ans = answers[b.id];
         if (ans && ans.trim().length > 0) {
-          answerHtml = `<div style="background:#f5f5f5;padding:15px;border-radius:8px;border:1px solid #e5e5e5;margin-top:10px;">${ans.replace(/\\n/g, "<br/>")}</div>`;
+          answerHtml = `
+            <div class="answer-box text-box">
+              <span class="answer-label">Deine Reflektion:</span>
+              <div class="text-content">${ans.replace(/\n/g, "<br/>")}</div>
+            </div>`;
         } else {
-          answerHtml = `<div style="height:150px;border:1px dashed #ccc;border-radius:8px;margin-top:10px;"></div>`;
+          answerHtml = `<div class="empty-box">Leere Reflektion</div>`;
         }
       } else if (b.type === "scale") {
         const ans = answers[b.id];
-        const min = b.minLabel || "1";
-        const max = b.maxLabel || "10";
+        const min = b.minLabel || "Gar nicht";
+        const max = b.maxLabel || "Sehr stark";
         if (ans && ans.trim().length > 0) {
-          answerHtml = `<div style="background:#f5f5f5;padding:15px;border-radius:8px;border:1px solid #e5e5e5;margin-top:10px;"><strong>Wert:</strong> ${ans} / 10</div>`;
+          const val = parseInt(ans, 10);
+          let scaleDots = "";
+          for (let i = 1; i <= 10; i++) {
+            scaleDots += `<span class="scale-dot ${i <= val ? 'active' : ''}">${i}</span>`;
+          }
+          answerHtml = `
+            <div class="answer-box scale-box">
+              <span class="answer-label">Skalenwert (${min} - ${max}):</span>
+              <div class="scale-container">
+                <div class="scale-labels"><span>${min}</span><span>${max}</span></div>
+                <div class="scale-dots">${scaleDots}</div>
+                <div class="scale-result">Gewählt: <strong>${ans} / 10</strong></div>
+              </div>
+            </div>`;
         } else {
-          answerHtml = `<div style="padding:15px;border:1px dashed #ccc;border-radius:8px;margin-top:10px;"><p style="color:#666">${min} [1] [2] [3] [4] [5] [6] [7] [8] [9] [10] ${max}</p></div>`;
+          answerHtml = `<div class="empty-box">Keine Bewertung abgegeben.</div>`;
         }
       } else if (b.type === "choice") {
         const ans = answers[b.id];
         if (ans && ans.trim().length > 0) {
-          answerHtml = `<div style="background:#f5f5f5;padding:15px;border-radius:8px;border:1px solid #e5e5e5;margin-top:10px;"><strong>Ausgewählt:</strong> ${ans}</div>`;
+          const optionsHtml = (b.options ?? []).map(opt => {
+            const isSelected = opt === ans;
+            return `<div class="choice-item ${isSelected ? 'selected' : ''}">
+                       <span class="choice-circle">${isSelected ? '&#10003;' : ''}</span>
+                       <span class="choice-text">${opt}</span>
+                     </div>`;
+          }).join("");
+          answerHtml = `<div class="answer-box choice-box">${optionsHtml}</div>`;
         } else {
-          const options = (b.options ?? [])
-            .map((opt) => `<div style="margin-bottom:8px;">[ ] ${opt}</div>`)
-            .join("");
-          answerHtml = `<div style="padding:15px;border:1px dashed #ccc;border-radius:8px;margin-top:10px;">${options}</div>`;
+          const optionsHtml = (b.options ?? []).map(opt => `<div class="choice-item"><span class="choice-circle"></span><span class="choice-text">${opt}</span></div>`).join("");
+          answerHtml = `<div class="answer-box choice-box">${optionsHtml}</div>`;
         }
       } else if (b.type === "checklist") {
         const ans = answers[b.id];
         let parsed: string[] = [];
-        try {
-          if (ans) parsed = JSON.parse(ans);
-        } catch (e) {
-          console.error("Failed to parse checklist answer:", e);
-        }
+        try { if (ans) parsed = JSON.parse(ans); } catch (e) { }
 
-        const options = (b.options ?? [])
-          .map((opt) => {
-            const checked = parsed.includes(opt) ? "[X]" : "[ ]";
-            return `<div style="margin-bottom:8px;">${checked} ${opt}</div>`;
-          })
-          .join("");
-
-        answerHtml = `<div style="padding:15px;border:1px solid #e5e5e5;border-radius:8px;margin-top:10px;">${options}</div>`;
+        const optionsHtml = (b.options ?? []).map(opt => {
+          const isChecked = parsed.includes(opt);
+          return `<div class="checklist-item ${isChecked ? 'checked' : ''}">
+                    <span class="check-box">${isChecked ? '&#10003;' : ''}</span>
+                    <span class="check-text">${opt}</span>
+                  </div>`;
+        }).join("");
+        answerHtml = `<div class="answer-box checklist-box">${optionsHtml}</div>`;
       } else if (b.type === "homework") {
-        const a = answers[`${b.id}_A`];
-        const b_ans = answers[`${b.id}_B`];
-        const c = answers[`${b.id}_C`];
+        const a = answers[`${b.id}_A`] || "";
+        const bParams = answers[`${b.id}_B`] || "";
+        const c = answers[`${b.id}_C`] || "";
 
-        answerHtml = `<div style="border:1px solid #e5e5e5;border-radius:8px;margin-top:10px;overflow:hidden;">
-                    <div style="padding:15px;border-bottom:1px solid #e5e5e5;">
-                        <strong style="color:#92400E">A (Auslöser)</strong><br/>
-                        ${a && a.trim().length > 0 ? `<p>${a}</p>` : `<div style="height:60px;"></div>`}
-                    </div>
-                    <div style="padding:15px;border-bottom:1px solid #e5e5e5;">
-                        <strong style="color:#92400E">B (Bewertung)</strong><br/>
-                        ${b_ans && b_ans.trim().length > 0 ? `<p>${b_ans}</p>` : `<div style="height:60px;"></div>`}
-                    </div>
-                    <div style="padding:15px;">
-                        <strong style="color:#92400E">C (Konsequenz)</strong><br/>
-                        ${c && c.trim().length > 0 ? `<p>${c}</p>` : `<div style="height:60px;"></div>`}
-                    </div>
-                </div>`;
+        answerHtml = `
+          <div class="answer-box homework-box">
+             <div class="hw-row">
+                <div class="hw-label">A (Auslöser)</div>
+                <div class="hw-content">${a ? a.replace(/\n/g, '<br/>') : "<i>Nicht ausgefüllt</i>"}</div>
+             </div>
+             <div class="hw-row">
+                <div class="hw-label">B (Bewertung)</div>
+                <div class="hw-content">${bParams ? bParams.replace(/\n/g, '<br/>') : "<i>Nicht ausgefüllt</i>"}</div>
+             </div>
+             <div class="hw-row no-border">
+                <div class="hw-label">C (Konsequenz)</div>
+                <div class="hw-content">${c ? c.replace(/\n/g, '<br/>') : "<i>Nicht ausgefüllt</i>"}</div>
+             </div>
+          </div>`;
       } else if (b.type === "gratitude") {
-        const acts = [1, 2, 3].map((n) => answers[`${b.id}_${n}`] || "");
-        const listItems = acts
-          .map((act, i) => {
-            if (act.trim().length > 0) {
-              return `<li style="margin-bottom:10px;">${act}</li>`;
-            } else {
-              return `<li style="margin-bottom:10px;color:#999;border-bottom:1px solid #eee;padding-bottom:15px;">...</li>`;
-            }
-          })
-          .join("");
-
-        answerHtml = `<ul style="padding:15px 15px 15px 35px;border:1px solid #e5e5e5;border-radius:8px;margin-top:10px;">${listItems}</ul>`;
+        const acts = [1, 2, 3].map(n => answers[`${b.id}_${n}`] || "");
+        const listItemsItems = acts.map((act, i) => {
+          return act.trim().length > 0
+            ? `<div class="gratitude-item"><span class="grat-num">${i + 1}.</span><span class="grat-text">${act}</span></div>`
+            : `<div class="gratitude-item empty"><span class="grat-num">${i + 1}.</span><span class="grat-text">...</span></div>`;
+        }).join("");
+        answerHtml = `<div class="answer-box gratitude-box">${listItemsItems}</div>`;
       } else if (b.type === "info") {
-        answerHtml = ""; // No answer box needed for info
+        answerHtml = "";
       } else if (b.type === "media" || b.type === "video") {
-        answerHtml = `<div style="padding:15px;background:#f9f9f9;border-radius:8px;margin-top:10px;color:#666;font-style:italic;">[Medium in App ansehen]</div>`;
-      } else if (
-        ["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(
-          b.type,
-        )
-      ) {
+        answerHtml = `<div class="media-placeholder">[Multimedia-Inhalt: Bitte in der App ansehen]</div>`;
+      } else if (["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(b.type)) {
         let parsed: Record<string, number> = {};
         try {
           const ans = answers[b.id];
           if (ans) parsed = JSON.parse(ans);
-        } catch (e) {
-          console.error("Failed to parse chart answer:", e);
-        }
+        } catch (e) { }
 
-        const optionsHtml = (b.options ?? [])
-          .map((opt) => {
-            const parts = opt.split(":");
-            const label = parts[0] || "";
-            const val = parsed[label] !== undefined ? parsed[label] : "";
-            return `<div style="margin-bottom:8px;display:flex;justify-content:space-between;border-bottom:1px solid #eee;padding-bottom:5px;">
-                        <span>${label}</span>
-                        <span style="font-weight:bold">${val !== "" ? val : "___"}</span>
-                     </div>`;
-          })
-          .join("");
+        const optionsHtml = (b.options ?? []).map(opt => {
+          const parts = opt.split(":");
+          const label = parts[0] || "";
+          const val = parsed[label] !== undefined ? parsed[label] : "";
+          return `<div class="chart-data-row">
+                    <span class="chart-data-label">${label}</span>
+                    <span class="chart-data-val">${val !== "" ? val : "-"}</span>
+                  </div>`;
+        }).join("");
 
-        answerHtml = `<div style="padding:15px;border:1px solid #e5e5e5;border-radius:8px;margin-top:10px;background:#fcfcfc;">
-                     <p style="margin-top:0;color:#666;font-size:12px;">Werte (${blockLabel}):</p>
-                     ${optionsHtml}
-                 </div>`;
+        answerHtml = `
+          <div class="answer-box chart-data-box">
+             <div class="chart-data-title">Erfasste Diagramm-Werte:</div>
+             ${optionsHtml}
+          </div>`;
       }
 
-      return `<div style="margin-bottom:40px; page-break-inside: avoid;">
-                 <h3 style="color:#2C3E50;margin-bottom:5px;">Aufgabe ${index + 1} <span style="font-size:14px;color:#9CA3AF;font-weight:normal;">(${blockLabel})</span></h3>
-                 ${b.content ? `<p style="font-size:16px;line-height:1.5;color:#333;margin-top:5px;margin-bottom:10px;">${b.content.replace(/\\n/g, "<br/>")}</p>` : ""}
-                 ${answerHtml}
-             </div>`;
-    })
-    .join("");
+      return `
+        <div class="block-container">
+          <div class="block-header">
+             <span class="block-number">${index + 1}</span>
+             <span class="block-type">${blockLabel}</span>
+          </div>
+          ${b.content ? `<div class="block-content">${b.content.replace(/\n/g, "<br/>")}</div>` : ""}
+          ${answerHtml}
+        </div>`;
+    }).join("");
 
-  return `<html>
-    <head>
+  return `
+    <html>
+      <head>
+        <meta charset="utf-8">
         <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
-            h1 { color: #137386; font-size: 28px; margin-bottom: 5px; }
-            hr { border: 0; height: 2px; background: #e5e5e5; margin-bottom: 30px; }
+          :root {
+            --primary: #137386;
+            --primary-light: #E0F2FE;
+            --text-dark: #0F172A;
+            --text-muted: #64748B;
+            --bg-light: #F8FAFC;
+            --border-color: #E2E8F0;
+            --accent-purple: #8B5CF6;
+            --accent-green: #10B981;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 40px 60px;
+            max-width: 900px;
+            margin: 0 auto;
+            color: var(--text-dark);
+            background-color: #ffffff;
+            line-height: 1.6;
+          }
+          .pdf-header {
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+          }
+          .header-left h1 {
+            color: var(--primary);
+            font-size: 32px;
+            margin: 0 0 8px 0;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+          }
+          .header-left p {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+          }
+          .header-right {
+            text-align: right;
+            color: var(--text-muted);
+            font-size: 12px;
+          }
+          .block-container {
+            margin-bottom: 35px;
+            page-break-inside: avoid;
+            background: #ffffff;
+          }
+          .block-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+          }
+          .block-number {
+            background: var(--primary-light);
+            color: var(--primary);
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 12px;
+          }
+          .block-type {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+          }
+          .block-content {
+            font-size: 16px;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+            font-weight: 500;
+            padding-left: 36px;
+          }
+          .answer-box {
+            margin-left: 36px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+          }
+          .empty-box {
+            margin-left: 36px;
+            border: 2px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            color: #94A3B8;
+            font-style: italic;
+            text-align: center;
+          }
+          
+          /* Reflektion */
+          .answer-label {
+            display: block;
+            font-size: 11px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: bold;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+          }
+          .text-content {
+            font-size: 15px;
+            color: #334155;
+            white-space: pre-wrap;
+          }
+
+          /* Choice */
+          .choice-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+          }
+          .choice-item.selected {
+            border-color: var(--primary);
+            background: #F0F9FF;
+          }
+          .choice-item:last-child { margin-bottom: 0; }
+          .choice-circle {
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #fff;
+            font-weight: bold;
+          }
+          .choice-item.selected .choice-circle {
+            background: var(--primary);
+            border-color: var(--primary);
+          }
+          .choice-text {
+            font-size: 15px;
+            color: var(--text-dark);
+            font-weight: 500;
+          }
+
+          /* Checklist */
+          .checklist-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+          }
+          .checklist-item.checked {
+            border-color: var(--accent-green);
+            background: #ECFDF5;
+          }
+          .checklist-item:last-child { margin-bottom: 0; }
+          .check-box {
+            width: 20px;
+            height: 20px;
+            border-radius: 6px;
+            border: 2px solid var(--border-color);
+            margin-right: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #fff;
+            font-weight: bold;
+          }
+          .checklist-item.checked .check-box {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+          }
+          .check-text { font-size: 15px; font-weight: 500; color: var(--text-dark); }
+
+          /* Scale */
+          .scale-container {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+          }
+          .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+          }
+          .scale-dots {
+            display: flex;
+            justify-content:space-between;
+            margin-bottom: 15px;
+          }
+          .scale-dot {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            background: #F1F5F9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            font-weight: bold;
+            color: #94A3B8;
+          }
+          .scale-dot.active {
+            background: var(--accent-purple);
+            color: #fff;
+          }
+          .scale-result {
+            text-align: center;
+            font-size: 14px;
+            color: var(--text-dark);
+          }
+
+          /* Homework */
+          .homework-box { padding: 0; overflow: hidden; }
+          .hw-row {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+          }
+          .hw-row.no-border { border-bottom: none; }
+          .hw-label {
+            font-size: 12px;
+            font-weight: bold;
+            color: #92400E;
+            margin-bottom: 8px;
+          }
+          .hw-content {
+            font-size: 15px;
+            color: var(--text-dark);
+          }
+
+          /* Gratitude */
+          .gratitude-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+          }
+          .gratitude-item:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+          }
+          .gratitude-item.empty .grat-text { color: #94A3B8; font-style: italic; }
+          .grat-num {
+            font-weight: bold;
+            color: #9D174D;
+            margin-right: 12px;
+            min-width: 20px;
+          }
+          .grat-text {
+            font-size: 15px;
+            color: var(--text-dark);
+          }
+
+          /* Charts */
+          .chart-data-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+          }
+          .chart-data-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+          }
+          .chart-data-row:last-child { border-bottom: none; padding-bottom: 0; }
+          .chart-data-label { color: var(--text-dark); font-weight: 500; }
+          .chart-data-val { font-weight: bold; color: var(--primary); }
+
+          .media-placeholder {
+            margin-left: 36px;
+            padding: 15px;
+            background: #F1F5F9;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 13px;
+          }
+
+          /* Print Overrides */
+          @media print {
+            body { padding: 0; }
+            .block-container { margin-bottom: 25px; }
+          }
         </style>
-    </head>
-    <body>
-        <h1>${exercise.title}</h1>
-        <hr/>
-        ${rows || "<p><i>Keine Aufgaben in dieser Übung gefunden.</i></p>"}
-    </body></html>`;
+      </head>
+      <body>
+        <div class="pdf-header">
+           <div class="header-left">
+              <h1>${exercise.title}</h1>
+              <p>Therapie-Protokoll</p>
+           </div>
+           <div class="header-right">
+              <div>Exportiert am:</div>
+              <strong>${customDate}</strong>
+           </div>
+        </div>
+        
+        <div class="content">
+          ${rows || "<p style='color:#64748B;font-style:italic;'>Keine Aufgaben in dieser Übung gefunden.</p>"}
+        </div>
+      </body>
+    </html>`;
 }
 
 // ─── Block renderers ─────────────────────────────────────────────────────────
@@ -1304,11 +1662,27 @@ export default function ExerciseScreen() {
 
   const loadExercise = async () => {
     if (!id) return;
+    const excId = Array.isArray(id) ? id[0] : id;
+    const cacheKey = `@TherapyApp:Cache:exercise_${excId}`;
     try {
-      const excId = Array.isArray(id) ? id[0] : id;
+      // ── Instant display from local cache ──────────────────────────────────
+      const cached = await AsyncStorage.getItem(cacheKey);
+      if (cached) {
+        setExercise(JSON.parse(cached) as Exercise);
+        setLoading(false); // render immediately; Firestore update runs silently
+      }
+      // ── Fetch fresh data from Firestore ───────────────────────────────────
       const snap = await getDoc(doc(db, "exercises", excId));
-      if (snap.exists())
-        setExercise({ id: snap.id, ...snap.data() } as Exercise);
+      if (snap.exists()) {
+        const fresh = { id: snap.id, ...snap.data() } as Exercise;
+        setExercise(fresh);
+        // Update answers from stored data if not already touched by the user
+        if (fresh.answers && Object.keys(answers).length === 0) {
+          setAnswers(fresh.answers as Answers);
+        }
+        // Persist to cache for next visit
+        AsyncStorage.setItem(cacheKey, JSON.stringify(fresh)).catch(() => { });
+      }
     } catch (err) {
       console.error("Failed to load exercise:", err);
     } finally {
@@ -1452,36 +1826,73 @@ export default function ExerciseScreen() {
         onScroll={scrollHandler}
         scrollEventThrottle={16}
       >
-        {(exercise?.blocks ?? []).map((block, index) => (
-          <View
-            key={block.id}
-            className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm mb-6"
-          >
-            <View className="flex-row items-center mb-4">
-              <View className="w-8 h-8 rounded-full bg-[#2C3E50]/10 items-center justify-center mr-3">
-                <Text className="text-[#2C3E50] font-bold text-sm">
-                  {index + 1}
-                </Text>
+        {(exercise?.blocks ?? []).map((block, index) => {
+          const { accent, bg, text } = getBlockAccent(block.type);
+          const Icon = getBlockIcon(block.type);
+          return (
+            <MotiView
+              key={block.id}
+              from={{ opacity: 0, translateY: 12 }}
+              animate={{ opacity: 1, translateY: 0 }}
+              transition={{ type: "timing", duration: 350, delay: index * 60 }}
+              style={{
+                backgroundColor: "white",
+                borderRadius: 24,
+                padding: 24,
+                marginBottom: 16,
+                borderWidth: 1.5,
+                borderColor: accent + "22",
+                shadowColor: accent,
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.08,
+                shadowRadius: 12,
+                elevation: 2,
+              }}
+            >
+              {/* Block type badge */}
+              <View className="flex-row items-center mb-4">
+                <View
+                  style={{
+                    backgroundColor: bg,
+                    borderRadius: 12,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 6,
+                    marginRight: 10,
+                  }}
+                >
+                  <Icon size={13} color={accent} />
+                  <Text style={{ color: text, fontWeight: "700", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                    {blockTypeLabel(block.type)}
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: 11,
+                    backgroundColor: accent + "18",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  <Text style={{ color: accent, fontWeight: "800", fontSize: 11 }}>
+                    {index + 1}
+                  </Text>
+                </View>
               </View>
-              {(() => {
-                const Icon = getBlockIcon(block.type);
-                return (
-                  <Icon size={16} color="#9CA3AF" style={{ marginRight: 6 }} />
-                );
-              })()}
-              <Text className="text-gray-400 font-bold text-xs uppercase tracking-wider">
-                {blockTypeLabel(block.type)}
-              </Text>
-            </View>
-            <ExerciseBlockRenderer
-              block={block}
-              answers={answers}
-              onAnswerChange={handleAnswerChange}
-              scrollY={scrollY}
-              globalIndex={index}
-            />
-          </View>
-        ))}
+              <ExerciseBlockRenderer
+                block={block}
+                answers={answers}
+                onAnswerChange={handleAnswerChange}
+                scrollY={scrollY}
+                globalIndex={index}
+              />
+            </MotiView>
+          );
+        })}
 
         {!exercise?.completed && (
           <View className="bg-white p-5 rounded-3xl border border-gray-100 shadow-sm mb-6 mt-2">

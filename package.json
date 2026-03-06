@@ -10,6 +10,11 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~6.1.2",
+    "@nivo/bar": "^0.99.0",
+    "@nivo/core": "^0.99.0",
+    "@nivo/line": "^0.99.0",
+    "@nivo/pie": "^0.99.0",
+    "@nivo/radar": "^0.99.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "^11.4.1",
     "@shopify/flash-list": "^2.2.2",

@@ -54,7 +54,7 @@ export async function validateInvitationCode(code: string): Promise<Invitation |
         return null;
     }
 
-    const data = docSnap.data() as Invitation;
+    const data = docSnap.data() as Omit<Invitation, 'id'>;
     if (data.status !== 'pending') {
         return null;
     }

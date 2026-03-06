@@ -34,8 +34,10 @@ export class ClientRepository {
     }
 
     /** All clients (filters out archived) */
-    static async findAllClients(): Promise<UserProfile[]> {
-        const q = query(collection(db, 'users'), where('role', '==', 'client'));
+    static async findAllClients(therapistId?: string): Promise<UserProfile[]> {
+        const q = therapistId
+            ? query(collection(db, 'users'), where('role', '==', 'client'), where('therapistId', '==', therapistId))
+            : query(collection(db, 'users'), where('role', '==', 'client'));
         const snap = await getDocs(q);
         // Filter in memory to avoid requiring a composite index on role + isArchived
         return snap.docs
@@ -44,7 +46,13 @@ export class ClientRepository {
     }
 
     /** First therapist — used by client dashboard to fetch bookingUrl */
-    static async findFirstTherapist(): Promise<UserProfile | null> {
+    static async findFirstTherapist(therapistId?: string): Promise<UserProfile | null> {
+        if (therapistId) {
+            const snap = await getDoc(doc(db, 'users', therapistId));
+            if (!snap.exists()) return null;
+            return { id: snap.id, ...snap.data() } as UserProfile;
+        }
+
         const q = query(collection(db, 'users'), where('role', '==', 'therapist'), firestoreLimit(1));
         const snap = await getDocs(q);
         if (snap.empty) return null;
@@ -62,3 +70,4 @@ export class ClientRepository {
         await updateDoc(doc(db, 'users', id), { bookingUrl: url });
     }
 }
+

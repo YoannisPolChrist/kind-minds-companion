@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut, sendEmailVerification } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp, updateDoc, getDocs, query, collection, where, addDoc } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
 import { router } from 'expo-router';
