@@ -1,5 +1,15 @@
 {
   "projects": {
     "default": "therapieprozessunterstuetzung"
-  }
+  },
+  "targets": {
+    "therapieprozessunterstuetzung": {
+      "hosting": {
+        "therapyApp": [
+          "therapy-client-app-live"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
