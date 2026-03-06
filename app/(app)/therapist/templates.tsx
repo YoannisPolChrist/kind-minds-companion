@@ -263,11 +263,11 @@ export default function TherapistTemplates() {
                     transition={{ type: 'timing', duration: 350, delay: 50 }}
                     style={{
                         backgroundColor: '#137386',
-                        paddingTop: Platform.OS === 'android' ? 84 : 100,
-                        paddingBottom: 80,
+                        paddingTop: Platform.OS === 'android' ? 56 : 64,
+                        paddingBottom: 40,
                         paddingHorizontal: 24,
-                        borderBottomLeftRadius: 40,
-                        borderBottomRightRadius: 40,
+                        borderBottomLeftRadius: 32,
+                        borderBottomRightRadius: 32,
                         overflow: 'hidden',
                         zIndex: 10,
                         shadowColor: '#000',
