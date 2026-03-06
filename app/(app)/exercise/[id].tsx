@@ -38,6 +38,8 @@ import {
 import { WebView } from "react-native-webview";
 import { CinematicBreathingBlock } from "../../../components/client/CinematicBreathingBlock";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getCat } from "../../../components/therapist/blocks/exerciseRegistry";
+import InteractiveChart from "../../../components/charts/InteractiveChart";
 
 import { Video, ResizeMode } from "expo-av";
 
@@ -1261,19 +1263,6 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
   );
 }
 
-const CHART_PALETTE = [
-  "#F97316",
-  "#0EA5E9",
-  "#10B981",
-  "#8B5CF6",
-  "#F43F5E",
-  "#F59E0B",
-  "#14B8A6",
-  "#64748B",
-  "#EC4899",
-  "#3B82F6",
-];
-
 function InteractiveChartBlock({
   block,
   value,
@@ -1283,261 +1272,13 @@ function InteractiveChartBlock({
   value: string;
   onChange: (v: string) => void;
 }) {
-  const currentValues: Record<string, number> = (() => {
-    try {
-      return value ? JSON.parse(value) : {};
-    } catch {
-      return {};
-    }
-  })();
-
-  const updateValue = (label: string, valStr: string) => {
-    const next = { ...currentValues };
-    const num = parseFloat(valStr);
-    if (isNaN(num)) {
-      delete next[label];
-    } else {
-      next[label] = num;
-    }
-    onChange(JSON.stringify(next));
-  };
-
-  const data = (block.options ?? []).map((opt, i) => {
-    const parts = opt.split(":");
-    const label = parts[0] || `Option ${i + 1}`;
-    const defaultVal = parseFloat(parts[1] || "0");
-    const color = parts[2] || CHART_PALETTE[i % CHART_PALETTE.length];
-    const currentVal =
-      currentValues[label] !== undefined ? currentValues[label] : defaultVal;
-    return { label, currentVal, color };
-  });
-
-  const { isDark, colors } = useTheme();
-  const screenWidth = Dimensions.get("window").width - 80;
-
-  return (
-    <MotiView
-      from={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "spring" }}
-      className="items-center"
-    >
-      {block.content ? (
-        <Text
-          style={{
-            fontSize: 16,
-            color: "#2C3E50",
-            marginBottom: 20,
-            textAlign: "center",
-            fontWeight: "600",
-          }}
-        >
-          {block.content}
-        </Text>
-      ) : null}
-
-      <View
-        style={{
-          width: "100%",
-          backgroundColor: isDark ? "rgba(30,41,59,0.3)" : "#FFFFFF",
-          borderRadius: 24,
-          padding: 20,
-          borderWidth: 1,
-          borderColor: isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
-          shadowColor: "#000",
-          shadowOffset: { width: 0, height: 8 },
-          shadowOpacity: 0.05,
-          shadowRadius: 15,
-          elevation: 2,
-          marginBottom: 28,
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-        }}
-      >
-        {block.type === "spider_chart" && (
-          <ProgressChart
-            data={{
-              labels: data.map((d) => d.label),
-              data: data.map((d) =>
-                Math.min(Math.max(d.currentVal / 100, 0), 1),
-              ),
-              colors: data.map((d) => d.color),
-            }}
-            width={screenWidth}
-            height={200}
-            strokeWidth={12}
-            radius={32}
-            hideLegend={false}
-            chartConfig={{
-              backgroundColor: "transparent",
-              backgroundGradientFrom: isDark ? "#1e293b" : "#FFFFFF",
-              backgroundGradientTo: isDark ? "#1e293b" : "#FFFFFF",
-              backgroundGradientFromOpacity: 0,
-              backgroundGradientToOpacity: 0,
-              color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-              labelColor: (opacity = 1) => isDark ? `rgba(255,255,255,0.6)` : `#64748B`,
-            }}
-            style={{ borderRadius: 16 }}
-          />
-        )}
-        {block.type === "bar_chart" && (
-          <BarChart
-            data={{
-              labels: data.map((d) => d.label),
-              datasets: [
-                {
-                  data: data.map((d) => d.currentVal || 0),
-                  colors: data.map((d) => () => d.color),
-                },
-              ],
-            }}
-            width={screenWidth}
-            height={200}
-            yAxisLabel=""
-            yAxisSuffix=""
-            fromZero
-            withCustomBarColorFromData={true}
-            flatColor={true}
-            chartConfig={{
-              backgroundColor: "transparent",
-              backgroundGradientFrom: isDark ? "#1e293b" : "#FFFFFF",
-              backgroundGradientTo: isDark ? "#1e293b" : "#FFFFFF",
-              backgroundGradientFromOpacity: 0,
-              backgroundGradientToOpacity: 0,
-              decimalPlaces: 0,
-              color: (opacity = 1) => isDark ? `rgba(255,255,255,0.1)` : `rgba(0,0,0, 0.05)`,
-              labelColor: (opacity = 1) => isDark ? `rgba(255,255,255,0.6)` : `#64748B`,
-              barPercentage: 0.5,
-              propsForLabels: {
-                fontSize: 10,
-                fontWeight: "700"
-              }
-            }}
-            style={{ borderRadius: 16 }}
-            showBarTops={false}
-            withInnerLines={false}
-          />
-        )}
-        {block.type === "pie_chart" && (
-          <PieChart
-            data={data.map((d) => ({
-              name: d.label,
-              population: d.currentVal || 0,
-              color: d.color,
-              legendFontColor: isDark ? "rgba(255,255,255,0.7)" : "#64748B",
-              legendFontSize: 11,
-            }))}
-            width={screenWidth}
-            height={200}
-            accessor="population"
-            backgroundColor="transparent"
-            paddingLeft="0"
-            center={[10, 0]}
-            absolute
-            chartConfig={{
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            }}
-          />
-        )}
-        {block.type === "line_chart" && (
-          <LineChart
-            data={{
-              labels: data.map((d) => d.label),
-              datasets: [{ data: data.map((d) => d.currentVal || 0) }],
-            }}
-            width={screenWidth}
-            height={200}
-            bezier
-            withInnerLines={false}
-            chartConfig={{
-              backgroundColor: "transparent",
-              backgroundGradientFrom: isDark ? "#1e293b" : "#FFFFFF",
-              backgroundGradientTo: isDark ? "#1e293b" : "#FFFFFF",
-              backgroundGradientFromOpacity: 0,
-              backgroundGradientToOpacity: 0,
-              decimalPlaces: 0,
-              color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-              labelColor: (opacity = 1) => isDark ? `rgba(255,255,255,0.6)` : `#64748B`,
-              propsForDots: { r: "5", strokeWidth: "2", stroke: "#059669" },
-            }}
-            style={{ borderRadius: 16 }}
-          />
-        )}
-      </View>
-
-      <View className="w-full gap-4">
-        <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
-          {i18n.t("dashboard.charts.enter_values", { defaultValue: "Werte anpassen" })}
-        </Text>
-        {data.map((item, i) => (
-          <MotiView
-            key={i}
-            from={{ opacity: 0, translateY: 4 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ delay: i * 80 }}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "#FFFFFF",
-              padding: 14,
-              borderRadius: 18,
-              borderWidth: 1,
-              borderColor: isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
-              shadowColor: "#000",
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.02,
-              shadowRadius: 8,
-              elevation: 1,
-            }}
-          >
-            <View
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: 5,
-                backgroundColor: item.color,
-                marginRight: 14,
-              }}
-            />
-            <Text
-              numberOfLines={1}
-              style={{
-                flex: 1,
-                fontWeight: "700",
-                color: isDark ? "rgba(255,255,255,0.8)" : "#334155",
-                fontSize: 15
-              }}
-            >
-              {item.label}
-            </Text>
-            <TextInput
-              keyboardType="numeric"
-              value={
-                currentValues[item.label] !== undefined
-                  ? String(currentValues[item.label])
-                  : ""
-              }
-              onChangeText={(t) => updateValue(item.label, t)}
-              placeholder={String(item.currentVal)}
-              placeholderTextColor={isDark ? "rgba(255,255,255,0.2)" : "#94A3B8"}
-              style={{
-                backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#F8FAFC",
-                paddingHorizontal: 12,
-                paddingVertical: 8,
-                borderRadius: 12,
-                textAlign: "center",
-                fontWeight: "800",
-                color: colors.primary,
-                minWidth: 70,
-              }}
-            />
-          </MotiView>
-        ))}
-      </View>
-    </MotiView>
-  );
+  // Delegates to the platform-specific InteractiveChart component
+  // (InteractiveChart.web.tsx for web, InteractiveChart.native.tsx for iOS/Android)
+  return <InteractiveChart block={block} value={value} onChange={onChange} />;
 }
+
+// InteractiveChart platform components handle all chart rendering.
+// See: components/charts/InteractiveChart.native.tsx and InteractiveChart.web.tsx
 
 // ─── Block dispatcher ─────────────────────────────────────────────────────────
 
@@ -1827,69 +1568,96 @@ export default function ExerciseScreen() {
         scrollEventThrottle={16}
       >
         {(exercise?.blocks ?? []).map((block, index) => {
-          const { accent, bg, text } = getBlockAccent(block.type);
-          const Icon = getBlockIcon(block.type);
+          const cat = getCat(block.type as any);
           return (
             <MotiView
               key={block.id}
-              from={{ opacity: 0, translateY: 12 }}
-              animate={{ opacity: 1, translateY: 0 }}
-              transition={{ type: "timing", duration: 350, delay: index * 60 }}
+              from={{ opacity: 0, translateY: 14, scale: 0.97 }}
+              animate={{ opacity: 1, translateY: 0, scale: 1 }}
+              transition={{ type: "timing", duration: 380, delay: index * 70 }}
               style={{
-                backgroundColor: "white",
-                borderRadius: 24,
-                padding: 24,
-                marginBottom: 16,
-                borderWidth: 1.5,
-                borderColor: accent + "22",
-                shadowColor: accent,
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.08,
-                shadowRadius: 12,
-                elevation: 2,
+                marginBottom: 20,
+                borderRadius: 28,
+                overflow: "hidden",
+                borderWidth: 1,
+                borderColor: cat.border,
+                backgroundColor: "#FFFFFF",
+                shadowColor: cat.accent,
+                shadowOffset: { width: 0, height: 8 },
+                shadowOpacity: 0.1,
+                shadowRadius: 20,
+                elevation: 5,
               }}
             >
-              {/* Block type badge */}
-              <View className="flex-row items-center mb-4">
-                <View
-                  style={{
-                    backgroundColor: bg,
-                    borderRadius: 12,
-                    paddingHorizontal: 10,
-                    paddingVertical: 6,
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    marginRight: 10,
-                  }}
-                >
-                  <Icon size={13} color={accent} />
-                  <Text style={{ color: text, fontWeight: "700", fontSize: 11, textTransform: "uppercase", letterSpacing: 0.8 }}>
-                    {blockTypeLabel(block.type)}
+              {/* Drag handle indicator (decorative) */}
+              <View style={{ alignItems: "center", backgroundColor: cat.bg, paddingTop: 8, paddingBottom: 4 }}>
+                <View style={{ width: 48, height: 4, borderRadius: 2, backgroundColor: cat.text, opacity: 0.12 }} />
+              </View>
+
+              {/* Card Header — exact copy of builder */}
+              <View style={{
+                flexDirection: "row",
+                alignItems: "center",
+                paddingHorizontal: 24,
+                paddingBottom: 20,
+                paddingTop: 16,
+                backgroundColor: cat.bg,
+                borderBottomWidth: 1,
+                borderBottomColor: cat.border,
+              }}>
+                {/* Icon square */}
+                <View style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: 14,
+                  backgroundColor: cat.accent,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  shadowColor: cat.accent,
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.28,
+                  shadowRadius: 8,
+                  elevation: 4,
+                  marginRight: 14,
+                }}>
+                  <cat.icon size={22} color="#fff" />
+                </View>
+                {/* Label + desc */}
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 17, fontWeight: "800", color: cat.text }}>
+                    {cat.label}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: cat.text, opacity: 0.7, fontWeight: "600", marginTop: 2 }}>
+                    {cat.desc}
                   </Text>
                 </View>
-                <View
-                  style={{
-                    width: 22,
-                    height: 22,
-                    borderRadius: 11,
-                    backgroundColor: accent + "18",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
-                >
-                  <Text style={{ color: accent, fontWeight: "800", fontSize: 11 }}>
+                {/* Step number badge */}
+                <View style={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: 14,
+                  backgroundColor: cat.accent + "20",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderWidth: 1.5,
+                  borderColor: cat.accent + "40",
+                }}>
+                  <Text style={{ color: cat.accent, fontWeight: "900", fontSize: 12 }}>
                     {index + 1}
                   </Text>
                 </View>
               </View>
-              <ExerciseBlockRenderer
-                block={block}
-                answers={answers}
-                onAnswerChange={handleAnswerChange}
-                scrollY={scrollY}
-                globalIndex={index}
-              />
+
+              {/* Card Body — white with generous padding */}
+              <View style={{ padding: 28, backgroundColor: "#FFFFFF" }}>
+                <ExerciseBlockRenderer
+                  block={block}
+                  answers={answers}
+                  onAnswerChange={handleAnswerChange}
+                  scrollY={scrollY}
+                  globalIndex={index}
+                />
+              </View>
             </MotiView>
           );
         })}

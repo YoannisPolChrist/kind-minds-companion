@@ -1,0 +1,2 @@
+﻿app/(app)/exercise/[id].tsx(1504,1): error TS1128: Declaration or statement expected.
+app/(app)/exercise/[id].tsx(1505,1): error TS1128: Declaration or statement expected.
