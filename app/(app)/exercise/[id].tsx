@@ -24,8 +24,10 @@ import i18n from "../../../utils/i18n";
 import { useAuth } from "../../../contexts/AuthContext";
 import { SuccessAnimation } from "../../../components/ui/SuccessAnimation";
 import { MotiView, AnimatePresence } from "moti";
-import Animated, { useSharedValue, useAnimatedScrollHandler } from "react-native-reanimated";
+import Animated, { useSharedValue, useAnimatedScrollHandler, SharedValue } from "react-native-reanimated";
 import { CinematicInfoBlock } from "../../../components/client/CinematicInfoBlock";
+import { LinearGradient } from "expo-linear-gradient";
+import { useTheme } from "../../../contexts/ThemeContext";
 import {
   ProgressChart,
   BarChart,
@@ -46,6 +48,7 @@ import {
   Wind,
   Image as ImageIcon,
   CircleDot,
+  ChevronLeft,
   Activity,
   Lock,
   Unlock,
@@ -1120,10 +1123,11 @@ function ExerciseBlockRenderer({
 }: {
   block: ExerciseBlock;
   answers: Answers;
-  onAnswerChange: (key: string, val: string) => void;
+  onAnswerChange: (id: string, value: string) => void;
   scrollY?: any;
   globalIndex?: number;
 }) {
+  const { colors } = useTheme();
   const onChange = (val: string) => onAnswerChange(block.id, val);
   const value = answers[block.id] ?? "";
 
@@ -1186,10 +1190,12 @@ function ExerciseBlockRenderer({
 
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
-export default function ExerciseRunScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+export default function ExerciseScreen() {
+  const { id: rawId } = useLocalSearchParams();
+  const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const router = useRouter();
   const { profile } = useAuth();
+  const { colors } = useTheme();
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Answers>({});
@@ -1227,8 +1233,10 @@ export default function ExerciseRunScreen() {
   }, [id]);
 
   const loadExercise = async () => {
+    if (!id) return;
     try {
-      const snap = await getDoc(doc(db, "exercises", id));
+      const excId = Array.isArray(id) ? id[0] : id;
+      const snap = await getDoc(doc(db, "exercises", excId));
       if (snap.exists())
         setExercise({ id: snap.id, ...snap.data() } as Exercise);
     } catch (err) {
@@ -1306,28 +1314,41 @@ export default function ExerciseRunScreen() {
     }
   };
 
-  return (
-    <ActivityIndicator style={{ flex: 1 }} size="large" color="#137386" />
-  );
+  if (loading) {
+    return (
+      <View className="flex-1 bg-[#FAF9F6] justify-center items-center">
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
     <View className="flex-1 bg-[#FAF9F6]">
-      <View className="bg-[#137386] pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center">
+      {/* Animated Header matches settings.tsx and standard layout */}
+      <View className="pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between overflow-hidden">
+        <LinearGradient
+          colors={[colors.primaryDark, colors.primary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        />
         <TouchableOpacity
-          onPress={() => router.back()}
-          style={{
-            backgroundColor: "rgba(255,255,255,0.15)",
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            borderRadius: 16,
+          accessibilityRole="button"
+          accessibilityLabel="Zurück"
+          onPress={() => {
+            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
           }}
+          className="bg-white/20 px-4 py-3 rounded-xl backdrop-blur-md flex-row items-center z-50"
+          style={{ zIndex: 50, elevation: 50 }}
         >
-          <Text className="text-white font-bold">
+          <ChevronLeft size={20} color="white" />
+          <Text className="text-white font-bold ml-1">
             {i18n.t("exercise.back")}
           </Text>
         </TouchableOpacity>
         <Text
-          className="text-xl font-extrabold text-white flex-1 text-right ml-4"
+          className="text-xl font-extrabold text-white flex-1 text-right ml-4 z-10"
           numberOfLines={1}
         >
           {exercise?.title ?? "Übung"}

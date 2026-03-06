@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { Exercise } from "../../types";
 import i18n from "../../utils/i18n";
 import { LinearGradient } from "expo-linear-gradient";
@@ -8,6 +8,100 @@ import { MotiView } from "moti";
 import * as Haptics from "expo-haptics";
 import { CalendarDays, Play, Clock } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
+
+const styles = StyleSheet.create({
+  card: {
+    borderRadius: 24,
+    borderWidth: 1,
+    marginBottom: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.04,
+    shadowRadius: 28,
+    elevation: 3,
+    overflow: "hidden",
+  },
+  imageContainer: {
+    width: "100%",
+    height: 140,
+    position: "relative",
+  },
+  image: {
+    width: "100%",
+    height: "100%",
+  },
+  imageGradient: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
+  },
+  imageOverlayBadge: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  imageOverlayText: {
+    color: "white",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+  },
+  noImageHeader: {
+    height: 48,
+    width: "100%",
+    paddingHorizontal: 24,
+    paddingTop: 24,
+  },
+  contentContainer: {
+    padding: 24,
+    paddingTop: 16,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "900",
+    letterSpacing: -0.5,
+    marginBottom: 12,
+    lineHeight: 28,
+  },
+  badgesRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 20,
+  },
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  badgeIcon: {
+    marginRight: 6,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 0.3,
+  },
+  actionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    paddingTop: 16,
+  },
+  actionText: {
+    fontSize: 14,
+    fontWeight: "800",
+  }
+});
 
 export const OpenExerciseCard = memo(function OpenExerciseCard({
   exercise,
@@ -35,14 +129,14 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
       onPress={onPress}
     >
       <MotiView
-        animate={{ scale: pressed ? 0.96 : 1, translateY: pressed ? 4 : 0 }}
+        animate={{ scale: pressed ? 0.97 : 1, translateY: pressed ? 4 : 0 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         style={[
           styles.card,
           {
-            backgroundColor: colors.surface,
-            borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
-            shadowColor: themeColor,
+            backgroundColor: isDark ? "rgba(30,41,59,0.5)" : "white",
+            borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(226, 232, 240, 0.8)",
+            shadowColor: isDark ? "#000" : themeColor,
           },
         ]}
       >
@@ -57,11 +151,11 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
             <LinearGradient
               colors={[
                 "transparent",
-                isDark ? colors.surface : "rgba(255,255,255,1)",
+                isDark ? "rgba(30,41,59,0.5)" : "white",
               ]}
               style={styles.imageGradient}
             />
-            <View style={styles.imageOverlayBadge}>
+            <View style={[styles.imageOverlayBadge, Platform.OS === 'web' ? { backdropFilter: 'blur(8px)' } as any : {}]}>
               <Text style={styles.imageOverlayText}>
                 {i18n.t("dashboard.exercises.modules", {
                   count: exercise.blocks?.length ?? 0,
@@ -70,204 +164,94 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
             </View>
           </View>
         ) : (
-          <View
-            style={[
-              styles.noImageBadge,
-              {
-                backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#F9F8F6",
-              },
-            ]}
-          >
-            <Text style={[styles.noImageText, { color: colors.textSubtle }]}>
-              {i18n.t("dashboard.exercises.modules", {
-                count: exercise.blocks?.length ?? 0,
-              })}
-            </Text>
-          </View>
+          <View style={styles.noImageHeader} />
         )}
 
         <View style={styles.contentContainer}>
-          <View style={styles.titleRow}>
-            <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text
-                style={[styles.title, { color: colors.text }]}
-                numberOfLines={2}
-              >
-                {exercise.title}
-              </Text>
+          <Text
+            style={[styles.title, { color: isDark ? "white" : "#0F172A" }]}
+            numberOfLines={2}
+          >
+            {exercise.title}
+          </Text>
 
-              <View style={styles.badgesRow}>
-                {exercise.recurrence && exercise.recurrence !== "none" && (
-                  <View
-                    style={[
-                      styles.badge,
-                      { backgroundColor: `${themeColor}15` },
-                    ]}
-                  >
-                    <CalendarDays
-                      size={12}
-                      color={themeColor}
-                      style={styles.badgeIcon}
-                    />
-                    <Text style={[styles.badgeText, { color: themeColor }]}>
-                      {exercise.recurrence === "daily"
-                        ? i18n.t("dashboard.exercises.daily")
-                        : i18n.t("dashboard.exercises.weekly")}
-                    </Text>
-                  </View>
-                )}
-                <View
-                  style={[
-                    styles.badge,
-                    {
-                      backgroundColor: isDark
-                        ? "rgba(255,255,255,0.05)"
-                        : "rgba(0,0,0,0.03)",
-                    },
-                  ]}
-                >
-                  <Clock
-                    size={12}
-                    color={colors.textSubtle}
-                    style={styles.badgeIcon}
-                  />
-                  <Text
-                    style={[styles.badgeText, { color: colors.textSubtle }]}
-                  >
-                    {(exercise.blocks?.length || 0) * 3} Min
-                  </Text>
-                </View>
+          <View style={styles.badgesRow}>
+            {exercise.recurrence && exercise.recurrence !== "none" && (
+              <View
+                style={[
+                  styles.badge,
+                  { backgroundColor: isDark ? `${themeColor}20` : `${themeColor}15` },
+                ]}
+              >
+                <CalendarDays
+                  size={12}
+                  color={themeColor}
+                  style={styles.badgeIcon}
+                  strokeWidth={2.5}
+                />
+                <Text style={[styles.badgeText, { color: themeColor }]}>
+                  {exercise.recurrence === "daily"
+                    ? i18n.t("dashboard.exercises.daily")
+                    : i18n.t("dashboard.exercises.weekly")}
+                </Text>
               </View>
+            )}
+
+            <View
+              style={[
+                styles.badge,
+                {
+                  backgroundColor: isDark
+                    ? "rgba(255,255,255,0.05)"
+                    : "#F8FAFC",
+                  borderWidth: 1,
+                  borderColor: isDark ? "transparent" : "#F1F5F9"
+                },
+              ]}
+            >
+              <Clock
+                size={12}
+                color={isDark ? "rgba(255,255,255,0.6)" : "#64748B"}
+                style={styles.badgeIcon}
+                strokeWidth={2.5}
+              />
+              <Text
+                style={[styles.badgeText, { color: isDark ? "rgba(255,255,255,0.6)" : "#64748B" }]}
+              >
+                {(exercise.blocks?.length || 0) * 3} Min
+              </Text>
             </View>
 
-            <View style={styles.iconContainer}>
-              <LinearGradient
-                colors={[themeColor, themeColor + "cc"]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.gradientIcon}
+            {!exercise.coverImage && (
+              <View
+                style={[
+                  styles.badge,
+                  {
+                    backgroundColor: isDark
+                      ? "rgba(255,255,255,0.05)"
+                      : "#F8FAFC",
+                    borderWidth: 1,
+                    borderColor: isDark ? "transparent" : "#F1F5F9"
+                  },
+                ]}
               >
-                <Play
-                  size={20}
-                  color="white"
-                  fill="white"
-                  style={{ marginLeft: 3 }}
-                />
-              </LinearGradient>
+                <Text
+                  style={[styles.badgeText, { color: isDark ? "rgba(255,255,255,0.6)" : "#64748B" }]}
+                >
+                  {exercise.blocks?.length ?? 0} {exercise.blocks?.length === 1 ? 'Modul' : 'Module'}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View style={[styles.actionRow, { borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC' }]}>
+            <Text style={[styles.actionText, { color: themeColor }]}>Jetzt starten</Text>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: `${themeColor}15`, alignItems: 'center', justifyContent: 'center' }}>
+              <Play size={14} color={themeColor} fill={themeColor} style={{ marginLeft: 2 }} />
             </View>
           </View>
         </View>
       </MotiView>
     </Pressable>
   );
-});
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: 32,
-    borderWidth: 1,
-    marginBottom: 16,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 6,
-    overflow: "hidden",
-  },
-  imageContainer: {
-    width: "100%",
-    height: 160,
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  imageGradient: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 80,
-  },
-  imageOverlayBadge: {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  imageOverlayText: {
-    color: "white",
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  noImageBadge: {
-    alignSelf: "flex-start",
-    marginTop: 24,
-    marginLeft: 24,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  noImageText: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  contentContainer: {
-    padding: 24,
-    paddingTop: 16,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-    marginBottom: 12,
-    lineHeight: 28,
-  },
-  badgesRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  badge: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 12,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  badgeIcon: {
-    marginRight: 4,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  iconContainer: {
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  gradientIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: "center",
-    justifyContent: "center",
-  },
 });

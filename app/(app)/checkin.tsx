@@ -24,7 +24,7 @@ export default function CheckinScreen() {
     const {
         selectedEmotionId, setSelectedEmotionId,
         note, setNote,
-        selectedTags, toggleTag,
+        energy, setEnergy,
         saving, saved, alreadyCompleted,
         loadingCheckin, inlineError, setInlineError,
         handleSave
@@ -179,7 +179,7 @@ export default function CheckinScreen() {
                         </View>
                     </MotiView>
 
-                    {/* Additional Circumstances / Tags */}
+                    {/* Energy Level Slider */}
                     <MotiView
                         from={{ opacity: 0, translateY: 20 }}
                         animate={{ opacity: 1, translateY: 0 }}
@@ -187,34 +187,50 @@ export default function CheckinScreen() {
                     >
                         <View style={{ backgroundColor: colors.surface, borderRadius: 32, padding: 24, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 16, elevation: 4 }}>
                             <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 16 }}>
-                                Hast du heute schon etwas Bestimmtes gemacht?
+                                Dein Energielevel (1-10)
                             </Text>
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                                {QUICK_TAGS.map((tag, idx) => {
-                                    const active = selectedTags.includes(tag);
-                                    return (
-                                        <MotiView
-                                            key={tag}
-                                            from={{ opacity: 0, translateY: 10 }}
-                                            animate={{ opacity: 1, translateY: 0 }}
-                                            transition={{ type: 'timing', duration: 300, delay: 250 + (idx * 20) }}
-                                        >
-                                            <TouchableOpacity onPress={() => !alreadyCompleted && toggleTag(tag)}
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10 }}>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#94A3B8' }}>Erschöpft</Text>
+                                <Text style={{ fontSize: 24, fontWeight: '900', color: activeEmotion ? activeEmotion.color : '#137386' }}>
+                                    {energy}
+                                </Text>
+                                <Text style={{ fontSize: 14, fontWeight: '700', color: '#94A3B8' }}>Voller Energie</Text>
+                            </View>
+                            <View style={{ marginTop: 24, paddingHorizontal: 10, height: 40, justifyContent: 'center' }}>
+                                {/* Note: Since Slider from react-native is mostly deprecated, an easy cross-platform custom slider UI is built here since it's just 1-10 */}
+                                <View style={{ height: 6, backgroundColor: isDark ? '#334155' : '#E2E8F0', borderRadius: 3, flex: 1, position: 'relative' }}>
+                                    {/* Active Track */}
+                                    <View style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: `${(energy - 1) * 11.11}%`, backgroundColor: activeEmotion ? activeEmotion.color : '#137386', borderRadius: 3 }} />
+                                    {/* Handle & Steps */}
+                                    <View style={{ position: 'absolute', top: -14, left: 0, right: 0, height: 34, flexDirection: 'row', justifyContent: 'space-between' }}>
+                                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
+                                            <TouchableOpacity
+                                                key={val}
+                                                onPress={() => {
+                                                    if (!alreadyCompleted) {
+                                                        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                                        setEnergy(val);
+                                                    }
+                                                }}
                                                 activeOpacity={alreadyCompleted ? 1 : 0.7}
-                                                style={{
-                                                    paddingHorizontal: 16,
-                                                    paddingVertical: 10,
-                                                    borderRadius: 20,
-                                                    backgroundColor: active ? (isDark ? 'rgba(255,255,255,0.15)' : '#1E293B') : (isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC'),
-                                                    borderWidth: active ? 0 : 1,
-                                                    borderColor: active ? 'transparent' : colors.border,
-                                                    opacity: alreadyCompleted && !active ? 0.4 : 1
-                                                }}>
-                                                <Text style={{ fontWeight: '700', fontSize: 13, color: active ? (isDark ? '#fff' : '#fff') : colors.textSubtle }}>{tag}</Text>
+                                                style={{ width: 34, height: 34, alignItems: 'center', justifyContent: 'center' }}
+                                            >
+                                                <View style={{
+                                                    width: energy === val ? 24 : 12,
+                                                    height: energy === val ? 24 : 12,
+                                                    borderRadius: 12,
+                                                    backgroundColor: energy === val ? (activeEmotion ? activeEmotion.color : '#137386') : 'transparent',
+                                                    borderWidth: energy === val ? 0 : 2,
+                                                    borderColor: energy === val ? 'transparent' : (isDark ? '#475569' : '#CBD5E1'),
+                                                    shadowColor: energy === val ? (activeEmotion ? activeEmotion.color : '#137386') : 'transparent',
+                                                    shadowOffset: { width: 0, height: 4 },
+                                                    shadowOpacity: energy === val ? 0.3 : 0,
+                                                    shadowRadius: 8
+                                                }} />
                                             </TouchableOpacity>
-                                        </MotiView>
-                                    );
-                                })}
+                                        ))}
+                                    </View>
+                                </View>
                             </View>
                         </View>
                     </MotiView>

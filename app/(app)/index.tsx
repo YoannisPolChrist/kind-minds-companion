@@ -392,20 +392,23 @@ export default function ClientDashboard() {
                                         Linking.openURL(bookingUrl);
                                     }
                                 }}
-                                className="p-6 rounded-[28px] flex-row items-center justify-between"
-                                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                             >
-                                <View className="flex-row items-center flex-1 pr-4">
-                                    <View style={{ backgroundColor: `${colors.primary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
-                                        <Calendar size={24} color={colors.primary} />
+                                <View
+                                    className="p-6 rounded-[28px] flex-row items-center justify-between shadow-sm"
+                                    style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', borderWidth: 1, borderColor: isDark ? 'transparent' : colors.border }}
+                                >
+                                    <View className="flex-row items-center flex-1 pr-4">
+                                        <View style={{ backgroundColor: isDark ? 'rgba(56, 189, 248, 0.2)' : `${colors.primary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
+                                            <Calendar size={24} color={isDark ? '#38BDF8' : colors.primary} />
+                                        </View>
+                                        <View className="flex-1">
+                                            <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}</Text>
+                                            <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5">{i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}</Text>
+                                        </View>
                                     </View>
-                                    <View className="flex-1">
-                                        <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}</Text>
-                                        <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5">{i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}</Text>
+                                    <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
+                                        <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                                     </View>
-                                </View>
-                                <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
-                                    <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                                 </View>
                             </PressableScale>
                         </MotiView>
@@ -421,20 +424,23 @@ export default function ClientDashboard() {
                             onPress={() => {
                                 router.push('/(app)/resources');
                             }}
-                            className="p-6 rounded-[28px] flex-row items-center justify-between"
-                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                         >
-                            <View className="flex-row items-center flex-1 pr-4">
-                                <View style={{ backgroundColor: `${colors.secondary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
-                                    <BookOpen size={24} color={colors.secondary} />
+                            <View
+                                className="p-6 rounded-[28px] flex-row items-center justify-between shadow-sm"
+                                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', borderWidth: 1, borderColor: isDark ? 'transparent' : colors.border }}
+                            >
+                                <View className="flex-row items-center flex-1 pr-4">
+                                    <View style={{ backgroundColor: isDark ? 'rgba(167, 139, 250, 0.2)' : `${colors.secondary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
+                                        <BookOpen size={24} color={isDark ? '#A78BFA' : colors.secondary} />
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
+                                        <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
+                                    </View>
                                 </View>
-                                <View className="flex-1">
-                                    <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
-                                    <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
+                                <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
+                                    <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                                 </View>
-                            </View>
-                            <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
-                                <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                             </View>
                         </PressableScale>
                     </MotiView>
@@ -449,22 +455,25 @@ export default function ClientDashboard() {
                             onPress={() => {
                                 router.push('/(app)/notes' as any);
                             }}
-                            className="p-6 rounded-[28px] flex-row items-center justify-between"
-                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                         >
-                            <View className="flex-row items-center flex-1 pr-4">
-                                <View className="w-14 h-14 rounded-full items-center justify-center mr-5" style={{ backgroundColor: 'rgba(59,130,246,0.1)' }}>
-                                    <View style={{ transform: [{ rotate: '-10deg' }] }}>
-                                        <Edit3 size={24} color={isDark ? '#60A5FA' : '#3B82F6'} />
+                            <View
+                                className="p-6 rounded-[28px] flex-row items-center justify-between shadow-sm"
+                                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', borderWidth: 1, borderColor: isDark ? 'transparent' : colors.border }}
+                            >
+                                <View className="flex-row items-center flex-1 pr-4">
+                                    <View className="w-14 h-14 rounded-full items-center justify-center mr-5" style={{ backgroundColor: isDark ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59,130,246,0.1)' }}>
+                                        <View style={{ transform: [{ rotate: '-10deg' }] }}>
+                                            <Edit3 size={24} color={isDark ? '#60A5FA' : '#3B82F6'} />
+                                        </View>
+                                    </View>
+                                    <View className="flex-1">
+                                        <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">Session Notes</Text>
+                                        <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>Füge Notizen und Erkenntnisse nach deiner Session hinzu.</Text>
                                     </View>
                                 </View>
-                                <View className="flex-1">
-                                    <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">Session Notes</Text>
-                                    <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>Füge Notizen und Erkenntnisse nach deiner Session hinzu.</Text>
+                                <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
+                                    <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                                 </View>
-                            </View>
-                            <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
-                                <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                             </View>
                         </PressableScale>
                     </MotiView>
@@ -475,7 +484,12 @@ export default function ClientDashboard() {
                             animate={{ opacity: 1, translateY: 0 }}
                             transition={{ type: 'timing', duration: 350, delay: 150 }}
                         >
-                            <StatsRow total={exercises.length} open={openExercises.length} completed={completedExercises.length} />
+                            <StatsRow
+                                total={exercises.length}
+                                open={openExercises.length}
+                                completed={completedExercises.length}
+                                onPress={() => router.push('/(app)/exercises_overview' as any)}
+                            />
                         </MotiView>
                     )}
 

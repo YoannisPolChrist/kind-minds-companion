@@ -13,7 +13,7 @@ export function useCheckin() {
 
     const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
     const [note, setNote] = useState('');
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
+    const [energy, setEnergy] = useState<number>(5); // Default middle
 
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -37,7 +37,7 @@ export function useCheckin() {
                 const matchedPreset = EMOTION_PRESETS.find(e => e.score === data.mood);
                 if (matchedPreset) setSelectedEmotionId(matchedPreset.id);
                 setNote(data.note || '');
-                setSelectedTags(data.tags || []);
+                setEnergy(data.energy || 5);
                 setAlreadyCompleted(true);
             } else {
                 const legacyDocId = `${profile.id}_${today}`;
@@ -47,7 +47,7 @@ export function useCheckin() {
                     const matchedPreset = EMOTION_PRESETS.find(e => e.score === data.mood);
                     if (matchedPreset) setSelectedEmotionId(matchedPreset.id);
                     setNote(data.note || '');
-                    setSelectedTags(data.tags || []);
+                    setEnergy(data.energy || 5);
                     setAlreadyCompleted(true);
                 }
             }
@@ -61,10 +61,6 @@ export function useCheckin() {
     useEffect(() => {
         checkToday();
     }, [checkToday]);
-
-    const toggleTag = useCallback((tag: string) => {
-        setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-    }, []);
 
     const handleSave = useCallback(async () => {
         if (!selectedEmotionId) { setInlineError(i18n.t('checkin.error_mood')); return; }
@@ -82,9 +78,9 @@ export function useCheckin() {
             const currentHour = now.getHours();
             const currentSlot = currentHour < 12 ? 'morning' : 'evening';
 
-            // Add the selected emotion's label dynamically to the tags array
+            // Add the selected emotion's label explicitly as a tag, since the user wanted it
             const labelStr = getEmotionLabel(selectedPreset, i18n.locale);
-            const finalTags = selectedTags.includes(labelStr) ? selectedTags : [labelStr, ...selectedTags];
+            const finalTags = [labelStr];
 
             await submitCheckin({
                 uid: profile.id,
@@ -92,6 +88,7 @@ export function useCheckin() {
                 slot: currentSlot,
                 mood: selectedPreset.score,
                 tags: finalTags,
+                energy: energy,
                 note: note.trim(),
                 createdAt: now.toISOString(),
             }, isConnected);
@@ -103,12 +100,12 @@ export function useCheckin() {
         } finally {
             setSaving(false);
         }
-    }, [selectedEmotionId, profile?.id, selectedTags, note, isConnected]);
+    }, [selectedEmotionId, profile?.id, energy, note, isConnected]);
 
     return {
         selectedEmotionId, setSelectedEmotionId,
         note, setNote,
-        selectedTags, toggleTag,
+        energy, setEnergy,
         saving, saved, alreadyCompleted,
         loadingCheckin, inlineError, setInlineError,
         handleSave

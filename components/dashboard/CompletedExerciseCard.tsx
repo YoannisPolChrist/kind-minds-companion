@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { Exercise } from "../../types";
 import i18n from "../../utils/i18n";
 import { useState, memo } from "react";
@@ -32,7 +32,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
   };
 
-  const themeColor = exercise.themeColor || "#10B981"; // Default to a nice success green
+  const themeColor = exercise.themeColor || "#10B981"; // Success green
 
   return (
     <Pressable
@@ -43,17 +43,18 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
       onPress={onPress}
     >
       <MotiView
-        animate={{ scale: pressed ? 0.97 : 1, opacity: pressed ? 0.9 : 1 }}
+        animate={{ scale: pressed ? 0.98 : 1, opacity: pressed ? 0.9 : 1 }}
         transition={{ type: "spring", stiffness: 300, damping: 20 }}
         style={[
           styles.card,
           {
-            backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "#F9F8F6",
-            borderColor: isDark ? "rgba(255,255,255,0.05)" : colors.border,
+            backgroundColor: isDark ? "rgba(30,41,59,0.3)" : "#F8FAFC",
+            borderColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(226, 232, 240, 0.8)",
+            shadowColor: isDark ? "#000" : colors.textSubtle,
           },
         ]}
       >
-        {exercise.coverImage && (
+        {exercise.coverImage ? (
           <View style={styles.imageContainer}>
             <Image
               source={{ uri: exercise.coverImage }}
@@ -62,59 +63,53 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
               transition={200}
             />
             <LinearGradient
-              colors={["transparent", isDark ? "rgba(15,23,42,1)" : "#F9F8F6"]}
+              colors={["transparent", isDark ? "rgba(30,41,59,1)" : "#F8FAFC"]}
               style={styles.imageGradient}
             />
-            <View style={styles.overlay} />
+            {Platform.OS === 'web' && <View style={styles.overlay} />}
           </View>
+        ) : (
+          <View style={styles.noImageHeader} />
         )}
 
         <View style={styles.contentContainer}>
-          <View style={styles.titleRow}>
-            <View style={{ flex: 1, paddingRight: 16 }}>
-              <Text
-                style={[styles.title, { color: colors.textSubtle }]}
-                numberOfLines={2}
-              >
-                {exercise.title}
-              </Text>
+          <Text
+            style={[styles.title, { color: isDark ? "rgba(255,255,255,0.7)" : colors.textSubtle }]}
+            numberOfLines={2}
+          >
+            {exercise.title}
+          </Text>
 
-              <View style={styles.badgesRow}>
-                <View
-                  style={[
-                    styles.badge,
-                    {
-                      backgroundColor: `${themeColor}15`,
-                      borderColor: `${themeColor}30`,
-                      borderWidth: 1,
-                    },
-                  ]}
-                >
-                  <Award
-                    size={12}
-                    color={themeColor}
-                    style={styles.badgeIcon}
-                  />
-                  <Text style={[styles.badgeText, { color: themeColor }]}>
-                    {i18n.t("dashboard.completed.done_on", {
-                      date: formatShortDate(exercise.lastCompletedAt),
-                      defaultValue: `Erledigt am ${formatShortDate(exercise.lastCompletedAt)}`,
-                    })}
-                  </Text>
-                </View>
-              </View>
-            </View>
-
+          <View style={styles.badgesRow}>
             <View
               style={[
-                styles.iconContainer,
+                styles.badge,
                 {
-                  backgroundColor: `${themeColor}15`,
-                  borderColor: `${themeColor}33`,
+                  backgroundColor: isDark ? "rgba(16, 185, 129, 0.15)" : "#ECFDF5",
+                  borderColor: isDark ? "transparent" : "#D1FAE5",
+                  borderWidth: 1,
                 },
               ]}
             >
-              <CheckCircle2 size={24} color={themeColor} />
+              <Award
+                size={12}
+                color={themeColor}
+                style={styles.badgeIcon}
+                strokeWidth={2.5}
+              />
+              <Text style={[styles.badgeText, { color: themeColor }]}>
+                {i18n.t("dashboard.completed.done_on", {
+                  date: formatShortDate(exercise.lastCompletedAt),
+                  defaultValue: `Erledigt am ${formatShortDate(exercise.lastCompletedAt)}`,
+                })}
+              </Text>
+            </View>
+          </View>
+
+          <View style={[styles.actionRow, { borderTopColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9' }]}>
+            <Text style={[styles.actionText, { color: isDark ? "rgba(255,255,255,0.5)" : "#94A3B8" }]}>Erneut ansehen</Text>
+            <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}>
+              <CheckCircle2 size={16} color={themeColor} strokeWidth={2.5} />
             </View>
           </View>
         </View>
@@ -125,9 +120,13 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 32,
+    borderRadius: 24,
     borderWidth: 1,
-    marginBottom: 16,
+    marginBottom: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.03,
+    shadowRadius: 28,
+    elevation: 2,
     overflow: "hidden",
   },
   imageContainer: {
@@ -138,7 +137,7 @@ const styles = StyleSheet.create({
   image: {
     width: "100%",
     height: "100%",
-    opacity: 0.6, // Dimmed for completed state
+    opacity: 0.5,
   },
   imageGradient: {
     position: "absolute",
@@ -148,23 +147,21 @@ const styles = StyleSheet.create({
     height: 60,
   },
   overlay: {
-    // Grayscale overlay to make it look 'completed'
     position: "absolute",
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: "rgba(255,255,255,0.2)",
-    mixBlendMode: "saturation",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    mixBlendMode: "saturation" as any,
+  },
+  noImageHeader: {
+    height: 32,
+    width: "100%",
   },
   contentContainer: {
     padding: 24,
     paddingTop: 16,
-  },
-  titleRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
   },
   title: {
     fontSize: 20,
@@ -173,35 +170,38 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     lineHeight: 26,
     textDecorationLine: "line-through",
-    opacity: 0.8,
+    opacity: 0.7,
   },
   badgesRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
+    marginBottom: 16,
   },
   badge: {
     paddingHorizontal: 10,
     paddingVertical: 6,
-    borderRadius: 12,
+    borderRadius: 10,
     flexDirection: "row",
     alignItems: "center",
   },
   badgeIcon: {
-    marginRight: 4,
+    marginRight: 6,
   },
   badgeText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "800",
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
+    letterSpacing: 0.3,
   },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderWidth: 1,
-    borderRadius: 24,
+  actionRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    paddingTop: 16,
   },
+  actionText: {
+    fontSize: 14,
+    fontWeight: "800",
+  }
 });

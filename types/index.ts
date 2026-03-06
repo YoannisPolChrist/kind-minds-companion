@@ -82,6 +82,7 @@ export interface Checkin {
     date: string;
     mood: number;
     tags: string[];
+    energy?: number; // 1-10
     note?: string;
     duration?: number;
     createdAt: string;

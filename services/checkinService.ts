@@ -13,6 +13,7 @@ export interface CheckinPayload {
     mood: number;         // 1–5
     note?: string;
     tags?: string[];
+    energy?: number; // 1-10
     duration?: number;
     date: string;         // ISO date string "YYYY-MM-DD"
     slot?: 'morning' | 'evening'; // Morning (00:00-12:00) or Evening (12:00-24:00)
