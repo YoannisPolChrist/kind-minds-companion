@@ -1,11 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../../utils/firebase';
-import { EMOTION_PRESETS, getEmotionLabel } from '../../constants/emotions';
-import { submitCheckin } from '../../services/checkinService';
-import i18n from '../../utils/i18n';
+import { EMOTION_PRESETS, getEmotionByScore, getEmotionLabel } from '../../constants/emotions';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNetwork } from '../../contexts/NetworkContext';
+import { submitCheckin } from '../../services/checkinService';
+import i18n from '../../utils/i18n';
+import { db } from '../../utils/firebase';
+import { normalizeMoodToHundred, normalizeMoodToTen } from '../../utils/checkinMood';
+
+function resolveEmotionId(score: unknown) {
+    const normalizedScore = normalizeMoodToTen(score);
+    const preset = EMOTION_PRESETS.find((emotion) => emotion.score === normalizedScore) || getEmotionByScore(normalizedScore);
+    return preset?.id ?? null;
+}
 
 export function useCheckin() {
     const { profile } = useAuth();
@@ -13,7 +20,7 @@ export function useCheckin() {
 
     const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
     const [note, setNote] = useState('');
-    const [energy, setEnergy] = useState<number>(5); // Default middle
+    const [energy, setEnergy] = useState<number>(5);
 
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
@@ -23,6 +30,7 @@ export function useCheckin() {
 
     const checkToday = useCallback(async () => {
         if (!profile?.id) return;
+
         setLoadingCheckin(true);
         const now = new Date();
         const today = now.toISOString().split('T')[0];
@@ -34,8 +42,7 @@ export function useCheckin() {
             const snap = await getDoc(doc(db, 'checkins', docId));
             if (snap.exists()) {
                 const data = snap.data();
-                const matchedPreset = EMOTION_PRESETS.find(e => e.score === data.mood);
-                if (matchedPreset) setSelectedEmotionId(matchedPreset.id);
+                setSelectedEmotionId(resolveEmotionId(data.mood));
                 setNote(data.note || '');
                 setEnergy(data.energy || 5);
                 setAlreadyCompleted(true);
@@ -44,15 +51,14 @@ export function useCheckin() {
                 const legacySnap = await getDoc(doc(db, 'checkins', legacyDocId));
                 if (legacySnap.exists()) {
                     const data = legacySnap.data();
-                    const matchedPreset = EMOTION_PRESETS.find(e => e.score === data.mood);
-                    if (matchedPreset) setSelectedEmotionId(matchedPreset.id);
+                    setSelectedEmotionId(resolveEmotionId(data.mood));
                     setNote(data.note || '');
                     setEnergy(data.energy || 5);
                     setAlreadyCompleted(true);
                 }
             }
-        } catch (e) {
-            console.error("Failed checking today's checkin", e);
+        } catch (error) {
+            console.error("Failed checking today's checkin", error);
         } finally {
             setLoadingCheckin(false);
         }
@@ -63,10 +69,17 @@ export function useCheckin() {
     }, [checkToday]);
 
     const handleSave = useCallback(async () => {
-        if (!selectedEmotionId) { setInlineError(i18n.t('checkin.error_mood')); return; }
-        if (!profile?.id) { setInlineError(i18n.t('checkin.error_auth')); return; }
+        if (!selectedEmotionId) {
+            setInlineError(i18n.t('checkin.error_mood'));
+            return;
+        }
 
-        const selectedPreset = EMOTION_PRESETS.find(e => e.id === selectedEmotionId);
+        if (!profile?.id) {
+            setInlineError(i18n.t('checkin.error_auth'));
+            return;
+        }
+
+        const selectedPreset = EMOTION_PRESETS.find((emotion) => emotion.id === selectedEmotionId);
         if (!selectedPreset) return;
 
         setInlineError(null);
@@ -78,7 +91,6 @@ export function useCheckin() {
             const currentHour = now.getHours();
             const currentSlot = currentHour < 12 ? 'morning' : 'evening';
 
-            // Add the selected emotion's label explicitly as a tag, since the user wanted it
             const labelStr = getEmotionLabel(selectedPreset, i18n.locale);
             const finalTags = [labelStr];
 
@@ -86,16 +98,16 @@ export function useCheckin() {
                 uid: profile.id,
                 date: today,
                 slot: currentSlot,
-                mood: selectedPreset.score,
+                mood: normalizeMoodToHundred(selectedPreset.score),
                 tags: finalTags,
-                energy: energy,
+                energy,
                 note: note.trim(),
                 createdAt: now.toISOString(),
             }, isConnected);
 
             setSaved(true);
-        } catch (e) {
-            console.error('Check-in save error:', e);
+        } catch (error) {
+            console.error('Check-in save error:', error);
             setInlineError(i18n.t('checkin.error_save') || 'Speichern fehlgeschlagen.');
         } finally {
             setSaving(false);
@@ -108,6 +120,6 @@ export function useCheckin() {
         energy, setEnergy,
         saving, saved, alreadyCompleted,
         loadingCheckin, inlineError, setInlineError,
-        handleSave
+        handleSave,
     };
 }

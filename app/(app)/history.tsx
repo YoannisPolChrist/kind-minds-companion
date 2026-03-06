@@ -1,13 +1,15 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from 'react-native';
+﻿import { useEffect, useState } from 'react';
+import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Lock } from 'lucide-react-native';
-import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { Lock } from 'lucide-react-native';
+import { getEmotionByScore, getEmotionLabel } from '../../constants/emotions';
 import { useAuth } from '../../contexts/AuthContext';
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { formatMoodScore, normalizeMoodToTen } from '../../utils/checkinMood';
 import { db } from '../../utils/firebase';
 import i18n from '../../utils/i18n';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { getLocalCache, setLocalCache } from '../../utils/SyncManager';
 
 function formatDate(dateStr: string, locale: string) {
@@ -15,10 +17,18 @@ function formatDate(dateStr: string, locale: string) {
     return d.toLocaleDateString(locale, { weekday: 'short', day: 'numeric', month: 'short', year: '2-digit' });
 }
 
+function getHistoryDate(item: any) {
+    if (item.isCheckin) {
+        return item.createdAt || item.date || Date.now();
+    }
+
+    return item.lastCompletedAt || item.createdAt || Date.now();
+}
+
 function groupByWeek(items: any[]) {
     const weeks: Record<string, any[]> = {};
-    items.forEach(item => {
-        const d = new Date(item.isCheckin ? item.date : (item.lastCompletedAt || item.createdAt || Date.now()));
+    items.forEach((item) => {
+        const d = new Date(getHistoryDate(item));
         const monday = new Date(d);
         monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
         const key = monday.toISOString().split('T')[0];
@@ -28,20 +38,20 @@ function groupByWeek(items: any[]) {
     return Object.entries(weeks).sort(([a], [b]) => b.localeCompare(a));
 }
 
-// We flatten the group for FlashList to use headers natively
 function flattenGroupedData(groupedData: [string, any[]][]) {
     const flatList: any[] = [];
     groupedData.forEach(([weekStart, items]) => {
         flatList.push({ isHeader: true, weekStart });
-        items.forEach(item => flatList.push(item));
+        items.forEach((item) => flatList.push(item));
     });
     return flatList;
 }
 
 function weekLabel(dateStr: string, locale: string) {
     const d = new Date(dateStr);
-    const end = new Date(d); end.setDate(d.getDate() + 6);
-    return `${d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} – ${end.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: '2-digit' })}`;
+    const end = new Date(d);
+    end.setDate(d.getDate() + 6);
+    return `${d.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} - ${end.toLocaleDateString(locale, { day: 'numeric', month: 'short', year: '2-digit' })}`;
 }
 
 export default function HistoryScreen() {
@@ -57,11 +67,10 @@ export default function HistoryScreen() {
 
     const fetchHistory = async () => {
         try {
-            // Instant render from cache
             const cachedData = await getLocalCache<any[]>(`history_${profile?.id}`);
             if (cachedData && cachedData.length > 0) {
                 setExercises(cachedData);
-                setLoading(false); // Disable loading if we have valid cache
+                setLoading(false);
             } else {
                 setLoading(true);
             }
@@ -78,25 +87,23 @@ export default function HistoryScreen() {
 
             const [exSnap, checkinSnap] = await Promise.all([
                 getDocs(exQuery),
-                getDocs(checkinsQuery)
+                getDocs(checkinsQuery),
             ]);
 
-            const exData = exSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-            const checkinData = checkinSnap.docs.map(d => ({ id: d.id, isCheckin: true, ...d.data() }));
-
+            const exData = exSnap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+            const checkinData = checkinSnap.docs.map((docSnap) => ({ id: docSnap.id, isCheckin: true, ...docSnap.data() }));
             const data = [...exData, ...checkinData];
 
-            // Sort by date desc
             data.sort((a: any, b: any) => {
-                const ta = a.isCheckin ? new Date(a.date).getTime() : (a.lastCompletedAt ? new Date(a.lastCompletedAt).getTime() : 0);
-                const tb = b.isCheckin ? new Date(b.date).getTime() : (b.lastCompletedAt ? new Date(b.lastCompletedAt).getTime() : 0);
+                const ta = new Date(getHistoryDate(a)).getTime();
+                const tb = new Date(getHistoryDate(b)).getTime();
                 return tb - ta;
             });
 
             setExercises(data);
             await setLocalCache(`history_${profile?.id}`, data);
-        } catch (e) {
-            console.error('History fetch error', e);
+        } catch (error) {
+            console.error('History fetch error', error);
         } finally {
             setLoading(false);
         }
@@ -105,11 +112,10 @@ export default function HistoryScreen() {
     const grouped = groupByWeek(exercises);
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#F9FAFB' }}>
-            {/* Header */}
-            <View style={{ backgroundColor: '#2C3E50', paddingTop: 60, paddingBottom: 28, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
+        <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
+            <View style={{ backgroundColor: '#22474D', paddingTop: 60, paddingBottom: 28, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
                 <TouchableOpacity onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginBottom: 16 }}>
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>← {i18n.t('exercise.back')}</Text>
+                    <Text style={{ color: '#fff', fontWeight: '700' }}>{'<-'} {i18n.t('exercise.back')}</Text>
                 </TouchableOpacity>
                 <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800' }}>{i18n.t('history.title')}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 4 }}>
@@ -119,13 +125,15 @@ export default function HistoryScreen() {
 
             {loading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color="#2C3E50" />
+                    <ActivityIndicator size="large" color="#1F2528" />
                 </View>
             ) : exercises.length === 0 ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-                    <Text style={{ fontSize: 48, marginBottom: 16 }}>🌱</Text>
-                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 8, textAlign: 'center' }}>{i18n.t('history.empty_title')}</Text>
-                    <Text style={{ fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 22 }}>
+                    <View style={{ width: 84, height: 84, borderRadius: 42, backgroundColor: '#EEF3EE', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                        <Text style={{ fontSize: 28, fontWeight: '900', color: '#788E76' }}>OK</Text>
+                    </View>
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: '#1F2528', marginBottom: 8, textAlign: 'center' }}>{i18n.t('history.empty_title')}</Text>
+                    <Text style={{ fontSize: 14, color: '#6F7472', textAlign: 'center', lineHeight: 22 }}>
                         {i18n.t('history.empty_desc')}
                     </Text>
                 </View>
@@ -133,52 +141,66 @@ export default function HistoryScreen() {
                 <View style={{ flex: 1, minHeight: 200 }}>
                     <FlashList<any>
                         data={flattenGroupedData(grouped)}
-                        // @ts-ignore - FlashList typing issue in this environment
-                        estimatedItemSize={120}
+                        
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={{ padding: 20, paddingBottom: 40 }}
                         renderItem={({ item, index }) => {
                             if (item.isHeader) {
                                 return (
                                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, marginTop: index > 0 ? 24 : 0, gap: 8 }}>
-                                        <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
-                                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1 }}>
+                                        <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4' }} />
+                                        <Text style={{ fontSize: 11, fontWeight: '700', color: '#8B938E', textTransform: 'uppercase', letterSpacing: 1 }}>
                                             {weekLabel(item.weekStart, locale)}
                                         </Text>
-                                        <View style={{ flex: 1, height: 1, backgroundColor: '#E5E7EB' }} />
+                                        <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4' }} />
                                     </View>
                                 );
                             }
 
                             if (item.isCheckin) {
-                                const emoji = { great: '😄', good: '🙂', okay: '😐', bad: '😔', terrible: '😫' }[item.mood as string] || '😐';
+                                const emotion = getEmotionByScore(normalizeMoodToTen(item.mood));
                                 return (
                                     <View style={{ flexDirection: 'row', marginBottom: 12, gap: 12 }}>
                                         <View style={{ alignItems: 'center', width: 24 }}>
-                                            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#3B82F6', borderWidth: 2, borderColor: '#fff', shadowColor: '#3B82F6', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.4, shadowRadius: 4, marginTop: 4 }} />
-                                            <View style={{ width: 2, flex: 1, backgroundColor: '#DBEAFE', marginTop: 4 }} />
+                                            <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#4E7E82', borderWidth: 2, borderColor: '#fff', shadowColor: '#4E7E82', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.4, shadowRadius: 4, marginTop: 4 }} />
+                                            <View style={{ width: 2, flex: 1, backgroundColor: '#D8E6E4', marginTop: 4 }} />
                                         </View>
-                                        <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: '#DBEAFE', padding: 14, marginBottom: 2 }}>
+                                        <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: '#D8E6E4', padding: 14, marginBottom: 2 }}>
                                             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                                 <View style={{ flex: 1, marginRight: 8 }}>
-                                                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 }}>Check-in</Text>
-                                                    <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                                                        {formatDate(item.date, locale)}
+                                                    <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2528', marginBottom: 2 }}>Check-in</Text>
+                                                    <Text style={{ fontSize: 12, color: '#6F7472' }}>
+                                                        {formatDate(getHistoryDate(item), locale)}
+                                                    </Text>
+                                                    <View style={{ alignSelf: 'flex-start', marginTop: 8, backgroundColor: '#EEF4F3', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999 }}>
+                                                        <Text style={{ fontSize: 11, color: '#2D666B', fontWeight: '800' }}>
+                                                            Stimmung {formatMoodScore(item.mood)}
+                                                        </Text>
+                                                    </View>
+                                                </View>
+                                                <View style={{ alignItems: 'center' }}>
+                                                    <Text style={{ fontSize: 24 }}>{emotion.emoji}</Text>
+                                                    <Text style={{ fontSize: 11, color: '#6F7472', fontWeight: '700', marginTop: 4 }}>
+                                                        {getEmotionLabel(emotion, i18n.locale)}
                                                     </Text>
                                                 </View>
-                                                <Text style={{ fontSize: 24 }}>{emoji}</Text>
                                             </View>
+                                            {item.energy !== undefined && item.energy !== null && (
+                                                <Text style={{ fontSize: 12, color: '#788E76', fontWeight: '700', marginTop: 10 }}>
+                                                    Energie {item.energy}/10
+                                                </Text>
+                                            )}
                                             {item.tags && item.tags.length > 0 && (
                                                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
                                                     {item.tags.map((tag: string) => (
-                                                        <View key={tag} style={{ backgroundColor: '#F3F4F6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
-                                                            <Text style={{ fontSize: 10, color: '#4B5563', fontWeight: '600' }}>{tag}</Text>
+                                                        <View key={tag} style={{ backgroundColor: '#F3EEE6', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 12 }}>
+                                                            <Text style={{ fontSize: 10, color: '#5E655F', fontWeight: '600' }}>{tag}</Text>
                                                         </View>
                                                     ))}
                                                 </View>
                                             )}
                                             {item.note ? (
-                                                <Text style={{ fontSize: 13, color: '#374151', marginTop: 8, fontStyle: 'italic' }}>"{item.note}"</Text>
+                                                <Text style={{ fontSize: 13, color: '#5E655F', marginTop: 8, fontStyle: 'italic' }}>"{item.note}"</Text>
                                             ) : null}
                                         </View>
                                     </View>
@@ -187,45 +209,41 @@ export default function HistoryScreen() {
 
                             const ex = item;
                             return (
-                                <TouchableOpacity onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)}
-                                    style={{ flexDirection: 'row', marginBottom: 12, gap: 12 }}>
-                                    {/* Timeline dot */}
+                                <TouchableOpacity onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} style={{ flexDirection: 'row', marginBottom: 12, gap: 12 }}>
                                     <View style={{ alignItems: 'center', width: 24 }}>
-                                        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#10B981', borderWidth: 2, borderColor: '#fff', shadowColor: '#10B981', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.4, shadowRadius: 4, marginTop: 4 }} />
-                                        <View style={{ width: 2, flex: 1, backgroundColor: '#D1FAE5', marginTop: 4 }} />
+                                        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#B08C57', borderWidth: 2, borderColor: '#fff', shadowColor: '#B08C57', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.4, shadowRadius: 4, marginTop: 4 }} />
+                                        <View style={{ width: 2, flex: 1, backgroundColor: '#E7DCCB', marginTop: 4 }} />
                                     </View>
 
-                                    {/* Card */}
-                                    <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: '#D1FAE5', padding: 14, marginBottom: 2 }}>
+                                    <View style={{ flex: 1, backgroundColor: '#fff', borderRadius: 18, borderWidth: 1, borderColor: '#E7DCCB', padding: 14, marginBottom: 2 }}>
                                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                             <View style={{ flex: 1, marginRight: 8 }}>
-                                                <Text style={{ fontSize: 15, fontWeight: '700', color: '#111827', marginBottom: 2 }}>{ex.title}</Text>
-                                                <Text style={{ fontSize: 12, color: '#6B7280' }}>
-                                                    {i18n.t('history.modules', { count: ex.blocks?.length ?? 0 })} · {formatDate(ex.lastCompletedAt || ex.createdAt, locale)}
+                                                <Text style={{ fontSize: 15, fontWeight: '700', color: '#1F2528', marginBottom: 2 }}>{ex.title}</Text>
+                                                <Text style={{ fontSize: 12, color: '#6F7472' }}>
+                                                    {i18n.t('history.modules', { count: ex.blocks?.length ?? 0 })} - {formatDate(ex.lastCompletedAt || ex.createdAt, locale)}
                                                 </Text>
                                             </View>
-                                            <View style={{ backgroundColor: '#D1FAE5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-                                                <Text style={{ color: '#065F46', fontWeight: '700', fontSize: 12 }}>{i18n.t('history.done')}</Text>
+                                            <View style={{ backgroundColor: '#E7DCCB', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
+                                                <Text style={{ color: '#8A6A53', fontWeight: '700', fontSize: 12 }}>{i18n.t('history.done')}</Text>
                                             </View>
                                         </View>
 
-                                        {/* Answer preview */}
                                         {ex.completed && ex.sharedAnswers === false ? (
-                                            <View style={{ marginTop: 10, backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#F3F4F6', flexDirection: 'row', alignItems: 'center' }}>
-                                                <Lock size={12} color="#9CA3AF" style={{ marginRight: 6 }} />
-                                                <Text style={{ fontSize: 11, color: '#6B7280', flex: 1 }}>Privte Antwort</Text>
+                                            <View style={{ marginTop: 10, backgroundColor: '#F7F4EE', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E7E0D4', flexDirection: 'row', alignItems: 'center' }}>
+                                                <Lock size={12} color="#8B938E" style={{ marginRight: 6 }} />
+                                                <Text style={{ fontSize: 11, color: '#6F7472', flex: 1 }}>Private Antwort</Text>
                                             </View>
                                         ) : (
                                             ex.answers && Object.keys(ex.answers).length > 0 && (
-                                                <View style={{ marginTop: 10, backgroundColor: '#F9FAFB', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#F3F4F6' }}>
-                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{i18n.t('history.answers')}</Text>
+                                                <View style={{ marginTop: 10, backgroundColor: '#F7F4EE', borderRadius: 10, padding: 10, borderWidth: 1, borderColor: '#E7E0D4' }}>
+                                                    <Text style={{ fontSize: 10, fontWeight: '700', color: '#8B938E', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{i18n.t('history.answers')}</Text>
                                                     {Object.values(ex.answers).slice(0, 2).map((ans, j) => (
-                                                        <Text key={j} numberOfLines={1} style={{ fontSize: 12, color: '#374151', marginBottom: 2 }}>
-                                                            · {String(ans)}
+                                                        <Text key={j} numberOfLines={1} style={{ fontSize: 12, color: '#5E655F', marginBottom: 2 }}>
+                                                            - {String(ans)}
                                                         </Text>
                                                     ))}
                                                     {Object.keys(ex.answers).length > 2 && (
-                                                        <Text style={{ fontSize: 11, color: '#9CA3AF', marginTop: 2 }}>{i18n.t('history.more', { count: Object.keys(ex.answers).length - 2 })}</Text>
+                                                        <Text style={{ fontSize: 11, color: '#8B938E', marginTop: 2 }}>{i18n.t('history.more', { count: Object.keys(ex.answers).length - 2 })}</Text>
                                                     )}
                                                 </View>
                                             )
@@ -240,3 +258,6 @@ export default function HistoryScreen() {
         </View>
     );
 }
+
+
+

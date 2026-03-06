@@ -4,11 +4,9 @@
  * All Firestore operations for the "client_notes" collection.
  */
 
-import {
-    collection, query, where, getDocs, addDoc, deleteDoc, doc, serverTimestamp,
-} from 'firebase/firestore';
-import { db } from '../firebase';
+import { addDoc, collection, deleteDoc, doc, getDocs, query, where } from 'firebase/firestore';
 import { logger } from '../errors';
+import { db } from '../firebase';
 
 export interface ClientNote {
     id: string;
@@ -20,6 +18,7 @@ export interface ClientNote {
     imageUrl?: string;
     type: 'session' | 'journal' | 'ai-session-summary' | 'manual';
     createdAt: string;
+    updatedAt?: string;
 }
 
 export interface CreateNoteDto {
@@ -32,23 +31,35 @@ export interface CreateNoteDto {
     type?: 'session' | 'journal' | 'ai-session-summary' | 'manual';
 }
 
+function getNoteTimestamp(value: any) {
+    if (!value) return 0;
+    if (typeof value === 'string' || value instanceof Date) return new Date(value).getTime();
+    if (typeof value?.seconds === 'number') return value.seconds * 1000;
+    if (typeof value?.toDate === 'function') return value.toDate().getTime();
+    return 0;
+}
+
 export class NoteRepository {
-    /** All notes for a client, newest first */
     static async findByClientId(clientId: string): Promise<ClientNote[]> {
         try {
             const q = query(collection(db, 'client_notes'), where('clientId', '==', clientId));
             const snap = await getDocs(q);
-            const notes = snap.docs.map(d => ({ id: d.id, ...d.data() } as ClientNote));
-            return notes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            const notes = snap.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() } as ClientNote));
+
+            return notes.sort((left, right) => {
+                const leftTime = getNoteTimestamp(left.updatedAt || left.createdAt);
+                const rightTime = getNoteTimestamp(right.updatedAt || right.createdAt);
+                return rightTime - leftTime;
+            });
         } catch (error) {
             logger.error(`Failed to fetch notes for client ${clientId}`, error);
             throw error;
         }
     }
 
-    /** Create a new note */
     static async create(data: CreateNoteDto): Promise<string> {
         try {
+            const now = new Date().toISOString();
             const ref = await addDoc(collection(db, 'client_notes'), {
                 ...data,
                 type: data.type ?? 'ai-session-summary',
@@ -56,7 +67,8 @@ export class NoteRepository {
                 imageUrl: data.imageUrl || null,
                 authorRole: data.authorRole || 'therapist',
                 isShared: data.isShared || false,
-                createdAt: new Date().toISOString(),
+                createdAt: now,
+                updatedAt: now,
             });
             logger.info('Created new client note', { noteId: ref.id, clientId: data.clientId });
             return ref.id;
@@ -67,14 +79,15 @@ export class NoteRepository {
         }
     }
 
-    /** Update an existing note */
     static async update(id: string, data: Partial<ClientNote>): Promise<void> {
         try {
-            const { id: _, clientId, ...updateData } = data as any; // Don't update id or clientId
-            const updatePayload: any = { ...updateData };
+            const { id: _, clientId, ...updateData } = data as any;
+            const updatePayload: any = {
+                ...updateData,
+                updatedAt: new Date().toISOString(),
+            };
 
-            // Clean up undefined values
-            Object.keys(updatePayload).forEach(key => {
+            Object.keys(updatePayload).forEach((key) => {
                 if (updatePayload[key] === undefined) {
                     delete updatePayload[key];
                 }
@@ -90,7 +103,6 @@ export class NoteRepository {
         }
     }
 
-    /** Delete a note */
     static async delete(id: string): Promise<void> {
         try {
             await deleteDoc(doc(db, 'client_notes', id));

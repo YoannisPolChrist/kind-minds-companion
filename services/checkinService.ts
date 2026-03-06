@@ -4,32 +4,33 @@
  * Centralized service for all Firestore mutations related to daily check-ins.
  */
 
-import { db } from '../utils/firebase';
 import { doc, setDoc } from 'firebase/firestore';
+import { normalizeMoodToHundred } from '../utils/checkinMood';
 import { queueSyncAction } from '../utils/SyncManager';
+import { db } from '../utils/firebase';
 
 export interface CheckinPayload {
     uid: string;
-    mood: number;         // 1–5
+    mood: number;
     note?: string;
     tags?: string[];
     energy?: number; // 1-10
     duration?: number;
-    date: string;         // ISO date string "YYYY-MM-DD"
-    slot?: 'morning' | 'evening'; // Morning (00:00-12:00) or Evening (12:00-24:00)
+    date: string; // ISO date string "YYYY-MM-DD"
+    slot?: 'morning' | 'evening';
     createdAt?: string;
 }
 
 /**
  * Submit a daily check-in for a user.
- * Document ID is deterministic: `{uid}_{date}_{slot}` — prevents duplicate entries per slot.
- * Uses SyncManager for offline capability.
+ * Document ID is deterministic: `{uid}_{date}_{slot}`.
  */
 export async function submitCheckin(payload: CheckinPayload, isConnected: boolean): Promise<void> {
     const docId = payload.slot ? `${payload.uid}_${payload.date}_${payload.slot}` : `${payload.uid}_${payload.date}`;
 
     const checkinData = {
         ...payload,
+        mood: normalizeMoodToHundred(payload.mood),
         createdAt: payload.createdAt || new Date().toISOString(),
     };
 
@@ -38,14 +39,13 @@ export async function submitCheckin(payload: CheckinPayload, isConnected: boolea
     } else {
         await queueSyncAction({
             type: 'SAVE_CHECKIN',
-            payload: checkinData
+            payload: checkinData,
         });
     }
 }
 
 /**
  * Update the mood or note of an existing check-in.
- * Only allowed on the same day.
  */
 export async function updateCheckin(
     uid: string,
@@ -53,6 +53,10 @@ export async function updateCheckin(
     updates: Partial<Pick<CheckinPayload, 'mood' | 'note' | 'duration' | 'slot'>>
 ): Promise<void> {
     const docId = updates.slot ? `${uid}_${date}_${updates.slot}` : `${uid}_${date}`;
-    await setDoc(doc(db, 'checkins', docId), updates, { merge: true });
-}
+    const payload = {
+        ...updates,
+        ...(updates.mood !== undefined ? { mood: normalizeMoodToHundred(updates.mood) } : {}),
+    };
 
+    await setDoc(doc(db, 'checkins', docId), payload, { merge: true });
+}
