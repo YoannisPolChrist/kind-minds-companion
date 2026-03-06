@@ -549,214 +549,351 @@ export default function ClientExercisesView() {
       <Modal
         visible={showBuilder}
         animationType="slide"
-        presentationStyle="formSheet"
+        transparent={Platform.OS !== 'ios'}
+        presentationStyle={Platform.OS === 'ios' ? 'formSheet' : 'overFullScreen'}
       >
-        <View className="flex-1 bg-[#F9F8F6]">
-          <View className="bg-[#137386] pt-8 pb-8 px-8 shadow-lg z-10 rounded-b-[32px]">
-            <View className="flex-row items-center justify-between w-full max-w-4xl mx-auto">
-              <Text className="text-[24px] font-black text-white tracking-tight">
-                {i18n.t("therapist.assign_title")}
-              </Text>
-              <TouchableOpacity
-                onPress={() => setShowBuilder(false)}
-                className="bg-white/20 px-4 py-2.5 rounded-2xl backdrop-blur-md"
-              >
-                <Text className="text-white font-bold">
-                  {i18n.t("therapist.cancel")}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {builderMode === "select" ? (
-            <>
-              <ScrollView
-                className="flex-1 w-full"
-                contentContainerStyle={{
-                  padding: 32,
-                  paddingBottom: 60,
-                  maxWidth: 896,
-                  marginHorizontal: "auto",
-                }}
-              >
-                <Text className="text-[18px] font-black text-[#243842] mb-4">
-                  {i18n.t("therapist.step_1_select")}
-                </Text>
-
-                <TouchableOpacity
-                  onPress={() => setBuilderMode("build")}
-                  className="bg-sky-50 border border-sky-200/60 p-6 rounded-[24px] mb-8 shadow-sm flex-row items-center"
-                >
-                  <View className="w-14 h-14 bg-white rounded-[20px] items-center justify-center shadow-sm mr-5">
-                    <Sparkles size={24} color="#0EA5E9" />
-                  </View>
-                  <View className="flex-1">
-                    <Text className="text-sky-900 font-bold text-[18px] mb-1">
-                      {i18n.t("therapist.create_new")}
-                    </Text>
-                    <Text className="text-sky-700/80 text-[14px] font-medium leading-relaxed">
-                      {i18n.t("therapist.create_new_desc")}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                {templates.length > 0 && (
-                  <>
-                    <Text className="text-[#243842]/40 font-black text-[13px] uppercase tracking-widest mb-4">
-                      {i18n.t("therapist.or_template")}
-                    </Text>
-                    {templates.map((t) => (
-                      <TouchableOpacity
-                        key={t.id}
-                        onPress={() => setSelectedTemplate(t)}
-                        className={`p-5 rounded-[24px] mb-4 border ${selectedTemplate?.id === t.id ? "border-[#137386] bg-[#137386]/5" : "border-gray-200 bg-white"}`}
-                        style={{
-                          shadowColor: "#243842",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: 0.03,
-                          shadowRadius: 12,
-                          elevation: 2,
-                        }}
-                      >
-                        <Text
-                          className={`font-bold text-[18px] mb-1 ${selectedTemplate?.id === t.id ? "text-[#137386]" : "text-[#243842]"}`}
-                        >
-                          {t.title}
-                        </Text>
-                        <Text className="text-[#243842]/50 text-[14px] font-medium">
-                          {t.blocks?.length || 0} Module
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </>
-                )}
-
-                <View className="mt-10">
-                  <Text className="text-[18px] font-black text-[#243842] mb-4">
-                    Wiederholung der Übung
+        {Platform.OS !== 'ios' ? (
+          // On Android/Web: overlay with our own rounded card
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+            <View style={{ flex: 1, backgroundColor: '#F9F8F6', borderTopLeftRadius: 40, borderTopRightRadius: 40, overflow: 'hidden', marginTop: 40 }}>
+              {/* Header */}
+              <View style={{ backgroundColor: '#137386', paddingTop: 24, paddingBottom: 24, paddingHorizontal: 32, shadowColor: '#137386', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 16, elevation: 8, borderTopLeftRadius: 40, borderTopRightRadius: 40 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', maxWidth: 896, width: '100%', alignSelf: 'center' }}>
+                  <Text style={{ fontSize: 24, fontWeight: '900', color: 'white', letterSpacing: -0.5 }}>
+                    {i18n.t("therapist.assign_title")}
                   </Text>
-                  <View className="flex-row gap-3 mb-5">
-                    {["none", "daily", "custom"].map((freq) => (
-                      <TouchableOpacity
-                        key={freq}
-                        onPress={() => setRecurrence(freq)}
-                        className={`flex-1 py-4 rounded-[20px] items-center border ${recurrence === freq ? "bg-[#243842] border-[#243842]" : "bg-white border-gray-200"}`}
-                        style={{
-                          shadowColor: "#243842",
-                          shadowOffset: { width: 0, height: 4 },
-                          shadowOpacity: recurrence === freq ? 0.2 : 0.02,
-                          shadowRadius: 12,
-                          elevation: 2,
-                        }}
-                      >
-                        <Text
-                          className={`font-bold text-[15px] ${recurrence === freq ? "text-white" : "text-[#243842]/60"}`}
-                        >
-                          {freq === "none"
-                            ? "Keine"
-                            : freq === "daily"
-                              ? "Täglich"
-                              : "Spezifische Tage"}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                  {recurrence === "custom" && (
-                    <View
-                      className="flex-row justify-between mb-8 bg-white p-5 rounded-[24px] border border-gray-200 shadow-sm"
-                      style={{
-                        shadowColor: "#243842",
-                        shadowOffset: { width: 0, height: 4 },
-                        shadowOpacity: 0.02,
-                        shadowRadius: 8,
-                        elevation: 1,
-                      }}
-                    >
-                      {WEEKDAYS.map((day) => {
-                        const isActive = recurrenceDays.includes(day.key);
-                        return (
-                          <TouchableOpacity
-                            key={day.key}
-                            onPress={() => toggleDay(day.key)}
-                            className={`w-12 h-12 rounded-[16px] items-center justify-center ${isActive ? "bg-[#137386]" : "bg-[#F9F8F6] border border-gray-100"}`}
-                          >
-                            <Text
-                              className={`font-bold text-[15px] ${isActive ? "text-white" : "text-[#243842]/50"}`}
-                            >
-                              {day.label}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
+                  <TouchableOpacity
+                    onPress={() => setShowBuilder(false)}
+                    style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}
+                  >
+                    <Text style={{ color: 'white', fontWeight: '700' }}>
+                      {i18n.t("therapist.cancel")}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-
-                <View className="mt-4">
-                  <Text className="text-[18px] font-black text-[#243842] mb-4">
-                    Push-Erinnerung (Uhrzeit)
-                  </Text>
-                  <View
-                    className="flex-row items-center bg-white border border-gray-200 rounded-[24px] p-5 mb-8 shadow-sm"
-                    style={{
-                      shadowColor: "#243842",
-                      shadowOffset: { width: 0, height: 4 },
-                      shadowOpacity: 0.02,
-                      shadowRadius: 12,
-                      elevation: 2,
+              </View>
+              {/* Content */}
+              {builderMode === "select" ? (
+                <>
+                  <ScrollView
+                    style={{ flex: 1, width: '100%' }}
+                    contentContainerStyle={{
+                      padding: 32,
+                      paddingBottom: 60,
+                      maxWidth: 896,
+                      marginHorizontal: 'auto',
                     }}
                   >
-                    <View className="w-12 h-12 bg-blue-50 rounded-[16px] items-center justify-center mr-4 border border-blue-100/50">
-                      <Clock size={24} color="#3B82F6" />
-                    </View>
-                    <TextInput
-                      value={reminderTime}
-                      onChangeText={setReminderTime}
-                      placeholder="18:00"
-                      keyboardType="numeric"
-                      maxLength={5}
-                      className="flex-1 font-black text-[24px] text-[#243842] tracking-wider"
-                    />
-                    <Text className="text-[#243842]/40 font-bold text-[16px] uppercase tracking-widest ml-3">
-                      Uhr
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                      {i18n.t("therapist.step_1_select")}
                     </Text>
-                  </View>
-                </View>
 
+                    <TouchableOpacity
+                      onPress={() => setBuilderMode("build")}
+                      style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BAE0FE', padding: 24, borderRadius: 24, marginBottom: 32, shadowColor: '#0EA5E9', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 2, flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <View style={{ width: 56, height: 56, backgroundColor: 'white', borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, marginRight: 20 }}>
+                        <Sparkles size={24} color="#0EA5E9" />
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ color: '#0C4A6E', fontWeight: '900', fontSize: 18, marginBottom: 4 }}>
+                          {i18n.t("therapist.create_new")}
+                        </Text>
+                        <Text style={{ color: '#0369A1', fontSize: 14, fontWeight: '500', lineHeight: 20 }}>
+                          {i18n.t("therapist.create_new_desc")}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {templates.length > 0 && (
+                      <>
+                        <Text style={{ color: '#94A3B8', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+                          {i18n.t("therapist.or_template")}
+                        </Text>
+                        {templates.map((t) => (
+                          <TouchableOpacity
+                            key={t.id}
+                            onPress={() => setSelectedTemplate(t)}
+                            style={{
+                              padding: 20, borderRadius: 24, marginBottom: 16,
+                              borderWidth: 1.5,
+                              borderColor: selectedTemplate?.id === t.id ? '#137386' : '#E2E8F0',
+                              backgroundColor: selectedTemplate?.id === t.id ? 'rgba(19,115,134,0.06)' : 'white',
+                              shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2
+                            }}
+                          >
+                            <Text style={{ fontWeight: '800', fontSize: 18, marginBottom: 4, color: selectedTemplate?.id === t.id ? '#137386' : '#243842' }}>
+                              {t.title}
+                            </Text>
+                            <Text style={{ color: '#94A3B8', fontSize: 14, fontWeight: '500' }}>
+                              {t.blocks?.length || 0} Module
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </>
+                    )}
+
+                    <View style={{ marginTop: 40 }}>
+                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                        Wiederholung der Übung
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+                        {["none", "daily", "custom"].map((freq) => (
+                          <TouchableOpacity
+                            key={freq}
+                            onPress={() => setRecurrence(freq)}
+                            style={{
+                              flex: 1, paddingVertical: 16, borderRadius: 20, alignItems: 'center',
+                              borderWidth: 1.5,
+                              borderColor: recurrence === freq ? '#243842' : '#E2E8F0',
+                              backgroundColor: recurrence === freq ? '#243842' : 'white',
+                              shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: recurrence === freq ? 0.15 : 0.02, shadowRadius: 12, elevation: 2
+                            }}
+                          >
+                            <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#94A3B8' }}>
+                              {freq === "none" ? "Keine" : freq === "daily" ? "Täglich" : "Spezifische Tage"}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                      {recurrence === "custom" && (
+                        <View
+                          style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, backgroundColor: 'white', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 1 }}
+                        >
+                          {WEEKDAYS.map((day) => {
+                            const isActive = recurrenceDays.includes(day.key);
+                            return (
+                              <TouchableOpacity
+                                key={day.key}
+                                onPress={() => toggleDay(day.key)}
+                                style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? '#137386' : '#F8FAFC', borderWidth: isActive ? 0 : 1, borderColor: '#E2E8F0' }}
+                              >
+                                <Text style={{ fontWeight: '800', fontSize: 15, color: isActive ? 'white' : '#94A3B8' }}>
+                                  {day.label}
+                                </Text>
+                              </TouchableOpacity>
+                            );
+                          })}
+                        </View>
+                      )}
+                    </View>
+
+                    <View style={{ marginTop: 8 }}>
+                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                        Push-Erinnerung (Uhrzeit)
+                      </Text>
+                      <View
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 24, padding: 20, marginBottom: 32, shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 12, elevation: 2 }}
+                      >
+                        <View style={{ width: 48, height: 48, backgroundColor: '#EFF6FF', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
+                          <Clock size={24} color="#3B82F6" />
+                        </View>
+                        <TextInput
+                          value={reminderTime}
+                          onChangeText={setReminderTime}
+                          placeholder="18:00"
+                          keyboardType="numeric"
+                          maxLength={5}
+                          style={{ flex: 1, fontWeight: '900', fontSize: 24, color: '#243842', letterSpacing: 2 }}
+                        />
+                        <Text style={{ color: '#94A3B8', fontWeight: '700', fontSize: 16, textTransform: 'uppercase', letterSpacing: 2, marginLeft: 12 }}>
+                          Uhr
+                        </Text>
+                      </View>
+                    </View>
+
+                    <TouchableOpacity
+                      onPress={confirmTemplateAssignment}
+                      disabled={!selectedTemplate}
+                      style={{
+                        paddingVertical: 20, borderRadius: 24, alignItems: 'center', marginTop: 8,
+                        backgroundColor: selectedTemplate ? '#137386' : '#E2E8F0',
+                        shadowColor: selectedTemplate ? '#137386' : 'transparent',
+                        shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: selectedTemplate ? 4 : 0
+                      }}
+                    >
+                      <Text style={{ color: selectedTemplate ? 'white' : '#94A3B8', fontWeight: '900', fontSize: 18 }}>
+                        {i18n.t("therapist.assign_save")}
+                      </Text>
+                    </TouchableOpacity>
+                    <View style={{ height: 128 }} />
+                  </ScrollView>
+
+                  <SuccessAnimation
+                    visible={showSuccess}
+                    message={successMessage}
+                    onAnimationDone={() => setShowSuccess(false)}
+                  />
+                </>
+              ) : (
+                <View style={{ flex: 1 }}>
+                  <ExerciseBuilder
+                    onSave={saveExercise}
+                    onCancel={() => setBuilderMode("select")}
+                  />
+                </View>
+              )}
+            </View>
+          </View>
+        ) : (
+          // On iOS: formSheet handles the presentation natively
+          <View style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+            {/* Header */}
+            <View style={{ backgroundColor: '#137386', paddingTop: 32, paddingBottom: 24, paddingHorizontal: 32, shadowColor: '#137386', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={{ fontSize: 24, fontWeight: '900', color: 'white', letterSpacing: -0.5 }}>
+                  {i18n.t("therapist.assign_title")}
+                </Text>
                 <TouchableOpacity
-                  onPress={confirmTemplateAssignment}
-                  disabled={!selectedTemplate}
-                  className={`py-5 rounded-[24px] items-center shadow-sm mt-4 ${selectedTemplate ? "bg-[#137386]" : "bg-gray-300"}`}
-                  style={{
-                    shadowColor: selectedTemplate ? "#137386" : "transparent",
-                    shadowOffset: { width: 0, height: 8 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 16,
-                    elevation: selectedTemplate ? 4 : 0,
-                  }}
+                  onPress={() => setShowBuilder(false)}
+                  style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}
                 >
-                  <Text className="text-white font-bold text-[18px]">
-                    {i18n.t("therapist.assign_save")}
+                  <Text style={{ color: 'white', fontWeight: '700' }}>
+                    {i18n.t("therapist.cancel")}
                   </Text>
                 </TouchableOpacity>
-                <View className="h-32" />
-              </ScrollView>
-
-              <SuccessAnimation
-                visible={showSuccess}
-                message={successMessage}
-                onAnimationDone={() => setShowSuccess(false)}
-              />
-            </>
-          ) : (
-            <View style={{ flex: 1 }}>
-              <ExerciseBuilder
-                onSave={saveExercise}
-                onCancel={() => setBuilderMode("select")}
-              />
+              </View>
             </View>
-          )}
-        </View>
+
+            {builderMode === "select" ? (
+              <>
+                <ScrollView
+                  style={{ flex: 1 }}
+                  contentContainerStyle={{ padding: 32, paddingBottom: 60, maxWidth: 896, marginHorizontal: 'auto' }}
+                >
+                  <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                    {i18n.t("therapist.step_1_select")}
+                  </Text>
+
+                  <TouchableOpacity
+                    onPress={() => setBuilderMode("build")}
+                    style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BAE0FE', padding: 24, borderRadius: 24, marginBottom: 32, flexDirection: 'row', alignItems: 'center' }}
+                  >
+                    <View style={{ width: 56, height: 56, backgroundColor: 'white', borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                      <Sparkles size={24} color="#0EA5E9" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: '#0C4A6E', fontWeight: '900', fontSize: 18, marginBottom: 4 }}>
+                        {i18n.t("therapist.create_new")}
+                      </Text>
+                      <Text style={{ color: '#0369A1', fontSize: 14, fontWeight: '500', lineHeight: 20 }}>
+                        {i18n.t("therapist.create_new_desc")}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+
+                  {templates.length > 0 && (
+                    <>
+                      <Text style={{ color: '#94A3B8', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+                        {i18n.t("therapist.or_template")}
+                      </Text>
+                      {templates.map((t) => (
+                        <TouchableOpacity
+                          key={t.id}
+                          onPress={() => setSelectedTemplate(t)}
+                          style={{
+                            padding: 20, borderRadius: 24, marginBottom: 16,
+                            borderWidth: 1.5,
+                            borderColor: selectedTemplate?.id === t.id ? '#137386' : '#E2E8F0',
+                            backgroundColor: selectedTemplate?.id === t.id ? 'rgba(19,115,134,0.06)' : 'white',
+                          }}
+                        >
+                          <Text style={{ fontWeight: '800', fontSize: 18, marginBottom: 4, color: selectedTemplate?.id === t.id ? '#137386' : '#243842' }}>
+                            {t.title}
+                          </Text>
+                          <Text style={{ color: '#94A3B8', fontSize: 14 }}>
+                            {t.blocks?.length || 0} Module
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  )}
+
+                  <View style={{ marginTop: 40 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                      Wiederholung der Übung
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
+                      {["none", "daily", "custom"].map((freq) => (
+                        <TouchableOpacity
+                          key={freq}
+                          onPress={() => setRecurrence(freq)}
+                          style={{ flex: 1, paddingVertical: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1.5, borderColor: recurrence === freq ? '#243842' : '#E2E8F0', backgroundColor: recurrence === freq ? '#243842' : 'white' }}
+                        >
+                          <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#94A3B8' }}>
+                            {freq === "none" ? "Keine" : freq === "daily" ? "Täglich" : "Spezifische Tage"}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                    {recurrence === "custom" && (
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, backgroundColor: 'white', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#E2E8F0' }}>
+                        {WEEKDAYS.map((day) => {
+                          const isActive = recurrenceDays.includes(day.key);
+                          return (
+                            <TouchableOpacity
+                              key={day.key}
+                              onPress={() => toggleDay(day.key)}
+                              style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? '#137386' : '#F8FAFC' }}
+                            >
+                              <Text style={{ fontWeight: '800', fontSize: 15, color: isActive ? 'white' : '#94A3B8' }}>
+                                {day.label}
+                              </Text>
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    )}
+                  </View>
+
+                  <View style={{ marginTop: 8 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                      Push-Erinnerung (Uhrzeit)
+                    </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 24, padding: 20, marginBottom: 32 }}>
+                      <View style={{ width: 48, height: 48, backgroundColor: '#EFF6FF', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                        <Clock size={24} color="#3B82F6" />
+                      </View>
+                      <TextInput
+                        value={reminderTime}
+                        onChangeText={setReminderTime}
+                        placeholder="18:00"
+                        keyboardType="numeric"
+                        maxLength={5}
+                        style={{ flex: 1, fontWeight: '900', fontSize: 24, color: '#243842' }}
+                      />
+                      <Text style={{ color: '#94A3B8', fontWeight: '700', fontSize: 16, textTransform: 'uppercase', marginLeft: 12 }}>Uhr</Text>
+                    </View>
+                  </View>
+
+                  <TouchableOpacity
+                    onPress={confirmTemplateAssignment}
+                    disabled={!selectedTemplate}
+                    style={{ paddingVertical: 20, borderRadius: 24, alignItems: 'center', backgroundColor: selectedTemplate ? '#137386' : '#E2E8F0', shadowColor: selectedTemplate ? '#137386' : 'transparent', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: selectedTemplate ? 4 : 0 }}
+                  >
+                    <Text style={{ color: selectedTemplate ? 'white' : '#94A3B8', fontWeight: '900', fontSize: 18 }}>
+                      {i18n.t("therapist.assign_save")}
+                    </Text>
+                  </TouchableOpacity>
+                  <View style={{ height: 128 }} />
+                </ScrollView>
+
+                <SuccessAnimation
+                  visible={showSuccess}
+                  message={successMessage}
+                  onAnimationDone={() => setShowSuccess(false)}
+                />
+              </>
+            ) : (
+              <View style={{ flex: 1 }}>
+                <ExerciseBuilder
+                  onSave={saveExercise}
+                  onCancel={() => setBuilderMode("select")}
+                />
+              </View>
+            )}
+          </View>
+        )}
       </Modal>
 
       {/* Delete Confirmation Modal */}

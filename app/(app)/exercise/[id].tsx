@@ -948,7 +948,8 @@ function InteractiveChartBlock({
     return { label, currentVal, color };
   });
 
-  const screenWidth = Dimensions.get("window").width - 96;
+  const { isDark, colors } = useTheme();
+  const screenWidth = Dimensions.get("window").width - 80;
 
   return (
     <MotiView
@@ -971,7 +972,25 @@ function InteractiveChartBlock({
         </Text>
       ) : null}
 
-      <View className="bg-white rounded-[32px] p-4 shadow-sm border border-gray-100 items-center justify-center overflow-hidden w-full mb-6">
+      <View
+        style={{
+          width: "100%",
+          backgroundColor: isDark ? "rgba(30,41,59,0.3)" : "#FFFFFF",
+          borderRadius: 24,
+          padding: 20,
+          borderWidth: 1,
+          borderColor: isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.05,
+          shadowRadius: 15,
+          elevation: 2,
+          marginBottom: 28,
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
+      >
         {block.type === "spider_chart" && (
           <ProgressChart
             data={{
@@ -982,18 +1001,20 @@ function InteractiveChartBlock({
               colors: data.map((d) => d.color),
             }}
             width={screenWidth}
-            height={220}
+            height={200}
             strokeWidth={12}
             radius={32}
             hideLegend={false}
             chartConfig={{
               backgroundColor: "transparent",
-              backgroundGradientFrom: "#F8FAFC",
-              backgroundGradientTo: "#F1F5F9",
-              color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-              labelColor: (opacity = 1) => `#6B7C85`,
+              backgroundGradientFrom: isDark ? "#1e293b" : "#FFFFFF",
+              backgroundGradientTo: isDark ? "#1e293b" : "#FFFFFF",
+              backgroundGradientFromOpacity: 0,
+              backgroundGradientToOpacity: 0,
+              color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
+              labelColor: (opacity = 1) => isDark ? `rgba(255,255,255,0.6)` : `#64748B`,
             }}
-            style={{ marginVertical: 8 }}
+            style={{ borderRadius: 16 }}
           />
         )}
         {block.type === "bar_chart" && (
@@ -1008,7 +1029,7 @@ function InteractiveChartBlock({
               ],
             }}
             width={screenWidth}
-            height={220}
+            height={200}
             yAxisLabel=""
             yAxisSuffix=""
             fromZero
@@ -1016,13 +1037,22 @@ function InteractiveChartBlock({
             flatColor={true}
             chartConfig={{
               backgroundColor: "transparent",
-              backgroundGradientFrom: "#F8FAFC",
-              backgroundGradientTo: "#F1F5F9",
-              color: (opacity = 1) => `rgba(0,0,0, ${opacity})`,
-              labelColor: (opacity = 1) => `#6B7C85`,
-              barPercentage: 0.6,
+              backgroundGradientFrom: isDark ? "#1e293b" : "#FFFFFF",
+              backgroundGradientTo: isDark ? "#1e293b" : "#FFFFFF",
+              backgroundGradientFromOpacity: 0,
+              backgroundGradientToOpacity: 0,
+              decimalPlaces: 0,
+              color: (opacity = 1) => isDark ? `rgba(255,255,255,0.1)` : `rgba(0,0,0, 0.05)`,
+              labelColor: (opacity = 1) => isDark ? `rgba(255,255,255,0.6)` : `#64748B`,
+              barPercentage: 0.5,
+              propsForLabels: {
+                fontSize: 10,
+                fontWeight: "700"
+              }
             }}
-            style={{ marginVertical: 8 }}
+            style={{ borderRadius: 16 }}
+            showBarTops={false}
+            withInnerLines={false}
           />
         )}
         {block.type === "pie_chart" && (
@@ -1031,19 +1061,19 @@ function InteractiveChartBlock({
               name: d.label,
               population: d.currentVal || 0,
               color: d.color,
-              legendFontColor: "#6B7C85",
-              legendFontSize: 12,
+              legendFontColor: isDark ? "rgba(255,255,255,0.7)" : "#64748B",
+              legendFontSize: 11,
             }))}
             width={screenWidth}
-            height={220}
+            height={200}
             accessor="population"
             backgroundColor="transparent"
-            paddingLeft="15"
+            paddingLeft="0"
+            center={[10, 0]}
             absolute
             chartConfig={{
               color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
             }}
-            style={{ marginVertical: 8 }}
           />
         )}
         {block.type === "line_chart" && (
@@ -1053,44 +1083,68 @@ function InteractiveChartBlock({
               datasets: [{ data: data.map((d) => d.currentVal || 0) }],
             }}
             width={screenWidth}
-            height={220}
+            height={200}
             bezier
+            withInnerLines={false}
             chartConfig={{
               backgroundColor: "transparent",
-              backgroundGradientFrom: "#F8FAFC",
-              backgroundGradientTo: "#F1F5F9",
+              backgroundGradientFrom: isDark ? "#1e293b" : "#FFFFFF",
+              backgroundGradientTo: isDark ? "#1e293b" : "#FFFFFF",
+              backgroundGradientFromOpacity: 0,
+              backgroundGradientToOpacity: 0,
               decimalPlaces: 0,
               color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-              labelColor: (opacity = 1) => `#6B7C85`,
-              propsForDots: { r: "6", strokeWidth: "2", stroke: "#059669" },
+              labelColor: (opacity = 1) => isDark ? `rgba(255,255,255,0.6)` : `#64748B`,
+              propsForDots: { r: "5", strokeWidth: "2", stroke: "#059669" },
             }}
-            style={{ marginVertical: 8 }}
+            style={{ borderRadius: 16 }}
           />
         )}
       </View>
 
-      <View className="w-full gap-3">
+      <View className="w-full gap-4">
         <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">
-          Deine Werte eintragen
+          {i18n.t("dashboard.charts.enter_values", { defaultValue: "Werte anpassen" })}
         </Text>
         {data.map((item, i) => (
           <MotiView
             key={i}
-            from={{ opacity: 0, translateX: -10 }}
-            animate={{ opacity: 1, translateX: 0 }}
-            transition={{ delay: i * 100 }}
-            className="flex-row items-center bg-gray-50 p-3 rounded-2xl border border-gray-100"
+            from={{ opacity: 0, translateY: 4 }}
+            animate={{ opacity: 1, translateY: 0 }}
+            transition={{ delay: i * 80 }}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "#FFFFFF",
+              padding: 14,
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: isDark ? "rgba(255,255,255,0.05)" : "#F1F5F9",
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.02,
+              shadowRadius: 8,
+              elevation: 1,
+            }}
           >
             <View
               style={{
-                width: 14,
-                height: 14,
-                borderRadius: 7,
+                width: 10,
+                height: 10,
+                borderRadius: 5,
                 backgroundColor: item.color,
-                marginRight: 12,
+                marginRight: 14,
               }}
             />
-            <Text className="flex-1 font-bold text-[#2C3E50] text-base">
+            <Text
+              numberOfLines={1}
+              style={{
+                flex: 1,
+                fontWeight: "700",
+                color: isDark ? "rgba(255,255,255,0.8)" : "#334155",
+                fontSize: 15
+              }}
+            >
               {item.label}
             </Text>
             <TextInput
@@ -1102,8 +1156,17 @@ function InteractiveChartBlock({
               }
               onChangeText={(t) => updateValue(item.label, t)}
               placeholder={String(item.currentVal)}
-              placeholderTextColor="#CBD5E1"
-              className="bg-white border border-gray-200 px-4 py-2 rounded-xl text-center font-bold text-[#137386] min-w-[80px]"
+              placeholderTextColor={isDark ? "rgba(255,255,255,0.2)" : "#94A3B8"}
+              style={{
+                backgroundColor: isDark ? "rgba(255,255,255,0.05)" : "#F8FAFC",
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 12,
+                textAlign: "center",
+                fontWeight: "800",
+                color: colors.primary,
+                minWidth: 70,
+              }}
             />
           </MotiView>
         ))}
@@ -1318,6 +1381,26 @@ export default function ExerciseScreen() {
     return (
       <View className="flex-1 bg-[#FAF9F6] justify-center items-center">
         <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
+
+  if (!exercise) {
+    return (
+      <View className="flex-1 bg-[#FAF9F6] justify-center items-center p-8">
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>🔒</Text>
+        <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 8 }}>
+          Übung nicht gefunden
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.textSubtle, textAlign: 'center', marginBottom: 32, lineHeight: 22 }}>
+          Diese Übung konnte nicht geladen werden. Bitte versuche es erneut oder wende dich an deinen Therapeuten.
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 20 }}
+        >
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Zurück</Text>
+        </TouchableOpacity>
       </View>
     );
   }
