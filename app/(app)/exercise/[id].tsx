@@ -39,6 +39,8 @@ import { WebView } from "react-native-webview";
 import { CinematicBreathingBlock } from "../../../components/client/CinematicBreathingBlock";
 import { evaluateCondition } from "../../../utils/conditionEvaluator";
 
+import { Video, ResizeMode } from "expo-av";
+
 import {
   Edit3,
   CheckCircle2,
@@ -298,11 +300,14 @@ function MediaBlock({ block }: { block: ExerciseBlock }) {
         className={`w-full ${sizeClass} bg-gray-100 rounded-2xl overflow-hidden border border-gray-200`}
       >
         {block.mediaType === "video" ? (
-          <View className="flex-1 items-center justify-center bg-gray-200">
-            <Text className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-2">
-              Video abspielen
-            </Text>
-          </View>
+          <Video
+            source={{ uri: block.mediaUri }}
+            style={{ flex: 1, width: "100%", height: "100%" }}
+            useNativeControls
+            resizeMode={block.mediaSize === "large" ? ResizeMode.CONTAIN : ResizeMode.COVER}
+            isLooping={false}
+            shouldPlay={false}
+          />
         ) : (
           <Image
             source={{ uri: block.mediaUri }}
@@ -573,7 +578,8 @@ function ChecklistBlock({
 }) {
   const checked: string[] = (() => {
     try {
-      return JSON.parse(value || "[]");
+      const parsed = JSON.parse(value || "[]");
+      return Array.isArray(parsed) ? parsed : [];
     } catch {
       return [];
     }

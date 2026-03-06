@@ -139,7 +139,7 @@ export default function ClientExercisesView() {
     setReminderFrequency("none");
   };
 
-  const saveExercise = async (title: string, blocks: ExerciseBlock[]) => {
+  const saveExercise = async (title: string, blocks: ExerciseBlock[], themeColor?: string, coverImage?: string) => {
     try {
       // Upload media blocks first
       const processedBlocks = await Promise.all(
@@ -163,7 +163,7 @@ export default function ClientExercisesView() {
         }),
       );
 
-      const exerciseData = {
+      const exerciseData: any = {
         clientId: id,
         therapistId: profile?.id || "unknown",
         title,
@@ -174,6 +174,9 @@ export default function ClientExercisesView() {
         createdAt: serverTimestamp(),
         completed: false,
       };
+
+      if (themeColor) exerciseData.themeColor = themeColor;
+      if (coverImage) exerciseData.coverImage = coverImage;
 
       await addDoc(collection(db, "exercises"), exerciseData);
       setShowBuilder(false);
@@ -231,7 +234,7 @@ export default function ClientExercisesView() {
       });
       return;
     }
-    saveExercise(selectedTemplate.title, selectedTemplate.blocks || []);
+    saveExercise(selectedTemplate.title, selectedTemplate.blocks || [], selectedTemplate.themeColor, selectedTemplate.coverImage);
   };
 
 

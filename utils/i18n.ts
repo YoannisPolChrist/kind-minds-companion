@@ -103,6 +103,11 @@ const translations = {
             telegram_error: "Telegram does not seem to be installed.",
             logout: "Sign Out / Logout"
         },
+        blocks: {
+            scale: "Scale",
+            reflection: "Reflection",
+            checklist: "Checklist"
+        },
         exercise: {
             back: "Back",
             complete: "Complete",
@@ -315,6 +320,11 @@ const translations = {
             telegram_error: "Telegram scheint nicht installiert zu sein.",
             logout: "Abmelden / Logout"
         },
+        blocks: {
+            scale: "Skala (1-10)",
+            reflection: "Reflexion",
+            checklist: "Checkliste"
+        },
         exercise: {
             back: "Zurück",
             complete: "Abschließen",
@@ -524,6 +534,11 @@ const translations = {
             telegram_error: "Telegram ne semble pas être installé.",
             logout: "Se Déconnecter"
         },
+        blocks: {
+            scale: "Échelle (1-10)",
+            reflection: "Réflexion",
+            checklist: "Liste de contrôle"
+        },
         exercise: {
             back: "Retour",
             complete: "Terminer",
@@ -732,6 +747,11 @@ const translations = {
             telegram_desc: "Para recordatorios automáticos de ejercicios.",
             telegram_error: "Telegram no parece estar instalado.",
             logout: "Cerrar Sesión"
+        },
+        blocks: {
+            scale: "Escala (1-10)",
+            reflection: "Reflexión",
+            checklist: "Lista de verificación"
         },
         exercise: {
             back: "Atrás",
@@ -948,6 +968,11 @@ const translations = {
             telegram_desc: "Per promemoria automatici sugli esercizi.",
             telegram_error: "Telegram non sembra essere installato.",
             logout: "Esci"
+        },
+        blocks: {
+            scale: "Scala (1-10)",
+            reflection: "Riflessione",
+            checklist: "Lista di controllo"
         },
         exercise: {
             back: "Indietro",

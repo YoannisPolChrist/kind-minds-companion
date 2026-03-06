@@ -828,8 +828,6 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     </>
                 )}
 
-                {/* Conditional Visibility Configurator */}
-                <BlockConditionEditor block={block} allBlocks={allBlocks} onUpdate={(condition) => onChange({ condition })} />
             </View>
         </View>
     );
