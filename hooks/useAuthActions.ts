@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import { signInWithEmailAndPassword, sendPasswordResetEmail, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
-import { doc, setDoc, serverTimestamp, updateDoc, getDocs, query, collection, where, addDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp, updateDoc, getDocs, query, collection, where, addDoc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../utils/firebase';
 import { router } from 'expo-router';
 import i18n from '../utils/i18n';
 import { validateInvitationCode, markInvitationAsUsed } from '../services/invitationService';
+import { getMissingProfileErrorMessage, hasInvalidAuthProfileData, UserProfile } from '../stores/authStore';
 
 interface AuthResponse {
     loading: boolean;
@@ -37,6 +38,15 @@ export function useAuthActions(): AuthResponse {
             if (!user.emailVerified) {
                 await signOut(auth);
                 setError('Bitte verifiziere zuerst deine E-Mail-Adresse. Wir haben dir bei der Registrierung einen Link gesendet.');
+                return;
+            }
+
+            const profileSnap = await getDoc(doc(db, 'users', user.uid));
+            const profileData = profileSnap.exists() ? profileSnap.data() as Partial<UserProfile> : null;
+
+            if (!profileSnap.exists() || hasInvalidAuthProfileData(profileData)) {
+                await signOut(auth);
+                setError(getMissingProfileErrorMessage());
                 return;
             }
 
@@ -172,15 +182,18 @@ export function useAuthActions(): AuthResponse {
         const normalizedEmail = email.trim().toLowerCase();
 
         try {
-            await sendPasswordResetEmail(auth, normalizedEmail);
-        } catch (err: any) {
-            // Avoid account enumeration: we still return a generic success message.
-            if (!['auth/user-not-found', 'auth/invalid-email'].includes(err?.code)) {
-                console.warn('Password reset attempt:', err?.message || err);
-            }
+            await addDoc(collection(db, 'mail_requests'), {
+                email: normalizedEmail,
+                type: 'PASSWORD_RESET',
+                status: 'pending',
+                requestedAt: serverTimestamp(),
+            });
+            setSuccess(i18n.t('login.reset_sent'));
+        } catch (err) {
+            console.error('Failed to queue password reset mail request:', err);
+            setError('Passwort-Reset konnte gerade nicht angefordert werden. Bitte versuche es in wenigen Minuten erneut.');
         } finally {
             setLoading(false);
-            setSuccess(i18n.t('login.reset_sent'));
         }
     }, [clearMessages]);
 

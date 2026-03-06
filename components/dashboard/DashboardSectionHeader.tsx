@@ -1,7 +1,8 @@
 import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { PressableScale } from '../ui/PressableScale';
 
 interface DashboardSectionHeaderProps {
     title: string;
@@ -32,11 +33,15 @@ export function DashboardSectionHeader({
                 ) : null}
             </View>
             {actionLabel && onActionPress ? (
-                <TouchableOpacity onPress={onActionPress} activeOpacity={0.8} style={{ alignSelf: isXs ? 'flex-start' : 'auto' }}>
+                <PressableScale
+                    onPress={onActionPress}
+                    intensity="subtle"
+                    style={{ alignSelf: isXs ? 'flex-start' : 'auto' }}
+                >
                     <Text style={{ color: colors.primary, fontSize: 13, fontWeight: '800' }}>
                         {actionLabel}
                     </Text>
-                </TouchableOpacity>
+                </PressableScale>
             ) : null}
         </View>
     );

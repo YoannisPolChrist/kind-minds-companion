@@ -25,7 +25,7 @@ export interface Exercise {
 
 export interface ExerciseBlock {
     id: string;
-    type: 'text' | 'video' | 'reflection' | 'breathing' | 'timer' | 'info' | 'media' | 'scale' | 'choice' | 'checklist' | 'homework' | 'gratitude' | 'spider_chart' | 'bar_chart' | 'pie_chart' | 'line_chart';
+    type: 'text' | 'video' | 'reflection' | 'breathing' | 'timer' | 'info' | 'media' | 'scale' | 'choice' | 'checklist' | 'homework' | 'gratitude' | 'spider_chart' | 'bar_chart' | 'pie_chart' | 'line_chart' | 'donut_progress' | 'stacked_bar_chart' | 'comparison_bar_chart' | 'heatmap_grid' | 'range_chart' | 'bubble_chart';
     content?: string;
     mediaUri?: string;
     videoUrl?: string;

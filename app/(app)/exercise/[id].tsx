@@ -1,8 +1,7 @@
-﻿import {
+import {
   View,
   Text,
   ScrollView,
-  TouchableOpacity,
   Alert,
   Platform,
   KeyboardAvoidingView,
@@ -11,6 +10,7 @@
   Dimensions,
 } from "react-native";
 import { Image } from "expo-image";
+import { PressableScale } from '../../../components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
@@ -68,23 +68,23 @@ import {
   Film,
 } from "lucide-react-native";
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Types Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type Answers = Record<string, string>;
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function blockTypeLabel(type: string): string {
   const labels: Record<string, string> = {
-    text: i18n.t("blocks.reflection") || "Reflektion",
-    reflection: i18n.t("blocks.reflection") || "Reflektion",
+    text: i18n.t("blocks.reflection") || "Reflexion",
+    reflection: i18n.t("blocks.reflection") || "Reflexion",
     scale: i18n.t("blocks.scale") || "Skala",
     choice: i18n.t("blocks.choice") || "Auswahl",
     checklist: i18n.t("blocks.checklist") || "Checkliste",
     homework: i18n.t("blocks.homework") || "Hausaufgabe",
     gratitude: i18n.t("blocks.gratitude") || "Dankbarkeit",
     timer: i18n.t("blocks.timer") || "Timer",
-    breathing: i18n.t("blocks.breathing") || "AtemÃƒÂ¼bung",
+    breathing: i18n.t("blocks.breathing") || "Atem\u00fcbung",
     info: i18n.t("blocks.info") || "Information",
     media: "Medium",
     video: "Video-Link",
@@ -92,11 +92,17 @@ function blockTypeLabel(type: string): string {
     bar_chart: "Balkendiagramm",
     pie_chart: "Kreisdiagramm",
     line_chart: "Liniendiagramm",
+    donut_progress: "Donut-Fokus",
+    stacked_bar_chart: "Stacked Bar",
+    comparison_bar_chart: "Vergleichsbalken",
+    heatmap_grid: "Heatmap-Raster",
+    range_chart: "Spannendiagramm",
+    bubble_chart: "Bubble-Cluster",
   };
   return labels[type] ?? "Block";
 }
 
-// Per-block-type accent Ã¢â‚¬â€œ mirrors CATALOGUE in exerciseRegistry.ts
+// Per-block-type accent – mirrors CATALOGUE in exerciseRegistry.ts
 function getBlockAccent(type: string): { accent: string; bg: string; text: string } {
   const map: Record<string, { accent: string; bg: string; text: string }> = {
     reflection: { accent: "#4E7E82", bg: "#EEF4F3", text: "#2D666B" },
@@ -115,6 +121,12 @@ function getBlockAccent(type: string): { accent: string; bg: string; text: strin
     bar_chart: { accent: "#4E7E82", bg: "#EEF4F3", text: "#2D666B" },
     pie_chart: { accent: "#B08C57", bg: "#F6F0E7", text: "#8F6F37" },
     line_chart: { accent: "#788E76", bg: "#EEF3EE", text: "#5F7560" },
+    donut_progress: { accent: "#8A6A53", bg: "#F6EFE8", text: "#8A6A53" },
+    stacked_bar_chart: { accent: "#6E7F86", bg: "#EEF1F0", text: "#4F5F64" },
+    comparison_bar_chart: { accent: "#4E7E82", bg: "#EEF4F3", text: "#2D666B" },
+    heatmap_grid: { accent: "#B08C57", bg: "#F6F0E7", text: "#8F6F37" },
+    range_chart: { accent: "#788E76", bg: "#EEF3EE", text: "#5F7560" },
+    bubble_chart: { accent: "#A37E68", bg: "#F6EFE8", text: "#8A6A53" },
   };
   return map[type] ?? { accent: "#6F7472", bg: "#F3EEE6", text: "#5E655F" };
 }
@@ -152,6 +164,18 @@ function getBlockIcon(type: string) {
       return PieChartIcon;
     case "line_chart":
       return LineChartIcon;
+    case "donut_progress":
+      return PieChartIcon;
+    case "stacked_bar_chart":
+      return BarChart3;
+    case "comparison_bar_chart":
+      return BarChart3;
+    case "heatmap_grid":
+      return Activity;
+    case "range_chart":
+      return Activity;
+    case "bubble_chart":
+      return CircleDot;
     default:
       return Edit3;
   }
@@ -176,11 +200,11 @@ function formatPdfHtml(exercise: Exercise, answers: Answers): string {
         if (ans && ans.trim().length > 0) {
           answerHtml = `
             <div class="answer-box text-box">
-              <span class="answer-label">Deine Reflektion:</span>
+              <span class="answer-label">Deine Reflexion:</span>
               <div class="text-content">${ans.replace(/\n/g, "<br/>")}</div>
             </div>`;
         } else {
-          answerHtml = `<div class="empty-box">Leere Reflektion</div>`;
+          answerHtml = `<div class="empty-box">Leere Reflexion</div>`;
         }
       } else if (b.type === "scale") {
         const ans = answers[b.id];
@@ -198,7 +222,7 @@ function formatPdfHtml(exercise: Exercise, answers: Answers): string {
               <div class="scale-container">
                 <div class="scale-labels"><span>${min}</span><span>${max}</span></div>
                 <div class="scale-dots">${scaleDots}</div>
-                <div class="scale-result">GewÃƒÂ¤hlt: <strong>${ans} / 10</strong></div>
+      <div class="scale-result">Gew\u00e4hlt: <strong>${ans} / 10</strong></div>
               </div>
             </div>`;
         } else {
@@ -240,16 +264,16 @@ function formatPdfHtml(exercise: Exercise, answers: Answers): string {
         answerHtml = `
           <div class="answer-box homework-box">
              <div class="hw-row">
-                <div class="hw-label">A (AuslÃƒÂ¶ser)</div>
-                <div class="hw-content">${a ? a.replace(/\n/g, '<br/>') : "<i>Nicht ausgefÃƒÂ¼llt</i>"}</div>
+          <div class="hw-label">A (Ausl\u00f6ser)</div>
+          <div class="hw-content">${a ? a.replace(/\n/g, '<br/>') : "<i>Nicht ausgef\u00fcllt</i>"}</div>
              </div>
              <div class="hw-row">
                 <div class="hw-label">B (Bewertung)</div>
-                <div class="hw-content">${bParams ? bParams.replace(/\n/g, '<br/>') : "<i>Nicht ausgefÃƒÂ¼llt</i>"}</div>
+          <div class="hw-content">${bParams ? bParams.replace(/\n/g, '<br/>') : "<i>Nicht ausgef\u00fcllt</i>"}</div>
              </div>
              <div class="hw-row no-border">
                 <div class="hw-label">C (Konsequenz)</div>
-                <div class="hw-content">${c ? c.replace(/\n/g, '<br/>') : "<i>Nicht ausgefÃƒÂ¼llt</i>"}</div>
+          <div class="hw-content">${c ? c.replace(/\n/g, '<br/>') : "<i>Nicht ausgef\u00fcllt</i>"}</div>
              </div>
           </div>`;
       } else if (b.type === "gratitude") {
@@ -264,7 +288,7 @@ function formatPdfHtml(exercise: Exercise, answers: Answers): string {
         answerHtml = "";
       } else if (b.type === "media" || b.type === "video") {
         answerHtml = `<div class="media-placeholder">[Multimedia-Inhalt: Bitte in der App ansehen]</div>`;
-      } else if (["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(b.type)) {
+      } else if (["spider_chart", "bar_chart", "pie_chart", "line_chart", "donut_progress", "stacked_bar_chart", "comparison_bar_chart", "heatmap_grid", "range_chart", "bubble_chart"].includes(b.type)) {
         let parsed: Record<string, number> = {};
         try {
           const ans = answers[b.id];
@@ -405,7 +429,7 @@ function formatPdfHtml(exercise: Exercise, answers: Answers): string {
             text-align: center;
           }
           
-          /* Reflektion */
+          /* Reflexion */
           .answer-label {
             display: block;
             font-size: 11px;
@@ -625,7 +649,7 @@ function formatPdfHtml(exercise: Exercise, answers: Answers): string {
         </div>
         
         <div class="content">
-          ${rows || "<p style='color:#6F7472;font-style:italic;'>Keine Aufgaben in dieser ÃƒÅ“bung gefunden.</p>"}
+      ${rows || "<p style='color:#6F7472;font-style:italic;'>Keine Aufgaben in dieser \u00dcbung gefunden.</p>"}
         </div>
       </body>
     </html>`;
@@ -671,7 +695,7 @@ function buildExercisePdfHtml(exercise: Exercise, answers: Answers): string {
             <div class="answer-title">Antwort</div>
             <div class="text-answer">${formatPdfMultiline(answer)}</div>
           </div>`
-        : `<div class="empty-state">Noch nicht ausgefuellt</div>`;
+        : `<div class="empty-state">Noch nicht ausgefüllt</div>`;
     } else if (block.type === "scale") {
       const answer = answers[block.id];
       const min = escapePdfHtml(block.minLabel || "Gar nicht");
@@ -701,7 +725,7 @@ function buildExercisePdfHtml(exercise: Exercise, answers: Answers): string {
         const isSelected = option === answer;
         return `
           <div class="list-row ${isSelected ? "selected" : ""}">
-            <span class="list-mark">${isSelected ? "Ausgewaehlt" : ""}</span>
+            <span class="list-mark">${isSelected ? "Ausgewählt" : ""}</span>
             <span class="list-text">${escapePdfHtml(option)}</span>
           </div>`;
       }).join("");
@@ -738,7 +762,7 @@ function buildExercisePdfHtml(exercise: Exercise, answers: Answers): string {
         : `<div class="empty-state">Keine Punkte vorhanden</div>`;
     } else if (block.type === "homework") {
       const fields = [
-        { label: "A - Ausloeser", value: answers[`${block.id}_A`] || "" },
+        { label: "A - Auslöser", value: answers[`${block.id}_A`] || "" },
         { label: "B - Bewertung", value: answers[`${block.id}_B`] || "" },
         { label: "C - Konsequenz", value: answers[`${block.id}_C`] || "" },
       ];
@@ -746,24 +770,24 @@ function buildExercisePdfHtml(exercise: Exercise, answers: Answers): string {
       const rowsHtml = fields.map((field) => `
         <div class="stack-row">
           <div class="stack-label">${field.label}</div>
-          <div class="stack-value">${field.value.trim() ? formatPdfMultiline(field.value) : "<span class=\"empty-inline\">Nicht ausgefuellt</span>"}</div>
+          <div class="stack-value">${field.value.trim() ? formatPdfMultiline(field.value) : "<span class=\"empty-inline\">Nicht ausgefüllt</span>"}</div>
         </div>`).join("");
 
-      answerHtml = `<div class="answer-group"><div class="answer-title">Eintraege</div>${rowsHtml}</div>`;
+      answerHtml = `<div class="answer-group"><div class="answer-title">Einträge</div>${rowsHtml}</div>`;
     } else if (block.type === "gratitude") {
       const rowsHtml = [1, 2, 3].map((item) => {
         const value = answers[`${block.id}_${item}`] || "";
         return `
           <div class="stack-row">
             <div class="stack-label">${item}</div>
-            <div class="stack-value">${value.trim() ? formatPdfMultiline(value) : "<span class=\"empty-inline\">Nicht ausgefuellt</span>"}</div>
+            <div class="stack-value">${value.trim() ? formatPdfMultiline(value) : "<span class=\"empty-inline\">Nicht ausgefüllt</span>"}</div>
           </div>`;
       }).join("");
 
       answerHtml = `<div class="answer-group"><div class="answer-title">Dankbarkeit</div>${rowsHtml}</div>`;
     } else if (block.type === "media" || block.type === "video") {
       answerHtml = `<div class="empty-state">Medieninhalt bitte in der App ansehen</div>`;
-    } else if (["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(block.type)) {
+    } else if (["spider_chart", "bar_chart", "pie_chart", "line_chart", "donut_progress", "stacked_bar_chart", "comparison_bar_chart", "heatmap_grid", "range_chart", "bubble_chart"].includes(block.type)) {
       let parsed: Record<string, number> = {};
       try {
         const answer = answers[block.id];
@@ -996,13 +1020,13 @@ function buildExercisePdfHtml(exercise: Exercise, answers: Answers): string {
       <body>
         <div class="page">
           <h1 class="exercise-title">${escapePdfHtml(exercise.title)}</h1>
-          ${rows || "<p style='color:#627d98;font-style:italic;'>Keine Elemente in dieser Uebung vorhanden.</p>"}
+          ${rows || "<p style='color:#627d98;font-style:italic;'>Keine Elemente in dieser Übung vorhanden.</p>"}
         </div>
       </body>
     </html>`;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Block renderers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Block renderers ─────────────────────────────────────────────────────────
 
 function MediaBlock({ block }: { block: ExerciseBlock }) {
   if (!block.mediaUri) return null;
@@ -1104,7 +1128,7 @@ function ReflectionBlock({
       {block.content ? <ExerciseBlockIntro>{block.content}</ExerciseBlockIntro> : null}
       {block.type !== "info" && (
         <View>
-          <ExerciseFieldLabel>Deine Reflektion</ExerciseFieldLabel>
+          <ExerciseFieldLabel>Deine Reflexion</ExerciseFieldLabel>
           <ExerciseTextArea
             placeholder="Schreibe deine Gedanken hier auf..."
             value={value}
@@ -1146,7 +1170,7 @@ function ScaleBlock({
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => {
           const selected = value === String(num);
           return (
-            <TouchableOpacity
+            <PressableScale
               key={num}
               onPress={() => onChange(String(num))}
               style={{
@@ -1175,13 +1199,13 @@ function ScaleBlock({
               >
                 {num}
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>
       {value ? (
         <Text style={{ textAlign: 'center', fontSize: 13, color: accent, fontWeight: '700', marginTop: 8 }}>
-          GewÃƒÂ¤hlt: {value} / 10
+              Gew\u00e4hlt: {value} / 10
         </Text>
       ) : null}
     </View>
@@ -1283,7 +1307,7 @@ function ChecklistBlock({
 const ABC_FIELDS = [
   {
     key: "A",
-    label: "A - Ausloeser",
+    label: "A - Auslöser",
     hint: "Was ist passiert? (Situation, Ort, Zeit)",
   },
   {
@@ -1294,7 +1318,7 @@ const ABC_FIELDS = [
   {
     key: "C",
     label: "C - Konsequenz",
-    hint: "Was habe ich gefuehlt / getan? (0-10)",
+    hint: "Was habe ich gefühlt / getan? (0-10)",
   },
 ];
 
@@ -1360,7 +1384,7 @@ function GratitudeBlock({
       </View>
       {[1, 2, 3].map((n) => (
         <View key={n} style={{ marginBottom: 12 }}>
-          <ExerciseFieldLabel>{n}. Ich bin dankbar fuer...</ExerciseFieldLabel>
+          <ExerciseFieldLabel>{n}. Ich bin dankbar für...</ExerciseFieldLabel>
           <ExerciseTextArea
             minHeight={64}
             placeholder="Schreibe hier..."
@@ -1423,7 +1447,7 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
           </Text>
         ) : null}
       </View>
-      <TouchableOpacity
+      <PressableScale
         onPress={toggle}
         style={{
           paddingHorizontal: 48,
@@ -1435,7 +1459,7 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
         <Text style={{ color: "#fff", fontWeight: "800", fontSize: 16 }}>
           {isRunning ? "Stop" : "Starten"}
         </Text>
-      </TouchableOpacity>
+      </PressableScale>
     </View>
   );
 }
@@ -1457,7 +1481,7 @@ function InteractiveChartBlock({
 // InteractiveChart platform components handle all chart rendering.
 // See: components/charts/InteractiveChart.native.tsx and InteractiveChart.web.tsx
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Block dispatcher Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Block dispatcher ─────────────────────────────────────────────────────────
 
 function ExerciseBlockRenderer({
   block,
@@ -1524,6 +1548,12 @@ function ExerciseBlockRenderer({
     case "bar_chart":
     case "pie_chart":
     case "line_chart":
+    case "donut_progress":
+    case "stacked_bar_chart":
+    case "comparison_bar_chart":
+    case "heatmap_grid":
+    case "range_chart":
+    case "bubble_chart":
       return (
         <InteractiveChartBlock
           block={block}
@@ -1536,7 +1566,7 @@ function ExerciseBlockRenderer({
   }
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Main Screen Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function ExerciseScreen() {
   const { id: rawId } = useLocalSearchParams();
@@ -1587,13 +1617,13 @@ export default function ExerciseScreen() {
     const excId = Array.isArray(id) ? id[0] : id;
     const cacheKey = `@TherapyApp:Cache:exercise_${excId}`;
     try {
-      // Ã¢â€â‚¬Ã¢â€â‚¬ Instant display from local cache Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+      // ── Instant display from local cache ──────────────────────────────────
       const cached = await AsyncStorage.getItem(cacheKey);
       if (cached) {
         setExercise(JSON.parse(cached) as Exercise);
         setLoading(false); // render immediately; Firestore update runs silently
       }
-      // Ã¢â€â‚¬Ã¢â€â‚¬ Fetch fresh data from Firestore Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+      // ── Fetch fresh data from Firestore ───────────────────────────────────
       const snap = await getDoc(doc(db, "exercises", excId));
       if (snap.exists()) {
         const fresh = { id: snap.id, ...snap.data() } as Exercise;
@@ -1672,7 +1702,7 @@ export default function ExerciseScreen() {
     try {
       await Sharing.shareAsync(uri, {
         mimeType: "application/pdf",
-        dialogTitle: `${exercise?.title || "Uebung"} als PDF speichern`,
+        dialogTitle: `${exercise?.title || "Übung"} als PDF speichern`,
       });
     } catch {
       showAlert("Fehler", "PDF konnte nicht auf dem Geraet gespeichert werden.", "error");
@@ -1697,7 +1727,7 @@ export default function ExerciseScreen() {
         clientId: profile.id,
         therapistId: exercise.therapistId || profile.therapistId || null,
         title: `${exercise.title} PDF`,
-        description: "Exportierte Uebung als PDF",
+        description: "Exportierte Übung als PDF",
         type: "pdf",
         url: downloadUrl,
         originalName,
@@ -1769,19 +1799,19 @@ export default function ExerciseScreen() {
   if (!exercise) {
     return (
       <View className="flex-1 bg-[#F7F4EE] justify-center items-center p-8">
-        <Text style={{ fontSize: 48, marginBottom: 16 }}>Ã°Å¸â€â€™</Text>
+        <Text style={{ fontSize: 48, marginBottom: 16 }}>{'\u{1F50D}'}</Text>
         <Text style={{ fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center', marginBottom: 8 }}>
-          ÃƒÅ“bung nicht gefunden
+          \u00dcbung nicht gefunden
         </Text>
         <Text style={{ fontSize: 14, color: colors.textSubtle, textAlign: 'center', marginBottom: 32, lineHeight: 22 }}>
-          Diese ÃƒÅ“bung konnte nicht geladen werden. Bitte versuche es erneut oder wende dich an deinen Therapeuten.
+          Diese \u00dcbung konnte nicht geladen werden. Bitte versuche es erneut oder wende dich an deinen Therapeuten.
         </Text>
-        <TouchableOpacity
+        <PressableScale
           onPress={() => router.back()}
           style={{ backgroundColor: colors.primary, paddingHorizontal: 32, paddingVertical: 16, borderRadius: 20 }}
         >
-          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>ZurÃƒÂ¼ck</Text>
-        </TouchableOpacity>
+          <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Zur\u00fcck</Text>
+        </PressableScale>
       </View>
     );
   }
@@ -1796,9 +1826,9 @@ export default function ExerciseScreen() {
           end={{ x: 1, y: 1 }}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         />
-        <TouchableOpacity
+        <PressableScale
           accessibilityRole="button"
-          accessibilityLabel="ZurÃƒÂ¼ck"
+        accessibilityLabel="Zur\u00fcck"
           onPress={() => {
             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             goBack();
@@ -1810,12 +1840,12 @@ export default function ExerciseScreen() {
           <Text className="text-white font-bold ml-1">
             {i18n.t("exercise.back")}
           </Text>
-        </TouchableOpacity>
+        </PressableScale>
         <Text
           className="text-xl font-extrabold text-white flex-1 text-right ml-4 z-10"
           numberOfLines={1}
         >
-          {exercise?.title ?? "ÃƒÅ“bung"}
+            {exercise?.title ?? "\u00dcbung"}
         </Text>
       </View>
 
@@ -1831,28 +1861,28 @@ export default function ExerciseScreen() {
             icon={BookOpen}
             label="Module"
             value={String(exercise?.blocks?.length ?? 0)}
-            hint="Alle Bestandteile dieser Uebung in der aktuellen Reihenfolge."
+            hint="Alle Bestandteile dieser Übung in der aktuellen Reihenfolge."
             tone="primary"
           />
           <ClientMetricCard
             icon={exercise?.completed ? CheckCircle2 : Clock}
             label="Status"
             value={exercise?.completed ? "Fertig" : "Offen"}
-            hint={exercise?.completed ? "Diese Uebung wurde bereits abgeschlossen." : "Deine Antworten koennen vor dem Abschluss bearbeitet werden."}
+            hint={exercise?.completed ? "Diese Übung wurde bereits abgeschlossen." : "Deine Antworten können vor dem Abschluss bearbeitet werden."}
             tone={exercise?.completed ? "success" : "secondary"}
           />
           <ClientMetricCard
             icon={sharedAnswers ? Unlock : Lock}
             label="Freigabe"
             value={sharedAnswers ? "Geteilt" : "Privat"}
-            hint={sharedAnswers ? "Dein Therapeut kann schriftliche Antworten einsehen." : "Deine Antworten bleiben fuer dich privat."}
+            hint={sharedAnswers ? "Dein Therapeut kann schriftliche Antworten einsehen." : "Deine Antworten bleiben für dich privat."}
             tone="success"
           />
         </View>
 
         <DashboardSectionHeader
           title="Module"
-          subtitle={`${exercise?.blocks?.length ?? 0} Schritt${(exercise?.blocks?.length ?? 0) === 1 ? "" : "e"} fuehren dich durch die Uebung.`}
+          subtitle={`${exercise?.blocks?.length ?? 0} Schritt${(exercise?.blocks?.length ?? 0) === 1 ? "" : "e"} führen dich durch die Übung.`}
         />
 
         {(exercise?.blocks ?? []).map((block, index) => {
@@ -1882,7 +1912,7 @@ export default function ExerciseScreen() {
                 <View style={{ width: 48, height: 4, borderRadius: 2, backgroundColor: cat.text, opacity: 0.12 }} />
               </View>
 
-              {/* Card Header Ã¢â‚¬â€ exact copy of builder */}
+              {/* Card Header — exact copy of builder */}
               <View style={{
                 flexDirection: "row",
                 alignItems: "center",
@@ -1936,7 +1966,7 @@ export default function ExerciseScreen() {
                 </View>
               </View>
 
-              {/* Card Body Ã¢â‚¬â€ white with generous padding */}
+              {/* Card Body — white with generous padding */}
               <View style={{ padding: 28, backgroundColor: "#FFFFFF" }}>
                 <ExerciseBlockRenderer
                   block={block}
@@ -1960,10 +1990,10 @@ export default function ExerciseScreen() {
                 <Text className="text-gray-500 text-xs">
                   {sharedAnswers
                     ? "Dein Therapeut kann deine geschriebenen Texte lesen."
-                    : "Deine Antworten bleiben in dieser App verschlÃƒÂ¼sselt und privat."}
+                    : "Deine Antworten bleiben in dieser App verschl\u00fcsselt und privat."}
                 </Text>
               </View>
-              <TouchableOpacity
+              <PressableScale
                 onPress={() => setSharedAnswers(!sharedAnswers)}
                 className={`w-14 h-14 rounded-full items-center justify-center ${sharedAnswers ? "bg-blue-100 border-2 border-blue-500" : "bg-gray-100 border border-gray-300"}`}
               >
@@ -1972,13 +2002,13 @@ export default function ExerciseScreen() {
                 ) : (
                   <Lock size={24} color="#8B938E" />
                 )}
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </View>
         )}
 
         <View style={{ marginTop: 16, marginBottom: 32, gap: 14 }}>
-          <TouchableOpacity
+          <PressableScale
             onPress={handleComplete}
             disabled={exercise?.completed}
             style={{
@@ -2005,8 +2035,8 @@ export default function ExerciseScreen() {
                 ? `${i18n.t("exercise.completed") || "Bereits abgeschlossen"}`
                 : i18n.t("exercise.complete")}
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
+          </PressableScale>
+          <PressableScale
             onPress={handleExportPdf}
             style={{
               paddingVertical: 18,
@@ -2022,7 +2052,7 @@ export default function ExerciseScreen() {
             >
               {i18n.t("exercise.export_pdf")}
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
       </Animated.ScrollView>
 

@@ -1,11 +1,12 @@
 import React, { useEffect } from 'react';
-import { View, Text, TouchableOpacity, Dimensions, Platform } from 'react-native';
+import { View, Text, Dimensions, Platform } from 'react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { useTimerBlock } from '../../hooks/useTimerBlock';
 import { ExerciseBlock } from '../../types';
 import { Play, Square, Pause } from 'lucide-react-native';
+import { PressableScale } from '../ui/PressableScale';
 
 const { width } = Dimensions.get('window');
 const ORB_SIZE = Math.min(width * 0.7, 300);
@@ -133,11 +134,13 @@ export function CinematicBreathingBlock({ block }: { block: ExerciseBlock }) {
                     </Text>
                 </View>
 
-                <TouchableOpacity
+                <PressableScale
                     onPress={() => {
                         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         toggle();
                     }}
+                    withHaptics={false}
+                    intensity="medium"
                     style={{
                         width: 72,
                         height: 72,
@@ -150,7 +153,7 @@ export function CinematicBreathingBlock({ block }: { block: ExerciseBlock }) {
                     }}
                 >
                     {isRunning ? <Square color="#fff" size={24} fill="#fff" /> : <Play color="#fff" size={32} fill="#fff" style={{ marginLeft: 4 }} />}
-                </TouchableOpacity>
+                </PressableScale>
             </View>
         </View>
     );

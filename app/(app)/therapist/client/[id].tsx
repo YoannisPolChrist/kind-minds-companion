@@ -1,7 +1,6 @@
-﻿import {
+import {
   View,
   Text,
-  TouchableOpacity,
   ScrollView,
   ActivityIndicator,
   Platform,
@@ -16,6 +15,7 @@ import { useSafeBack } from "../../../../hooks/useSafeBack";
 import { db } from "../../../../utils/firebase";
 import { doc, updateDoc } from "firebase/firestore";
 import { Calendar } from "lucide-react-native";
+import { PressableScale } from "../../../../components/ui/PressableScale";
 
 export default function ClientView() {
   const { id } = useLocalSearchParams();
@@ -78,13 +78,14 @@ export default function ClientView() {
       {/* Header Section */}
       <View className="bg-[#2D666B] pt-16 pb-8 px-8 rounded-b-[40px] shadow-lg z-10">
         <View className="flex-row items-center justify-between w-full max-w-5xl mx-auto">
-          <TouchableOpacity
+          <PressableScale
             onPress={goBack}
+            intensity="subtle"
             className="bg-white/20 px-4 py-3 rounded-2xl backdrop-blur-md flex-row items-center"
           >
             <ArrowLeft size={20} color="white" style={{ marginRight: 8 }} />
-            <Text className="text-white font-bold text-[16px]">ZurÃ¼ck</Text>
-          </TouchableOpacity>
+            <Text className="text-white font-bold text-[16px]">Zurück</Text>
+          </PressableScale>
           <View className="flex-row items-center flex-1 justify-end ml-4">
             <View className="bg-white/10 w-12 h-12 rounded-[16px] items-center justify-center mr-4 border border-white/20">
               {client?.photoURL ? (
@@ -124,10 +125,11 @@ export default function ClientView() {
           </Text>
 
           <View className="flex-row flex-wrap gap-6 mb-12">
-            <TouchableOpacity
+            <PressableScale
               onPress={() =>
                 router.push(`/(app)/therapist/client/${id}/exercises` as any)
               }
+              intensity="medium"
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
                 shadowColor: "#1F2528",
@@ -141,17 +143,18 @@ export default function ClientView() {
                 <Activity size={36} color="#F97316" />
               </View>
               <Text className="text-[22px] font-bold text-[#1F2528] mb-1.5">
-                Ãœbungen
+                Übungen
               </Text>
               <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Zuweisen & Auswerten
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
 
-            <TouchableOpacity
+            <PressableScale
               onPress={() =>
                 router.push(`/(app)/therapist/client/${id}/notes` as any)
               }
+              intensity="medium"
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
                 shadowColor: "#1F2528",
@@ -170,12 +173,13 @@ export default function ClientView() {
               <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Verwalte Notizen
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
 
-            <TouchableOpacity
+            <PressableScale
               onPress={() =>
                 router.push(`/(app)/therapist/client/${id}/files` as any)
               }
+              intensity="medium"
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
                 shadowColor: "#1F2528",
@@ -194,12 +198,13 @@ export default function ClientView() {
               <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Hinterlegte Dokumente
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
 
-            <TouchableOpacity
+            <PressableScale
               onPress={() =>
                 router.push(`/(app)/therapist/client/${id}/checkins` as any)
               }
+              intensity="medium"
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
                 shadowColor: "#1F2528",
@@ -218,7 +223,7 @@ export default function ClientView() {
               <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Stimmungs-Tagebuch
               </Text>
-            </TouchableOpacity>
+            </PressableScale>
           </View>
 
           {/* Next Appointment Section */}
@@ -240,7 +245,7 @@ export default function ClientView() {
                 <Calendar size={24} color="#8A6A53" />
               </View>
               <View>
-                <Text className="text-[20px] font-bold text-[#1F2528] tracking-tight">NÃ¤chster Termin</Text>
+                <Text className="text-[20px] font-bold text-[#1F2528] tracking-tight">Nächster Termin</Text>
                 <Text className="text-[14px] text-gray-500 mt-1">Wird dem Klienten direkt auf dem Dashboard angezeigt</Text>
               </View>
             </View>
@@ -274,14 +279,15 @@ export default function ClientView() {
                   </View>
                 </View>
               )}
-              <TouchableOpacity
+              <PressableScale
                 onPress={handleSaveAppointment}
                 disabled={savingAppointment}
+                intensity="medium"
                 className="bg-[#2D666B] px-8 py-4 rounded-[16px] items-center justify-center"
                 style={{ opacity: savingAppointment ? 0.7 : 1 }}
               >
                 <Text className="text-white font-bold text-base">{savingAppointment ? '...' : 'Speichern'}</Text>
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </MotiView>
 

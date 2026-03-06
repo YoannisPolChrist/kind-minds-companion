@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, InteractionManager, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
@@ -15,10 +15,8 @@ import { registerForPushNotificationsAsync } from '../../utils/notifications';
 import { useClientExercises } from '../../hooks/useClientExercises';
 import i18n from '../../utils/i18n';
 import { ProgressBar } from '../../components/dashboard/ProgressBar';
-import { StatsRow } from '../../components/dashboard/StatsRow';
 import { CheckinBanner } from '../../components/dashboard/CheckinBanner';
 import { OpenExerciseCard } from '../../components/dashboard/OpenExerciseCard';
-import { CompletedExerciseCard } from '../../components/dashboard/CompletedExerciseCard';
 import { EmptyState } from '../../components/dashboard/EmptyState';
 import { ClientMetricCard } from '../../components/dashboard/ClientMetricCard';
 import { DashboardSectionHeader } from '../../components/dashboard/DashboardSectionHeader';
@@ -27,6 +25,7 @@ import { useCheckinStatus } from '../../hooks/useCheckinStatus';
 // Lazy load heavy charting libraries to reduce initial JS bundle size
 const MoodChart = lazy(() => import('../../components/dashboard/MoodChart').then(m => ({ default: m.MoodChart })));
 import { Skeleton } from '../../components/ui/Skeleton';
+import { PressableScale } from '../../components/ui/PressableScale';
 import { markNotificationsAsRead } from '../../services/notificationService';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
@@ -236,17 +235,16 @@ export default function ClientDashboard() {
                                         minimumFontScale={0.75}
                                         numberOfLines={1}
                                     >
-                                        Hi {profile?.firstName || ''} 👋
+                                        Hi {profile?.firstName || ''}
                                     </Text>
                                 </View>
                                 {/* Settings button */}
-                                <TouchableOpacity
-                                    accessibilityRole="button"
-                                    accessibilityLabel="Einstellungen"
+                                <PressableScale
                                     onPress={() => {
                                         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                         router.push('/(app)/settings' as any);
                                     }}
+                                    intensity="subtle"
                                     style={{
                                         backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)',
                                         paddingHorizontal: isSm ? 12 : 18,
@@ -258,7 +256,7 @@ export default function ClientDashboard() {
                                     }}
                                 >
                                     <Settings size={isSm ? 18 : 22} color={colors.text} />
-                                </TouchableOpacity>
+                                </PressableScale>
                             </View>
 
                             {/* Progress bar */}
@@ -274,30 +272,23 @@ export default function ClientDashboard() {
                     <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 20 }}>
                         <ClientMetricCard
                             icon={Calendar}
-                            label="Offene Ubungen"
+                            label="Offene Übungen"
                             value={String(openExercises.length)}
-                            hint={openExercises.length === 0 ? 'Heute ist nichts mehr offen.' : 'Deine aktuellen Aufgaben fuer die naechsten Schritte.'}
+                            hint={openExercises.length === 0 ? 'Heute ist nichts mehr offen.' : 'Deine aktuellen Aufgaben für die nächsten Schritte.'}
                             tone="primary"
-                        />
-                        <ClientMetricCard
-                            icon={BookOpen}
-                            label="Erledigt"
-                            value={String(completedExercises.length)}
-                            hint={completedExercises.length === 0 ? 'Noch keine abgeschlossenen Einheiten.' : 'Abgeschlossene Uebungen bleiben fuer dich abrufbar.'}
-                            tone="secondary"
                         />
                         <ClientMetricCard
                             icon={Edit3}
                             label="Check-ins"
                             value={String(recentCheckinCount)}
-                            hint={recentCheckinCount === 0 ? 'Noch keine Eintraege in den letzten Tagen.' : 'Deine letzten Eintraege fuer Verlauf und Reflexion.'}
+                            hint={recentCheckinCount === 0 ? 'Noch keine Einträge in den letzten Tagen.' : 'Deine letzten Einträge für Verlauf und Reflexion.'}
                             tone="success"
                         />
                     </View>
 
                     <DashboardSectionHeader
                         title="Heute"
-                        subtitle="Alles Wichtige fuer deinen naechsten Schritt."
+                        subtitle="Alles Wichtige für deinen nächsten Schritt."
                     />
 
                     {profile?.nextAppointment && (
@@ -323,8 +314,9 @@ export default function ClientDashboard() {
                                     </View>
                                 </View>
                                 {bookingUrl && (
-                                    <TouchableOpacity
+                                    <PressableScale
                                         onPress={() => Linking.openURL(bookingUrl)}
+                                        intensity="medium"
                                         style={{
                                             backgroundColor: '#DB2777',
                                             paddingVertical: 12,
@@ -334,7 +326,7 @@ export default function ClientDashboard() {
                                         }}
                                     >
                                         <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>Termin verwalten</Text>
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 )}
                             </View>
                         </MotiView>
@@ -347,8 +339,9 @@ export default function ClientDashboard() {
                             transition={{ type: 'spring', damping: 20, stiffness: 100 }}
                             style={{ marginBottom: 16 }}
                         >
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={handleNotificationClick}
+                                intensity="medium"
                                 className={`border rounded-2xl p-4 flex-row items-center shadow-sm elevation-sm ${isDark ? 'bg-sky-500/15 border-sky-500/30' : 'bg-sky-100 border-sky-200'
                                     }`}
                                 style={{
@@ -370,7 +363,7 @@ export default function ClientDashboard() {
                                 <View style={{ backgroundColor: isDark ? 'rgba(56,189,248,0.2)' : 'rgba(2,132,199,0.1)', padding: 8, borderRadius: 100 }}>
                                     <Text style={{ color: isDark ? '#38BDF8' : '#0369A1', fontWeight: 'bold' }}>{'>'}</Text>
                                 </View>
-                            </TouchableOpacity>
+                            </PressableScale>
                         </MotiView>
                     ) : null}
 
@@ -402,7 +395,7 @@ export default function ClientDashboard() {
 
                     <DashboardSectionHeader
                         title="Dein Raum"
-                        subtitle="Direkte Zugaenge fuer Ressourcen, Termine und Reflexion."
+                        subtitle="Direkte Zugänge für Ressourcen, Termine und Reflexion."
                     />
 
                     <View style={{ flexDirection: isTablet ? 'row' : 'column', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
@@ -416,7 +409,7 @@ export default function ClientDashboard() {
                                     <QuickActionCard
                                         icon={Calendar}
                                         title={i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}
-                                        description={i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein naechstes Coaching' })}
+                                        description={i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}
                                         tone="primary"
                                         onPress={() => {
                                             if (bookingUrl.startsWith('https://') || bookingUrl.startsWith('http://')) {
@@ -455,7 +448,7 @@ export default function ClientDashboard() {
                                 <QuickActionCard
                                     icon={Edit3}
                                     title="Session Notes"
-                                    description="Fuege Notizen und Erkenntnisse nach deiner Session hinzu."
+                                    description="Füge Notizen und Erkenntnisse nach deiner Session hinzu."
                                     tone="accent"
                                     onPress={() => {
                                         router.push('/(app)/notes' as any);
@@ -464,29 +457,6 @@ export default function ClientDashboard() {
                             </MotiView>
                         </View>
                     </View>
-
-                    {exercises.length > 0 && (
-                        <>
-                            <DashboardSectionHeader
-                                title="Fortschritt"
-                                subtitle="Dein aktueller Stand ueber alle Aufgaben."
-                                actionLabel="Alle ansehen"
-                                onActionPress={() => router.push('/(app)/exercises_overview' as any)}
-                            />
-                            <MotiView
-                                from={{ opacity: 0, translateY: 20 }}
-                                animate={{ opacity: 1, translateY: 0 }}
-                                transition={{ type: 'timing', duration: 350, delay: 150 }}
-                            >
-                                <StatsRow
-                                    total={exercises.length}
-                                    open={openExercises.length}
-                                    completed={completedExercises.length}
-                                    onPress={() => router.push('/(app)/exercises_overview' as any)}
-                                />
-                            </MotiView>
-                        </>
-                    )}
 
                     {exercises.length === 0 ? (
                         <MotiView
@@ -504,6 +474,8 @@ export default function ClientDashboard() {
                                         <DashboardSectionHeader
                                             title={i18n.t('dashboard.exercises.title')}
                                             subtitle={`${openExercises.length} offene Aufgabe${openExercises.length > 1 ? 'n' : ''} warten auf dich.`}
+                                            actionLabel="Alle ansehen"
+                                            onActionPress={() => router.push('/(app)/exercises_overview' as any)}
                                         />
                                     </MotiView>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
@@ -518,34 +490,6 @@ export default function ClientDashboard() {
                                                     style={{ width: itemWidth as any, paddingHorizontal: 8, paddingBottom: 16 }}
                                                 >
                                                     <OpenExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
-                                                </MotiView>
-                                            );
-                                        })}
-                                    </View>
-                                </View>
-                            ) : null}
-                            {completedExercises.length > 0 ? (
-                                <View>
-                                    <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 300 }}>
-                                        <View style={{ marginTop: 8 }}>
-                                            <DashboardSectionHeader
-                                                title={i18n.t('dashboard.completed.title')}
-                                                subtitle={`${completedExercises.length} abgeschlossene Aufgabe${completedExercises.length > 1 ? 'n' : ''} bleiben fuer dich abrufbar.`}
-                                            />
-                                        </View>
-                                    </MotiView>
-                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-                                        {completedExercises.map((ex, idx) => {
-                                            const itemWidth = isDesktop ? '33.33%' : isTablet ? '50%' : '100%';
-                                            return (
-                                                <MotiView
-                                                    key={ex.id}
-                                                    from={{ opacity: 0, translateY: 30 }}
-                                                    animate={{ opacity: 1, translateY: 0 }}
-                                                    transition={{ type: 'timing', duration: 350, delay: 350 + ((idx % 10) * 50) }}
-                                                    style={{ width: itemWidth as any, paddingHorizontal: 8, paddingBottom: 16 }}
-                                                >
-                                                    <CompletedExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
                                                 </MotiView>
                                             );
                                         })}

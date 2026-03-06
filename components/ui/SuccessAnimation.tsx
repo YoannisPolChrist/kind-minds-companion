@@ -28,19 +28,22 @@ export function SuccessAnimation({
     const config = {
         success: {
             color: '#788E76',
-            bg: 'rgba(120, 142, 118, 0.12)',
+            bg: '#EAF3E8',
+            border: '#CFE1CC',
             icon: CheckCircle2,
             defaultMessage: 'Erfolgreich!'
         },
         error: {
             color: '#EF4444',
-            bg: 'rgba(239, 68, 68, 0.1)',
+            bg: '#FEECEC',
+            border: '#FECACA',
             icon: XCircle,
             defaultMessage: 'Fehler'
         },
         warning: {
             color: '#F59E0B',
-            bg: 'rgba(245, 158, 11, 0.1)',
+            bg: '#FFF4DB',
+            border: '#FCD58B',
             icon: AlertCircle,
             defaultMessage: 'Hinweis'
         }
@@ -59,7 +62,7 @@ export function SuccessAnimation({
                         exit={{ opacity: 0 }}
                         style={[StyleSheet.absoluteFill, { zIndex: 9999, alignItems: 'center', justifyContent: 'center' }]}
                     >
-                        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(255, 255, 255, 0.85)' }]} />
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.28)' }]} />
 
                         <MotiView
                             from={{ scale: 0.8, translateY: 40, opacity: 0 }}
@@ -78,7 +81,7 @@ export function SuccessAnimation({
                                 shadowRadius: 40,
                                 elevation: 10,
                                 borderWidth: 1,
-                                borderColor: config.bg,
+                                borderColor: config.border,
                                 maxWidth: 360,
                                 width: '85%'
                             }}
@@ -103,7 +106,7 @@ export function SuccessAnimation({
                                 {displayMessage}
                             </Text>
                             {subMessage ? (
-                                <Text style={{ fontSize: 15, fontWeight: '500', color: '#6F7472', textAlign: 'center', lineHeight: 22 }}>
+                                <Text style={{ fontSize: 15, fontWeight: '500', color: '#4B5A61', textAlign: 'center', lineHeight: 22 }}>
                                     {subMessage}
                                 </Text>
                             ) : null}

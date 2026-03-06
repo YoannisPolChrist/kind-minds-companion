@@ -4,7 +4,18 @@ import { MotiView } from 'moti';
 import { useTheme } from '../../contexts/ThemeContext';
 import { ExerciseBlock } from '../../types';
 import { parseExerciseChartData, withAlpha } from './chartData';
-import { FlBarChart, FlDonutChart, FlLineAreaChart, FlRadarChart } from './flChartPrimitives';
+import {
+  FlBarChart,
+  FlBubbleChart,
+  FlComparisonBarChart,
+  FlDonutChart,
+  FlHeatmapGridChart,
+  FlLineAreaChart,
+  FlProgressRingsChart,
+  FlRangeChart,
+  FlRadarChart,
+  FlStackedBarChart,
+} from './flChartPrimitives';
 
 interface InteractiveChartProps {
   block: ExerciseBlock;
@@ -16,6 +27,7 @@ export default function InteractiveChartShared({ block, value, onChange }: Inter
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { width: screenWidth } = useWindowDimensions();
   const { isDark, colors } = useTheme();
+  const isCompactHeader = screenWidth < 390;
 
   const currentValues: Record<string, number> = useMemo(() => {
     try {
@@ -26,8 +38,58 @@ export default function InteractiveChartShared({ block, value, onChange }: Inter
   }, [value]);
 
   const data = useMemo(() => parseExerciseChartData(block.options, currentValues), [block.options, currentValues]);
+  const baselineData = useMemo(() => parseExerciseChartData(block.options), [block.options]);
   const chartWidth = Math.min(screenWidth - 88, 440);
   const activeDatum = data[Math.min(selectedIndex, Math.max(0, data.length - 1))];
+  const total = useMemo(() => Math.max(1, data.reduce((sum, item) => sum + item.value, 0)), [data]);
+
+  const activeSummary = useMemo(() => {
+    if (!activeDatum) {
+      return { label: 'Aktiver Wert', value: '0' };
+    }
+
+    if (block.type === 'pie_chart' || block.type === 'stacked_bar_chart') {
+      return {
+        label: 'Aktiver Anteil',
+        value: `${Math.round((activeDatum.value / total) * 100)}%`,
+      };
+    }
+
+    if (block.type === 'comparison_bar_chart') {
+      const reference = baselineData[Math.min(selectedIndex, Math.max(0, baselineData.length - 1))]?.value ?? activeDatum.value;
+      return {
+        label: 'Aktueller Vergleich',
+        value: `${activeDatum.value} / ${reference}`,
+      };
+    }
+
+    if (block.type === 'donut_progress' || block.type === 'range_chart') {
+      const maxValue = Math.max(100, ...data.map((item) => item.value), 100);
+      return {
+        label: block.type === 'donut_progress' ? 'Fortschritt' : 'Skalenwert',
+        value: `${activeDatum.value} / ${maxValue}`,
+      };
+    }
+
+    if (block.type === 'heatmap_grid') {
+      return {
+        label: 'Intensitaet',
+        value: `${activeDatum.value}`,
+      };
+    }
+
+    if (block.type === 'bubble_chart') {
+      return {
+        label: 'Gewichtung',
+        value: `${activeDatum.value}`,
+      };
+    }
+
+    return {
+      label: 'Aktiver Wert',
+      value: `${activeDatum.value}`,
+    };
+  }, [activeDatum, baselineData, block.type, data, selectedIndex, total]);
 
   const updateValue = (label: string, nextValue: string) => {
     const next = { ...currentValues };
@@ -85,7 +147,6 @@ export default function InteractiveChartShared({ block, value, onChange }: Inter
     }
 
     if (block.type === 'pie_chart') {
-      const total = Math.max(1, data.reduce((sum, item) => sum + item.value, 0));
       return (
         <FlDonutChart
           data={data}
@@ -95,6 +156,91 @@ export default function InteractiveChartShared({ block, value, onChange }: Inter
           centerLabel={activeDatum?.label ?? 'Verteilung'}
           centerValue={activeDatum ? `${Math.round((activeDatum.value / total) * 100)}%` : '0%'}
           showLegend
+          textColor={colors.text}
+          subtleTextColor={colors.textSubtle}
+        />
+      );
+    }
+
+    if (block.type === 'donut_progress') {
+      return (
+        <FlProgressRingsChart
+          data={data}
+          width={chartWidth}
+          maxValue={Math.max(100, ...data.map((item) => item.value), 100)}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          textColor={colors.text}
+          subtleTextColor={colors.textSubtle}
+        />
+      );
+    }
+
+    if (block.type === 'stacked_bar_chart') {
+      return (
+        <FlStackedBarChart
+          data={data}
+          width={chartWidth}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          textColor={colors.text}
+          subtleTextColor={colors.textSubtle}
+        />
+      );
+    }
+
+    if (block.type === 'comparison_bar_chart') {
+      return (
+        <FlComparisonBarChart
+          data={data.map((item, index) => ({
+            ...item,
+            secondaryValue: baselineData[index]?.value ?? item.value,
+          }))}
+          width={chartWidth}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          textColor={colors.text}
+          subtleTextColor={colors.textSubtle}
+        />
+      );
+    }
+
+    if (block.type === 'heatmap_grid') {
+      return (
+        <FlHeatmapGridChart
+          data={data}
+          width={chartWidth}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          maxValue={Math.max(100, ...data.map((item) => item.value), 100)}
+          textColor={colors.text}
+          subtleTextColor={colors.textSubtle}
+        />
+      );
+    }
+
+    if (block.type === 'range_chart') {
+      return (
+        <FlRangeChart
+          data={data}
+          width={chartWidth}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          maxValue={Math.max(100, ...data.map((item) => item.value), 100)}
+          textColor={colors.text}
+          subtleTextColor={colors.textSubtle}
+        />
+      );
+    }
+
+    if (block.type === 'bubble_chart') {
+      return (
+        <FlBubbleChart
+          data={data}
+          width={chartWidth}
+          selectedIndex={selectedIndex}
+          onSelectIndex={setSelectedIndex}
+          maxValue={Math.max(100, ...data.map((item) => item.value), 100)}
           textColor={colors.text}
           subtleTextColor={colors.textSubtle}
         />
@@ -156,12 +302,23 @@ export default function InteractiveChartShared({ block, value, onChange }: Inter
         }}
       >
         {activeDatum ? (
-          <View style={{ marginBottom: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View>
+          <View
+            style={{
+              marginBottom: 14,
+              flexDirection: isCompactHeader ? 'column' : 'row',
+              alignItems: isCompactHeader ? 'flex-start' : 'center',
+              justifyContent: 'space-between',
+              gap: isCompactHeader ? 10 : 12,
+            }}
+          >
+            <View style={{ flex: isCompactHeader ? undefined : 1, width: isCompactHeader ? '100%' : undefined }}>
               <Text style={{ color: colors.textSubtle, fontSize: 11, fontWeight: '800', letterSpacing: 1.2, textTransform: 'uppercase' }}>
-                Aktiver Wert
+                {activeSummary.label}
               </Text>
-              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '900', marginTop: 4 }}>
+              <Text
+                numberOfLines={isCompactHeader ? 2 : 1}
+                style={{ color: colors.text, fontSize: 18, fontWeight: '900', marginTop: 4, flexShrink: 1 }}
+              >
                 {activeDatum.label}
               </Text>
             </View>
@@ -171,10 +328,11 @@ export default function InteractiveChartShared({ block, value, onChange }: Inter
                 paddingHorizontal: 12,
                 paddingVertical: 8,
                 borderRadius: 14,
+                alignSelf: isCompactHeader ? 'flex-start' : 'auto',
               }}
             >
               <Text style={{ color: activeDatum.color, fontSize: 14, fontWeight: '900' }}>
-                {activeDatum.value}
+                {activeSummary.value}
               </Text>
             </View>
           </View>

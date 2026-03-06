@@ -1,4 +1,4 @@
-﻿import {
+import {
   View,
   Text,
   TouchableOpacity,
@@ -208,7 +208,7 @@ export default function ClientExercisesView() {
       setToast({
         visible: true,
         message: "Fehler",
-        subMessage: error.message || "Ãœbung konnte nicht gespeichert werden.",
+        subMessage: error.message || "Übung konnte nicht gespeichert werden.",
         type: "error",
       });
     }
@@ -244,7 +244,7 @@ export default function ClientExercisesView() {
       setToast({
         visible: true,
         message: "Fehler",
-        subMessage: "Bitte wÃ¤hle eine Vorlage aus.",
+        subMessage: "Bitte wähle eine Vorlage aus.",
         type: "warning",
       });
       return;
@@ -279,7 +279,7 @@ export default function ClientExercisesView() {
               className="bg-white/20 px-4 py-3 rounded-2xl backdrop-blur-md flex-row items-center"
             >
               <ArrowLeft size={20} color="white" style={{ marginRight: 8 }} />
-              <Text className="text-white font-bold text-[16px]">ZurÃ¼ck</Text>
+              <Text className="text-white font-bold text-[16px]">Zurück</Text>
             </TouchableOpacity>
             <View className="flex-row items-center flex-1 justify-end ml-4">
               <View className="bg-white/10 w-12 h-12 rounded-[16px] items-center justify-center mr-4 border border-white/20">
@@ -297,7 +297,7 @@ export default function ClientExercisesView() {
                 numberOfLines={1}
               >
                 {client?.firstName
-                  ? `${client.firstName} ${client.lastName} - Ãœbungen`
+                  ? `${client.firstName} ${client.lastName} - Übungen`
                   : i18n.t("therapist.exercises")}
               </Text>
             </View>
@@ -356,7 +356,7 @@ export default function ClientExercisesView() {
               {exercises.filter((e) => !e.completed).length > 0 && (
                 <View className="mb-8">
                   <Text className="text-[13px] font-black text-[#1F2528]/40 uppercase tracking-widest mb-4 ml-2">
-                    Offene Ãœbungen
+                    Offene Übungen
                   </Text>
                   <View className="flex-row flex-wrap gap-6">
                     {exercises
@@ -415,7 +415,7 @@ export default function ClientExercisesView() {
               {exercises.filter((e) => e.completed).length > 0 && (
                 <View className="mb-4">
                   <Text className="text-[13px] font-black text-[#1F2528]/40 uppercase tracking-widest mb-4 ml-2">
-                    Abgeschlossene Ãœbungen
+                    Abgeschlossene Übungen
                   </Text>
                   <View className="flex-row flex-wrap gap-6">
                     {exercises
@@ -514,7 +514,7 @@ export default function ClientExercisesView() {
                                               ? i18n.t("blocks.scale") ||
                                               "Skala"
                                               : i18n.t("blocks.reflection") ||
-                                              "Reflektion"}
+                                              "Reflexion"}
                                           </Text>
                                         </View>
                                         <Text
@@ -582,7 +582,7 @@ export default function ClientExercisesView() {
                   </Text>
                   <TouchableOpacity
                     onPress={() => setShowBuilder(false)}
-                    style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}
+                    style={{ backgroundColor: 'rgba(255,255,255,0.24)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}
                   >
                     <Text style={{ color: 'white', fontWeight: '700' }}>
                       {i18n.t("therapist.cancel")}
@@ -653,7 +653,7 @@ export default function ClientExercisesView() {
 
                     <View style={{ marginTop: 40 }}>
                       <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
-                        Wiederholung der Ãœbung
+                        Wiederholung der Übung
                       </Text>
                       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
                         {["none", "daily", "custom"].map((freq) => (
@@ -669,7 +669,7 @@ export default function ClientExercisesView() {
                             }}
                           >
                             <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#8B938E' }}>
-                              {freq === "none" ? "Keine" : freq === "daily" ? "TÃ¤glich" : "Spezifische Tage"}
+                              {freq === "none" ? "Keine" : freq === "daily" ? "Täglich" : "Spezifische Tage"}
                             </Text>
                           </TouchableOpacity>
                         ))}
@@ -764,7 +764,7 @@ export default function ClientExercisesView() {
                 </Text>
                 <TouchableOpacity
                   onPress={() => setShowBuilder(false)}
-                  style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}
+                  style={{ backgroundColor: 'rgba(255,255,255,0.24)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}
                 >
                   <Text style={{ color: 'white', fontWeight: '700' }}>
                     {i18n.t("therapist.cancel")}
@@ -829,7 +829,7 @@ export default function ClientExercisesView() {
 
                   <View style={{ marginTop: 40 }}>
                     <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
-                      Wiederholung der Ãœbung
+                      Wiederholung der Übung
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
                       {["none", "daily", "custom"].map((freq) => (
@@ -839,7 +839,7 @@ export default function ClientExercisesView() {
                           style={{ flex: 1, paddingVertical: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1.5, borderColor: recurrence === freq ? '#1F2528' : '#E2E8F0', backgroundColor: recurrence === freq ? '#1F2528' : 'white' }}
                         >
                           <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#8B938E' }}>
-                            {freq === "none" ? "Keine" : freq === "daily" ? "TÃ¤glich" : "Spezifische Tage"}
+                            {freq === "none" ? "Keine" : freq === "daily" ? "Täglich" : "Spezifische Tage"}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -944,8 +944,8 @@ export default function ClientExercisesView() {
               <Text className="text-[24px] font-black text-[#1F2528] mb-3 text-center tracking-tight">
                 {i18n.t("therapist.delete_title")}
               </Text>
-              <Text className="text-[#1F2528]/60 font-medium text-center text-[16px] leading-relaxed mb-8">
-                MÃ¶chtest du diese Ãœbung wirklich entfernen?
+              <Text className="font-medium text-center text-[16px] leading-relaxed mb-8" style={{ color: '#4B5A61' }}>
+                Möchtest du diese Übung wirklich entfernen?
               </Text>
               {exerciseToDelete && (
                 <View className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 flex-row items-center">
@@ -997,7 +997,7 @@ export default function ClientExercisesView() {
                 <Text
                   style={{ fontWeight: "bold", fontSize: 17, color: "white" }}
                 >
-                  LÃ¶schen
+                  Löschen
                 </Text>
               </TouchableOpacity>
             </View>

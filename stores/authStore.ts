@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { User, onIdTokenChanged } from 'firebase/auth';
+import { User, onIdTokenChanged, signOut } from 'firebase/auth';
 import { auth, db } from '../utils/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { registerForPushNotificationsAsync } from '../utils/notifications';
@@ -20,6 +20,30 @@ export interface UserProfile {
     pushToken?: string;
     lastActivePlatform?: string;
     nextAppointment?: string;
+}
+
+const MISSING_PROFILE_ERROR_MESSAGE = 'Zu diesem Konto wurde kein vollstaendiges Profil gefunden. Bitte kontaktiere den Support, damit der Zugang korrekt eingerichtet wird.';
+
+function hasValidRole(role: unknown): role is UserProfile['role'] {
+    return role === 'client' || role === 'therapist';
+}
+
+export function hasInvalidAuthProfileData(data: Partial<UserProfile> | null | undefined): boolean {
+    if (!data || !hasValidRole(data.role)) {
+        return true;
+    }
+
+    return data.role === 'client'
+        && !data.createdAt
+        && data.onboardingCompleted === undefined
+        && !data.therapistId
+        && !data.firstName
+        && !data.lastName
+        && !data.birthDate;
+}
+
+export function getMissingProfileErrorMessage() {
+    return MISSING_PROFILE_ERROR_MESSAGE;
 }
 
 interface AuthState {
@@ -55,21 +79,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             const docRef = doc(db, 'users', user.uid);
             const docSnap = await getDoc(docRef);
 
-            let profile: UserProfile;
-
-            if (docSnap.exists()) {
-                profile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
-            } else {
-                // Falls noch kein Firestore-Dokument existiert (z.B. neuer User)
-                profile = {
-                    id: user.uid,
-                    email: user.email || '',
-                    role: 'client'
-                };
-
-                // Wir speichern das Profil direkt, wenn es nicht existiert
-                await setDoc(docRef, profile);
+            if (!docSnap.exists() || hasInvalidAuthProfileData(docSnap.data() as Partial<UserProfile>)) {
+                const error = new Error(MISSING_PROFILE_ERROR_MESSAGE);
+                set({ profile: null, error });
+                await signOut(auth);
+                return;
             }
+
+            const profile = { id: docSnap.id, ...docSnap.data() } as UserProfile;
 
             // Register Push Token & Platform after successfully getting the document
             try {
@@ -87,10 +104,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 console.warn("Failed to register push token during auth refresh:", tokenErr);
             }
 
-            set({ profile });
+            set({ profile, error: null });
         } catch (error: any) {
             console.error('Error fetching user profile:', error);
-            set({ error });
+            set({ profile: null, error });
         }
     }
 }));

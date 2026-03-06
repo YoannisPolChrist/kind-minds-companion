@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, Platform } from 'react-native';
+import { View, Text } from 'react-native';
 import { Bold, Italic, Heading1, Heading2, List, ListOrdered } from 'lucide-react-native';
+import { PressableScale } from './PressableScale';
 
 interface RichTextToolbarProps {
     onInsert: (prefix: string, suffix: string) => void;
@@ -11,13 +12,13 @@ export function RichTextToolbar({ onInsert }: RichTextToolbarProps) {
     const TOOLBAR_ICON_COLOR = "#182428";
 
     const Button = ({ icon: Icon, onPress }: any) => (
-        <TouchableOpacity
+        <PressableScale
             onPress={onPress}
+            intensity="subtle"
             style={{ padding: 8, marginHorizontal: 4, borderRadius: 8, backgroundColor: '#F3EEE6' }}
-            {...(Platform.OS === 'web' ? { tabIndex: -1 } : {})}
         >
             <Icon size={TOOLBAR_ICON_SIZE} color={TOOLBAR_ICON_COLOR} />
-        </TouchableOpacity>
+        </PressableScale>
     );
 
     return (

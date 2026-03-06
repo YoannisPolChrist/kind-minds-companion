@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { Text, View } from 'react-native';
 import { MotiView } from 'moti';
 import { Activity, Gauge, Tag } from 'lucide-react-native';
@@ -33,7 +33,6 @@ export const CheckinCard = React.memo(({ checkin, formatTime }: { checkin: any, 
                 <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: checkin.note ? 16 : 8, gap: 12 }}>
                     <View style={{ flex: 1, gap: 10 }}>
                         <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', backgroundColor: `${activeEmotion.color}15`, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: `${activeEmotion.color}20` }}>
-                            <Text style={{ fontSize: 16, marginRight: 6 }}>{activeEmotion.emoji}</Text>
                             <Text style={{ fontSize: 13, fontWeight: '800', color: activeEmotion.color }}>
                                 {getEmotionLabel(activeEmotion, i18n.locale)}
                             </Text>

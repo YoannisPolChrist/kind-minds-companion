@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { View, ViewStyle, DimensionValue } from 'react-native';
 import { MotiView } from 'moti';
 import { useTheme } from '../../contexts/ThemeContext';

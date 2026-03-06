@@ -1,10 +1,11 @@
-﻿import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Image, ScrollView, useWindowDimensions } from 'react-native';
+import { useState, useEffect } from 'react';
+import { PressableScale } from '../../components/ui/PressableScale';
+import { View, Text, TextInput, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Image, ScrollView, useWindowDimensions } from 'react-native';
 import i18n from '../../utils/i18n';
 import { MotiView } from 'moti';
 import { useAuthActions } from '../../hooks/useAuthActions';
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Design Tokens Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Design Tokens ─────────────────────────────────────────────────────────────
 
 const DecorativeBackground = () => (
     <>
@@ -41,7 +42,7 @@ const BrandHeader = ({ isKeyboardVisible, width }: { isKeyboardVisible: boolean;
     </MotiView>
 );
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Password Strength Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Password Strength ─────────────────────────────────────────────────────────
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
     if (!pw) return { score: 0, label: '', color: '#E7E0D4' };
@@ -51,21 +52,21 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
 
-    if (score <= 1) return { score, label: 'Schwach', color: '#EF4444' };
-    if (score === 2) return { score, label: 'Mittel', color: '#F59E0B' };
-    if (score === 3) return { score, label: 'Gut', color: '#4E7E82' };
-    return { score, label: 'Stark', color: '#788E76' };
+    if (score <= 1) return { score, label: i18n.t('login.strength.weak', { defaultValue: 'Schwach' }), color: '#EF4444' };
+    if (score === 2) return { score, label: i18n.t('login.strength.medium', { defaultValue: 'Mittel' }), color: '#F59E0B' };
+    if (score === 3) return { score, label: i18n.t('login.strength.good', { defaultValue: 'Gut' }), color: '#4E7E82' };
+    return { score, label: i18n.t('login.strength.strong', { defaultValue: 'Stark' }), color: '#788E76' };
 }
 
 function validatePassword(pw: string): string | undefined {
-    if (pw.length < 8) return 'Mindestens 8 Zeichen erforderlich.';
-    if (!/[A-Z]/.test(pw)) return 'Mindestens ein GroÃƒÅ¸buchstabe erforderlich.';
-    if (!/[0-9]/.test(pw)) return 'Mindestens eine Zahl erforderlich.';
-    if (!/[^A-Za-z0-9]/.test(pw)) return 'Mindestens ein Sonderzeichen erforderlich.';
+    if (pw.length < 8) return i18n.t('login.validation.min_length', { defaultValue: 'Mindestens 8 Zeichen erforderlich.' });
+    if (!/[A-Z]/.test(pw)) return i18n.t('login.validation.uppercase', { defaultValue: 'Mindestens ein Großbuchstabe erforderlich.' });
+    if (!/[0-9]/.test(pw)) return i18n.t('login.validation.number', { defaultValue: 'Mindestens eine Zahl erforderlich.' });
+    if (!/[^A-Za-z0-9]/.test(pw)) return i18n.t('login.validation.special', { defaultValue: 'Mindestens ein Sonderzeichen erforderlich.' });
     return undefined;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Input Field Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Input Field Component ─────────────────────────────────────────────────────────────
 
 function FormField({
     label, value, onChange, placeholder, secureTextEntry = false,
@@ -96,7 +97,7 @@ function FormField({
     );
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Main Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Login() {
     const { login, register, resetPassword, loading, error: globalError, success } = useAuthActions();
@@ -132,26 +133,26 @@ export default function Login() {
         const newErrors: Record<string, string | undefined> = {};
 
         if (!formData.email.trim()) {
-            newErrors.email = 'E-Mail ist erforderlich.';
+            newErrors.email = i18n.t('login.validation.email_required', { defaultValue: 'E-Mail ist erforderlich.' });
         } else if (!formData.email.includes('@') || !formData.email.includes('.')) {
-            newErrors.email = 'UngÃƒÂ¼ltiges E-Mail Format.';
+            newErrors.email = i18n.t('login.validation.email_invalid', { defaultValue: 'Ungültiges E-Mail Format.' });
         }
 
         if (!isReset && !isLoginMode) {
             // Register-specific validation
-            if (!formData.firstName.trim()) newErrors.firstName = 'Vorname ist erforderlich.';
-            if (!formData.lastName.trim()) newErrors.lastName = 'Nachname ist erforderlich.';
-            if (!formData.birthDate.trim()) newErrors.birthDate = 'Geburtsdatum ist erforderlich.';
+            if (!formData.firstName.trim()) newErrors.firstName = i18n.t('login.validation.first_required', { defaultValue: 'Vorname ist erforderlich.' });
+            if (!formData.lastName.trim()) newErrors.lastName = i18n.t('login.validation.last_required', { defaultValue: 'Nachname ist erforderlich.' });
+            if (!formData.birthDate.trim()) newErrors.birthDate = i18n.t('login.validation.birth_required', { defaultValue: 'Geburtsdatum ist erforderlich.' });
 
             if (!formData.password) {
-                newErrors.password = 'Passwort ist erforderlich.';
+                newErrors.password = i18n.t('login.validation.password_required', { defaultValue: 'Passwort ist erforderlich.' });
             } else {
                 const pwError = validatePassword(formData.password);
                 if (pwError) newErrors.password = pwError;
             }
         } else if (!isReset) {
             // Login validation
-            if (!formData.password) newErrors.password = 'Passwort ist erforderlich.';
+            if (!formData.password) newErrors.password = i18n.t('login.validation.password_required', { defaultValue: 'Passwort ist erforderlich.' });
         }
 
         setErrors(newErrors);
@@ -224,18 +225,18 @@ export default function Login() {
                             <>
                                 <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 12, marginBottom: 0 }}>
                                     <View style={{ flex: 1 }}>
-                                        <FormField label="Vorname" value={formData.firstName} onChange={t => handleChange('firstName', t)} placeholder="Max" autoCapitalize="words" error={errors.firstName} />
+                                        <FormField label={i18n.t('login.first_name', { defaultValue: 'Vorname' })} value={formData.firstName} onChange={t => handleChange('firstName', t)} placeholder="Max" autoCapitalize="words" error={errors.firstName} />
                                     </View>
                                     <View style={{ flex: 1 }}>
-                                        <FormField label="Nachname" value={formData.lastName} onChange={t => handleChange('lastName', t)} placeholder="Mustermann" autoCapitalize="words" error={errors.lastName} />
+                                        <FormField label={i18n.t('login.last_name', { defaultValue: 'Nachname' })} value={formData.lastName} onChange={t => handleChange('lastName', t)} placeholder="Mustermann" autoCapitalize="words" error={errors.lastName} />
                                     </View>
                                 </View>
 
                                 <FormField
-                                    label="Geburtsdatum"
+                                    label={i18n.t('login.birthdate', { defaultValue: 'Geburtsdatum' })}
                                     value={formData.birthDate}
                                     onChange={t => handleChange('birthDate', t)}
-                                    placeholder="TT.MM.JJJJ"
+                                    placeholder={i18n.t('login.birthdate_placeholder', { defaultValue: 'TT.MM.JJJJ' })}
                                     keyboardType="numbers-and-punctuation"
                                     error={errors.birthDate}
                                     maxLength={10}
@@ -244,11 +245,11 @@ export default function Login() {
                         )}
 
                         {/* Email */}
-                        <FormField label="E-Mail" value={formData.email} onChange={t => handleChange('email', t)} placeholder={i18n.t('login.email')} keyboardType="email-address" error={errors.email} />
+                        <FormField label={i18n.t('login.email', { defaultValue: 'E-Mail' })} value={formData.email} onChange={t => handleChange('email', t)} placeholder={i18n.t('login.email')} keyboardType="email-address" error={errors.email} />
 
                         {/* Password */}
                         <View style={{ marginBottom: 32 }}>
-                            <FormField label="Passwort" value={formData.password} onChange={t => handleChange('password', t)} placeholder={i18n.t('login.password')} secureTextEntry error={errors.password} />
+                            <FormField label={i18n.t('login.password', { defaultValue: 'Passwort' })} value={formData.password} onChange={t => handleChange('password', t)} placeholder={i18n.t('login.password')} secureTextEntry error={errors.password} />
 
                             {/* Password strength bar */}
                             {passwordStrength && formData.password.length > 0 && (
@@ -264,7 +265,7 @@ export default function Login() {
 
                             {!isLoginMode && (
                                 <Text style={{ fontSize: 11, color: 'rgba(31,37,40,0.46)', marginLeft: 4, marginTop: 6, lineHeight: 16 }}>
-                                    Mind. 8 Zeichen, 1 GroÃƒÅ¸buchstabe, 1 Zahl, 1 Sonderzeichen
+                                    {i18n.t('login.password_hint', { defaultValue: 'Mind. 8 Zeichen, 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen' })}
                                 </Text>
                             )}
                         </View>
@@ -272,12 +273,12 @@ export default function Login() {
                         {/* Invite Code (Register only) */}
                         {!isLoginMode && (
                             <View style={{ marginBottom: 32 }}>
-                                <FormField label="Einladungscode (Optional)" value={formData.inviteCode} onChange={t => handleChange('inviteCode', t)} placeholder="ABCDEF" autoCapitalize="characters" maxLength={6} error={errors.inviteCode} />
+                                <FormField label={i18n.t('login.invite_code', { defaultValue: 'Einladungscode (Optional)' })} value={formData.inviteCode} onChange={t => handleChange('inviteCode', t)} placeholder="ABCDEF" autoCapitalize="characters" maxLength={6} error={errors.inviteCode} />
                             </View>
                         )}
 
                         {/* Primary CTA */}
-                        <TouchableOpacity
+                        <PressableScale
                             style={{ backgroundColor: '#2D666B', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#2D666B', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 6 }}
                             onPress={handleAuthSubmit}
                             disabled={loading}
@@ -286,13 +287,13 @@ export default function Login() {
                                 <ActivityIndicator color="#fff" />
                             ) : (
                                 <Text style={{ color: 'white', fontWeight: '700', fontSize: 16, letterSpacing: 0.5 }}>
-                                    {isLoginMode ? i18n.t('login.button') : 'Registrieren'}
+                                    {isLoginMode ? i18n.t('login.button') : i18n.t('login.register_button', { defaultValue: 'Registrieren' })}
                                 </Text>
                             )}
-                        </TouchableOpacity>
+                        </PressableScale>
 
                         {/* Toggle Mode */}
-                        <TouchableOpacity
+                        <PressableScale
                             style={{ paddingVertical: 16, marginTop: 12, alignItems: 'center' }}
                             onPress={() => {
                                 setIsLoginMode(!isLoginMode);
@@ -302,15 +303,17 @@ export default function Login() {
                             disabled={loading}
                         >
                             <Text style={{ color: 'rgba(31,37,40,0.62)', fontWeight: '600', fontSize: 14 }}>
-                                {isLoginMode ? 'Noch kein Konto? Registrieren' : 'Bereits einen Account? Anmelden'}
+                                {isLoginMode
+                                    ? i18n.t('login.toggle_to_register', { defaultValue: 'Noch kein Konto? Registrieren' })
+                                    : i18n.t('login.toggle_to_login', { defaultValue: 'Bereits einen Account? Anmelden' })}
                             </Text>
-                        </TouchableOpacity>
+                        </PressableScale>
 
                         {/* Forgot Password */}
                         {isLoginMode && (
-                            <TouchableOpacity style={{ paddingVertical: 8, alignItems: 'center' }} onPress={handleResetPasswordSubmit} disabled={loading}>
+                            <PressableScale style={{ paddingVertical: 8, alignItems: 'center' }} onPress={handleResetPasswordSubmit} disabled={loading}>
                                 <Text style={{ color: 'rgba(45,102,107,0.82)', fontWeight: '600', fontSize: 14, letterSpacing: 0.3 }}>{i18n.t('login.forgot')}</Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         )}
                     </MotiView>
                 </View>

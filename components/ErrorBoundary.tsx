@@ -1,9 +1,9 @@
 import React, { Component, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
+import { PressableScale } from './ui/PressableScale';
 
 interface Props {
     children: ReactNode;
-    /** Optional: custom fallback UI */
     fallback?: ReactNode;
 }
 
@@ -12,12 +12,6 @@ interface State {
     error: Error | null;
 }
 
-/**
- * Global ErrorBoundary — wraps the entire app to prevent
- * a single screen crash from taking down the whole application.
- *
- * Usage: wrap in app/_layout.tsx around <RootApp />
- */
 export class ErrorBoundary extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
@@ -29,7 +23,6 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     componentDidCatch(error: Error, info: React.ErrorInfo) {
-        // In production, send to error monitoring (e.g. Sentry)
         console.error('[ErrorBoundary] Caught error:', error, info.componentStack);
     }
 
@@ -53,7 +46,6 @@ export class ErrorBoundary extends Component<Props, State> {
                         padding: 32,
                     }}
                 >
-                    {/* Icon area */}
                     <View
                         style={{
                             width: 72,
@@ -65,7 +57,7 @@ export class ErrorBoundary extends Component<Props, State> {
                             marginBottom: 24,
                         }}
                     >
-                        <Text style={{ fontSize: 32 }}>⚠️</Text>
+                        <Text style={{ fontSize: 32, fontWeight: '900', color: '#DC2626' }}>!</Text>
                     </View>
 
                     <Text
@@ -92,7 +84,6 @@ export class ErrorBoundary extends Component<Props, State> {
                         Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.
                     </Text>
 
-                    {/* Error details (dev only) */}
                     {__DEV__ && this.state.error && (
                         <ScrollView
                             style={{
@@ -104,14 +95,15 @@ export class ErrorBoundary extends Component<Props, State> {
                                 width: '100%',
                             }}
                         >
-                            <Text style={{ color: '#f87171', fontFamily: 'monospace', fontSize: 12 }}>
+                            <Text style={{ color: '#F87171', fontFamily: 'monospace', fontSize: 12 }}>
                                 {this.state.error.message}
                             </Text>
                         </ScrollView>
                     )}
 
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={this.reset}
+                        intensity="medium"
                         style={{
                             backgroundColor: '#1F2528',
                             paddingHorizontal: 32,
@@ -122,7 +114,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         <Text style={{ color: 'white', fontWeight: '700', fontSize: 16 }}>
                             Erneut versuchen
                         </Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                 </View>
             );
         }
@@ -130,4 +122,3 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.children;
     }
 }
-

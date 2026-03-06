@@ -1,5 +1,6 @@
-﻿import React from 'react';
-import { Text, TextInput, TextInputProps, TouchableOpacity, View } from 'react-native';
+import React from 'react';
+import { Text, TextInput, TextInputProps, View } from 'react-native';
+import { PressableScale } from '../ui/PressableScale';
 
 export function ExerciseBlockIntro({
     children,
@@ -89,8 +90,9 @@ export function ExerciseOptionRow({
     onPress: () => void;
 }) {
     return (
-        <TouchableOpacity
+        <PressableScale
             onPress={onPress}
+            intensity="subtle"
             style={{
                 flexDirection: 'row',
                 alignItems: 'center',
@@ -148,7 +150,7 @@ export function ExerciseOptionRow({
             >
                 {label}
             </Text>
-        </TouchableOpacity>
+        </PressableScale>
     );
 }
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Block3DEntrance
  *
  * Wraps a block card in a "coming from behind the screen" entrance animation.

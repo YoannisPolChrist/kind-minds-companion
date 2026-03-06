@@ -1,4 +1,4 @@
-﻿import { Redirect, Slot } from 'expo-router';
+import { Redirect, Slot } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 

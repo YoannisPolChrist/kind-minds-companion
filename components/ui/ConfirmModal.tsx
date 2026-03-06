@@ -1,7 +1,8 @@
-﻿import React, { useState } from 'react';
-import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Modal, ActivityIndicator } from 'react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { AlertCircle, Trash2, HelpCircle } from 'lucide-react-native';
+import { PressableScale } from './PressableScale';
 
 interface ConfirmModalProps {
     visible: boolean;
@@ -21,7 +22,7 @@ export function ConfirmModal({
     message,
     onConfirm,
     onCancel,
-    confirmText = 'BestÃ¤tigen',
+    confirmText = 'Bestätigen',
     cancelText = 'Abbrechen',
     isDestructive = false,
     icon
@@ -38,7 +39,8 @@ export function ConfirmModal({
     };
 
     const themeColor = isDestructive ? '#EF4444' : '#1F2528';
-    const themeBg = isDestructive ? 'rgba(239, 68, 68, 0.1)' : '#F0F4F8';
+    const themeBg = isDestructive ? '#FEECEC' : '#EDF3F7';
+    const themeBorder = isDestructive ? '#FECACA' : '#C5D2DC';
 
     // Choose default icon if none provided
     const DefaultIcon = isDestructive ? Trash2 : HelpCircle;
@@ -54,7 +56,7 @@ export function ConfirmModal({
                         exit={{ opacity: 0 }}
                         style={[StyleSheet.absoluteFill, { zIndex: 9999, alignItems: 'center', justifyContent: 'center' }]}
                     >
-                        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0, 0, 0, 0.4)' }]} />
+                        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(15, 23, 42, 0.42)' }]} />
 
                         <MotiView
                             from={{ scale: 0.9, translateY: 20, opacity: 0 }}
@@ -71,6 +73,8 @@ export function ConfirmModal({
                                 shadowOpacity: 0.15,
                                 shadowRadius: 40,
                                 elevation: 10,
+                                borderWidth: 1,
+                                borderColor: 'rgba(31, 37, 40, 0.06)',
                                 maxWidth: 360,
                                 width: '85%'
                             }}
@@ -85,7 +89,7 @@ export function ConfirmModal({
                                     justifyContent: 'center',
                                     marginBottom: 20,
                                     borderWidth: 1,
-                                    borderColor: isDestructive ? 'rgba(239, 68, 68, 0.2)' : '#C5D2DC'
+                                    borderColor: themeBorder
                                 }}
                             >
                                 {IconComponent}
@@ -95,53 +99,64 @@ export function ConfirmModal({
                                 {title}
                             </Text>
 
-                            <Text style={{ fontSize: 16, fontWeight: '500', color: '#6B7C85', textAlign: 'center', lineHeight: 24, marginBottom: 32 }}>
+                            <Text style={{ fontSize: 16, fontWeight: '500', color: '#4B5A61', textAlign: 'center', lineHeight: 24, marginBottom: 32 }}>
                                 {message}
                             </Text>
 
                             <View style={{ flexDirection: 'row', gap: 12, width: '100%' }}>
-                                <TouchableOpacity
+                                <PressableScale
                                     onPress={onCancel}
                                     disabled={isLoading}
-                                    style={{
-                                        flex: 1,
-                                        backgroundColor: '#F5F1EA',
-                                        paddingVertical: 16,
-                                        borderRadius: 20,
-                                        alignItems: 'center'
-                                    }}
+                                    intensity="subtle"
+                                    style={{ flex: 1 }}
                                 >
-                                    <Text style={{ fontWeight: '700', fontSize: 16, color: '#1F2528' }}>
-                                        {cancelText}
-                                    </Text>
-                                </TouchableOpacity>
+                                    <View
+                                        style={{
+                                            backgroundColor: '#F5F1EA',
+                                            borderWidth: 1,
+                                            borderColor: '#E3DACC',
+                                            paddingVertical: 16,
+                                            borderRadius: 20,
+                                            alignItems: 'center'
+                                        }}
+                                    >
+                                        <Text style={{ fontWeight: '700', fontSize: 16, color: '#1F2528' }}>
+                                            {cancelText}
+                                        </Text>
+                                    </View>
+                                </PressableScale>
 
-                                <TouchableOpacity
+                                <PressableScale
                                     onPress={handleConfirm}
                                     disabled={isLoading}
-                                    style={{
-                                        flex: 1,
-                                        backgroundColor: themeColor,
-                                        paddingVertical: 16,
-                                        borderRadius: 20,
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        flexDirection: 'row',
-                                        shadowColor: themeColor,
-                                        shadowOffset: { width: 0, height: 8 },
-                                        shadowOpacity: 0.25,
-                                        shadowRadius: 12,
-                                        elevation: 4
-                                    }}
+                                    intensity="medium"
+                                    style={{ flex: 1 }}
                                 >
-                                    {isLoading ? (
-                                        <ActivityIndicator color="white" size="small" />
-                                    ) : (
-                                        <Text style={{ fontWeight: '800', fontSize: 16, color: 'white' }}>
-                                            {confirmText}
-                                        </Text>
-                                    )}
-                                </TouchableOpacity>
+                                    <View
+                                        style={{
+                                            backgroundColor: themeColor,
+                                            paddingVertical: 16,
+                                            borderRadius: 20,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            flexDirection: 'row',
+                                            shadowColor: themeColor,
+                                            shadowOffset: { width: 0, height: 8 },
+                                            shadowOpacity: 0.25,
+                                            shadowRadius: 12,
+                                            elevation: 4,
+                                            opacity: isLoading ? 0.7 : 1,
+                                        }}
+                                    >
+                                        {isLoading ? (
+                                            <ActivityIndicator color="white" size="small" />
+                                        ) : (
+                                            <Text style={{ fontWeight: '800', fontSize: 16, color: 'white' }}>
+                                                {confirmText}
+                                            </Text>
+                                        )}
+                                    </View>
+                                </PressableScale>
                             </View>
                         </MotiView>
                     </MotiView>

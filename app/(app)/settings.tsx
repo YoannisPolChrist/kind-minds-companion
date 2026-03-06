@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView as DefaultScrollView, Switch, Alert, TextInput, Platform, Image } from 'react-native';
+import { View, Text, ScrollView as DefaultScrollView, Switch, Alert, TextInput, Platform, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAppStore } from '../../utils/useAppStore';
 import { useState, useEffect } from 'react';
@@ -24,6 +24,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { SuccessAnimation } from '../../components/ui/SuccessAnimation';
 import { useTheme, ThemeType } from '../../contexts/ThemeContext';
 import { Card } from '../../components/ui/Card';
+import { PressableScale } from '../../components/ui/PressableScale';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -241,7 +242,7 @@ export default function SettingsScreen() {
                         end={{ x: 1, y: 1 }}
                         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                     />
-                    <TouchableOpacity
+                    <PressableScale
                         accessibilityRole="button"
                         accessibilityLabel="Zurück"
                         onPress={() => {
@@ -256,12 +257,14 @@ export default function SettingsScreen() {
                                 }
                             }
                         }}
+                        withHaptics={false}
+                        intensity="subtle"
                         className="bg-white/20 px-4 py-3 rounded-xl backdrop-blur-md flex-row items-center z-50"
                         style={{ zIndex: 50, elevation: 50 }}
                     >
                         <ChevronLeft size={20} color="white" />
                         <Text className="text-white font-bold ml-1">{i18n.t('exercise.back')}</Text>
-                    </TouchableOpacity>
+                    </PressableScale>
                     <Text className="text-xl font-extrabold text-white flex-1 text-right ml-4 z-10">
                         {i18n.t('settings.title')}
                     </Text>
@@ -281,7 +284,7 @@ export default function SettingsScreen() {
                         <Card className="mb-6">
                             {/* Avatar */}
                             <View className="items-center mb-6">
-                                <TouchableOpacity onPress={pickProfilePhoto} disabled={uploadingPhoto} activeOpacity={0.8}>
+                                <PressableScale onPress={pickProfilePhoto} disabled={uploadingPhoto} intensity="medium">
                                     <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: '#E8F4F6', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#2D666B', overflow: 'hidden' }}>
                                         {photoURL ? (
                                             <Image source={{ uri: photoURL }} style={{ width: 96, height: 96, borderRadius: 48 }} />
@@ -292,7 +295,7 @@ export default function SettingsScreen() {
                                     <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#2D666B', borderRadius: 20, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'white' }}>
                                         <Camera size={16} color="white" />
                                     </View>
-                                </TouchableOpacity>
+                                </PressableScale>
                                 <Text className="text-sm text-gray-500 mt-2">
                                     {uploadingPhoto ? 'Wird hochgeladen...' : 'Foto ändern'}
                                 </Text>
@@ -333,16 +336,17 @@ export default function SettingsScreen() {
                                 />
                             </View>
 
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={saveProfile}
                                 disabled={savingProfile}
+                                intensity="medium"
                                 className="bg-[#2D666B] py-4 rounded-2xl items-center"
                                 style={{ opacity: savingProfile ? 0.7 : 1 }}
                             >
                                 <Text className="text-white font-bold text-base">
                                     {savingProfile ? 'Wird gespeichert...' : 'Profil speichern'}
                                 </Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         </Card>
                     </MotiView>
 
@@ -398,16 +402,18 @@ export default function SettingsScreen() {
                                         const hour = parseInt(time.split(':')[0]);
                                         const isSelected = reminderHour === hour;
                                         return (
-                                            <TouchableOpacity
+                                            <PressableScale
                                                 key={time}
                                                 onPress={() => {
                                                     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                                     saveReminderHour(hour);
                                                 }}
+                                                withHaptics={false}
+                                                intensity="subtle"
                                                 className={`border px-4 py-3 rounded-xl flex-1 items-center min-w-[30%] ${isSelected ? 'bg-[#2D666B] border-[#2D666B]' : 'bg-gray-50 border-gray-200'}`}
                                             >
                                                 <Text className={`font-bold ${isSelected ? 'text-white' : 'text-[#1F2528]'}`}>{time}</Text>
-                                            </TouchableOpacity>
+                                            </PressableScale>
                                         );
                                     })}
                                 </View>
@@ -440,14 +446,16 @@ export default function SettingsScreen() {
                                         keyboardType="url"
                                         style={{ color: '#1F2528' }}
                                     />
-                                    <TouchableOpacity
+                                    <PressableScale
                                         onPress={() => {
                                             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                             saveBookingUrl();
                                         }}
+                                        withHaptics={false}
+                                        intensity="subtle"
                                         className="bg-[#2D666B] px-4 py-3 rounded-xl ml-2">
                                         <Text className="text-white font-bold">{i18n.t('settings.save', { defaultValue: 'Speichern' })}</Text>
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 </View>
                             </Card>
                         )}
@@ -462,16 +470,17 @@ export default function SettingsScreen() {
                                     const isActive = theme === t;
                                     const labels: Record<string, string> = { system: 'System', light: 'Hell', dark: 'Dunkel' };
                                     return (
-                                        <TouchableOpacity
+                                        <PressableScale
                                             key={t}
                                             onPress={() => setTheme(t as ThemeType)}
+                                            intensity="subtle"
                                             className={`flex-1 py-2.5 items-center justify-center rounded-lg ${isActive ? 'bg-white shadow-sm' : ''}`}
                                             style={isActive ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 } : {}}
                                         >
                                             <Text className={`font-bold ${isActive ? 'text-[#2D666B]' : 'text-gray-500'}`}>
                                                 {labels[t]}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </PressableScale>
                                     );
                                 })}
                             </View>
@@ -486,15 +495,16 @@ export default function SettingsScreen() {
                                 </View>
                                 <DefaultScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pl-2">
                                     {['de', 'en', 'es', 'fr', 'it'].map((lang) => (
-                                        <TouchableOpacity
+                                        <PressableScale
                                             key={lang}
                                             onPress={() => setLanguage(lang)}
+                                            intensity="subtle"
                                             className={`px-3 py-1 rounded-lg ${locale === lang ? 'bg-[#2D666B]' : 'bg-gray-100'} mx-1`}
                                         >
                                             <Text className={`font-bold ${locale === lang ? 'text-white' : 'text-gray-500'}`}>
                                                 {lang.toUpperCase()}
                                             </Text>
-                                        </TouchableOpacity>
+                                        </PressableScale>
                                     ))}
                                 </DefaultScrollView>
                             </View>
@@ -502,7 +512,7 @@ export default function SettingsScreen() {
                             <View className="h-[1px] bg-gray-100 w-full" />
 
                             {/* Telegram Connection */}
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => {
                                     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     if (!profile?.id) return;
@@ -514,6 +524,8 @@ export default function SettingsScreen() {
                                         });
                                     });
                                 }}
+                                withHaptics={false}
+                                intensity="subtle"
                                 className="flex-row justify-between items-center py-4"
                             >
                                 <View className="flex-1 pr-4">
@@ -524,39 +536,43 @@ export default function SettingsScreen() {
                                     <Text className="text-[#0088cc] font-bold mr-1">Verbinden</Text>
                                     <ChevronRight size={18} color="#0088cc" />
                                 </View>
-                            </TouchableOpacity>
+                            </PressableScale>
 
                             <View className="h-[1px] bg-gray-100 w-full" />
 
                             {/* Password Reset */}
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => {
                                     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     handleResetPassword();
                                 }}
+                                withHaptics={false}
+                                intensity="subtle"
                                 className="flex-row justify-between items-center py-4">
                                 <View className="flex-1 pr-4">
                                     <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.pw_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.pw_desc')}</Text>
                                 </View>
                                 <ChevronRight size={20} color="#8B938E" />
-                            </TouchableOpacity>
+                            </PressableScale>
 
                             <View className="h-[1px] bg-gray-100 w-full" />
 
                             {/* Exercise History */}
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => {
                                     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                     router.push('/(app)/history' as any);
                                 }}
+                                withHaptics={false}
+                                intensity="subtle"
                                 className="flex-row justify-between items-center py-4">
                                 <View className="flex-1 pr-4">
                                     <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.hist_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.hist_desc')}</Text>
                                 </View>
                                 <ChevronRight size={20} color="#8B938E" />
-                            </TouchableOpacity>
+                            </PressableScale>
                         </Card>
                     </MotiView>
 
@@ -565,14 +581,16 @@ export default function SettingsScreen() {
                         animate={{ opacity: 1, translateY: 0 }}
                         transition={{ type: 'timing', duration: 350, delay: 400 }}
                     >
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => {
                                 if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 signOut();
                             }}
+                            withHaptics={false}
+                            intensity="medium"
                             className="mt-2 bg-red-50 border border-red-100 py-4 rounded-2xl items-center">
                             <Text className="text-red-600 font-bold text-lg">{i18n.t('settings.logout')}</Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </MotiView>
 
                 </View>

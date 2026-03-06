@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -50,6 +50,7 @@ export default function TemplateDetail() {
     const [loading, setLoading] = useState(!isNew);
     const [saving, setSaving] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
+    const [builderVersion, setBuilderVersion] = useState(0);
     const [toast, setToast] = useState<ToastState>({ visible: false, message: '', type: 'success' });
     const [template, setTemplate] = useState<TemplateState>({
         title: '',
@@ -146,6 +147,13 @@ export default function TemplateDetail() {
                 });
             }
 
+            setTemplate({
+                title,
+                blocks: processedBlocks,
+                coverImage: processedCoverImage || undefined,
+                themeColor: themeColor || undefined,
+            });
+            setBuilderVersion(prev => prev + 1);
             setSaving(false);
             setShowSuccess(true);
         } catch (error: any) {
@@ -199,6 +207,7 @@ export default function TemplateDetail() {
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
             <ExerciseBuilder
+                key={`${String(id)}-${builderVersion}`}
                 initialTitle={template.title}
                 initialBlocks={template.blocks}
                 initialCoverImage={template.coverImage}

@@ -28,6 +28,18 @@ service firebase.storage {
         get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'therapist';
     }
 
+    match /template_covers/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'therapist';
+    }
+
+    match /exercise_media/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'therapist';
+    }
+
     match /{allPaths=**} {
       allow read, write: if false;
     }

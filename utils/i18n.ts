@@ -57,7 +57,34 @@ const translations = {
             error_fields: "Please fill out all fields",
             error_default: "An error occurred during login.",
             error_network: "Missing or poor internet connection.",
-            reset_sent: "If this email is registered, a link has been sent. Please check your inbox."
+            reset_sent: "If this email is registered, a link has been sent. Please check your inbox.",
+            first_name: "First Name",
+            last_name: "Last Name",
+            birthdate: "Date of Birth",
+            birthdate_placeholder: "DD.MM.YYYY",
+            invite_code: "Invite Code (Optional)",
+            register_button: "Register",
+            toggle_to_register: "No account yet? Sign up",
+            toggle_to_login: "Already have an account? Sign in",
+            password_hint: "Min. 8 characters, 1 uppercase, 1 number, 1 special character.",
+            strength: {
+                weak: "Weak",
+                medium: "Medium",
+                good: "Good",
+                strong: "Strong"
+            },
+            validation: {
+                email_required: "Email is required.",
+                email_invalid: "Please enter a valid email address.",
+                first_required: "First name is required.",
+                last_required: "Last name is required.",
+                birth_required: "Date of birth is required.",
+                password_required: "Password is required.",
+                min_length: "At least 8 characters are required.",
+                uppercase: "Add at least one uppercase letter.",
+                number: "Add at least one number.",
+                special: "Add at least one special character."
+            }
         },
         checkin: {
             title: "Daily Check-in",
@@ -140,6 +167,14 @@ const translations = {
             no_clients: "No clients registered yet.",
             client_tag: "Therapy Client",
             active: "Active",
+            gauge: {
+                title: "Cognitive Load",
+                subtitle: "Complexity estimation",
+                empty: "No blocks yet",
+                accessible: { label: "Accessible", sub: "Suitable for all clients" },
+                challenging: { label: "Challenging", sub: "Experience recommended" },
+                intense: { label: "Intense", sub: "For advanced clients" }
+            },
             msg_btn: "💬 Message",
             exercises_btn: "Exercises ›",
             whatsapp_msg: "Hello %{name},\n\nI have assigned new therapy tasks for you in the app. Please take a look.\n\nBest regards!",
@@ -188,6 +223,129 @@ const translations = {
             pdf_upload: "PDF Upload",
             web_link: "Web Link",
             available: "Available Resources"
+        },
+        notes: {
+            journal_title: "My Journal",
+            section: {
+                title: "Journal",
+                subtitle: "Search, filter, and open entries by date."
+            },
+            prompts: {
+                energy: "What nourished me today?",
+                thoughts: "Which thoughts do I want to remember?",
+                challenges: "What felt challenging?",
+                next_week: "What do I take into next week?"
+            },
+            templates: {
+                session: {
+                    title: "Session Log",
+                    description: "Agenda, insights, homework",
+                    body: `<h2>Session Agenda</h2><ul><li>Focus areas:</li><li>Body sensations:</li></ul>
+<h2>Insights</h2><p></p>
+<h2>Homework</h2><ol><li>Practice:</li><li>Reflection:</li></ol>`
+                },
+                gratitude: {
+                    title: "Gratitude Journal",
+                    description: "3 highlights and emotions",
+                    body: `<h2>Gratitude today</h2><ol><li></li><li></li><li></li></ol>
+<blockquote>Mood today: </blockquote>`
+                },
+                progress: {
+                    title: "Progress Note",
+                    description: "Wins, hurdles, next step",
+                    body: `<h2>What went well?</h2><p></p>
+<h2>Where am I stuck?</h2><p></p>
+<h2>Next step</h2><p></p>`
+                }
+            },
+            toolbar: {
+                typography: "Typography",
+                structure: "Structure",
+                alignment: "Alignment",
+                highlights: "Highlights",
+                bold: "Bold",
+                italic: "Italic",
+                underline: "Underline",
+                strike: "Strikethrough",
+                heading1: "Heading",
+                heading2: "Subheading",
+                bullet: "Bullet list",
+                ordered: "Numbered",
+                checklist: "Checklist",
+                quote: "Quote",
+                divider: "Divider",
+                align_left: "Left",
+                align_center: "Center",
+                align_right: "Right",
+                marker: "Marker",
+                code: "Code"
+            },
+            filters: {
+                all: "All Notes",
+                mine: "My Private Notes",
+                therapist: "From Therapist"
+            },
+            sort: {
+                latest: "Newest first",
+                oldest: "Oldest first"
+            },
+            search: {
+                placeholder: "Search title or content...",
+                clear: "Clear search",
+                empty: "No notes found for \"%{query}\""
+            },
+            actions: {
+                new_note: "New Note",
+                edit_note: "Edit Note",
+                delete: "Delete"
+            },
+            tags: {
+                diary_entry: "Journal Entry",
+                therapist_note: "Therapist Note",
+                therapist_tag: "From therapist",
+                with_image: "With image"
+            },
+            stats: {
+                total_label: "Notes total",
+                total_hint: "All visible entries in your journal.",
+                private_label: "Private entries",
+                private_hint: "Notes only you can see.",
+                shared_label: "Therapist shared",
+                shared_hint: "Notes shared with your therapist."
+            },
+            empty: {
+                title: "No notes yet",
+                description: "Capture observations, insights, and progress whenever something matters.",
+                cta: "Create first note"
+            },
+            privacy: {
+                shared: "Shared",
+                private: "Private",
+                shared_hint: "Visible to your therapist",
+                private_hint: "Visible only to you"
+            },
+            toast: {
+                permission_title: "Permission",
+                permission_body: "Gallery access is required.",
+                error_title: "Error",
+                image_error: "Image could not be loaded.",
+                saved_title: "Saved",
+                saved_body: "Note saved successfully.",
+                deleted_title: "Deleted",
+                deleted_body: "The note has been removed."
+            },
+            characters_label: "Characters",
+            word_count_label: "Words",
+            editor: {
+                insert_image: "Insert image",
+                tap_to_insert: "Tap to insert"
+            },
+            delete: {
+                title: "Delete note?",
+                body: "This action cannot be undone.",
+                cancel: "Cancel",
+                confirm: "Delete"
+            }
         },
         templates: {
             title: "Templates",
@@ -274,7 +432,34 @@ const translations = {
             error_fields: "Bitte fülle alle Felder aus",
             error_default: "Ein Fehler ist beim Login aufgetreten.",
             error_network: "Fehlende oder schlechte Internetverbindung.",
-            reset_sent: "Falls diese E-Mail registriert ist, wurde ein Link versendet. Bitte prüfe dein Postfach."
+            reset_sent: "Falls diese E-Mail registriert ist, wurde ein Link versendet. Bitte prüfe dein Postfach.",
+            first_name: "Vorname",
+            last_name: "Nachname",
+            birthdate: "Geburtsdatum",
+            birthdate_placeholder: "TT.MM.JJJJ",
+            invite_code: "Einladungscode (Optional)",
+            register_button: "Registrieren",
+            toggle_to_register: "Noch kein Konto? Registrieren",
+            toggle_to_login: "Bereits einen Account? Anmelden",
+            password_hint: "Mind. 8 Zeichen, 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen",
+            strength: {
+                weak: "Schwach",
+                medium: "Mittel",
+                good: "Gut",
+                strong: "Stark"
+            },
+            validation: {
+                email_required: "E-Mail ist erforderlich.",
+                email_invalid: "Ungültiges E-Mail Format.",
+                first_required: "Vorname ist erforderlich.",
+                last_required: "Nachname ist erforderlich.",
+                birth_required: "Geburtsdatum ist erforderlich.",
+                password_required: "Passwort ist erforderlich.",
+                min_length: "Mindestens 8 Zeichen erforderlich.",
+                uppercase: "Mindestens ein Großbuchstabe erforderlich.",
+                number: "Mindestens eine Zahl erforderlich.",
+                special: "Mindestens ein Sonderzeichen erforderlich."
+            }
         },
         checkin: {
             title: "Tägliches Check-in",
@@ -328,21 +513,21 @@ const translations = {
         exercise: {
             back: "Zurück",
             complete: "Abschließen",
-            complete_success: "Super! 🎉",
+            complete_success: "Super!",
             complete_success_msg: "Du hast die Übung erfolgreich abgeschlossen.",
             export_pdf: "Als PDF exportieren",
             completed: "Bereits abgeschlossen",
             play_video: "Video abspielen",
-            your_reflection: "Deine Reflektion",
+            your_reflection: "Deine Reflexion",
             breathing_444: "4-4-4 Atemrhythmus",
             is_running: "läuft..."
         },
         history: {
-            title: "Dein Verlauf 📈",
+            title: "Dein Verlauf",
             subtitle: "%{count} abgeschlossene Übungen",
             empty_title: "Noch keine Einträge",
             empty_desc: "Hier erscheinen deine abgeschlossenen Übungen. Fang jetzt an!",
-            done: "✓ Erledigt",
+            done: "Erledigt",
             answers: "Deine Antworten",
             more: "+%{count} weitere...",
             modules: "%{count} Module"
@@ -351,12 +536,20 @@ const translations = {
             cockpit: "Therapeuten-Cockpit",
             welcome: "Willkommen %{name}! Schön, dass du da bist.",
             logout: "Abmelden",
-            templates: "📋 Übungsvorlagen",
+            templates: "Übungsvorlagen",
             templates_desc: "Erstelle oder verwalte Basis-Übungen, die du an alle deine Klienten verteilen kannst.",
             clients: "Deine Klienten",
             no_clients: "Bisher sind keine Klienten registriert.",
             client_tag: "Therapie-Klient",
             active: "Aktiv",
+            gauge: {
+                title: "Kognitive Belastung",
+                subtitle: "Komplexitäts-Einschätzung",
+                empty: "Noch keine Blöcke",
+                accessible: { label: "Zugänglich", sub: "Geeignet für alle Klienten" },
+                challenging: { label: "Anspruchsvoll", sub: "Erfahrung empfehlenswert" },
+                intense: { label: "Intensiv", sub: "Für fortgeschrittene Klienten" }
+            },
             msg_btn: "💬 Message",
             exercises_btn: "Übungen ›",
             whatsapp_msg: "Hallo %{name},\n\nich habe dir neue Therapie-Aufgaben in der App zugewiesen. Bitte schau doch mal rein.\n\nViele Grüße!",
@@ -370,7 +563,7 @@ const translations = {
             exercises: "Übungen",
             open_exercises: "%{count} offen",
             done_exercises: "%{count} erledigt",
-            status_done: "✓ Erledigt",
+            status_done: "Erledigt",
             status_open: "⏳ Offen",
             recur_daily: "🔁 Täglich",
             recur_weekly: "🔁 Wöchentlich",
@@ -402,6 +595,129 @@ const translations = {
             pdf_upload: "PDF Upload",
             web_link: "Web Link",
             available: "Verfügbare Ressourcen"
+        },
+        notes: {
+            journal_title: "Mein Tagebuch",
+            section: {
+                title: "Journal",
+                subtitle: "Suche, filtere und öffne deine Einträge nach Datum."
+            },
+            prompts: {
+                energy: "Was hat mir heute gutgetan?",
+                thoughts: "Welche Gedanken möchte ich festhalten?",
+                challenges: "Was war heute herausfordernd?",
+                next_week: "Was nehme ich in die nächste Woche mit?"
+            },
+            templates: {
+                session: {
+                    title: "Sitzungsprotokoll",
+                    description: "Agenda, Erkenntnisse, Hausaufgaben",
+                    body: `<h2>Sitzungsagenda</h2><ul><li>Schwerpunkte:</li><li>Körperliche Wahrnehmungen:</li></ul>
+<h2>Erkenntnisse</h2><p></p>
+<h2>Hausaufgabe</h2><ol><li>Praxisübung:</li><li>Reflexion:</li></ol>`
+                },
+                gratitude: {
+                    title: "Dankbarkeitsjournal",
+                    description: "3 Highlights und Emotionen",
+                    body: `<h2>Dankbarkeit des Tages</h2><ol><li></li><li></li><li></li></ol>
+<blockquote>Stimmung heute: </blockquote>`
+                },
+                progress: {
+                    title: "Fortschrittsnotiz",
+                    description: "Ziele, Hürden, nächster Schritt",
+                    body: `<h2>Was lief gut?</h2><p></p>
+<h2>Wo stehe ich an?</h2><p></p>
+<h2>Nächster Schritt</h2><p></p>`
+                }
+            },
+            toolbar: {
+                typography: "Schrift",
+                structure: "Struktur",
+                alignment: "Ausrichtung",
+                highlights: "Highlights",
+                bold: "Fett",
+                italic: "Kursiv",
+                underline: "Unterstrichen",
+                strike: "Durchgestrichen",
+                heading1: "Überschrift",
+                heading2: "Untertitel",
+                bullet: "Aufzählung",
+                ordered: "Nummeriert",
+                checklist: "Checkliste",
+                quote: "Zitat",
+                divider: "Trenner",
+                align_left: "Links",
+                align_center: "Zentriert",
+                align_right: "Rechts",
+                marker: "Marker",
+                code: "Code"
+            },
+            filters: {
+                all: "Alle Notizen",
+                mine: "Meine Privaten",
+                therapist: "Vom Therapeut"
+            },
+            sort: {
+                latest: "Neueste zuerst",
+                oldest: "Älteste zuerst"
+            },
+            search: {
+                placeholder: "Titel oder Inhalt durchsuchen...",
+                clear: "Suche leeren",
+                empty: "Keine Notizen gefunden für \"%{query}\""
+            },
+            actions: {
+                new_note: "Neue Notiz",
+                edit_note: "Notiz bearbeiten",
+                delete: "Löschen"
+            },
+            tags: {
+                diary_entry: "Tagebucheintrag",
+                therapist_note: "Therapeuten-Notiz",
+                therapist_tag: "Vom Therapeut",
+                with_image: "Mit Bild"
+            },
+            stats: {
+                total_label: "Notizen gesamt",
+                total_hint: "Alle sichtbaren Einträge in deinem Journal.",
+                private_label: "Private Einträge",
+                private_hint: "Notizen nur für dich und deine Reflexion.",
+                shared_label: "Geteilte Einträge",
+                shared_hint: "Notizen, die mit deinem Therapeuten geteilt sind."
+            },
+            empty: {
+                title: "Noch keine Notizen",
+                description: "Halte Beobachtungen, Erkenntnisse und Fortschritte fest – mit Text, Bild oder Audio.",
+                cta: "Erste Notiz erstellen"
+            },
+            privacy: {
+                shared: "Freigegeben",
+                private: "Privat",
+                shared_hint: "Sichtbar für deinen Therapeuten",
+                private_hint: "Nur für dich sichtbar"
+            },
+            toast: {
+                permission_title: "Berechtigung",
+                permission_body: "Galerie-Zugriff wird benötigt.",
+                error_title: "Fehler",
+                image_error: "Bild konnte nicht geladen werden.",
+                saved_title: "Gespeichert",
+                saved_body: "Notiz wurde erfolgreich gespeichert.",
+                deleted_title: "Gelöscht",
+                deleted_body: "Die Notiz wurde entfernt."
+            },
+            characters_label: "Zeichen",
+            word_count_label: "Wörter",
+            editor: {
+                insert_image: "Bild einfügen",
+                tap_to_insert: "Tippen zum Einfügen"
+            },
+            delete: {
+                title: "Notiz löschen?",
+                body: "Diese Aktion kann nicht rückgängig gemacht werden.",
+                cancel: "Abbrechen",
+                confirm: "Löschen"
+            }
         },
         templates: {
             title: "Vorlagen",
@@ -488,7 +804,34 @@ const translations = {
             error_fields: "Veuillez remplir tous les champs",
             error_default: "Une erreur est survenue lors de la connexion.",
             error_network: "Connexion internet manquante ou mauvaise.",
-            reset_sent: "Si cet e-mail est enregistré, un lien a été envoyé. Veuillez vérifier votre boîte de réception."
+            reset_sent: "Si cet e-mail est enregistré, un lien a été envoyé. Veuillez vérifier votre boîte de réception.",
+            first_name: "Prénom",
+            last_name: "Nom",
+            birthdate: "Date de naissance",
+            birthdate_placeholder: "JJ.MM.AAAA",
+            invite_code: "Code d'invitation (optionnel)",
+            register_button: "S'inscrire",
+            toggle_to_register: "Pas encore de compte ? Inscrivez-vous",
+            toggle_to_login: "Vous avez déjà un compte ? Connectez-vous",
+            password_hint: "Min. 8 caractères, 1 majuscule, 1 chiffre, 1 symbole",
+            strength: {
+                weak: "Faible",
+                medium: "Moyen",
+                good: "Bon",
+                strong: "Fort"
+            },
+            validation: {
+                email_required: "L'e-mail est requis.",
+                email_invalid: "Veuillez saisir une adresse e-mail valide.",
+                first_required: "Le prénom est requis.",
+                last_required: "Le nom est requis.",
+                birth_required: "La date de naissance est requise.",
+                password_required: "Le mot de passe est requis.",
+                min_length: "Au moins 8 caractères sont requis.",
+                uppercase: "Ajoutez au moins une lettre majuscule.",
+                number: "Ajoutez au moins un chiffre.",
+                special: "Ajoutez au moins un caractère spécial."
+            }
         },
         checkin: {
             title: "Bilan Quotidien",
@@ -571,6 +914,14 @@ const translations = {
             no_clients: "Aucun client inscrit pour le moment.",
             client_tag: "Client en Thérapie",
             active: "Actif",
+            gauge: {
+                title: "Charge cognitive",
+                subtitle: "Estimation de la complexité",
+                empty: "Aucun bloc pour le moment",
+                accessible: { label: "Accessible", sub: "Convient à tous les clients" },
+                challenging: { label: "Exigeant", sub: "Expérience recommandée" },
+                intense: { label: "Intense", sub: "Pour clients avancés" }
+            },
             msg_btn: "💬 Message",
             exercises_btn: "Exercices ›",
             whatsapp_msg: "Bonjour %{name},\n\nJe vous ai assigné de nouvelles tâches de thérapie dans l'application. Veuillez y jeter un coup d'œil.\n\nCordialement !",
@@ -616,6 +967,129 @@ const translations = {
             pdf_upload: "Télécharger PDF",
             web_link: "Lien Web",
             available: "Ressources disponibles"
+        },
+        notes: {
+            journal_title: "Mon journal",
+            section: {
+                title: "Journal",
+                subtitle: "Recherchez, filtrez et ouvrez vos entrées par date."
+            },
+            prompts: {
+                energy: "Qu'est-ce qui m'a fait du bien aujourd'hui ?",
+                thoughts: "Quelles pensées veux-je retenir ?",
+                challenges: "Qu'est-ce qui a été difficile ?",
+                next_week: "Que vais-je emporter pour la semaine prochaine ?"
+            },
+            templates: {
+                session: {
+                    title: "Compte-rendu de séance",
+                    description: "Agenda, insights, devoirs",
+                    body: `<h2>Agenda de séance</h2><ul><li>Points clés :</li><li>Ressentis corporels :</li></ul>
+<h2>Insights</h2><p></p>
+<h2>Devoir</h2><ol><li>Exercice :</li><li>Réflexion :</li></ol>`
+                },
+                gratitude: {
+                    title: "Journal de gratitude",
+                    description: "3 moments forts et émotions",
+                    body: `<h2>Gratitude du jour</h2><ol><li></li><li></li><li></li></ol>
+<blockquote>Humeur aujourd'hui : </blockquote>`
+                },
+                progress: {
+                    title: "Note de progrès",
+                    description: "Réussites, obstacles, prochaine étape",
+                    body: `<h2>Ce qui a bien fonctionné</h2><p></p>
+<h2>Où suis-je bloqué ?</h2><p></p>
+<h2>Prochaine étape</h2><p></p>`
+                }
+            },
+            toolbar: {
+                typography: "Typographie",
+                structure: "Structure",
+                alignment: "Alignement",
+                highlights: "Mises en évidence",
+                bold: "Gras",
+                italic: "Italique",
+                underline: "Souligné",
+                strike: "Barré",
+                heading1: "Titre",
+                heading2: "Sous-titre",
+                bullet: "Liste à puces",
+                ordered: "Numérotée",
+                checklist: "Checklist",
+                quote: "Citation",
+                divider: "Séparateur",
+                align_left: "Gauche",
+                align_center: "Centre",
+                align_right: "Droite",
+                marker: "Surligneur",
+                code: "Code"
+            },
+            filters: {
+                all: "Toutes les notes",
+                mine: "Mes privées",
+                therapist: "Du thérapeute"
+            },
+            sort: {
+                latest: "Plus récentes",
+                oldest: "Plus anciennes"
+            },
+            search: {
+                placeholder: "Rechercher titre ou contenu...",
+                clear: "Effacer la recherche",
+                empty: "Aucune note trouvée pour \"%{query}\""
+            },
+            actions: {
+                new_note: "Nouvelle note",
+                edit_note: "Modifier la note",
+                delete: "Supprimer"
+            },
+            tags: {
+                diary_entry: "Entrée de journal",
+                therapist_note: "Note du thérapeute",
+                therapist_tag: "Depuis le thérapeute",
+                with_image: "Avec image"
+            },
+            stats: {
+                total_label: "Notes totales",
+                total_hint: "Toutes les entrées visibles de votre journal.",
+                private_label: "Entrées privées",
+                private_hint: "Notes visibles uniquement par vous.",
+                shared_label: "Entrées partagées",
+                shared_hint: "Notes partagées avec votre thérapeute."
+            },
+            empty: {
+                title: "Pas encore de notes",
+                description: "Capturez observations, insights et progrès quand cela compte.",
+                cta: "Créer une première note"
+            },
+            privacy: {
+                shared: "Partagée",
+                private: "Privée",
+                shared_hint: "Visible pour votre thérapeute",
+                private_hint: "Visible uniquement par vous"
+            },
+            toast: {
+                permission_title: "Autorisation",
+                permission_body: "L'accès à la galerie est requis.",
+                error_title: "Erreur",
+                image_error: "L'image n'a pas pu être chargée.",
+                saved_title: "Enregistré",
+                saved_body: "La note a été enregistrée.",
+                deleted_title: "Supprimé",
+                deleted_body: "La note a été supprimée."
+            },
+            characters_label: "Caractères",
+            word_count_label: "Mots",
+            editor: {
+                insert_image: "Insérer une image",
+                tap_to_insert: "Touchez pour insérer"
+            },
+            delete: {
+                title: "Supprimer la note ?",
+                body: "Cette action est irréversible.",
+                cancel: "Annuler",
+                confirm: "Supprimer"
+            }
         },
         templates: {
             title: "Modèles",
@@ -702,7 +1176,34 @@ const translations = {
             error_fields: "Por favor, rellene todos los campos",
             error_default: "Se produjo un error durante el inicio de sesión.",
             error_network: "Conexión a internet deficiente o inexistente.",
-            reset_sent: "Si este correo está registrado, se ha enviado un enlace. Por favor, revisa tu bandeja de entrada."
+            reset_sent: "Si este correo está registrado, se ha enviado un enlace. Por favor, revisa tu bandeja de entrada.",
+            first_name: "Nombre",
+            last_name: "Apellido",
+            birthdate: "Fecha de nacimiento",
+            birthdate_placeholder: "DD.MM.AAAA",
+            invite_code: "Código de invitación (opcional)",
+            register_button: "Registrarse",
+            toggle_to_register: "¿Sin cuenta? Regístrate",
+            toggle_to_login: "¿Ya tienes cuenta? Inicia sesión",
+            password_hint: "Mín. 8 caracteres, 1 mayúscula, 1 número, 1 símbolo",
+            strength: {
+                weak: "Débil",
+                medium: "Media",
+                good: "Buena",
+                strong: "Fuerte"
+            },
+            validation: {
+                email_required: "El correo electrónico es obligatorio.",
+                email_invalid: "Introduce un correo electrónico válido.",
+                first_required: "El nombre es obligatorio.",
+                last_required: "El apellido es obligatorio.",
+                birth_required: "La fecha de nacimiento es obligatoria.",
+                password_required: "La contraseña es obligatoria.",
+                min_length: "Se requieren al menos 8 caracteres.",
+                uppercase: "Añade al menos una letra mayúscula.",
+                number: "Añade al menos un número.",
+                special: "Añade al menos un carácter especial."
+            }
         },
         checkin: {
             title: "Registro Diario",
@@ -785,6 +1286,14 @@ const translations = {
             no_clients: "Todavía no hay clientes registrados.",
             client_tag: "Cliente de Terapia",
             active: "Activo",
+            gauge: {
+                title: "Carga cognitiva",
+                subtitle: "Estimación de complejidad",
+                empty: "Aún no hay bloques",
+                accessible: { label: "Accesible", sub: "Apto para todos los clientes" },
+                challenging: { label: "Exigente", sub: "Se recomienda experiencia" },
+                intense: { label: "Intenso", sub: "Para clientes avanzados" }
+            },
             msg_btn: "💬 Mensaje",
             exercises_btn: "Ejercicios ›",
             whatsapp_msg: "Hola %{name},\n\nTe he asignado nuevas tareas de terapia en la aplicación. Por favor, dales un vistazo.\n\n¡Saludos!",
@@ -830,6 +1339,129 @@ const translations = {
             pdf_upload: "Subir PDF",
             web_link: "Enlace Web",
             available: "Recursos Disponibles"
+        },
+        notes: {
+            journal_title: "Mi diario",
+            section: {
+                title: "Diario",
+                subtitle: "Busca, filtra y abre tus entradas por fecha."
+            },
+            prompts: {
+                energy: "¿Qué me hizo bien hoy?",
+                thoughts: "¿Qué pensamientos quiero guardar?",
+                challenges: "¿Qué resultó desafiante?",
+                next_week: "¿Qué me llevo a la próxima semana?"
+            },
+            templates: {
+                session: {
+                    title: "Registro de sesión",
+                    description: "Agenda, ideas, tareas",
+                    body: `<h2>Agenda de sesión</h2><ul><li>Focos:</li><li>Sensaciones corporales:</li></ul>
+<h2>Ideas</h2><p></p>
+<h2>Tarea</h2><ol><li>Práctica:</li><li>Reflexión:</li></ol>`
+                },
+                gratitude: {
+                    title: "Diario de gratitud",
+                    description: "3 momentos y emociones",
+                    body: `<h2>Gratitud de hoy</h2><ol><li></li><li></li><li></li></ol>
+<blockquote>Ánimo hoy: </blockquote>`
+                },
+                progress: {
+                    title: "Nota de progreso",
+                    description: "Logros, obstáculos, siguiente paso",
+                    body: `<h2>¿Qué salió bien?</h2><p></p>
+<h2>¿Dónde me trabo?</h2><p></p>
+<h2>Siguiente paso</h2><p></p>`
+                }
+            },
+            toolbar: {
+                typography: "Tipografía",
+                structure: "Estructura",
+                alignment: "Alineación",
+                highlights: "Resaltados",
+                bold: "Negrita",
+                italic: "Cursiva",
+                underline: "Subrayado",
+                strike: "Tachado",
+                heading1: "Título",
+                heading2: "Subtítulo",
+                bullet: "Lista con viñetas",
+                ordered: "Numerada",
+                checklist: "Checklist",
+                quote: "Cita",
+                divider: "Separador",
+                align_left: "Izquierda",
+                align_center: "Centro",
+                align_right: "Derecha",
+                marker: "Marcador",
+                code: "Código"
+            },
+            filters: {
+                all: "Todas las notas",
+                mine: "Mis privadas",
+                therapist: "Del terapeuta"
+            },
+            sort: {
+                latest: "Más recientes",
+                oldest: "Más antiguas"
+            },
+            search: {
+                placeholder: "Buscar título o contenido...",
+                clear: "Limpiar búsqueda",
+                empty: "No se encontraron notas para \"%{query}\""
+            },
+            actions: {
+                new_note: "Nueva nota",
+                edit_note: "Editar nota",
+                delete: "Eliminar"
+            },
+            tags: {
+                diary_entry: "Entrada de diario",
+                therapist_note: "Nota del terapeuta",
+                therapist_tag: "Del terapeuta",
+                with_image: "Con imagen"
+            },
+            stats: {
+                total_label: "Notas totales",
+                total_hint: "Todas las entradas visibles de tu diario.",
+                private_label: "Entradas privadas",
+                private_hint: "Notas solo para ti.",
+                shared_label: "Entradas compartidas",
+                shared_hint: "Notas compartidas con tu terapeuta."
+            },
+            empty: {
+                title: "Aún sin notas",
+                description: "Registra observaciones, ideas y progreso cuando importe.",
+                cta: "Crear primera nota"
+            },
+            privacy: {
+                shared: "Compartida",
+                private: "Privada",
+                shared_hint: "Visible para tu terapeuta",
+                private_hint: "Solo visible para ti"
+            },
+            toast: {
+                permission_title: "Permiso",
+                permission_body: "Se requiere acceso a la galería.",
+                error_title: "Error",
+                image_error: "No se pudo cargar la imagen.",
+                saved_title: "Guardado",
+                saved_body: "La nota se guardó correctamente.",
+                deleted_title: "Eliminado",
+                deleted_body: "La nota fue eliminada."
+            },
+            characters_label: "Caracteres",
+            word_count_label: "Palabras",
+            editor: {
+                insert_image: "Insertar imagen",
+                tap_to_insert: "Tocar para insertar"
+            },
+            delete: {
+                title: "¿Eliminar la nota?",
+                body: "Esta acción no se puede deshacer.",
+                cancel: "Cancelar",
+                confirm: "Eliminar"
+            }
         },
         templates: {
             title: "Plantillas",
@@ -916,7 +1548,34 @@ const translations = {
             error_fields: "Si prega di compilare tutti i campi",
             error_default: "Si è verificato un errore durante l'accesso.",
             error_network: "Connessione internet assente o scarsa.",
-            reset_sent: "Se questa email è registrata, è stato inviato un link. Controlla la tua casella di posta."
+            reset_sent: "Se questa email è registrata, è stato inviato un link. Controlla la tua casella di posta.",
+            first_name: "Nome",
+            last_name: "Cognome",
+            birthdate: "Data di nascita",
+            birthdate_placeholder: "GG.MM.AAAA",
+            invite_code: "Codice invito (opzionale)",
+            register_button: "Registrati",
+            toggle_to_register: "Nessun account? Registrati",
+            toggle_to_login: "Hai già un account? Accedi",
+            password_hint: "Min. 8 caratteri, 1 maiuscola, 1 numero, 1 simbolo",
+            strength: {
+                weak: "Debole",
+                medium: "Media",
+                good: "Buona",
+                strong: "Forte"
+            },
+            validation: {
+                email_required: "L'e-mail è obbligatoria.",
+                email_invalid: "Inserisci un indirizzo e-mail valido.",
+                first_required: "Il nome è obbligatorio.",
+                last_required: "Il cognome è obbligatorio.",
+                birth_required: "La data di nascita è obbligatoria.",
+                password_required: "La password è obbligatoria.",
+                min_length: "Sono richiesti almeno 8 caratteri.",
+                uppercase: "Aggiungi almeno una lettera maiuscola.",
+                number: "Aggiungi almeno un numero.",
+                special: "Aggiungi almeno un carattere speciale."
+            }
         },
         checkin: {
             title: "Check-in Giornaliero",
@@ -1006,6 +1665,14 @@ const translations = {
             no_clients: "Nessun cliente registrato ancora.",
             client_tag: "Cliente di Terapia",
             active: "Attivo",
+            gauge: {
+                title: "Carico cognitivo",
+                subtitle: "Stima della complessità",
+                empty: "Ancora nessun blocco",
+                accessible: { label: "Accessibile", sub: "Adatto a tutti i clienti" },
+                challenging: { label: "Impegnativo", sub: "Si consiglia esperienza" },
+                intense: { label: "Intenso", sub: "Per clienti avanzati" }
+            },
             msg_btn: "💬 Messaggio",
             exercises_btn: "Esercizi ›",
             whatsapp_msg: "Ciao %{name},\n\nTi ho assegnato nuovi compiti di terapia nell'app. Per favore, dai un'occhiata.\n\nCordiali saluti!",
@@ -1048,6 +1715,129 @@ const translations = {
             pdf_upload: "Carica PDF",
             web_link: "Link Web",
             available: "Risorse Disponibili"
+        },
+        notes: {
+            journal_title: "Il mio diario",
+            section: {
+                title: "Diario",
+                subtitle: "Cerca, filtra e apri le tue voci per data."
+            },
+            prompts: {
+                energy: "Cosa mi ha fatto bene oggi?",
+                thoughts: "Quali pensieri voglio ricordare?",
+                challenges: "Cosa è stato impegnativo?",
+                next_week: "Cosa porto con me la prossima settimana?"
+            },
+            templates: {
+                session: {
+                    title: "Registro di seduta",
+                    description: "Agenda, insight, compiti",
+                    body: `<h2>Agenda della seduta</h2><ul><li>Punti chiave:</li><li>Sensazioni corporee:</li></ul>
+<h2>Insight</h2><p></p>
+<h2>Compito</h2><ol><li>Esercizio:</li><li>Riflessione:</li></ol>`
+                },
+                gratitude: {
+                    title: "Diario di gratitudine",
+                    description: "3 momenti e emozioni",
+                    body: `<h2>Gratitudine di oggi</h2><ol><li></li><li></li><li></li></ol>
+<blockquote>Umore di oggi: </blockquote>`
+                },
+                progress: {
+                    title: "Nota di progresso",
+                    description: "Successi, ostacoli, prossimo passo",
+                    body: `<h2>Cosa è andato bene?</h2><p></p>
+<h2>Dove sono bloccato?</h2><p></p>
+<h2>Prossimo passo</h2><p></p>`
+                }
+            },
+            toolbar: {
+                typography: "Tipografia",
+                structure: "Struttura",
+                alignment: "Allineamento",
+                highlights: "Evidenziazioni",
+                bold: "Grassetto",
+                italic: "Corsivo",
+                underline: "Sottolineato",
+                strike: "Barrato",
+                heading1: "Titolo",
+                heading2: "Sottotitolo",
+                bullet: "Elenco puntato",
+                ordered: "Numerato",
+                checklist: "Checklist",
+                quote: "Citazione",
+                divider: "Separatore",
+                align_left: "Sinistra",
+                align_center: "Centro",
+                align_right: "Destra",
+                marker: "Evidenziatore",
+                code: "Codice"
+            },
+            filters: {
+                all: "Tutte le note",
+                mine: "Le mie private",
+                therapist: "Del terapeuta"
+            },
+            sort: {
+                latest: "Più recenti",
+                oldest: "Più vecchie"
+            },
+            search: {
+                placeholder: "Cerca titolo o contenuto...",
+                clear: "Cancella ricerca",
+                empty: "Nessuna nota trovata per \"%{query}\""
+            },
+            actions: {
+                new_note: "Nuova nota",
+                edit_note: "Modifica nota",
+                delete: "Elimina"
+            },
+            tags: {
+                diary_entry: "Voce di diario",
+                therapist_note: "Nota del terapeuta",
+                therapist_tag: "Dal terapeuta",
+                with_image: "Con immagine"
+            },
+            stats: {
+                total_label: "Note totali",
+                total_hint: "Tutte le voci visibili del tuo diario.",
+                private_label: "Voci private",
+                private_hint: "Note visibili solo a te.",
+                shared_label: "Voci condivise",
+                shared_hint: "Note condivise con il tuo terapeuta."
+            },
+            empty: {
+                title: "Ancora nessuna nota",
+                description: "Annota osservazioni, insight e progressi quando conta.",
+                cta: "Crea la prima nota"
+            },
+            privacy: {
+                shared: "Condivisa",
+                private: "Privata",
+                shared_hint: "Visibile al tuo terapeuta",
+                private_hint: "Solo per te"
+            },
+            toast: {
+                permission_title: "Autorizzazione",
+                permission_body: "Serve l'accesso alla galleria.",
+                error_title: "Errore",
+                image_error: "Impossibile caricare l'immagine.",
+                saved_title: "Salvata",
+                saved_body: "La nota è stata salvata.",
+                deleted_title: "Eliminata",
+                deleted_body: "La nota è stata rimossa."
+            },
+            characters_label: "Caratteri",
+            word_count_label: "Parole",
+            editor: {
+                insert_image: "Inserisci immagine",
+                tap_to_insert: "Tocca per inserire"
+            },
+            delete: {
+                title: "Eliminare la nota?",
+                body: "Questa azione è irreversibile.",
+                cancel: "Annulla",
+                confirm: "Elimina"
+            }
         },
         templates: {
             title: "Modelli",

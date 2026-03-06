@@ -1,4 +1,5 @@
-﻿import { View, Text, TouchableOpacity, ScrollView, TextInput, Alert, ActivityIndicator, Modal, FlatList, Platform, Linking, KeyboardAvoidingView } from 'react-native';
+import { View, Text, ScrollView, TextInput, Alert, ActivityIndicator, Modal, FlatList, Platform, Linking, KeyboardAvoidingView } from 'react-native';
+import { PressableScale } from '../../../components/ui/PressableScale';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
@@ -204,7 +205,7 @@ export default function TherapistResources() {
                 createdAt: serverTimestamp()
             });
 
-            showAlert("Erfolg", "Link wurde erfolgreich hinzugefÃ¼gt.", "success");
+            showAlert("Erfolg", "Link wurde erfolgreich hinzugefügt.", "success");
             resetForm();
             setAddModalVisible(false);
             fetchResources();
@@ -257,8 +258,8 @@ export default function TherapistResources() {
                         userId: client,
                         type: 'FILE_UPLOAD',
                         title: 'Neue Ressource',
-                        body: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, fÃ¼r dich wurde neues Material hinterlegt!' }),
-                        message: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, fÃ¼r dich wurde neues Material hinterlegt!' }),
+                        body: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, für dich wurde neues Material hinterlegt!' }),
+                        message: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, für dich wurde neues Material hinterlegt!' }),
                         read: false,
                         createdAt: serverTimestamp()
                     })
@@ -318,9 +319,9 @@ export default function TherapistResources() {
     const handleDelete = async (item: any) => {
         setConfirmModal({
             visible: true,
-            title: 'Ressource lÃ¶schen',
-            message: `MÃ¶chtest du "${item.title}" wirklich lÃ¶schen?`,
-            confirmText: 'LÃ¶schen',
+            title: 'Ressource löschen',
+            message: `Möchtest du "${item.title}" wirklich löschen?`,
+            confirmText: 'Löschen',
             isDestructive: true,
             onConfirm: async () => {
                 try {
@@ -329,7 +330,7 @@ export default function TherapistResources() {
                         try {
                             await deleteObject(storageRef);
                         } catch (e) {
-                            console.warn("Konnte Datei im Storage nicht lÃ¶schen", e);
+                            console.warn("Konnte Datei im Storage nicht löschen", e);
                         }
                     }
                     await deleteDoc(doc(db, "resources", item.id));
@@ -337,7 +338,7 @@ export default function TherapistResources() {
                     setSelectedResourcesForAssign(prev => prev.filter(id => id !== item.id));
                 } catch (error) {
                     console.error("Error deleting resource:", error);
-                    showAlert("Fehler", "Konnte nicht gelÃ¶scht werden.", "error");
+                    showAlert("Fehler", "Konnte nicht gelöscht werden.", "error");
                 } finally {
                     setConfirmModal(prev => ({ ...prev, visible: false }));
                 }
@@ -415,17 +416,26 @@ export default function TherapistResources() {
     };
 
     const TYPE_CONFIG: Record<string, { bg: string; border: string; text: string; label: string; icon: string }> = {
-        document: { bg: '#EEF2FF', border: '#C7D2FE', text: '#4F46E5', label: 'Dokument', icon: 'ðŸ“„' },
-        file: { bg: '#EEF2FF', border: '#C7D2FE', text: '#4F46E5', label: 'Datei', icon: 'ðŸ“„' },
-        pdf: { bg: '#FEF2F2', border: '#FECACA', text: '#DC2626', label: 'PDF', icon: 'ðŸ“‹' },
-        video: { bg: '#F5F3FF', border: '#DDD6FE', text: '#7C3AED', label: 'Video', icon: 'ðŸŽ¥' },
-        image: { bg: '#F6EFE8', border: '#E7DCCB', text: '#8A6A53', label: 'Bild', icon: 'ðŸ–¼ï¸' },
-        link: { bg: '#EEF4F3', border: '#D8E6E4', text: '#2D666B', label: 'Web Link', icon: 'ðŸ”—' },
+        document: { bg: '#EEF2FF', border: '#C7D2FE', text: '#4F46E5', label: 'Dokument', icon: '📄' },
+        file: { bg: '#EEF2FF', border: '#C7D2FE', text: '#4F46E5', label: 'Datei', icon: '📄' },
+        pdf: { bg: '#FEF2F2', border: '#FECACA', text: '#DC2626', label: 'PDF', icon: '📋' },
+        video: { bg: '#F5F3FF', border: '#DDD6FE', text: '#7C3AED', label: 'Video', icon: '🎥' },
+        image: { bg: '#F6EFE8', border: '#E7DCCB', text: '#8A6A53', label: 'Bild', icon: '🖼️' },
+        link: { bg: '#EEF4F3', border: '#D8E6E4', text: '#2D666B', label: 'Web Link', icon: '🔗' },
+    };
+    const TYPE_ICON_OVERRIDES: Record<string, string> = {
+        document: 'DOC',
+        file: 'FILE',
+        pdf: 'PDF',
+        video: 'VID',
+        image: 'IMG',
+        link: 'WEB',
     };
 
     const renderResourceItem = ({ item, index }: { item: any, index: number }) => {
         const isSelected = selectedResourceIds.includes(item.id);
-        const cfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG['file'];
+        const baseCfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.file;
+        const cfg = { ...baseCfg, icon: TYPE_ICON_OVERRIDES[item.type] ?? TYPE_ICON_OVERRIDES.file };
 
         return (
             <MotiView
@@ -446,10 +456,9 @@ export default function TherapistResources() {
                     overflow: 'hidden',
                 }}
             >
-                <TouchableOpacity
+                <PressableScale
                     onPress={() => selectionMode ? toggleResourceSelection(item.id) : handlePressPreview(item)}
                     onLongPress={() => { setSelectionMode(true); toggleResourceSelection(item.id); }}
-                    activeOpacity={0.75}
                 >
                     {/* Pinned indicator */}
                     {item.isPinned && (
@@ -484,9 +493,9 @@ export default function TherapistResources() {
                             <View style={{ flex: 1 }}>
                                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                                     <Text style={{ fontSize: 17, fontWeight: '800', color: '#182428', flex: 1, lineHeight: 22, marginRight: 8 }} numberOfLines={2}>{item.title}</Text>
-                                    <TouchableOpacity onPress={() => handleTogglePin(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                                    <PressableScale onPress={() => handleTogglePin(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
                                         <Star size={20} color={item.isPinned ? '#F59E0B' : '#BEC7C0'} fill={item.isPinned ? '#F59E0B' : 'transparent'} />
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 </View>
                                 {/* Type badge */}
                                 <View style={{ backgroundColor: cfg.bg, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: cfg.border, alignSelf: 'flex-start' }}>
@@ -517,30 +526,30 @@ export default function TherapistResources() {
                         {/* Action buttons */}
                         {!selectionMode && (
                             <View style={{ flexDirection: 'row', gap: 8, marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(0,0,0,0.05)', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                <TouchableOpacity
+                                <PressableScale
                                     onPress={() => handlePressDelete(item)}
                                     style={{ paddingHorizontal: 14, paddingVertical: 10, backgroundColor: '#FEF2F2', borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderColor: '#FECACA' }}
                                 >
                                     <Trash2 size={15} color="#EF4444" />
-                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 13 }}>LÃ¶schen</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 13 }}>Löschen</Text>
+                                </PressableScale>
+                                <PressableScale
                                     onPress={() => openHistoryModal(item)}
                                     style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: '#F5F1EA', borderWidth: 1, borderColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center' }}
                                 >
                                     <Clock size={16} color="#6F7472" />
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </PressableScale>
+                                <PressableScale
                                     onPress={() => handlePressAssign(item)}
                                     style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#1F2528', borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
                                 >
                                     <Send size={15} color="#B08C57" />
                                     <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>Zuweisen</Text>
-                                </TouchableOpacity>
+                                </PressableScale>
                             </View>
                         )}
                     </View>
-                </TouchableOpacity>
+                </PressableScale>
             </MotiView>
         );
     };
@@ -566,7 +575,7 @@ export default function TherapistResources() {
                         style={{ flex: 1, color: '#182428', fontWeight: '600', fontSize: 16 } as any}
                     />
                     {searchQuery.length > 0 ? (
-                        <TouchableOpacity
+                        <PressableScale
                             accessibilityRole="button"
                             accessibilityLabel="Suche leeren"
                             onPress={() => setSearchQuery('')}
@@ -574,7 +583,7 @@ export default function TherapistResources() {
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                             <X color="#6F7472" size={14} />
-                        </TouchableOpacity>
+                        </PressableScale>
                     ) : null}
                 </View>
 
@@ -583,7 +592,7 @@ export default function TherapistResources() {
                     {FILTER_OPTIONS.map(opt => {
                         const isActive = activeFilter === opt.key;
                         return (
-                            <TouchableOpacity
+                            <PressableScale
                                 key={opt.key}
                                 onPress={() => setActiveFilter(opt.key as any)}
                                 style={{
@@ -604,7 +613,7 @@ export default function TherapistResources() {
                                 }}
                             >
                                 <Text style={{ fontSize: 14, fontWeight: '800', color: isActive ? 'white' : '#6F7472', letterSpacing: 0.2 }}>{opt.label}</Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         );
                     })}
                 </ScrollView>
@@ -613,7 +622,7 @@ export default function TherapistResources() {
             {/* Section heading */}
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                 <Text style={{ fontSize: 12, fontWeight: '900', color: '#8B938E', textTransform: 'uppercase', letterSpacing: 1.5 }}>
-                    Bibliothek Â· {filteredResources.length} {filteredResources.length === 1 ? 'Eintrag' : 'EintrÃ¤ge'}
+                    Bibliothek · {filteredResources.length} {filteredResources.length === 1 ? 'Eintrag' : 'Einträge'}
                 </Text>
                 <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(0,0,0,0.05)', marginLeft: 12 }} />
             </View>
@@ -626,7 +635,7 @@ export default function TherapistResources() {
                         <Library size={36} color="#BEC7C0" strokeWidth={1.5} />
                     </View>
                     <Text style={{ fontSize: 20, fontWeight: '900', color: '#182428', marginBottom: 8 }}>Nichts gefunden</Text>
-                    <Text style={{ fontSize: 14, color: '#8B938E', fontWeight: '500', textAlign: 'center', paddingHorizontal: 40, lineHeight: 20 }}>Ã„ndere die Suchkriterien oder fÃ¼ge eine neue Ressource hinzu.</Text>
+                    <Text style={{ fontSize: 14, color: '#8B938E', fontWeight: '500', textAlign: 'center', paddingHorizontal: 40, lineHeight: 20 }}>Ändere die Suchkriterien oder füge eine neue Ressource hinzu.</Text>
                 </MotiView>
             ) : null}
         </View>
@@ -641,19 +650,19 @@ export default function TherapistResources() {
                     style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 28, paddingHorizontal: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8, zIndex: 10 }}
                 >
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => router.replace('/therapist')}
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}
                         >
                             <ArrowLeft size={18} color="rgba(255,255,255,0.9)" />
-                            <Text style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '700', fontSize: 14 }}>ZurÃ¼ck</Text>
-                        </TouchableOpacity>
+                            <Text style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '700', fontSize: 14 }}>Zurück</Text>
+                        </PressableScale>
 
                         <View style={{ flex: 1, alignItems: 'center' }}>
                             <Text style={{ fontSize: 20, fontWeight: '900', color: 'white', letterSpacing: -0.3 }}>Bibliothek</Text>
                         </View>
 
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => {
                                 if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                 setAddModalVisible(true);
@@ -661,13 +670,13 @@ export default function TherapistResources() {
                             style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#B08C57', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 18, shadowColor: '#B08C57', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.35, shadowRadius: 6, elevation: 3 }}
                         >
                             <Plus size={17} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>HinzufÃ¼gen</Text>
-                        </TouchableOpacity>
+                            <Text style={{ color: 'white', fontWeight: '800', fontSize: 14 }}>Hinzufügen</Text>
+                        </PressableScale>
                     </View>
 
                     {/* Subtitle stats */}
                     <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 13, fontWeight: '600', marginTop: 8 }}>
-                        {resources.length} {resources.length === 1 ? 'Ressource' : 'Ressourcen'} Â· Gemeinsames Material
+                        {resources.length} {resources.length === 1 ? 'Ressource' : 'Ressourcen'} · Gemeinsames Material
                     </Text>
                 </LinearGradient>
             </MotiView>
@@ -687,40 +696,40 @@ export default function TherapistResources() {
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}
                 >
-                    <TouchableOpacity className="flex-1" onPress={() => setAddModalVisible(false)} />
+                    <PressableScale className="flex-1" onPress={() => setAddModalVisible(false)} />
                     <View className="bg-white rounded-t-[32px] p-6 pb-10" style={{ shadowColor: '#000', shadowOffset: { width: 0, height: -10 }, shadowOpacity: 0.1, shadowRadius: 20, elevation: 20 }}>
                         <View className="flex-row justify-between items-center mb-6">
                             <View className="flex-row items-center">
                                 <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F0F4F8', alignItems: 'center', justifyContent: 'center', marginRight: 12, borderWidth: 1, borderColor: '#C5D2DC' }}>
                                     <PlusCircle color="#1F2528" size={22} />
                                 </View>
-                                <Text className="text-xl font-black text-[#1F2528]">Ressource hinzufÃ¼gen</Text>
+                                <Text className="text-xl font-black text-[#1F2528]">Ressource hinzufügen</Text>
                             </View>
-                            <TouchableOpacity onPress={() => setAddModalVisible(false)} className="bg-gray-100 p-2.5 rounded-full" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                            <PressableScale onPress={() => setAddModalVisible(false)} className="bg-gray-100 p-2.5 rounded-full" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={20} color="#1F2528" />
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
 
                         {/* Tabs */}
                         <View className="flex-row gap-3 mb-6 bg-[#F7F4EE] p-1.5 rounded-2xl border border-[#E7E0D4]">
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => setResourceType('file')}
                                 className={`flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2 ${resourceType === 'file' ? 'bg-white shadow-sm border border-[#E7E0D4]' : 'border border-transparent'}`}
                             >
                                 <FileText size={18} color={resourceType === 'file' ? '#1F2528' : '#8B938E'} />
                                 <Text style={{ fontWeight: '700', color: resourceType === 'file' ? '#1F2528' : '#8B938E' }}>Datei</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </PressableScale>
+                            <PressableScale
                                 onPress={() => setResourceType('link')}
                                 className={`flex-1 py-3 rounded-xl items-center flex-row justify-center gap-2 ${resourceType === 'link' ? 'bg-white shadow-sm border border-[#E7E0D4]' : 'border border-transparent'}`}
                             >
                                 <LinkIcon size={18} color={resourceType === 'link' ? '#B08C57' : '#8B938E'} />
                                 <Text style={{ fontWeight: '700', color: resourceType === 'link' ? '#B08C57' : '#8B938E' }}>Web Link</Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
 
                         <View className="mb-4">
-                            <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Titel der Ressource</Text>
+                            <Text className="text-[11px] font-bold text-[#5C696F] uppercase tracking-widest mb-2 ml-1">Titel der Ressource</Text>
                             <TextInput
                                 placeholder="Z.B. Arbeitsblatt Entspannung"
                                 placeholderTextColor="#8B938E"
@@ -731,22 +740,22 @@ export default function TherapistResources() {
                         </View>
 
                         <View className="mb-4">
-                            <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Kurze Beschreibung (optional)</Text>
+                            <Text className="text-[11px] font-bold text-[#5C696F] uppercase tracking-widest mb-2 ml-1">Kurze Beschreibung (optional)</Text>
                             <TextInput
-                                placeholder="Z.B. Eine einfache AtemÃ¼bung fÃ¼r den Alltag"
+                                placeholder="Z.B. Eine einfache Atemübung für den Alltag"
                                 placeholderTextColor="#8B938E"
                                 value={description}
                                 onChangeText={setDescription}
                                 multiline
-                                className="bg-[#F7F4EE] border border-[#E7E0D4] p-4 rounded-2xl text-[#6B7C85] text-base min-h-[80px]"
+                                className="bg-[#F7F4EE] border border-[#E7E0D4] p-4 rounded-2xl text-[#1F2528] text-base min-h-[80px]"
                                 textAlignVertical="top"
                             />
                         </View>
 
                         <View className="mb-4">
-                            <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">Tags (Komma getrennt, optional)</Text>
+                            <Text className="text-[11px] font-bold text-[#5C696F] uppercase tracking-widest mb-2 ml-1">Tags (Komma getrennt, optional)</Text>
                             <TextInput
-                                placeholder="Z.B. Angst, Achtsamkeit, Ãœbung"
+                                placeholder="Z.B. Angst, Achtsamkeit, Übung"
                                 placeholderTextColor="#8B938E"
                                 value={tagsInput}
                                 onChangeText={setTagsInput}
@@ -756,7 +765,7 @@ export default function TherapistResources() {
 
                         {resourceType === 'link' && (
                             <View className="mb-6">
-                                <Text className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-2 ml-1">URL</Text>
+                                <Text className="text-[11px] font-bold text-[#5C696F] uppercase tracking-widest mb-2 ml-1">URL</Text>
                                 <TextInput
                                     placeholder="https://..."
                                     placeholderTextColor="#8B938E"
@@ -769,7 +778,7 @@ export default function TherapistResources() {
                             </View>
                         )}
 
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={resourceType === 'file' ? handleUploadFile : handleAddLink}
                             disabled={uploading}
                             style={{ paddingVertical: 16, marginTop: 8, borderRadius: 18, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: uploading ? '#E7E0D4' : '#1F2528', shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: uploading ? 0 : 0.3, shadowRadius: 8, elevation: uploading ? 0 : 4 }}
@@ -780,9 +789,9 @@ export default function TherapistResources() {
                                 resourceType === 'file' ? <UploadCloud color="#B08C57" size={20} style={{ marginRight: 8 }} /> : <LinkIcon color="#B08C57" size={20} style={{ marginRight: 8 }} />
                             )}
                             <Text style={{ color: 'white', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 }}>
-                                {uploading ? 'Speichern...' : resourceType === 'file' ? 'Datei AuswÃ¤hlen & Hochladen' : 'Link Speichern'}
+                                {uploading ? 'Speichern...' : resourceType === 'file' ? 'Datei Auswählen & Hochladen' : 'Link Speichern'}
                             </Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
@@ -796,18 +805,18 @@ export default function TherapistResources() {
                         className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl"
                         style={{ backgroundColor: 'white' }}
                     >
-                        <View className="bg-gray-50/50 p-6 border-b border-gray-100 flex-row justify-between items-center">
+                        <View className="p-6 flex-row justify-between items-center" style={{ backgroundColor: '#F8F5EF', borderBottomWidth: 1, borderBottomColor: '#E7E0D4' }}>
                             <Text className="text-[20px] font-black text-[#1F2528] tracking-tight">An Klienten Senden</Text>
-                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                            <PressableScale onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={20} color="#1F2528" />
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
 
                         <View className="p-6">
-                            <Text style={{ color: 'rgba(36,56,66,0.6)', fontWeight: '500', fontSize: 15, marginBottom: 16, lineHeight: 22 }}>
+                            <Text style={{ color: '#4B5A61', fontWeight: '500', fontSize: 15, marginBottom: 16, lineHeight: 22 }}>
                                 {selectedResourcesForAssign.length === 1
-                                    ? <Text>An wen mÃ¶chtest du <Text style={{ fontWeight: '700', color: '#1F2528' }}>"{selectedResourcesForAssign[0]?.title}"</Text> zuweisen?</Text>
-                                    : <Text>An wen mÃ¶chtest du die <Text style={{ fontWeight: '700', color: '#1F2528' }}>{selectedResourcesForAssign.length} markierten Ressourcen</Text> zuweisen?</Text>
+                                    ? <Text>An wen möchtest du <Text style={{ fontWeight: '700', color: '#1F2528' }}>"{selectedResourcesForAssign[0]?.title}"</Text> zuweisen?</Text>
+                                    : <Text>An wen möchtest du die <Text style={{ fontWeight: '700', color: '#1F2528' }}>{selectedResourcesForAssign.length} markierten Ressourcen</Text> zuweisen?</Text>
                                 }
                             </Text>
 
@@ -817,7 +826,7 @@ export default function TherapistResources() {
                                 renderItem={({ item }) => {
                                     const isClientSelected = selectedClientsForAssign.includes(item.id);
                                     return (
-                                        <TouchableOpacity
+                                        <PressableScale
                                             onPress={() => toggleClientSelection(item.id)}
                                             style={{ padding: 16, borderRadius: 20, borderWidth: 1.5, marginBottom: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: isClientSelected ? '#FAF7F0' : 'white', borderColor: isClientSelected ? '#B08C57' : '#F5F1EA' }}
                                         >
@@ -830,14 +839,14 @@ export default function TherapistResources() {
                                             <View style={{ width: 24, height: 24, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: isClientSelected ? '#B08C57' : 'white', borderWidth: isClientSelected ? 0 : 2, borderColor: '#E7E0D4' }}>
                                                 {isClientSelected && <Check size={14} color="#fff" />}
                                             </View>
-                                        </TouchableOpacity>
+                                        </PressableScale>
                                     );
                                 }}
                                 style={{ maxHeight: 250 }}
                                 showsVerticalScrollIndicator={false}
                             />
 
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={confirmBulkAssign}
                                 disabled={selectedClientsForAssign.length === 0}
                                 style={{ marginTop: 20, paddingVertical: 16, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: selectedClientsForAssign.length > 0 ? '#1F2528' : '#E7E0D4', shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: selectedClientsForAssign.length > 0 ? 0.3 : 0, shadowRadius: 8, elevation: selectedClientsForAssign.length > 0 ? 4 : 0 }}
@@ -846,7 +855,7 @@ export default function TherapistResources() {
                                 <Text style={{ color: selectedClientsForAssign.length > 0 ? 'white' : '#8B938E', fontWeight: '900', fontSize: 16, letterSpacing: 0.3 }}>
                                     An {selectedClientsForAssign.length} Klient(en) senden
                                 </Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
                     </MotiView>
                 </View>
@@ -864,9 +873,9 @@ export default function TherapistResources() {
                         <Text className="text-white text-[20px] font-black max-w-[80%]" numberOfLines={1}>
                             {selectedResourceForPreview?.title || selectedResourceForPreview?.originalName || 'Vorschau'}
                         </Text>
-                        <TouchableOpacity onPress={() => setPreviewModalVisible(false)} className="w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md">
+                        <PressableScale onPress={() => setPreviewModalVisible(false)} className="w-10 h-10 rounded-full items-center justify-center backdrop-blur-md" style={{ backgroundColor: 'rgba(255,255,255,0.24)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
                             <X size={20} color="white" />
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
 
                     <View className="flex-1">
@@ -882,25 +891,25 @@ export default function TherapistResources() {
                                     </View>
 
                                     {selectedResourceForPreview.description ? (
-                                        <Text className="text-[#1F2528]/70 text-[15px] leading-relaxed mb-4">
+                                        <Text className="text-[15px] leading-relaxed mb-4" style={{ color: '#4B5A61' }}>
                                             {selectedResourceForPreview.description}
                                         </Text>
                                     ) : null}
 
-                                    <TouchableOpacity
+                                    <PressableScale
                                         onPress={() => Linking.openURL(previewUrl)}
                                         className="bg-[#B08C57] flex-row items-center justify-center py-4 rounded-[20px] shadow-sm"
                                         style={{ shadowColor: '#B08C57', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
                                     >
                                         {selectedResourceForPreview.type !== 'link' && <Download size={20} color="white" style={{ marginRight: 8 }} />}
                                         <Text className="text-white font-bold text-[16px]">
-                                            {selectedResourceForPreview.type === 'link' ? 'Im Browser Ã¶ffnen' : 'Speichern / Herunterladen'}
+                                            {selectedResourceForPreview.type === 'link' ? 'Im Browser öffnen' : 'Speichern / Herunterladen'}
                                         </Text>
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 </View>
 
                                 {/* Embedded Preview Section */}
-                                <View className="flex-1 bg-gray-50/50 mt-4 mx-4 mb-8 rounded-[32px] overflow-hidden border border-gray-200">
+                                <View className="flex-1 mt-4 mx-4 mb-8 rounded-[32px] overflow-hidden border" style={{ backgroundColor: '#F5F1EA', borderColor: '#D9E1E5' }}>
                                     {selectedResourceForPreview.type === 'image' ? (
                                         <Image
                                             source={{ uri: previewUrl }}
@@ -955,24 +964,24 @@ export default function TherapistResources() {
                         className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl"
                         style={{ backgroundColor: 'white' }}
                     >
-                        <View className="bg-gray-50/50 p-6 border-b border-gray-100 flex-row justify-between items-center">
+                        <View className="p-6 flex-row justify-between items-center" style={{ backgroundColor: '#F8F5EF', borderBottomWidth: 1, borderBottomColor: '#E7E0D4' }}>
                             <Text className="text-[20px] font-black text-[#1F2528] tracking-tight">Verlauf</Text>
-                            <TouchableOpacity onPress={() => setHistoryModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                            <PressableScale onPress={() => setHistoryModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                 <X size={20} color="#1F2528" />
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
 
                         <View className="p-6">
-                            <Text style={{ color: 'rgba(36,56,66,0.6)', fontWeight: '500', fontSize: 15, marginBottom: 16 }}>
-                                Bisherige Zuweisungen fÃ¼r <Text style={{ fontWeight: '700', color: '#1F2528' }}>"{selectedResourceForHistory?.title}"</Text>
+                            <Text style={{ color: '#4B5A61', fontWeight: '500', fontSize: 15, marginBottom: 16 }}>
+                                Bisherige Zuweisungen für <Text style={{ fontWeight: '700', color: '#1F2528' }}>"{selectedResourceForHistory?.title}"</Text>
                             </Text>
 
                             {loadingHistory ? (
                                 <ActivityIndicator size="small" color="#1F2528" style={{ marginVertical: 32 }} />
                             ) : historyData.length === 0 ? (
                                 <View style={{ paddingVertical: 32, alignItems: 'center', backgroundColor: '#F7F4EE', borderRadius: 18, borderWidth: 1.5, borderColor: '#E7E0D4', borderStyle: 'dashed' }}>
-                                    <Clock size={32} color="#BEC7C0" style={{ marginBottom: 12 }} />
-                                    <Text style={{ color: '#6B7C85', textAlign: 'center', fontWeight: '500' }}>Noch nicht zugewiesen.</Text>
+                                    <Clock size={32} color="#7D8B91" style={{ marginBottom: 12 }} />
+                                    <Text style={{ color: '#4B5A61', textAlign: 'center', fontWeight: '500' }}>Noch nicht zugewiesen.</Text>
                                 </View>
                             ) : (
                                 <FlatList

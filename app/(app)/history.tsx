@@ -1,5 +1,5 @@
-﻿import { useEffect, useState } from 'react';
-import { ActivityIndicator, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Text, View } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useRouter } from 'expo-router';
 import { collection, getDocs, query, where } from 'firebase/firestore';
@@ -11,6 +11,7 @@ import { formatMoodScore, normalizeMoodToTen } from '../../utils/checkinMood';
 import { db } from '../../utils/firebase';
 import i18n from '../../utils/i18n';
 import { getLocalCache, setLocalCache } from '../../utils/SyncManager';
+import { PressableScale } from '../../components/ui/PressableScale';
 
 function formatDate(dateStr: string, locale: string) {
     const d = new Date(dateStr);
@@ -114,9 +115,9 @@ export default function HistoryScreen() {
     return (
         <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
             <View style={{ backgroundColor: '#22474D', paddingTop: 60, paddingBottom: 28, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
-                <TouchableOpacity onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginBottom: 16 }}>
+                <PressableScale onPress={() => router.back()} intensity="subtle" style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginBottom: 16 }}>
                     <Text style={{ color: '#fff', fontWeight: '700' }}>{'<-'} {i18n.t('exercise.back')}</Text>
-                </TouchableOpacity>
+                </PressableScale>
                 <Text style={{ color: '#fff', fontSize: 26, fontWeight: '800' }}>{i18n.t('history.title')}</Text>
                 <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 4 }}>
                     {i18n.t('history.subtitle', { count: exercises.length })}
@@ -179,7 +180,9 @@ export default function HistoryScreen() {
                                                     </View>
                                                 </View>
                                                 <View style={{ alignItems: 'center' }}>
-                                                    <Text style={{ fontSize: 24 }}>{emotion.emoji}</Text>
+                                                    <View style={{ minWidth: 52, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 999, backgroundColor: '#EEF4F3', alignItems: 'center' }}>
+                                                        <Text style={{ fontSize: 12, fontWeight: '900', color: '#2D666B' }}>{emotion.score}/10</Text>
+                                                    </View>
                                                     <Text style={{ fontSize: 11, color: '#6F7472', fontWeight: '700', marginTop: 4 }}>
                                                         {getEmotionLabel(emotion, i18n.locale)}
                                                     </Text>
@@ -209,7 +212,7 @@ export default function HistoryScreen() {
 
                             const ex = item;
                             return (
-                                <TouchableOpacity onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} style={{ flexDirection: 'row', marginBottom: 12, gap: 12 }}>
+                                <PressableScale onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} intensity="medium" style={{ flexDirection: 'row', marginBottom: 12, gap: 12 }}>
                                     <View style={{ alignItems: 'center', width: 24 }}>
                                         <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: '#B08C57', borderWidth: 2, borderColor: '#fff', shadowColor: '#B08C57', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.4, shadowRadius: 4, marginTop: 4 }} />
                                         <View style={{ width: 2, flex: 1, backgroundColor: '#E7DCCB', marginTop: 4 }} />
@@ -249,7 +252,7 @@ export default function HistoryScreen() {
                                             )
                                         )}
                                     </View>
-                                </TouchableOpacity>
+                                </PressableScale>
                             );
                         }}
                     />

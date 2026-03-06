@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, SectionList, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, SectionList, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeBack } from '../../../../../hooks/useSafeBack';
 import { collection, query, where, getDocs } from 'firebase/firestore';
@@ -9,6 +9,7 @@ import { MotiView } from 'moti';
 import { ArrowLeft, Calendar, Activity } from 'lucide-react-native';
 import { CheckinCard } from '../../../../../components/checkins/CheckinCard';
 import { CheckinAnalytics } from '../../../../../components/checkins/CheckinAnalytics';
+import { PressableScale } from '../../../../../components/ui/PressableScale';
 
 export default function TherapistClientCheckinsScreen() {
     const router = useRouter();
@@ -76,10 +77,10 @@ export default function TherapistClientCheckinsScreen() {
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
                 <View style={{ backgroundColor: '#2D666B', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                        <TouchableOpacity onPress={goBack} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
+                        <PressableScale onPress={goBack} intensity="subtle" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
                             <ArrowLeft size={18} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>ZurÃ¼ck</Text>
-                        </TouchableOpacity>
+                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurück</Text>
+                        </PressableScale>
                     </View>
                     <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Stimmungs-Tagebuch</Text>
                     <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600', marginTop: 4 }}>
@@ -100,7 +101,7 @@ export default function TherapistClientCheckinsScreen() {
                         </View>
                         <Text style={{ fontSize: 24, fontWeight: '900', color: '#182428', letterSpacing: -0.5, marginBottom: 12, textAlign: 'center' }}>Keine Check-ins</Text>
                         <Text style={{ fontSize: 16, color: '#6F7472', textAlign: 'center', lineHeight: 24, maxWidth: 300, fontWeight: '500' }}>
-                            Der Klient hat bisher noch keinen Check-in durchgefÃ¼hrt.
+                            Der Klient hat bisher noch keinen Check-in durchgeführt.
                         </Text>
                     </MotiView>
                 </View>

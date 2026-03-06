@@ -1,4 +1,4 @@
-﻿import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
+import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { Exercise } from "../../types";
 import i18n from "../../utils/i18n";
 import { useState, memo } from "react";
@@ -64,7 +64,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
     <WebHoverCard>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${exercise.title} â€” Erledigt am ${completedDate}`}
+        accessibilityLabel={`${exercise.title} — Erledigt am ${completedDate}`}
         onPressIn={handlePressIn}
         onPressOut={() => setPressed(false)}
         onPress={onPress}
@@ -83,7 +83,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
             },
           ]}
         >
-          {/* Top completed stripe â€” muted */}
+          {/* Top completed stripe — muted */}
           <View
             style={{
               height: 3,
@@ -142,7 +142,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
               </Text>
             </View>
 
-            {/* Title â€” crossed out to signal done */}
+            {/* Title — crossed out to signal done */}
             <Text
               style={[
                 styles.title,

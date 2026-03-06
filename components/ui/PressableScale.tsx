@@ -1,98 +1,90 @@
 import React, { useState } from 'react';
-import { Pressable, ViewStyle, Platform } from 'react-native';
+import { Platform, Pressable, ViewStyle, PressableProps } from 'react-native';
 import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 
-interface PressableScaleProps {
-    children: React.ReactNode;
+interface PressableScaleProps extends Omit<PressableProps, 'style' | 'onPress' | 'children'> {
+    children?: React.ReactNode;
     onPress: () => void;
     style?: ViewStyle | ViewStyle[] | any;
     className?: string;
     disabled?: boolean;
+    intensity?: 'subtle' | 'medium' | 'bold';
+    withHaptics?: boolean;
 }
 
-// Web: use motion/react for native pointer hover & tap spring animations
-// Mobile: keep moti + Haptics as before
-let MotionWrapper: React.FC<{ children: React.ReactNode; style?: any; onPress: () => void; disabled?: boolean }>;
+const intensityMap = {
+    subtle: {
+        hoverScale: 1.012,
+        pressedScale: 0.988,
+        hoverLift: 2,
+    },
+    medium: {
+        hoverScale: 1.022,
+        pressedScale: 0.974,
+        hoverLift: 4,
+    },
+    bold: {
+        hoverScale: 1.032,
+        pressedScale: 0.962,
+        hoverLift: 6,
+    },
+} as const;
 
-if (Platform.OS === 'web') {
-    // Lazy-load motion only on web to avoid bundling it into native builds
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const { motion } = require('motion/react');
-    MotionWrapper = ({ children, style, onPress, disabled }) => (
-        <motion.div
-            onClick={disabled ? undefined : onPress}
-            whileHover={disabled ? undefined : { scale: 1.025, y: -2 }}
-            whileTap={disabled ? undefined : { scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 380, damping: 26 }}
-            style={{
-                cursor: disabled ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                flexDirection: 'column',
-                opacity: disabled ? 0.5 : 1,
-                ...style,
-            }}
-        >
-            {children}
-        </motion.div>
-    );
-} else {
-    // Native fallback — identical to original behaviour
-    MotionWrapper = ({ children, style, onPress, disabled }) => {
-        const [pressed, setPressed] = useState(false);
-        return (
-            <Pressable
-                onPressIn={() => {
-                    if (!disabled) {
-                        setPressed(true);
-                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    }
-                }}
-                onPressOut={() => setPressed(false)}
-                onPress={onPress}
-                disabled={disabled}
-            >
-                <MotiView
-                    animate={{ scale: pressed ? 0.95 : 1 }}
-                    transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                    style={style}
-                >
-                    {children}
-                </MotiView>
-            </Pressable>
-        );
-    };
-}
-
-export function PressableScale({ children, onPress, style, className, disabled }: PressableScaleProps) {
-    // On web we delegate entirely to MotionWrapper (which handles click + hover)
-    if (Platform.OS === 'web') {
-        return (
-            <MotionWrapper onPress={onPress} style={style} disabled={disabled}>
-                {children}
-            </MotionWrapper>
-        );
-    }
-
-    // Native: original Pressable + MotiView pattern
+export function PressableScale({
+    children,
+    onPress,
+    style,
+    className,
+    disabled,
+    intensity = 'medium',
+    withHaptics = true,
+    ...pressableProps
+}: PressableScaleProps) {
     const [pressed, setPressed] = useState(false);
+    const [hovered, setHovered] = useState(false);
+    const preset = intensityMap[intensity];
+    const showHoverState = Platform.OS === 'web' && hovered && !pressed && !disabled;
+
     return (
         <Pressable
             className={className}
             onPressIn={() => {
                 if (!disabled) {
                     setPressed(true);
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    if (withHaptics && Platform.OS !== 'web') {
+                        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+                    }
                 }
             }}
             onPressOut={() => setPressed(false)}
+            onHoverIn={() => setHovered(true)}
+            onHoverOut={() => setHovered(false)}
             onPress={onPress}
             disabled={disabled}
+            {...pressableProps}
         >
             <MotiView
-                animate={{ scale: pressed ? 0.95 : 1 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 25 }}
-                style={style}
+                animate={{
+                    scale: disabled ? 1 : pressed ? preset.pressedScale : showHoverState ? preset.hoverScale : 1,
+                    translateY: disabled ? 0 : pressed ? 1 : showHoverState ? -preset.hoverLift : 0,
+                    opacity: disabled ? 0.55 : 1,
+                }}
+                transition={{
+                    type: 'spring',
+                    stiffness: intensity === 'bold' ? 360 : 400,
+                    damping: intensity === 'bold' ? 22 : 26,
+                    mass: intensity === 'subtle' ? 0.9 : 1,
+                }}
+                style={[
+                    style,
+                    Platform.OS === 'web'
+                        ? {
+                            cursor: disabled ? 'not-allowed' : 'pointer',
+                            willChange: 'transform, opacity',
+                        } as any
+                        : null,
+                ]}
             >
                 {children}
             </MotiView>

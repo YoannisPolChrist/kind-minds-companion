@@ -1,10 +1,11 @@
-﻿import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, TextInput, Modal, ActivityIndicator, Share, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, Modal, ActivityIndicator, Share, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { MotiView } from 'moti';
 import { X, Copy, Share2, UserPlus, Link as LinkIcon, Mail, Key, CheckCircle2, AlertCircle } from 'lucide-react-native';
 import { createInvitation } from '../../services/invitationService';
 import { ClientService } from '../../services/clientService';
 import { ErrorHandler } from '../../utils/errors';
+import { PressableScale } from '../ui/PressableScale';
 
 interface AddClientModalProps {
     visible: boolean;
@@ -24,7 +25,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
     const [email, setEmail] = useState('');
     const [birthDate, setBirthDate] = useState('');
 
-    // Result State â€” shown after account is created
+    // Result State — shown after account is created
     const [createdAccount, setCreatedAccount] = useState<{ email: string; resetSent: boolean } | null>(null);
 
     // Invite State
@@ -160,30 +161,32 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                     {/* Header */}
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                         <Text style={{ fontSize: 24, fontWeight: '900', color: '#1F2528', letterSpacing: -0.5 }}>
-                            {offlineProfile ? 'Profil verknÃ¼pfen' : 'Neuer Klient'}
+                            {offlineProfile ? 'Profil verknüpfen' : 'Neuer Klient'}
                         </Text>
-                        <TouchableOpacity onPress={handleClose} style={{ backgroundColor: '#F3EEE6', padding: 8, borderRadius: 20 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                            <X size={22} color="#6F7472" />
-                        </TouchableOpacity>
+                        <PressableScale onPress={handleClose} intensity="subtle" style={{ backgroundColor: '#F3EEE6', padding: 8, borderRadius: 20 }}>
+                            <X size={22} color="#4F5D63" />
+                        </PressableScale>
                     </View>
 
-                    {/* Tabs â€” only show if not linking an offline profile */}
+                    {/* Tabs — only show if not linking an offline profile */}
                     {!offlineProfile && (
                         <View style={{ flexDirection: 'row', backgroundColor: '#F3EEE6', padding: 4, borderRadius: 20, marginBottom: 24 }}>
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => setActiveTab('manual')}
+                                intensity="subtle"
                                 style={{ flex: 1, paddingVertical: 12, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: activeTab === 'manual' ? 'white' : 'transparent' }}
                             >
-                                <UserPlus size={16} color={activeTab === 'manual' ? '#2D666B' : '#6F7472'} />
-                                <Text style={{ fontWeight: '700', color: activeTab === 'manual' ? '#2D666B' : '#6F7472', fontSize: 14 }}>Klient anlegen</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                                <UserPlus size={16} color={activeTab === 'manual' ? '#2D666B' : '#56636B'} />
+                                <Text style={{ fontWeight: '700', color: activeTab === 'manual' ? '#2D666B' : '#56636B', fontSize: 14 }}>Klient anlegen</Text>
+                            </PressableScale>
+                            <PressableScale
                                 onPress={() => setActiveTab('invite')}
+                                intensity="subtle"
                                 style={{ flex: 1, paddingVertical: 12, borderRadius: 16, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 6, backgroundColor: activeTab === 'invite' ? 'white' : 'transparent' }}
                             >
-                                <LinkIcon size={16} color={activeTab === 'invite' ? '#2D666B' : '#6F7472'} />
-                                <Text style={{ fontWeight: '700', color: activeTab === 'invite' ? '#2D666B' : '#6F7472', fontSize: 14 }}>Einladungscode</Text>
-                            </TouchableOpacity>
+                                <LinkIcon size={16} color={activeTab === 'invite' ? '#2D666B' : '#56636B'} />
+                                <Text style={{ fontWeight: '700', color: activeTab === 'invite' ? '#2D666B' : '#56636B', fontSize: 14 }}>Einladungscode</Text>
+                            </PressableScale>
                         </View>
                     )}
 
@@ -197,8 +200,8 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                         <CheckCircle2 size={36} color="#788E76" />
                                     </View>
                                     <Text style={{ fontSize: 22, fontWeight: '900', color: '#1F2528', textAlign: 'center', marginBottom: 8 }}>Klient angelegt!</Text>
-                                    <Text style={{ fontSize: 15, color: '#6F7472', textAlign: 'center', marginBottom: 16, lineHeight: 22 }}>
-                                        Der Account fÃ¼r{'\n'}
+                                    <Text style={{ fontSize: 15, color: '#55636B', textAlign: 'center', marginBottom: 16, lineHeight: 22 }}>
+                                        Der Account für{'\n'}
                                         <Text style={{ fontWeight: '800', color: '#2D666B' }}>{createdAccount.email}</Text>
                                         {'\n'}wurde erfolgreich erstellt.
                                     </Text>
@@ -206,7 +209,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                         <View style={{ backgroundColor: '#EEF4F3', borderRadius: 16, padding: 16, width: '100%', borderWidth: 1, borderColor: '#D8E6E4' }}>
                                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                                                 <Mail size={20} color="#2D666B" />
-                                                <Text style={{ flex: 1, color: '#1D4ED8', fontWeight: '700', fontSize: 14 }}>
+                                                <Text style={{ flex: 1, color: '#1F4B6E', fontWeight: '700', fontSize: 14 }}>
                                                     Eine E-Mail mit dem Link zum Passwort-Setzen wurde verschickt.
                                                 </Text>
                                             </View>
@@ -214,24 +217,25 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                     ) : (
                                         <View style={{ backgroundColor: '#F6F0E7', borderRadius: 16, padding: 16, width: '100%', borderWidth: 1, borderColor: '#FDE68A' }}>
                                             <Text style={{ color: '#92400E', fontWeight: '700', fontSize: 14 }}>
-                                                âš  Die Willkommens-E-Mail konnte nicht versendet werden. Bitte teile dem Klienten den Zugang manuell mit.
+                                                Wichtig: Die Willkommens-E-Mail konnte nicht versendet werden. Bitte teile dem Klienten den Zugang manuell mit.
                                             </Text>
                                         </View>
                                     )}
-                                    <TouchableOpacity
+                                    <PressableScale
                                         onPress={handleClose}
+                                        intensity="medium"
                                         style={{ marginTop: 24, backgroundColor: '#2D666B', paddingVertical: 16, paddingHorizontal: 40, borderRadius: 20 }}
                                     >
                                         <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Fertig</Text>
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 </MotiView>
                             ) : (
                                 <>
                                     {/* Info Banner */}
                                     <View style={{ backgroundColor: '#EEF4F3', borderRadius: 16, padding: 14, marginBottom: 20, flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
                                         <Key size={18} color="#2D666B" style={{ marginTop: 1 }} />
-                                        <Text style={{ flex: 1, color: '#1D4ED8', fontWeight: '600', fontSize: 13, lineHeight: 19 }}>
-                                            Mit E-Mail-Adresse: Klient erhÃ¤lt automatisch eine E-Mail zum Passwort setzen und kann sich sofort einloggen.{'\n'}
+                                        <Text style={{ flex: 1, color: '#1F4B6E', fontWeight: '600', fontSize: 13, lineHeight: 19 }}>
+                                            Mit E-Mail-Adresse: Klient erhält automatisch eine E-Mail zum Passwort setzen und kann sich sofort einloggen.{'\n'}
                                             Ohne E-Mail: Es wird eine Offline-Akte angelegt.
                                         </Text>
                                     </View>
@@ -247,7 +251,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                     {/* Form Fields */}
                                     <View style={{ gap: 16 }}>
                                         <View>
-                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#6F7472', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Vorname *</Text>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#56636B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Vorname *</Text>
                                             <TextInput
                                                 style={{ backgroundColor: '#F5F1EA', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#1F2528', fontWeight: '500' }}
                                                 placeholder="Max"
@@ -257,7 +261,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                             />
                                         </View>
                                         <View>
-                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#6F7472', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Nachname *</Text>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#56636B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Nachname *</Text>
                                             <TextInput
                                                 style={{ backgroundColor: '#F5F1EA', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#1F2528', fontWeight: '500' }}
                                                 placeholder="Mustermann"
@@ -267,7 +271,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                             />
                                         </View>
                                         <View>
-                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#6F7472', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>E-Mail (fÃ¼r App-Zugang)</Text>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#56636B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>E-Mail (für App-Zugang)</Text>
                                             <TextInput
                                                 style={{ backgroundColor: '#F5F1EA', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#1F2528', fontWeight: '500' }}
                                                 placeholder="max@beispiel.de"
@@ -279,7 +283,7 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                             />
                                         </View>
                                         <View>
-                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#6F7472', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Geburtsdatum (Optional)</Text>
+                                            <Text style={{ fontSize: 12, fontWeight: '800', color: '#56636B', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Geburtsdatum (Optional)</Text>
                                             <TextInput
                                                 style={{ backgroundColor: '#F5F1EA', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#1F2528', fontWeight: '500' }}
                                                 placeholder="TT.MM.JJJJ"
@@ -293,32 +297,34 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                     {/* Action Buttons */}
                                     <View style={{ marginTop: 24, gap: 12 }}>
                                         {email.trim() ? (
-                                            <TouchableOpacity
+                                            <PressableScale
                                                 onPress={handleCreateWithAccount}
                                                 disabled={loading || !firstName.trim() || !lastName.trim()}
+                                                intensity="medium"
                                                 style={{ backgroundColor: (!firstName.trim() || !lastName.trim()) ? '#E2E8F0' : '#2D666B', padding: 18, borderRadius: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 8 }}
                                             >
                                                 {loading ? (
                                                     <ActivityIndicator color="white" />
                                                 ) : (
                                                     <>
-                                                        <Mail size={20} color="white" />
-                                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Account anlegen & E-Mail senden</Text>
+                                                        <Mail size={20} color={(!firstName.trim() || !lastName.trim()) ? '#607078' : 'white'} />
+                                                        <Text style={{ color: (!firstName.trim() || !lastName.trim()) ? '#607078' : 'white', fontWeight: '800', fontSize: 16 }}>Account anlegen & E-Mail senden</Text>
                                                     </>
                                                 )}
-                                            </TouchableOpacity>
+                                            </PressableScale>
                                         ) : (
-                                            <TouchableOpacity
+                                            <PressableScale
                                                 onPress={handleCreateOfflineProfile}
                                                 disabled={loading || !firstName.trim() || !lastName.trim()}
+                                                intensity="medium"
                                                 style={{ backgroundColor: (!firstName.trim() || !lastName.trim()) ? '#E2E8F0' : '#6F7472', padding: 18, borderRadius: 18, alignItems: 'center' }}
                                             >
                                                 {loading ? (
                                                     <ActivityIndicator color="white" />
                                                 ) : (
-                                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Offline-Akte erstellen</Text>
+                                                    <Text style={{ color: (!firstName.trim() || !lastName.trim()) ? '#607078' : 'white', fontWeight: '800', fontSize: 16 }}>Offline-Akte erstellen</Text>
                                                 )}
-                                            </TouchableOpacity>
+                                            </PressableScale>
                                         )}
                                     </View>
                                 </>
@@ -333,35 +339,37 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                 <Share2 size={32} color="#4E7E82" />
                             </View>
                             <Text style={{ fontSize: 22, fontWeight: '900', color: '#1F2528', textAlign: 'center', marginBottom: 8 }}>Einladungscode generieren</Text>
-                            <Text style={{ color: '#6F7472', textAlign: 'center', fontWeight: '600', lineHeight: 22, maxWidth: 300, marginBottom: 28 }}>
+                            <Text style={{ color: '#55636B', textAlign: 'center', fontWeight: '600', lineHeight: 22, maxWidth: 300, marginBottom: 28 }}>
                                 {offlineProfile
-                                    ? `Generiere einen Code fÃ¼r ${offlineProfile.firstName} ${offlineProfile.lastName}. Er verknÃ¼pft den neuen Account mit der bisherigen Akte.`
+                                    ? `Generiere einen Code für ${offlineProfile.firstName} ${offlineProfile.lastName}. Er verknüpft den neuen Account mit der bisherigen Akte.`
                                     : 'Dein Klient gibt den Code bei der Registrierung ein und wird direkt mit dir verbunden.'}
                             </Text>
 
                             {generatedCode ? (
                                 <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ width: '100%', alignItems: 'center' }}>
                                     <View style={{ backgroundColor: '#F0F9FF', borderWidth: 2, borderColor: '#BAE6FD', borderStyle: 'dashed', paddingHorizontal: 32, paddingVertical: 24, borderRadius: 24, marginBottom: 20, width: '100%', alignItems: 'center' }}>
-                                        <Text style={{ fontSize: 48, fontWeight: '900', color: '#4E7E82', letterSpacing: 8 }}>{generatedCode}</Text>
+                                        <Text style={{ fontSize: 48, fontWeight: '900', color: '#245B60', letterSpacing: 8 }}>{generatedCode}</Text>
                                     </View>
-                                    <TouchableOpacity
+                                    <PressableScale
                                         onPress={handleShareCode}
+                                        intensity="medium"
                                         style={{ backgroundColor: '#2D666B', width: '100%', padding: 18, borderRadius: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                                     >
                                         <Copy size={20} color="white" />
                                         <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Code teilen / kopieren</Text>
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 </MotiView>
                             ) : (
-                                <TouchableOpacity
+                                <PressableScale
                                     onPress={handleGenerateLink}
                                     disabled={loading}
+                                    intensity="medium"
                                     style={{ backgroundColor: '#2D666B', width: '100%', padding: 18, borderRadius: 18, alignItems: 'center' }}
                                 >
                                     {loading ? <ActivityIndicator color="white" /> : (
                                         <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>Code generieren</Text>
                                     )}
-                                </TouchableOpacity>
+                                </PressableScale>
                             )}
                         </View>
                     )}

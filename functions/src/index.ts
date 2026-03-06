@@ -1,4 +1,4 @@
-import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
+﻿import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
 import * as admin from "firebase-admin";
 import { Expo } from "expo-server-sdk";
 import { Resend } from "resend";
@@ -8,9 +8,9 @@ const db = admin.firestore();
 const expo = new Expo();
 const resend = new Resend("re_CUA2weaM_FhRyT7CzpA9RK6jE3vnC2aNL");
 
-// ────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Email HTML Template Builder
-// ────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function baseTemplate(content: string): string {
   return `
@@ -63,49 +63,49 @@ function exerciseAssignedTemplate(exerciseName: string): string {
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
-      <div class="header-title">Neue Übung zugewiesen ✨</div>
-      <div class="header-subtitle">Dein Therapeut hat etwas Neues für dich vorbereitet.</div>
+      <div class="header-title">Neue Ãœbung zugewiesen âœ¨</div>
+      <div class="header-subtitle">Dein Therapeut hat etwas Neues fÃ¼r dich vorbereitet.</div>
     </div>
     <div class="body">
       <p class="greeting">Hallo,</p>
       <p class="message">
-        Dein Therapeut hat dir eine neue Übung zugewiesen. Öffne die App, um sie zu starten und deinen Fortschritt zu dokumentieren.
+        Dein Therapeut hat dir eine neue Ãœbung zugewiesen. Ã–ffne die App, um sie zu starten und deinen Fortschritt zu dokumentieren.
       </p>
       <div class="info-box">
-        <div class="info-box-label">Übung</div>
-        <div class="info-box-value">📋 ${exerciseName}</div>
+        <div class="info-box-label">Ãœbung</div>
+        <div class="info-box-value">ðŸ“‹ ${exerciseName}</div>
       </div>
       <p class="message">
-        Regelmäßiges Üben ist ein wichtiger Teil deines Therapieprozesses. Wir sind hier, um dich dabei zu unterstützen. 💙
+        RegelmÃ¤ÃŸiges Ãœben ist ein wichtiger Teil deines Therapieprozesses. Wir sind hier, um dich dabei zu unterstÃ¼tzen. ðŸ’™
       </p>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">Übung öffnen →</a>
+      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">Ãœbung Ã¶ffnen â†’</a>
       <div class="divider"></div>
       <p class="message" style="font-size:13px; color:#9CA3AF;">
-        Falls du Fragen zu dieser Übung hast, wende dich direkt an deinen Therapeuten.
+        Falls du Fragen zu dieser Ãœbung hast, wende dich direkt an deinen Therapeuten.
       </p>
     </div>
   `);
 }
 
 function resourceSharedTemplate(resourceTitle: string, resourceType: string): string {
-  const emoji = resourceType === 'pdf' ? '📄' : '🔗';
+  const emoji = resourceType === 'pdf' ? 'ðŸ“„' : 'ðŸ”—';
   const typeLabel = resourceType === 'pdf' ? 'PDF-Dokument' : 'Link';
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
       <div class="header-title">Neue Ressource geteilt ${emoji}</div>
-      <div class="header-subtitle">Dein Therapeut hat dir etwas Nützliches bereitgestellt.</div>
+      <div class="header-subtitle">Dein Therapeut hat dir etwas NÃ¼tzliches bereitgestellt.</div>
     </div>
     <div class="body">
       <p class="greeting">Hallo,</p>
       <p class="message">
-        Dein Therapeut hat eine neue Ressource für dich in der App hinterlegt. Du findest sie im Bereich <em>Ressourcen</em>.
+        Dein Therapeut hat eine neue Ressource fÃ¼r dich in der App hinterlegt. Du findest sie im Bereich <em>Ressourcen</em>.
       </p>
       <div class="info-box">
         <div class="info-box-label">${typeLabel}</div>
         <div class="info-box-value">${emoji} ${resourceTitle}</div>
       </div>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">Ressourcen ansehen →</a>
+      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">Ressourcen ansehen â†’</a>
     </div>
   `);
 }
@@ -114,7 +114,7 @@ function checkinReminderTemplate(): string {
   return baseTemplate(`
     <div class="header" style="background: linear-gradient(135deg, #D4AF37 0%, #AA7C11 100%);">
       <div class="header-logo" style="color:rgba(255,255,255,0.6);">Therapie-App</div>
-      <div class="header-title">Dein täglicher Check-in wartet 🌅</div>
+      <div class="header-title">Dein tÃ¤glicher Check-in wartet ðŸŒ…</div>
       <div class="header-subtitle">Wie geht es dir heute?</div>
     </div>
     <div class="body">
@@ -123,9 +123,9 @@ function checkinReminderTemplate(): string {
         Du hast deinen heutigen Check-in noch nicht abgeschlossen. Nimm dir kurz einen Moment, um deine Stimmung zu reflektieren. Es dauert nur 30 Sekunden!
       </p>
       <p class="message">
-        Deine täglichen Check-ins helfen dir und deinem Therapeuten, deinen Fortschritt besser nachzuvollziehen. 🌱
+        Deine tÃ¤glichen Check-ins helfen dir und deinem Therapeuten, deinen Fortschritt besser nachzuvollziehen. ðŸŒ±
       </p>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn" style="background: linear-gradient(135deg, #D4AF37, #AA7C11);">Check-in starten →</a>
+      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn" style="background: linear-gradient(135deg, #D4AF37, #AA7C11);">Check-in starten â†’</a>
     </div>
   `);
 }
@@ -139,7 +139,7 @@ function generalTemplate(title: string, body: string): string {
     <div class="body">
       <p class="greeting">Hallo,</p>
       <p class="message">${body}</p>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">App öffnen →</a>
+      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">App Ã¶ffnen â†’</a>
     </div>
   `);
 }
@@ -148,18 +148,18 @@ function passwordResetTemplate(resetLink: string): string {
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
-      <div class="header-title">Passwort zurücksetzen 🔑</div>
-      <div class="header-subtitle">Erstelle ein neues Passwort für deinen Account.</div>
+      <div class="header-title">Passwort zurÃ¼cksetzen ðŸ”‘</div>
+      <div class="header-subtitle">Erstelle ein neues Passwort fÃ¼r deinen Account.</div>
     </div>
     <div class="body">
       <p class="greeting">Hallo,</p>
       <p class="message">
-        Wir haben eine Anfrage erhalten, dein Passwort für die Therapie-App zurückzusetzen. Klicke auf den Button unten, um ein neues Passwort festzulegen.
+        Wir haben eine Anfrage erhalten, dein Passwort fÃ¼r die Therapie-App zurÃ¼ckzusetzen. Klicke auf den Button unten, um ein neues Passwort festzulegen.
       </p>
-      <a href="${resetLink}" class="cta-btn">Passwort zurücksetzen →</a>
+      <a href="${resetLink}" class="cta-btn">Passwort zurÃ¼cksetzen â†’</a>
       <div class="divider"></div>
       <p class="message" style="font-size:13px; color:#9CA3AF;">
-        Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail einfach ignorieren. Dein Passwort bleibt dann unverändert.
+        Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail einfach ignorieren. Dein Passwort bleibt dann unverÃ¤ndert.
       </p>
     </div>
   `);
@@ -169,15 +169,15 @@ function welcomeTemplate(resetLink: string): string {
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
-      <div class="header-title">Willkommen! 👋</div>
-      <div class="header-subtitle">Dein Therapeut hat einen Account für dich erstellt.</div>
+      <div class="header-title">Willkommen! ðŸ‘‹</div>
+      <div class="header-subtitle">Dein Therapeut hat einen Account fÃ¼r dich erstellt.</div>
     </div>
     <div class="body">
       <p class="greeting">Hallo,</p>
       <p class="message">
         Dein Therapeut hat dich zur Therapie-App eingeladen. Um loszulegen, richte dir bitte ein eigenes, sicheres Passwort ein.
       </p>
-      <a href="${resetLink}" class="cta-btn">Passwort festlegen →</a>
+      <a href="${resetLink}" class="cta-btn">Passwort festlegen â†’</a>
       <div class="divider"></div>
       <p class="message" style="font-size:13px; color:#9CA3AF;">
         Nachdem du dein Passwort vergeben hast, kannst du dich jederzeit mit deiner E-Mail-Adresse und dem neuen Passwort in der App anmelden.
@@ -191,22 +191,22 @@ function verifyEmailTemplate(verifyLink: string): string {
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
-      <div class="header-title">E-Mail bestätigen 📧</div>
+      <div class="header-title">E-Mail bestÃ¤tigen ðŸ“§</div>
       <div class="header-subtitle">Willkommen bei der Therapie-App!</div>
     </div>
     <div class="body">
       <p class="greeting">Hallo,</p>
       <p class="message">
-        Vielen Dank für deine Registrierung. Bitte bestätige deine E-Mail-Adresse über den untenstehenden Button, um deinen Account zu aktivieren und loszulegen.
+        Vielen Dank fÃ¼r deine Registrierung. Bitte bestÃ¤tige deine E-Mail-Adresse Ã¼ber den untenstehenden Button, um deinen Account zu aktivieren und loszulegen.
       </p>
-      <a href="${verifyLink}" class="cta-btn">E-Mail bestätigen →</a>
+      <a href="${verifyLink}" class="cta-btn">E-Mail bestÃ¤tigen â†’</a>
     </div>
   `);
 }
 
-// ────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Cloud Function
-// ────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const onNotificationCreated = onDocumentCreated(
   { document: "notifications/{notificationId}", retry: true },
@@ -280,16 +280,16 @@ export const onNotificationCreated = onDocumentCreated(
 
         switch (type) {
           case "exercise_assigned":
-            html = exerciseAssignedTemplate(exerciseTitle || title || "Neue Übung");
-            subject = `📋 Neue Übung: ${exerciseTitle || title || "Neue Übung"}`;
+            html = exerciseAssignedTemplate(exerciseTitle || title || "Neue Ãœbung");
+            subject = `ðŸ“‹ Neue Ãœbung: ${exerciseTitle || title || "Neue Ãœbung"}`;
             break;
           case "resource_shared":
             html = resourceSharedTemplate(resourceTitle || title || "Neue Ressource", resourceType || "link");
-            subject = `📎 Neue Ressource: ${resourceTitle || title || "Neue Ressource"}`;
+            subject = `ðŸ“Ž Neue Ressource: ${resourceTitle || title || "Neue Ressource"}`;
             break;
           case "checkin_reminder":
             html = checkinReminderTemplate();
-            subject = "🌅 Dein täglicher Check-in wartet auf dich";
+            subject = "ðŸŒ… Dein tÃ¤glicher Check-in wartet auf dich";
             break;
           default:
             html = generalTemplate(
@@ -356,7 +356,7 @@ export const onClientDocumentDeleted = onDocumentDeleted(
       console.log(`Successfully deleted Firebase Auth account for userId: ${userId}`);
     } catch (authError: any) {
       if (authError.code === "auth/user-not-found") {
-        console.log(`Auth account not found for userId: ${userId} – nothing to delete.`);
+        console.log(`Auth account not found for userId: ${userId} â€“ nothing to delete.`);
       } else {
         console.error(`Failed to delete Auth account for userId: ${userId}`, authError);
       }
@@ -400,9 +400,9 @@ export const onClientDocumentDeleted = onDocumentDeleted(
   }
 );
 
-// ────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Custom Auth Emails (Password Reset, Welcome Emails)
-// ────────────────────────────────────────────────────────────
+// â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 export const onAuthEmailRequest = onDocumentCreated(
   "mail_requests/{requestId}",
@@ -425,15 +425,15 @@ export const onAuthEmailRequest = onDocumentCreated(
         if (type === "WELCOME_CLIENT") {
           authLink = await admin.auth().generatePasswordResetLink(email);
           html = welcomeTemplate(authLink);
-          subject = "👋 Willkommen bei der Therapie-App – Bitte lege dein Passwort fest";
+          subject = "ðŸ‘‹ Willkommen bei der Therapie-App â€“ Bitte lege dein Passwort fest";
         } else if (type === "VERIFY_EMAIL") {
           authLink = await admin.auth().generateEmailVerificationLink(email);
           html = verifyEmailTemplate(authLink);
-          subject = "📧 Bitte bestätige deine E-Mail-Adresse für die Therapie-App";
+          subject = "ðŸ“§ Bitte bestÃ¤tige deine E-Mail-Adresse fÃ¼r die Therapie-App";
         } else {
           authLink = await admin.auth().generatePasswordResetLink(email);
           html = passwordResetTemplate(authLink);
-          subject = "🔑 Setze dein Therapie-App Passwort zurück";
+          subject = "ðŸ”‘ Setze dein Therapie-App Passwort zurÃ¼ck";
         }
 
         // Send via Resend
@@ -462,3 +462,4 @@ export const onAuthEmailRequest = onDocumentCreated(
     }
   }
 );
+

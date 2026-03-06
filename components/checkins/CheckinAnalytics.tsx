@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import { MotiView } from 'moti';
 import { Activity, Star } from 'lucide-react-native';
@@ -38,7 +38,7 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
 
         let totalScore = 0;
         let validScoresCount = 0;
-        const emotionCounts = new Map<string, { count: number; color: string; emoji: string; label: string }>();
+        const emotionCounts = new Map<string, { count: number; color: string; label: string }>();
         const tagCounts: Record<string, number> = {};
         const weekdayCounts = Array.from({ length: 7 }, (_, index) => ({
             label: weekdayLabel(index),
@@ -63,7 +63,6 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                 emotionCounts.set(emotion.id, {
                     count: nextCount,
                     color: emotion.color,
-                    emoji: emotion.emoji,
                     label: getEmotionLabel(emotion, i18n.locale),
                 });
             }
@@ -80,7 +79,7 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
             .sort((left, right) => right.count - left.count)
             .slice(0, 4)
             .map((emotion) => ({
-                label: `${emotion.emoji} ${emotion.label}`,
+                label: emotion.label,
                 value: emotion.count,
                 color: emotion.color,
             }));
@@ -170,7 +169,7 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                     <View style={{ alignItems: 'flex-end' }}>
                         <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F1EA', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginBottom: 8 }}>
                             <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? colors.headerText : '#5E655F' }}>
-                                {checkins.length} Eintraege
+                                {checkins.length} Einträge
                             </Text>
                         </View>
                         {analytics.topTags.length > 0 ? (
@@ -209,7 +208,7 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                     <View style={{ flex: 1, minWidth: isCompact ? '100%' : 280, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F5F1EA', borderRadius: 24, padding: isCompact ? 14 : 18 }}>
                         <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 6 }}>Emotionen</Text>
                         <Text style={{ fontSize: 12, color: colors.textSubtle, marginBottom: 12 }}>
-                            {selectedEmotion ? selectedEmotion.label : 'Verteilung der haeufigsten Stimmungen'}
+                            {selectedEmotion ? selectedEmotion.label : 'Verteilung der häufigsten Stimmungen'}
                         </Text>
                         <FlDonutChart
                             data={analytics.topEmotions}
@@ -244,7 +243,7 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
 
                 {analytics.topTags.length > 0 ? (
                     <View style={{ marginTop: 20 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 12 }}>Hauefigste Aktivitaeten</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 12 }}>Häufigste Aktivitäten</Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                             {analytics.topTags.map(([tag, count], index) => (
                                 <View

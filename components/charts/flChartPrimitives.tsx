@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Svg, {
   Circle,
   Defs,
@@ -61,6 +61,23 @@ interface DonutChartProps extends BaseChartProps {
   showLegend?: boolean;
 }
 
+interface ProgressRingsChartProps extends BaseChartProps {
+  data: ChartDatum[];
+  width: number;
+  ringSize?: number;
+  strokeWidth?: number;
+  maxValue?: number;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
+}
+
+interface ComparisonBarChartProps extends BaseChartProps {
+  data: Array<ChartDatum & { secondaryValue?: number }>;
+  width: number;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
+}
+
 interface RadarChartProps extends BaseChartProps {
   data: ChartDatum[];
   size?: number;
@@ -68,6 +85,31 @@ interface RadarChartProps extends BaseChartProps {
   maxValue?: number;
   selectedIndex?: number;
   onSelectIndex?: (index: number) => void;
+}
+
+interface HeatmapGridChartProps extends BaseChartProps {
+  data: ChartDatum[];
+  width: number;
+  columns?: number;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
+  maxValue?: number;
+}
+
+interface RangeChartProps extends BaseChartProps {
+  data: ChartDatum[];
+  width: number;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
+  maxValue?: number;
+}
+
+interface BubbleChartProps extends BaseChartProps {
+  data: ChartDatum[];
+  width: number;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
+  maxValue?: number;
 }
 
 function getTickValues(minValue: number, maxValue: number, count = 4) {
@@ -503,6 +545,92 @@ export function FlBarChart({
   );
 }
 
+export function FlComparisonBarChart({
+  data,
+  width,
+  selectedIndex,
+  onSelectIndex,
+  textColor = DEFAULT_TEXT,
+  subtleTextColor = DEFAULT_SUBTLE,
+}: ComparisonBarChartProps) {
+  const safeData = data.map((item) => ({
+    ...item,
+    value: Math.max(0, item.value),
+    secondaryValue: Math.max(0, item.secondaryValue ?? item.value),
+  }));
+  const maxValue = Math.max(
+    1,
+    ...safeData.map((item) => Math.max(item.value, item.secondaryValue ?? item.value)),
+  );
+  const activeIndex = selectedIndex === undefined && safeData.length > 0
+    ? 0
+    : clamp(selectedIndex ?? 0, 0, Math.max(0, safeData.length - 1));
+
+  if (safeData.length === 0) {
+    return (
+      <View style={{ width, height: 220, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: subtleTextColor, fontSize: 13 }}>Keine Daten vorhanden</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ width, gap: 12 }}>
+      {safeData.map((item, index) => {
+        const isActive = index === activeIndex;
+        const referenceRatio = clamp((item.secondaryValue ?? item.value) / maxValue, 0, 1);
+        const currentRatio = clamp(item.value / maxValue, 0, 1);
+
+        return (
+          <Pressable
+            key={`${item.label}-${index}`}
+            onPress={() => onSelectIndex?.(index)}
+            style={{
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: isActive ? withAlpha(item.color, 0.24) : withAlpha(item.color, 0.12),
+              backgroundColor: isActive ? withAlpha(item.color, 0.08) : '#FFFFFF',
+              paddingHorizontal: 14,
+              paddingVertical: 14,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={{ color: textColor, fontSize: 14, fontWeight: isActive ? '800' : '700', flex: 1, paddingRight: 12 }}>
+                {truncateLabel(item.label, 26)}
+              </Text>
+              <Text style={{ color: isActive ? item.color : subtleTextColor, fontSize: 12, fontWeight: '800' }}>
+                {formatChartNumber(item.value)} / {formatChartNumber(item.secondaryValue ?? item.value)}
+              </Text>
+            </View>
+
+            <View style={{ gap: 8 }}>
+              <View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ color: subtleTextColor, fontSize: 10, fontWeight: '800', textTransform: 'uppercase' }}>Referenz</Text>
+                  <Text style={{ color: subtleTextColor, fontSize: 10, fontWeight: '800' }}>{formatChartNumber(item.secondaryValue ?? item.value)}</Text>
+                </View>
+                <View style={{ height: 10, borderRadius: 999, backgroundColor: withAlpha(item.color, 0.08), overflow: 'hidden' }}>
+                  <View style={{ width: `${referenceRatio * 100}%`, height: '100%', borderRadius: 999, backgroundColor: withAlpha(item.color, 0.3) }} />
+                </View>
+              </View>
+
+              <View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <Text style={{ color: isActive ? item.color : subtleTextColor, fontSize: 10, fontWeight: '800', textTransform: 'uppercase' }}>Aktuell</Text>
+                  <Text style={{ color: isActive ? item.color : subtleTextColor, fontSize: 10, fontWeight: '800' }}>{formatChartNumber(item.value)}</Text>
+                </View>
+                <View style={{ height: 14, borderRadius: 999, backgroundColor: withAlpha(item.color, 0.1), overflow: 'hidden' }}>
+                  <View style={{ width: `${currentRatio * 100}%`, height: '100%', borderRadius: 999, backgroundColor: item.color }} />
+                </View>
+              </View>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 export function FlDonutChart({
   data,
   size = 220,
@@ -630,6 +758,124 @@ export function FlDonutChart({
           })}
         </View>
       ) : null}
+    </View>
+  );
+}
+
+export function FlProgressRingsChart({
+  data,
+  width,
+  ringSize = 92,
+  strokeWidth = 10,
+  maxValue,
+  selectedIndex,
+  onSelectIndex,
+  textColor = DEFAULT_TEXT,
+  subtleTextColor = DEFAULT_SUBTLE,
+}: ProgressRingsChartProps) {
+  const safeMaxValue = maxValue ?? Math.max(100, ...data.map((item) => item.value), 1);
+  const activeIndex = selectedIndex === undefined && data.length > 0
+    ? 0
+    : clamp(selectedIndex ?? 0, 0, Math.max(0, data.length - 1));
+  const radius = ringSize / 2;
+  const innerRadius = radius - strokeWidth;
+  const columns = width < 320 ? 2 : 3;
+  const cardWidth = Math.max(96, Math.min(132, (width - (columns - 1) * 12) / columns));
+
+  if (data.length === 0) {
+    return (
+      <View style={{ height: 220, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: subtleTextColor, fontSize: 13 }}>Keine Daten vorhanden</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View
+      style={{
+        width,
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+        gap: 12,
+      }}
+    >
+      {data.map((item, index) => {
+        const ratio = clamp(item.value / safeMaxValue, 0, 1);
+        const arc = d3.arc<d3.DefaultArcObject>()
+          .innerRadius(innerRadius)
+          .outerRadius(radius - 6)
+          .cornerRadius(8)
+          .startAngle(-Math.PI / 2)
+          .endAngle(-Math.PI / 2 + Math.PI * 2 * ratio);
+        const isActive = index === activeIndex;
+
+        return (
+          <Pressable
+            key={`${item.label}-${index}`}
+            onPress={() => onSelectIndex?.(index)}
+            style={{
+              width: cardWidth,
+              borderRadius: 20,
+              borderWidth: 1,
+              borderColor: isActive ? withAlpha(item.color, 0.3) : withAlpha(item.color, 0.14),
+              backgroundColor: isActive ? withAlpha(item.color, 0.08) : '#FFFFFF',
+              paddingVertical: 14,
+              paddingHorizontal: 10,
+              alignItems: 'center',
+            }}
+          >
+            <Svg width={ringSize} height={ringSize}>
+              <G x={radius} y={radius}>
+                <Circle
+                  cx={0}
+                  cy={0}
+                  r={radius - 11}
+                  stroke={withAlpha(item.color, 0.14)}
+                  strokeWidth={strokeWidth}
+                  fill="transparent"
+                />
+                <Path
+                  d={arc({} as d3.DefaultArcObject) ?? ''}
+                  fill={item.color}
+                />
+              </G>
+              <Circle cx={radius} cy={radius} r={innerRadius - 6} fill="#FFFFFF" />
+              <SvgText
+                x={radius}
+                y={radius + 4}
+                textAnchor="middle"
+                fill={item.color}
+                fontSize={18}
+                fontWeight="900"
+              >
+                {`${Math.round(ratio * 100)}%`}
+              </SvgText>
+            </Svg>
+            <Text
+              style={{
+                color: textColor,
+                fontSize: 12,
+                fontWeight: '800',
+                textAlign: 'center',
+                marginTop: 4,
+              }}
+            >
+              {truncateLabel(item.label, 18)}
+            </Text>
+            <Text
+              style={{
+                color: isActive ? item.color : subtleTextColor,
+                fontSize: 11,
+                fontWeight: '800',
+                marginTop: 2,
+              }}
+            >
+              {formatChartNumber(item.value)} / {formatChartNumber(safeMaxValue)}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
@@ -772,6 +1018,402 @@ export function FlRadarChart({
           </Text>
         </View>
       ) : null}
+    </View>
+  );
+}
+
+interface StackedBarChartProps extends BaseChartProps {
+  data: ChartDatum[];
+  width: number;
+  barHeight?: number;
+  selectedIndex?: number;
+  onSelectIndex?: (index: number) => void;
+}
+
+export function FlStackedBarChart({
+  data,
+  width,
+  barHeight = 28,
+  selectedIndex,
+  onSelectIndex,
+  textColor = DEFAULT_TEXT,
+  subtleTextColor = DEFAULT_SUBTLE,
+}: StackedBarChartProps) {
+  const normalized = data.map((item) => ({
+    ...item,
+    value: Math.max(0, item.value),
+  }));
+  const total = normalized.reduce((sum, item) => sum + item.value, 0);
+  const activeIndex = selectedIndex === undefined && normalized.length > 0
+    ? 0
+    : clamp(selectedIndex ?? 0, 0, Math.max(0, normalized.length - 1));
+  const activeItem = normalized[activeIndex];
+  const barWidth = Math.max(120, width - 8);
+
+  const segments = useMemo(() => {
+    if (total <= 0) return [];
+
+    let offset = 0;
+    return normalized.map((item, index) => {
+      const segmentWidth = (item.value / total) * barWidth;
+      const next = {
+        ...item,
+        index,
+        x: offset,
+        width: segmentWidth,
+      };
+      offset += segmentWidth;
+      return next;
+    });
+  }, [barWidth, normalized, total]);
+
+  if (normalized.length === 0 || total <= 0) {
+    return (
+      <View style={{ width, alignItems: 'center' }}>
+        <View
+          style={{
+            width: barWidth,
+            height: barHeight,
+            borderRadius: barHeight / 2,
+            backgroundColor: withAlpha('#BEC7C0', 0.22),
+          }}
+        />
+        <Text style={{ color: subtleTextColor, fontSize: 13, marginTop: 10 }}>Keine Verteilung vorhanden</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ width }}>
+      <View style={{ alignItems: 'center', marginBottom: 12 }}>
+        <Svg width={barWidth} height={barHeight + 6}>
+          <Rect
+            x={0}
+            y={3}
+            width={barWidth}
+            height={barHeight}
+            rx={barHeight / 2}
+            fill={withAlpha(activeItem?.color ?? '#BEC7C0', 0.1)}
+          />
+          {segments.map((segment, index) => (
+            <Rect
+              key={`${segment.label}-${index}`}
+              x={segment.x}
+              y={3}
+              width={Math.max(segment.width, 6)}
+              height={barHeight}
+              fill={segment.color}
+              opacity={index === activeIndex ? 1 : 0.88}
+              onPress={() => onSelectIndex?.(index)}
+            />
+          ))}
+        </Svg>
+      </View>
+
+      <View style={{ gap: 8 }}>
+        {segments.map((segment, index) => {
+          const percentage = Math.round((segment.value / total) * 100);
+          const isActive = index === activeIndex;
+
+          return (
+            <Pressable
+              key={`legend-${segment.label}-${index}`}
+              onPress={() => onSelectIndex?.(index)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 16,
+                backgroundColor: isActive ? withAlpha(segment.color, 0.12) : '#FFFFFF',
+                borderWidth: 1,
+                borderColor: isActive ? withAlpha(segment.color, 0.24) : withAlpha(segment.color, 0.08),
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                <View
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: segment.color,
+                  }}
+                />
+                <Text style={{ color: textColor, fontSize: 13, fontWeight: isActive ? '800' : '700', flex: 1 }}>
+                  {truncateLabel(segment.label, 24)}
+                </Text>
+              </View>
+              <Text style={{ color: isActive ? segment.color : subtleTextColor, fontSize: 12, fontWeight: '800' }}>
+                {percentage}% ({formatChartNumber(segment.value)})
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
+export function FlHeatmapGridChart({
+  data,
+  width,
+  columns = width < 320 ? 3 : 4,
+  selectedIndex,
+  onSelectIndex,
+  maxValue,
+  textColor = DEFAULT_TEXT,
+  subtleTextColor = DEFAULT_SUBTLE,
+}: HeatmapGridChartProps) {
+  const safeMaxValue = maxValue ?? Math.max(1, ...data.map((item) => item.value), 1);
+  const activeIndex = selectedIndex === undefined && data.length > 0
+    ? 0
+    : clamp(selectedIndex ?? 0, 0, Math.max(0, data.length - 1));
+  const gap = 10;
+  const cellWidth = Math.max(74, (width - gap * (columns - 1)) / columns);
+
+  if (data.length === 0) {
+    return (
+      <View style={{ width, height: 220, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: subtleTextColor, fontSize: 13 }}>Keine Daten vorhanden</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ width }}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap }}>
+        {data.map((item, index) => {
+          const ratio = clamp(item.value / safeMaxValue, 0, 1);
+          const isActive = index === activeIndex;
+          return (
+            <Pressable
+              key={`${item.label}-${index}`}
+              onPress={() => onSelectIndex?.(index)}
+              style={{
+                width: cellWidth,
+                minHeight: cellWidth,
+                borderRadius: 18,
+                borderWidth: 1,
+                borderColor: isActive ? withAlpha(item.color, 0.3) : withAlpha(item.color, 0.12),
+                backgroundColor: withAlpha(item.color, 0.12 + ratio * 0.58),
+                padding: 10,
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text
+                numberOfLines={2}
+                style={{
+                  color: ratio > 0.56 ? '#FFFFFF' : textColor,
+                  fontSize: 12,
+                  fontWeight: '800',
+                  lineHeight: 16,
+                }}
+              >
+                {truncateLabel(item.label, 18)}
+              </Text>
+              <Text
+                style={{
+                  color: ratio > 0.48 ? '#FFFFFF' : isActive ? item.color : subtleTextColor,
+                  fontSize: 16,
+                  fontWeight: '900',
+                  marginTop: 8,
+                }}
+              >
+                {formatChartNumber(item.value)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 }}>
+        <Text style={{ color: subtleTextColor, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>
+          Niedrig
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 6 }}>
+          {[0.18, 0.34, 0.5, 0.66].map((alpha, index) => (
+            <View
+              key={`heat-legend-${index}`}
+              style={{
+                width: 18,
+                height: 10,
+                borderRadius: 999,
+                backgroundColor: withAlpha(data[activeIndex]?.color ?? '#B08C57', alpha),
+              }}
+            />
+          ))}
+        </View>
+        <Text style={{ color: subtleTextColor, fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>
+          Hoch
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+export function FlRangeChart({
+  data,
+  width,
+  selectedIndex,
+  onSelectIndex,
+  maxValue,
+  textColor = DEFAULT_TEXT,
+  subtleTextColor = DEFAULT_SUBTLE,
+}: RangeChartProps) {
+  const safeMaxValue = maxValue ?? Math.max(100, ...data.map((item) => item.value), 1);
+  const activeIndex = selectedIndex === undefined && data.length > 0
+    ? 0
+    : clamp(selectedIndex ?? 0, 0, Math.max(0, data.length - 1));
+
+  if (data.length === 0) {
+    return (
+      <View style={{ width, height: 220, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: subtleTextColor, fontSize: 13 }}>Keine Daten vorhanden</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ width, gap: 12 }}>
+      {data.map((item, index) => {
+        const isActive = index === activeIndex;
+        const ratio = clamp(item.value / safeMaxValue, 0, 1);
+        return (
+          <Pressable
+            key={`${item.label}-${index}`}
+            onPress={() => onSelectIndex?.(index)}
+            style={{
+              borderRadius: 18,
+              borderWidth: 1,
+              borderColor: isActive ? withAlpha(item.color, 0.24) : withAlpha(item.color, 0.12),
+              backgroundColor: isActive ? withAlpha(item.color, 0.07) : '#FFFFFF',
+              paddingHorizontal: 14,
+              paddingVertical: 12,
+            }}
+          >
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text style={{ color: textColor, fontSize: 13, fontWeight: isActive ? '800' : '700', flex: 1, paddingRight: 12 }}>
+                {truncateLabel(item.label, 24)}
+              </Text>
+              <Text style={{ color: isActive ? item.color : subtleTextColor, fontSize: 12, fontWeight: '900' }}>
+                {formatChartNumber(item.value)}
+              </Text>
+            </View>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Text style={{ color: subtleTextColor, fontSize: 10, fontWeight: '800', width: 18 }}>0</Text>
+              <View style={{ flex: 1, height: 14, justifyContent: 'center' }}>
+                <View style={{ height: 6, borderRadius: 999, backgroundColor: withAlpha(item.color, 0.12) }} />
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: `${ratio * 100}%`,
+                    marginLeft: -8,
+                    width: 16,
+                    height: 16,
+                    borderRadius: 8,
+                    backgroundColor: item.color,
+                    borderWidth: 3,
+                    borderColor: '#FFFFFF',
+                    shadowColor: item.color,
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.2,
+                    shadowRadius: 6,
+                    elevation: 2,
+                  }}
+                />
+              </View>
+              <Text style={{ color: subtleTextColor, fontSize: 10, fontWeight: '800', width: 30, textAlign: 'right' }}>
+                {formatChartNumber(safeMaxValue)}
+              </Text>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
+export function FlBubbleChart({
+  data,
+  width,
+  selectedIndex,
+  onSelectIndex,
+  maxValue,
+  textColor = DEFAULT_TEXT,
+  subtleTextColor = DEFAULT_SUBTLE,
+}: BubbleChartProps) {
+  const safeMaxValue = maxValue ?? Math.max(1, ...data.map((item) => item.value), 1);
+  const activeIndex = selectedIndex === undefined && data.length > 0
+    ? 0
+    : clamp(selectedIndex ?? 0, 0, Math.max(0, data.length - 1));
+  const columns = width < 340 ? 2 : 3;
+  const gap = 12;
+  const cellWidth = Math.max(92, (width - gap * (columns - 1)) / columns);
+
+  if (data.length === 0) {
+    return (
+      <View style={{ width, height: 220, alignItems: 'center', justifyContent: 'center' }}>
+        <Text style={{ color: subtleTextColor, fontSize: 13 }}>Keine Daten vorhanden</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ width, flexDirection: 'row', flexWrap: 'wrap', gap, justifyContent: 'center' }}>
+      {data.map((item, index) => {
+        const ratio = clamp(item.value / safeMaxValue, 0, 1);
+        const isActive = index === activeIndex;
+        const bubbleSize = 64 + ratio * 48;
+        const foreground = ratio > 0.58 ? '#FFFFFF' : textColor;
+        return (
+          <Pressable
+            key={`${item.label}-${index}`}
+            onPress={() => onSelectIndex?.(index)}
+            style={{
+              width: cellWidth,
+              alignItems: 'center',
+              paddingVertical: 6,
+            }}
+          >
+            <View
+              style={{
+                width: bubbleSize,
+                height: bubbleSize,
+                borderRadius: bubbleSize / 2,
+                backgroundColor: withAlpha(item.color, 0.18 + ratio * 0.55),
+                borderWidth: 1.5,
+                borderColor: isActive ? withAlpha(item.color, 0.34) : withAlpha(item.color, 0.16),
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 10,
+                shadowColor: item.color,
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: isActive ? 0.22 : 0.1,
+                shadowRadius: 12,
+                elevation: isActive ? 4 : 2,
+              }}
+            >
+              <Text style={{ color: foreground, fontSize: 16, fontWeight: '900' }}>
+                {formatChartNumber(item.value)}
+              </Text>
+            </View>
+            <Text
+              numberOfLines={2}
+              style={{
+                color: isActive ? item.color : subtleTextColor,
+                fontSize: 12,
+                fontWeight: '800',
+                textAlign: 'center',
+                marginTop: 8,
+              }}
+            >
+              {truncateLabel(item.label, 20)}
+            </Text>
+          </Pressable>
+        );
+      })}
     </View>
   );
 }

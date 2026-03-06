@@ -1,11 +1,11 @@
-﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { PressableScale } from '../../../components/ui/PressableScale';
 import {
     ActivityIndicator,
     Modal,
     Platform,
     ScrollView,
     Text,
-    TouchableOpacity,
     View,
     useWindowDimensions,
 } from 'react-native';
@@ -57,6 +57,8 @@ export default function TherapistTemplates() {
     const { profile } = useAuth();
     const { colors, isDark } = useTheme();
     const { width: screenWidth } = useWindowDimensions();
+    const isCompact = screenWidth < 720;
+    const isNarrow = screenWidth < 440;
     const isTablet = screenWidth > 768;
     const isDesktop = screenWidth > 1120;
     const heroBackground = useMemo(
@@ -94,7 +96,14 @@ export default function TherapistTemplates() {
 
     const fetchClientsForAssignment = async () => {
         try {
-            const rawClients = await ClientRepository.findAllClients();
+            if (!profile?.id) {
+                if (mountedRef.current) {
+                    setClients([]);
+                }
+                return;
+            }
+
+            const rawClients = await ClientRepository.findAllClients(profile.id);
             if (mountedRef.current) {
                 setClients(rawClients);
             }
@@ -159,7 +168,7 @@ export default function TherapistTemplates() {
             setTemplateToDelete(null);
             setToast({
                 visible: true,
-                message: 'Geloescht',
+                message: 'Gelöscht',
                 subMessage: 'Die Vorlage wurde archiviert.',
                 type: 'success',
             });
@@ -204,7 +213,7 @@ export default function TherapistTemplates() {
             setToast({
                 visible: true,
                 message: 'Zugewiesen',
-                subMessage: `Die Vorlage "${selectedTemplateForAssign.title}" wurde uebernommen.`,
+                subMessage: `Die Vorlage "${selectedTemplateForAssign.title}" wurde übernommen.`,
                 type: 'success',
             });
         } catch (error) {
@@ -310,8 +319,8 @@ export default function TherapistTemplates() {
                                 </Text>
                             </LinearGradient>
                         )}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                            <View style={{ flex: 1, paddingRight: 12 }}>
+                        <View style={{ flexDirection: isNarrow ? 'column' : 'row', justifyContent: 'space-between', alignItems: isNarrow ? 'stretch' : 'flex-start', gap: isNarrow ? 12 : 0, marginBottom: 16 }}>
+                            <View style={{ flex: 1, paddingRight: isNarrow ? 0 : 12 }}>
                                 <View
                                     style={{
                                         width: 48,
@@ -332,10 +341,9 @@ export default function TherapistTemplates() {
                                 </Text>
                             </View>
 
-                            <View style={{ flexDirection: 'row', gap: 8 }}>
-                                <TouchableOpacity
+                            <View style={{ flexDirection: 'row', gap: 8, alignSelf: isNarrow ? 'flex-start' : 'auto' }}>
+                                <PressableScale
                                     onPress={() => openColorModal(template)}
-                                    activeOpacity={0.75}
                                     style={{
                                         width: 42,
                                         height: 42,
@@ -348,10 +356,9 @@ export default function TherapistTemplates() {
                                     }}
                                 >
                                     <Palette size={18} color={themeColor} />
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </PressableScale>
+                                <PressableScale
                                     onPress={() => openDeleteModal(template)}
-                                    activeOpacity={0.75}
                                     style={{
                                         width: 42,
                                         height: 42,
@@ -364,7 +371,7 @@ export default function TherapistTemplates() {
                                     }}
                                 >
                                     <Trash2 size={18} color={colors.danger} />
-                                </TouchableOpacity>
+                                </PressableScale>
                             </View>
                         </View>
 
@@ -377,14 +384,13 @@ export default function TherapistTemplates() {
 
                         <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 21, fontWeight: '600', marginBottom: 20 }}>
                             {moduleCount === 0
-                                ? 'Noch leer. Ideal, um eine neue Struktur fuer eine Sitzung aufzubauen.'
-                                : 'Direkt editierbar und bereit, einem Klienten als naechsten Schritt zugewiesen zu werden.'}
+                                ? 'Noch leer. Ideal, um eine neue Struktur für eine Sitzung aufzubauen.'
+                                : 'Direkt editierbar und bereit, einem Klienten als nächsten Schritt zugewiesen zu werden.'}
                         </Text>
 
-                        <View style={{ flexDirection: 'row', gap: 10 }}>
-                            <TouchableOpacity
+                        <View style={{ flexDirection: isNarrow ? 'column' : 'row', gap: 10 }}>
+                            <PressableScale
                                 onPress={() => router.push(`/(app)/therapist/template/${template.id}` as any)}
-                                activeOpacity={0.82}
                                 style={{
                                     flex: 1,
                                     minHeight: 50,
@@ -397,11 +403,10 @@ export default function TherapistTemplates() {
                                 }}
                             >
                                 <Text style={{ color: colors.text, fontSize: 14, fontWeight: '800' }}>{i18n.t('templates.edit')}</Text>
-                            </TouchableOpacity>
+                            </PressableScale>
 
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => openAssignModal(template)}
-                                activeOpacity={0.86}
                                 style={{
                                     flex: 1.15,
                                     minHeight: 50,
@@ -424,12 +429,13 @@ export default function TherapistTemplates() {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         gap: 8,
+                                        paddingHorizontal: 14,
                                     }}
                                 >
                                     <Send size={16} color="#FFFFFF" />
                                     <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '900' }}>Zuweisen</Text>
                                 </LinearGradient>
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
                     </LinearGradient>
                 </Card>
@@ -497,17 +503,16 @@ export default function TherapistTemplates() {
                         >
                             <View
                                 style={{
-                                    flexDirection: screenWidth < 720 ? 'column' : 'row',
+                                    flexDirection: isCompact ? 'column' : 'row',
                                     justifyContent: 'space-between',
-                                    alignItems: screenWidth < 720 ? 'flex-start' : 'center',
+                                    alignItems: isCompact ? 'flex-start' : 'center',
                                     gap: 12,
                                     marginBottom: 22,
                                 }}
                             >
                                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                    <TouchableOpacity
+                                    <PressableScale
                                         onPress={() => router.back()}
-                                        activeOpacity={0.8}
                                         style={{
                                             width: 44,
                                             height: 44,
@@ -518,13 +523,12 @@ export default function TherapistTemplates() {
                                         }}
                                     >
                                         <ArrowLeft size={20} color={colors.text} />
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                     <Badge variant="secondary">Vorlagen-Board</Badge>
                                 </View>
 
-                                <TouchableOpacity
+                                <PressableScale
                                     onPress={() => router.push('/(app)/therapist/template/new' as any)}
-                                    activeOpacity={0.85}
                                     style={{
                                         minHeight: 48,
                                         borderRadius: 16,
@@ -533,6 +537,7 @@ export default function TherapistTemplates() {
                                         alignItems: 'center',
                                         justifyContent: 'center',
                                         gap: 8,
+                                        width: isCompact ? '100%' : undefined,
                                         backgroundColor: colors.primary,
                                         shadowColor: colors.primary,
                                         shadowOffset: { width: 0, height: 6 },
@@ -543,14 +548,14 @@ export default function TherapistTemplates() {
                                 >
                                     <Plus size={18} color="#FFFFFF" />
                                     <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '900' }}>Neue Vorlage</Text>
-                                </TouchableOpacity>
+                                </PressableScale>
                             </View>
 
-                            <Text style={{ color: colors.text, fontSize: screenWidth < 720 ? 28 : 34, fontWeight: '900', letterSpacing: -1, marginBottom: 8 }}>
+                            <Text style={{ color: colors.text, fontSize: isCompact ? 28 : 34, fontWeight: '900', letterSpacing: -1, marginBottom: 8 }}>
                                 {i18n.t('templates.title')}
                             </Text>
                             <Text style={{ color: colors.textSubtle, fontSize: 15, lineHeight: 22, fontWeight: '600', marginBottom: 20, maxWidth: 620 }}>
-                                Entwirf Vorlagen mit derselben ruhigen, hochwertigen Sprache wie im Hauptdashboard und halte die Zuweisung fuer deinen Workflow in einem Board.
+                                Entwirf Vorlagen mit derselben ruhigen, hochwertigen Sprache wie im Hauptdashboard und halte die Zuweisung für deinen Workflow in einem Board.
                             </Text>
 
                             <Input
@@ -559,9 +564,9 @@ export default function TherapistTemplates() {
                                 placeholder="Vorlagen, Inhalte oder Module durchsuchen..."
                                 leading={<Search size={18} color={colors.textSubtle} />}
                                 trailing={searchQuery ? (
-                                    <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                    <PressableScale onPress={() => setSearchQuery('')} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
                                         <X size={18} color={colors.textSubtle} />
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 ) : undefined}
                                 containerStyle={{
                                     backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)',
@@ -577,7 +582,7 @@ export default function TherapistTemplates() {
                         width: '100%',
                         maxWidth: contentMaxWidth,
                         alignSelf: 'center',
-                        paddingHorizontal: screenWidth < 720 ? 18 : 24,
+                        paddingHorizontal: isCompact ? 18 : 24,
                     }}
                 >
                     <View style={{ flexDirection: screenWidth < 1080 ? 'column' : 'row', gap: 16, marginBottom: 28 }}>
@@ -592,7 +597,7 @@ export default function TherapistTemplates() {
                             icon={FileText}
                             label="Module im Schnitt"
                             value={String(averageBlocks)}
-                            hint={templates.length === 0 ? 'Sobald du Inhalte anlegst, erscheint hier die Komplexitaet pro Vorlage.' : 'Guter Richtwert fuer Dichte und Umfang einer Vorlage.'}
+                            hint={templates.length === 0 ? 'Sobald du Inhalte anlegst, erscheint hier die Komplexität pro Vorlage.' : 'Guter Richtwert für Dichte und Umfang einer Vorlage.'}
                             tone="success"
                         />
                         <TherapistMetricCard
@@ -672,7 +677,7 @@ export default function TherapistTemplates() {
                                     : 'Lege deine erste Struktur an und baue damit denselben hochwertigen Einstieg wie im Dashboard.'}
                             </Text>
                             {!searchQuery.trim() ? (
-                                <TouchableOpacity
+                                <PressableScale
                                     onPress={() => router.push('/(app)/therapist/template/new' as any)}
                                     style={{
                                         minHeight: 48,
@@ -684,7 +689,7 @@ export default function TherapistTemplates() {
                                     }}
                                 >
                                     <Text style={{ color: '#FFFFFF', fontWeight: '900' }}>Erste Vorlage erstellen</Text>
-                                </TouchableOpacity>
+                                </PressableScale>
                             ) : null}
                         </Card>
                     ) : (
@@ -713,9 +718,10 @@ export default function TherapistTemplates() {
                                 paddingVertical: 20,
                                 borderBottomWidth: 1,
                                 borderBottomColor: colors.border,
-                                flexDirection: 'row',
-                                alignItems: 'center',
+                                flexDirection: isNarrow ? 'column' : 'row',
+                                alignItems: isNarrow ? 'flex-start' : 'center',
                                 justifyContent: 'space-between',
+                                gap: 12,
                             }}
                         >
                             <View>
@@ -724,7 +730,7 @@ export default function TherapistTemplates() {
                                     {selectedTemplateForAssign?.title || 'Vorlage'}
                                 </Text>
                             </View>
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => setAssignModalVisible(false)}
                                 style={{
                                     width: 40,
@@ -736,20 +742,19 @@ export default function TherapistTemplates() {
                                 }}
                             >
                                 <X size={18} color={colors.text} />
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
 
                         <View style={{ padding: 24 }}>
                             <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 22, fontWeight: '600', marginBottom: 18 }}>
-                                Waehle den Klienten aus, dem du diese Struktur direkt in den Alltag geben willst.
+                                Wähle den Klienten aus, dem du diese Struktur direkt in den Alltag geben willst.
                             </Text>
 
                             <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
                                 {clients.map(client => (
-                                    <TouchableOpacity
+                                    <PressableScale
                                         key={client.id}
                                         onPress={() => confirmAssignToClient(client.id)}
-                                        activeOpacity={0.8}
                                         style={{
                                             minHeight: 72,
                                             borderRadius: 20,
@@ -759,9 +764,10 @@ export default function TherapistTemplates() {
                                             backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F7F4EE',
                                             borderWidth: 1,
                                             borderColor: colors.border,
-                                            flexDirection: 'row',
-                                            alignItems: 'center',
+                                            flexDirection: isNarrow ? 'column' : 'row',
+                                            alignItems: isNarrow ? 'flex-start' : 'center',
                                             justifyContent: 'space-between',
+                                            gap: 12,
                                         }}
                                     >
                                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
@@ -792,11 +798,12 @@ export default function TherapistTemplates() {
                                                 alignItems: 'center',
                                                 justifyContent: 'center',
                                                 backgroundColor: colors.primary,
+                                                alignSelf: isNarrow ? 'flex-end' : 'auto',
                                             }}
                                         >
                                             <Send size={15} color="#FFFFFF" />
                                         </View>
-                                    </TouchableOpacity>
+                                    </PressableScale>
                                 ))}
                             </ScrollView>
                         </View>
@@ -834,7 +841,7 @@ export default function TherapistTemplates() {
                                 Vorlage archivieren?
                             </Text>
                             <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 22, fontWeight: '600', textAlign: 'center' }}>
-                                Die Vorlage verschwindet aus der Bibliothek, bestehende Zuweisungen bleiben aber unberuehrt.
+                                Die Vorlage verschwindet aus der Bibliothek, bestehende Zuweisungen bleiben aber unberührt.
                             </Text>
                         </View>
 
@@ -875,8 +882,8 @@ export default function TherapistTemplates() {
                             </View>
                         ) : null}
 
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <TouchableOpacity
+                        <View style={{ flexDirection: isNarrow ? 'column' : 'row', gap: 12 }}>
+                            <PressableScale
                                 onPress={() => setDeleteModalVisible(false)}
                                 style={{
                                     flex: 1,
@@ -888,8 +895,8 @@ export default function TherapistTemplates() {
                                 }}
                             >
                                 <Text style={{ color: colors.text, fontSize: 15, fontWeight: '800' }}>{i18n.t('therapist.cancel')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </PressableScale>
+                            <PressableScale
                                 onPress={confirmDeleteTemplate}
                                 style={{
                                     flex: 1,
@@ -901,7 +908,7 @@ export default function TherapistTemplates() {
                                 }}
                             >
                                 <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '900' }}>{i18n.t('templates.delete_btn')}</Text>
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
                     </Card>
                 </View>
@@ -919,14 +926,14 @@ export default function TherapistTemplates() {
                             borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
                         }}
                     >
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                        <View style={{ flexDirection: isNarrow ? 'column' : 'row', alignItems: isNarrow ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
                             <View>
                                 <Text style={{ color: colors.text, fontSize: 22, fontWeight: '900' }}>Akzentfarbe</Text>
                                 <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '600', marginTop: 4 }}>
-                                    Fuer Karte, Preview und CTA
+                                    Für Karte, Vorschau und CTA
                                 </Text>
                             </View>
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => setColorModalVisible(false)}
                                 style={{
                                     width: 40,
@@ -938,7 +945,7 @@ export default function TherapistTemplates() {
                                 }}
                             >
                                 <X size={18} color={colors.text} />
-                            </TouchableOpacity>
+                            </PressableScale>
                         </View>
 
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
@@ -946,7 +953,7 @@ export default function TherapistTemplates() {
                                 const isActive = templateToColor?.themeColor === color;
 
                                 return (
-                                    <TouchableOpacity
+                                    <PressableScale
                                         key={color}
                                         onPress={() => handleUpdateThemeColor(color)}
                                         style={{

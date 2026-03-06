@@ -17,6 +17,7 @@ import { DashboardSectionHeader } from '../../components/dashboard/DashboardSect
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 type ResourceKind = 'document' | 'pdf' | 'video' | 'image' | 'link';
+type ResourceCategory = 'all' | 'docs' | 'links';
 
 const getResourceMeta = (type?: string) => {
     const kind = (type || 'link') as ResourceKind;
@@ -64,7 +65,7 @@ const getResourceMeta = (type?: string) => {
                 badge: 'default' as const,
                 circleColor: 'rgba(45,102,107,0.12)',
                 iconColor: '#2D666B',
-                cta: 'Vorschau oeffnen',
+                cta: 'Vorschau öffnen',
                 icon: LinkIcon,
             };
     }
@@ -82,131 +83,224 @@ export default function ResourcesScreen() {
     const { colors, isDark } = useTheme();
     const { resources, loading, refreshing, onRefresh } = useClientResources();
     const [selectedResource, setSelectedResource] = useState<any>(null);
-    const { isXs, isSm, isTablet, contentMaxWidth, gutter, sectionGap, headerTop } = useResponsiveLayout();
+    const [selectedCategory, setSelectedCategory] = useState<ResourceCategory | null>(null);
+    const { isXs, isSm, isTablet, isDesktop, contentMaxWidth, gutter, sectionGap, headerTop } = useResponsiveLayout();
     const previewUrl = normalizeResourceUrl(selectedResource?.url);
+    const listColumnWidth = isTablet ? (isDesktop ? '48.8%' : '48.4%') : '100%';
+    const modalContentWidth = isDesktop ? 1120 : isTablet ? 920 : undefined;
 
     const resourceStats = useMemo(() => {
         const totals = {
             all: resources.length,
             docs: resources.filter(resource => resource.type === 'document' || resource.type === 'pdf').length,
-            media: resources.filter(resource => resource.type === 'video' || resource.type === 'image').length,
             links: resources.filter(resource => !resource.type || resource.type === 'link').length,
         };
 
         return totals;
     }, [resources]);
 
+    const categoryResources = useMemo(() => {
+        if (!selectedCategory) return [];
+        if (selectedCategory === 'docs') {
+            return resources.filter(resource => resource.type === 'document' || resource.type === 'pdf');
+        }
+        if (selectedCategory === 'links') {
+            return resources.filter(resource => !resource.type || resource.type === 'link');
+        }
+        return resources;
+    }, [resources, selectedCategory]);
+
+    const categoryTitle = useMemo(() => {
+        if (selectedCategory === 'docs') return 'Dokumente';
+        if (selectedCategory === 'links') return 'Links';
+        return 'Gesamt';
+    }, [selectedCategory]);
+
     const handleOpenResource = (url: string) => {
         const validUrl = normalizeResourceUrl(url);
         if (!validUrl) {
-            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geoeffnet werden.' }));
+            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geöffnet werden.' }));
             return;
         }
         Linking.openURL(validUrl).catch(err => {
             console.error('Cannot open url', err);
-            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geoeffnet werden.' }));
+            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geöffnet werden.' }));
         });
+    };
+
+    const openResourcePreview = (resource: any) => {
+        setSelectedCategory(null);
+        setSelectedResource(resource);
+    };
+
+    const renderResourceCard = (item: any, index: number, keyPrefix: string = 'resource') => {
+        const meta = getResourceMeta(item.type);
+        const Icon = meta.icon;
+
+        return (
+            <Animated.View
+                key={`${keyPrefix}-${item.id}`}
+                entering={FadeInDown.delay(100 + (index * 50)).springify()}
+                layout={Layout.springify()}
+                style={{ marginBottom: 16 }}
+            >
+                <Card
+                    variant="elevated"
+                    padding={isSm ? 'md' : 'lg'}
+                    style={{
+                        width: listColumnWidth as any,
+                        backgroundColor: colors.card,
+                        borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                        shadowColor: isDark ? '#000' : '#182428',
+                        shadowOffset: { width: 0, height: 8 },
+                        shadowOpacity: isDark ? 0.16 : 0.04,
+                        shadowRadius: 20,
+                        elevation: 2,
+                    }}
+                >
+                    <View style={{ flexDirection: isXs ? 'column' : 'row', alignItems: 'flex-start', marginBottom: 18 }}>
+                        <View style={{ width: 52, height: 52, borderRadius: 18, backgroundColor: meta.circleColor, alignItems: 'center', justifyContent: 'center', marginRight: isXs ? 0 : 16, marginBottom: isXs ? 12 : 0 }}>
+                            <Icon size={24} color={meta.iconColor} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                            <Text style={{ color: colors.text, fontSize: isXs ? 18 : 20, fontWeight: '900', lineHeight: isXs ? 24 : 26, marginBottom: 8 }}>
+                                {item.title}
+                            </Text>
+                            <Badge variant={meta.badge}>{meta.label}</Badge>
+                        </View>
+                    </View>
+
+                    {item.description ? (
+                        <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 21, fontWeight: '500', marginBottom: 20 }}>
+                            {item.description}
+                        </Text>
+                    ) : null}
+
+                    <TouchableOpacity
+                        onPress={() => openResourcePreview(item)}
+                        style={{
+                            backgroundColor: meta.iconColor,
+                            paddingVertical: 14,
+                            borderRadius: 18,
+                            alignItems: 'center',
+                            flexDirection: 'row',
+                            justifyContent: 'center',
+                        }}
+                    >
+                        <Eye size={18} color="white" style={{ marginRight: 8 }} />
+                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>
+                            {meta.cta}
+                        </Text>
+                    </TouchableOpacity>
+                </Card>
+            </Animated.View>
+        );
     };
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <MotiView
-                from={{ opacity: 0, translateY: -40 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: 'timing', duration: 400, delay: 50 }}
-            >
-                <LinearGradient
-                    colors={[colors.primaryDark, colors.primary]}
-                    style={{
-                        paddingTop: headerTop,
-                        paddingBottom: isXs ? 20 : 28,
-                        paddingHorizontal: gutter,
-                        borderBottomLeftRadius: isSm ? 24 : 32,
-                        borderBottomRightRadius: isSm ? 24 : 32,
-                        shadowColor: colors.primaryDark,
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 16,
-                        elevation: 8,
-                        zIndex: 10,
-                    }}
-                >
-                    <View style={{ flexDirection: isSm ? 'column' : 'row', justifyContent: 'space-between', alignItems: isSm ? 'stretch' : 'flex-start', gap: 16 }}>
-                        <TouchableOpacity
-                            onPress={() => router.back()}
-                            style={{
-                                backgroundColor: 'rgba(255,255,255,0.14)',
-                                paddingHorizontal: isXs ? 12 : 16,
-                                paddingVertical: 10,
-                                borderRadius: 20,
-                                borderWidth: 1,
-                                borderColor: 'rgba(255,255,255,0.18)',
-                                flexDirection: 'row',
-                                alignItems: 'center',
-                                alignSelf: isSm ? 'flex-start' : 'auto',
-                            }}
-                        >
-                            <ArrowLeft size={18} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '800', marginLeft: 6 }}>Zurueck</Text>
-                        </TouchableOpacity>
-
-                        <View style={{ flex: 1, alignItems: isSm ? 'flex-start' : 'flex-end' }}>
-                            <Badge variant="muted" style={{ backgroundColor: 'rgba(255,255,255,0.16)', borderColor: 'rgba(255,255,255,0.2)' }}>
-                                {resourceStats.all} Eintraege
-                            </Badge>
-                            <Text style={{ fontSize: isXs ? 24 : 28, fontWeight: '900', color: 'white', marginTop: 12, letterSpacing: -0.8 }}>
-                                {i18n.t('resources.title', { defaultValue: 'Bibliothek' })}
-                            </Text>
-                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '600', marginTop: 4, maxWidth: isSm ? '100%' : 320, textAlign: isSm ? 'left' : 'right' }}>
-                                Material, Links und Dokumente, die dir dein Therapeut zur Verfuegung gestellt hat.
-                            </Text>
-                        </View>
-                    </View>
-                </LinearGradient>
-            </MotiView>
-
-            <Animated.FlatList
-                data={resources}
-                keyExtractor={(item: any) => item.id}
-                style={{ flex: 1, width: '100%', maxWidth: contentMaxWidth ? Math.max(contentMaxWidth + gutter * 2, 760) : undefined, alignSelf: 'center' }}
-                contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: gutter, paddingBottom: isSm ? 40 : 60 }}
+            <Animated.ScrollView
+                style={{ flex: 1 }}
+                showsVerticalScrollIndicator={false}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-                ListHeaderComponent={(
-                    <View>
-                        <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 24 }}>
+                contentContainerStyle={{
+                    width: '100%',
+                    maxWidth: contentMaxWidth ? Math.max(contentMaxWidth + gutter * 2, 760) : undefined,
+                    alignSelf: 'center',
+                    paddingBottom: isSm ? 40 : 60,
+                }}
+            >
+                <MotiView
+                    from={{ opacity: 0, translateY: -40 }}
+                    animate={{ opacity: 1, translateY: 0 }}
+                    transition={{ type: 'timing', duration: 400, delay: 50 }}
+                >
+                    <LinearGradient
+                        colors={[colors.primaryDark, colors.primary]}
+                        style={{
+                            paddingTop: headerTop,
+                            paddingBottom: isXs ? 20 : 28,
+                            paddingHorizontal: gutter,
+                            borderBottomLeftRadius: isSm ? 24 : 32,
+                            borderBottomRightRadius: isSm ? 24 : 32,
+                            shadowColor: colors.primaryDark,
+                            shadowOffset: { width: 0, height: 6 },
+                            shadowOpacity: 0.2,
+                            shadowRadius: 16,
+                            elevation: 8,
+                            zIndex: 10,
+                        }}
+                    >
+                        <View style={{ flexDirection: isSm ? 'column' : 'row', justifyContent: 'space-between', alignItems: isSm ? 'stretch' : 'flex-start', gap: 16 }}>
+                            <TouchableOpacity
+                                onPress={() => router.back()}
+                                style={{
+                                    backgroundColor: 'rgba(255,255,255,0.14)',
+                                    paddingHorizontal: isXs ? 12 : 16,
+                                    paddingVertical: 10,
+                                    borderRadius: 20,
+                                    borderWidth: 1,
+                                    borderColor: 'rgba(255,255,255,0.18)',
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    alignSelf: isSm ? 'flex-start' : 'auto',
+                                }}
+                            >
+                                <ArrowLeft size={18} color="white" />
+                                <Text style={{ color: 'white', fontWeight: '800', marginLeft: 6 }}>Zurück</Text>
+                            </TouchableOpacity>
+
+                            <View style={{ flex: 1, alignItems: isSm ? 'flex-start' : 'flex-end' }}>
+                                <Text style={{ fontSize: isXs ? 24 : 28, fontWeight: '900', color: 'white', marginTop: 12, letterSpacing: -0.8 }}>
+                                    {i18n.t('resources.title', { defaultValue: 'Bibliothek' })}
+                                </Text>
+                                <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '600', marginTop: 4, maxWidth: isSm ? '100%' : 320, textAlign: isSm ? 'left' : 'right' }}>
+                                    Material, Links und Dokumente, die dir dein Therapeut zur Verfügung gestellt hat.
+                                </Text>
+                            </View>
+                        </View>
+                    </LinearGradient>
+                </MotiView>
+
+                <View style={{ paddingHorizontal: gutter, paddingTop: gutter }}>
+                    <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 24 }}>
+                        <TouchableOpacity onPress={() => setSelectedCategory('all')} style={{ flex: 1 }}>
                             <ClientMetricCard
                                 icon={FileText}
                                 label="Gesamt"
                                 value={String(resourceStats.all)}
-                                hint={resourceStats.all === 0 ? 'Noch wurden keine Ressourcen geteilt.' : 'Alle freigegebenen Materialien an einem Ort.'}
+                                hint={resourceStats.all === 0 ? 'Noch wurden keine Ressourcen geteilt.' : 'Alle freigegebenen Materialien in einem eigenen Fenster ansehen.'}
                                 tone="primary"
                             />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setSelectedCategory('docs')} style={{ flex: 1 }}>
                             <ClientMetricCard
                                 icon={Download}
                                 label="Dokumente"
                                 value={String(resourceStats.docs)}
-                                hint="PDFs und freigegebene Unterlagen fuer deine Arbeit zwischen Sessions."
+                                hint="PDFs und Unterlagen gesammelt in einer separaten Ansicht."
                                 tone="secondary"
                             />
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setSelectedCategory('links')} style={{ flex: 1 }}>
                             <ClientMetricCard
                                 icon={LinkIcon}
-                                label="Links und Medien"
-                                value={String(resourceStats.media + resourceStats.links)}
-                                hint="Externe Inhalte, Videos und Bilder fuer Vertiefung und Umsetzung."
+                                label="Links"
+                                value={String(resourceStats.links)}
+                                hint="Alle geteilten Links direkt in einem eigenen Fenster durchsuchen."
                                 tone="success"
                             />
-                        </View>
-
-                        <DashboardSectionHeader
-                            title="Zuletzt geteilt"
-                            subtitle="Neue Inhalte erscheinen hier automatisch nach Aktualisierung."
-                        />
+                        </TouchableOpacity>
                     </View>
-                )}
-                ListEmptyComponent={(
-                    loading ? (
+
+                    <DashboardSectionHeader
+                        title="Zuletzt geteilt"
+                        subtitle="Neue Inhalte erscheinen hier automatisch nach Aktualisierung."
+                    />
+
+                    {loading ? (
                         <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
-                    ) : (
+                    ) : resources.length === 0 ? (
                         <Card
                             variant="elevated"
                             padding={isSm ? 'md' : 'lg'}
@@ -227,70 +321,86 @@ export default function ResourcesScreen() {
                                 {i18n.t('resources.no_documents_uploaded', { defaultValue: 'Dein Therapeut hat noch keine Dokumente hinterlegt.' })}
                             </Text>
                         </Card>
-                    )
-                )}
-                renderItem={({ item, index }: { item: any; index: number }) => {
-                    const meta = getResourceMeta(item.type);
-                    const Icon = meta.icon;
+                    ) : (
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'stretch', marginTop: 8 }}>
+                            {resources.map((item, index) => renderResourceCard(item, index))}
+                        </View>
+                    )}
+                </View>
+            </Animated.ScrollView>
 
-                    return (
-                        <Animated.View
-                            entering={FadeInDown.delay(100 + (index * 50)).springify()}
-                            layout={Layout.springify()}
-                            style={{ marginBottom: 16 }}
-                        >
+            <Modal
+                visible={!!selectedCategory}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setSelectedCategory(null)}
+            >
+                <View style={{ flex: 1, backgroundColor: colors.background }}>
+                    <View
+                        style={{
+                            backgroundColor: colors.primary,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            paddingTop: headerTop,
+                            paddingBottom: isXs ? 18 : 24,
+                            paddingHorizontal: gutter,
+                            borderBottomLeftRadius: isSm ? 24 : 32,
+                            borderBottomRightRadius: isSm ? 24 : 32,
+                            zIndex: 10,
+                        }}
+                    >
+                        <View style={{ flex: 1, paddingRight: 16 }}>
+                            <Text style={{ color: 'white', fontSize: 20, fontWeight: '900' }} numberOfLines={1}>
+                                {categoryTitle}
+                            </Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.82)', fontSize: 13, fontWeight: '600', marginTop: 4 }}>
+                                {categoryResources.length} Einträge in dieser Ansicht
+                            </Text>
+                        </View>
+                        <TouchableOpacity onPress={() => setSelectedCategory(null)} style={{ width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.24)', borderRadius: 999, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
+                            <X size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <Animated.ScrollView
+                        style={{ flex: 1 }}
+                        showsVerticalScrollIndicator={false}
+                        contentContainerStyle={{
+                            paddingHorizontal: gutter,
+                            paddingTop: gutter,
+                            paddingBottom: isSm ? 32 : 48,
+                            width: '100%',
+                            maxWidth: modalContentWidth,
+                            alignSelf: 'center',
+                        }}
+                    >
+                        {categoryResources.length === 0 ? (
                             <Card
                                 variant="elevated"
                                 padding={isSm ? 'md' : 'lg'}
                                 style={{
+                                    alignItems: 'center',
+                                    marginTop: 8,
                                     backgroundColor: colors.card,
                                     borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
-                                    shadowColor: isDark ? '#000' : '#182428',
-                                    shadowOffset: { width: 0, height: 8 },
-                                    shadowOpacity: isDark ? 0.16 : 0.04,
-                                    shadowRadius: 20,
-                                    elevation: 2,
                                 }}
                             >
-                                <View style={{ flexDirection: isXs ? 'column' : 'row', alignItems: 'flex-start', marginBottom: 18 }}>
-                                    <View style={{ width: 52, height: 52, borderRadius: 18, backgroundColor: meta.circleColor, alignItems: 'center', justifyContent: 'center', marginRight: isXs ? 0 : 16, marginBottom: isXs ? 12 : 0 }}>
-                                        <Icon size={24} color={meta.iconColor} />
-                                    </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ color: colors.text, fontSize: isXs ? 18 : 20, fontWeight: '900', lineHeight: isXs ? 24 : 26, marginBottom: 8 }}>
-                                            {item.title}
-                                        </Text>
-                                        <Badge variant={meta.badge}>{meta.label}</Badge>
-                                    </View>
-                                </View>
-
-                                {item.description ? (
-                                    <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 21, fontWeight: '500', marginBottom: 20 }}>
-                                        {item.description}
-                                    </Text>
-                                ) : null}
-
-                                <TouchableOpacity
-                                    onPress={() => setSelectedResource(item)}
-                                    style={{
-                                        backgroundColor: meta.iconColor,
-                                        paddingVertical: 14,
-                                        borderRadius: 18,
-                                        alignItems: 'center',
-                                        flexDirection: 'row',
-                                        justifyContent: 'center',
-                                    }}
-                                >
-                                    <Eye size={18} color="white" style={{ marginRight: 8 }} />
-                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>
-                                        {meta.cta}
-                                    </Text>
-                                </TouchableOpacity>
+                                <Text style={{ color: colors.text, fontSize: 22, fontWeight: '900', marginBottom: 8, textAlign: 'center' }}>
+                                    Keine Einträge
+                                </Text>
+                                <Text style={{ color: colors.textSubtle, textAlign: 'center', lineHeight: 22, fontWeight: '600', maxWidth: 320 }}>
+                                    In dieser Kategorie sind aktuell keine Ressourcen vorhanden.
+                                </Text>
                             </Card>
-                        </Animated.View>
-                    );
-                }}
-            />
+                        ) : (
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'stretch', marginTop: 8 }}>
+                                {categoryResources.map((item, index) => renderResourceCard(item, index, `category-${selectedCategory}`))}
+                            </View>
+                        )}
+                    </Animated.ScrollView>
+                </View>
+            </Modal>
 
             <Modal
                 visible={!!selectedResource}
@@ -316,14 +426,14 @@ export default function ResourcesScreen() {
                         <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', maxWidth: '80%' }} numberOfLines={1}>
                             {selectedResource?.title || 'Vorschau'}
                         </Text>
-                        <TouchableOpacity onPress={() => setSelectedResource(null)} style={{ width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 999, alignItems: 'center', justifyContent: 'center' }}>
+                        <TouchableOpacity onPress={() => setSelectedResource(null)} style={{ width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.24)', borderRadius: 999, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.3)' }}>
                             <X size={20} color="white" />
                         </TouchableOpacity>
                     </View>
 
                     <View style={{ flex: 1 }}>
                         {selectedResource && (
-                            <View style={{ flex: 1 }}>
+                            <View style={{ flex: 1, width: '100%', maxWidth: modalContentWidth, alignSelf: 'center' }}>
                                 <Card
                                     variant="elevated"
                                     padding={isSm ? 'md' : 'lg'}
@@ -332,6 +442,11 @@ export default function ResourcesScreen() {
                                         marginTop: gutter,
                                         backgroundColor: colors.card,
                                         borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                                        shadowColor: isDark ? '#000' : '#182428',
+                                        shadowOffset: { width: 0, height: 10 },
+                                        shadowOpacity: isDark ? 0.18 : 0.05,
+                                        shadowRadius: 24,
+                                        elevation: 3,
                                     }}
                                 >
                                     <Badge variant={getResourceMeta(selectedResource.type).badge}>
@@ -357,7 +472,7 @@ export default function ResourcesScreen() {
                                     >
                                         {selectedResource.type !== 'link' && <Download size={20} color="white" style={{ marginRight: 8 }} />}
                                         <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>
-                                            {selectedResource.type === 'link' ? 'Im Browser oeffnen' : 'Speichern oder herunterladen'}
+                            {selectedResource.type === 'link' ? 'Im Browser öffnen' : 'Speichern oder herunterladen'}
                                         </Text>
                                     </TouchableOpacity>
                                 </Card>
@@ -365,7 +480,7 @@ export default function ResourcesScreen() {
                                 <View
                                     style={{
                                         flex: 1,
-                                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F5F1EA',
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F1ECE4',
                                         marginTop: gutter,
                                         marginHorizontal: gutter,
                                         marginBottom: isSm ? 16 : 24,
@@ -373,6 +488,7 @@ export default function ResourcesScreen() {
                                         overflow: 'hidden',
                                         borderWidth: 1,
                                         borderColor: colors.border,
+                                        minHeight: isTablet ? 520 : 360,
                                     }}
                                 >
                                     {selectedResource.type === 'image' ? (

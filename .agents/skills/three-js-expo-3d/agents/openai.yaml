@@ -1,0 +1,3 @@
+interface:
+  display_name: "Three.js Expo 3D"
+  short_description: "Use three.js only when this Expo app truly needs 3D or canvas-driven immersion"

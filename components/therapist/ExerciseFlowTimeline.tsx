@@ -1,57 +1,46 @@
-﻿/**
- * ExerciseFlowTimeline
- *
- * A horizontal node-link diagram that maps each ExerciseBlock to a node,
- * positioned using D3's scaleBand, connected by smooth cubic Bezier paths
- * computed with d3.linkHorizontal. Category color-codes each node.
- *
- * The timeline updates live as blocks change and uses React Native's
- * Animated API for staggered entrance animations.
- */
-
-import React, { useMemo, useEffect, useRef } from 'react';
-import { View, Text, Animated, ScrollView } from 'react-native';
-import Svg, { Path, Circle, G, Text as SvgText, Defs, LinearGradient, Stop } from 'react-native-svg';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, ScrollView, Text, View } from 'react-native';
+import Svg, { Circle, G, Path, Text as SvgText } from 'react-native-svg';
 import * as d3 from 'd3';
 import { ExerciseBlock, ExerciseBlockType } from './blocks/exerciseRegistry';
 
-// â”€â”€â”€ Category Palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 const BLOCK_META: Record<ExerciseBlockType, { color: string; icon: string; short: string }> = {
-    reflection: { color: '#4E7E82', icon: 'âœï¸', short: 'Refl.' },
-    info: { color: '#14B8A6', icon: 'ðŸ“–', short: 'Info' },
-    homework: { color: '#B08C57', icon: 'ðŸ“', short: 'ABC' },
-    scale: { color: '#F59E0B', icon: 'ðŸ“Š', short: 'Skala' },
-    choice: { color: '#6366F1', icon: 'ðŸ”˜', short: 'Wahl' },
-    checklist: { color: '#788E76', icon: 'âœ…', short: 'Liste' },
-    gratitude: { color: '#EC4899', icon: 'ðŸ™', short: 'Dank.' },
-    breathing: { color: '#2D666B', icon: 'ðŸŒ¬ï¸', short: 'Atem' },
-    timer: { color: '#8B5CF6', icon: 'â±ï¸', short: 'Timer' },
-    media: { color: '#F43F5E', icon: 'ðŸ“¸', short: 'Medien' },
-    video: { color: '#E11D48', icon: 'ðŸŽ¥', short: 'Video' },
-    spider_chart: { color: '#F97316', icon: 'ðŸ•¸ï¸', short: 'Netz' },
-    bar_chart: { color: '#4E7E82', icon: 'ðŸ“ˆ', short: 'Balken' },
-    pie_chart: { color: '#8B5CF6', icon: 'ðŸ¥§', short: 'Kreis' },
-    line_chart: { color: '#788E76', icon: 'ðŸ“‰', short: 'Linie' },
+    reflection: { color: '#4E7E82', icon: 'RF', short: 'Refl.' },
+    info: { color: '#14B8A6', icon: 'IN', short: 'Info' },
+    homework: { color: '#B08C57', icon: 'ABC', short: 'ABC' },
+    scale: { color: '#F59E0B', icon: '1-10', short: 'Skala' },
+    choice: { color: '#6366F1', icon: 'AW', short: 'Wahl' },
+    checklist: { color: '#788E76', icon: 'CL', short: 'Liste' },
+    gratitude: { color: '#EC4899', icon: 'DG', short: 'Dank.' },
+    breathing: { color: '#2D666B', icon: 'AT', short: 'Atem' },
+    timer: { color: '#8B5CF6', icon: 'TM', short: 'Timer' },
+    media: { color: '#F43F5E', icon: 'MD', short: 'Medien' },
+    video: { color: '#E11D48', icon: 'VD', short: 'Video' },
+    spider_chart: { color: '#F97316', icon: 'NZ', short: 'Netz' },
+    bar_chart: { color: '#4E7E82', icon: 'BK', short: 'Balken' },
+    pie_chart: { color: '#8B5CF6', icon: 'KR', short: 'Kreis' },
+    line_chart: { color: '#788E76', icon: 'LN', short: 'Linie' },
+    donut_progress: { color: '#8A6A53', icon: 'DN', short: 'Donut' },
+    stacked_bar_chart: { color: '#6E7F86', icon: 'SB', short: 'Stack' },
+    comparison_bar_chart: { color: '#4E7E82', icon: 'VG', short: 'Vergl.' },
+    heatmap_grid: { color: '#B08C57', icon: 'HM', short: 'Heat' },
+    range_chart: { color: '#788E76', icon: 'RG', short: 'Range' },
+    bubble_chart: { color: '#A37E68', icon: 'BB', short: 'Bubble' },
 };
 
-// â”€â”€â”€ Node Size Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
 const NODE_R = 22;
-const H = 80;    // SVG height
-const PAD = 16;  // horizontal padding each side
+const HEIGHT = 80;
+const PAD = 16;
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-
-interface Props { blocks: ExerciseBlock[]; }
+interface Props {
+    blocks: ExerciseBlock[];
+}
 
 export default function ExerciseFlowTimeline({ blocks }: Props) {
-    // Animated value for entrance fade-in
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0.92)).current;
 
     useEffect(() => {
-        // Re-trigger subtle pop animation whenever blocks change
         Animated.parallel([
             Animated.timing(fadeAnim, { toValue: 0, duration: 80, useNativeDriver: true }),
             Animated.timing(scaleAnim, { toValue: 0.95, duration: 80, useNativeDriver: true }),
@@ -61,83 +50,97 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
                 Animated.spring(scaleAnim, { toValue: 1, friction: 6, tension: 120, useNativeDriver: true }),
             ]).start();
         });
-    }, [blocks.length]);
+    }, [blocks.length, fadeAnim, scaleAnim]);
 
-    // --- D3 Layout ---
-    const { nodes, links, svgWidth } = useMemo(() => {
-        if (blocks.length === 0) return { nodes: [], links: [], svgWidth: 100 };
+    const { links, nodes, svgWidth } = useMemo(() => {
+        if (blocks.length === 0) {
+            return { nodes: [], links: [], svgWidth: 100 };
+        }
 
-        // Minimum width so nodes don't overlap; each needs 2*NODE_R + some spacing
-        const minNodeSpacing = (NODE_R * 2) + 28;
+        const minNodeSpacing = NODE_R * 2 + 28;
         const totalWidth = Math.max(300, PAD * 2 + blocks.length * minNodeSpacing);
-
-        // D3 band scale maps block index â†’ x center
-        const xScale = d3.scaleBand()
+        const xScale = d3
+            .scaleBand()
             .domain(blocks.map((_, i) => String(i)))
             .range([PAD + NODE_R, totalWidth - PAD - NODE_R])
             .padding(0);
+        const centerY = HEIGHT / 2;
 
-        const CY = H / 2;
-
-        const nodes = blocks.map((b, i) => ({
-            x: (xScale(String(i)) ?? 0) + xScale.bandwidth() / 2,
-            y: CY,
-            block: b,
-            meta: BLOCK_META[b.type],
-            index: i,
+        const nextNodes = blocks.map((block, index) => ({
+            x: (xScale(String(index)) ?? 0) + xScale.bandwidth() / 2,
+            y: centerY,
+            block,
+            meta: BLOCK_META[block.type],
+            index,
         }));
 
-        // D3 horizontal link generator
-        const linkGen = d3.linkHorizontal<any, any>()
-            .x((d: any) => d.x)
-            .y((d: any) => d.y);
+        const linkGen = d3
+            .linkHorizontal<any, any>()
+            .x((point: any) => point.x)
+            .y((point: any) => point.y);
 
-        const links = nodes.slice(0, -1).map((src, i) => ({
-            path: linkGen({ source: src, target: nodes[i + 1] }) ?? '',
-            color: src.meta.color,
+        const nextLinks = nextNodes.slice(0, -1).map((source, index) => ({
+            path: linkGen({ source, target: nextNodes[index + 1] }) ?? '',
+            color: source.meta.color,
         }));
 
-        return { nodes, links, svgWidth: totalWidth };
+        return { nodes: nextNodes, links: nextLinks, svgWidth: totalWidth };
     }, [blocks]);
 
-    if (blocks.length === 0) return null;
+    if (blocks.length === 0) {
+        return null;
+    }
 
     const isScrollable = svgWidth > 340;
 
     return (
-        <Animated.View style={{
-            opacity: fadeAnim,
-            transform: [{ scale: scaleAnim }],
-            backgroundColor: '#FFFFFF',
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: '#E7E0D4',
-            marginBottom: 16,
-            overflow: 'hidden',
-            shadowColor: '#000',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.06,
-            shadowRadius: 10,
-            elevation: 3,
-        }}>
-            {/* Header */}
-            <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Animated.View
+            style={{
+                opacity: fadeAnim,
+                transform: [{ scale: scaleAnim }],
+                backgroundColor: '#FFFFFF',
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: '#E7E0D4',
+                marginBottom: 16,
+                overflow: 'hidden',
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 3 },
+                shadowOpacity: 0.06,
+                shadowRadius: 10,
+                elevation: 3,
+            }}
+        >
+            <View
+                style={{
+                    paddingHorizontal: 18,
+                    paddingTop: 14,
+                    paddingBottom: 6,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                }}
+            >
                 <View>
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#1F2528', letterSpacing: 0.2 }}>Ãœbungs-Flow</Text>
-                    <Text style={{ fontSize: 10, color: '#8B938E', fontWeight: '500' }}>Reihenfolge der BlÃ¶cke</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#1F2528', letterSpacing: 0.2 }}>
+                        Übungs-Flow
+                    </Text>
+                    <Text style={{ fontSize: 10, color: '#8B938E', fontWeight: '500' }}>
+                        Reihenfolge der Blöcke
+                    </Text>
                 </View>
-                {isScrollable && (
-                    <Text style={{ fontSize: 9, color: '#D1D5DB', fontWeight: '600' }}>â† scrollen â†’</Text>
-                )}
+                {isScrollable ? (
+                    <Text style={{ fontSize: 9, color: '#D1D5DB', fontWeight: '600' }}>
+                        {'<- scrollen ->'}
+                    </Text>
+                ) : null}
             </View>
 
-            {/* Horizontally Scrollable Timeline SVG */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 4 }}>
-                <Svg width={svgWidth} height={H}>
-                    {/* Connection Paths */}
-                    {links.map((link, i) => (
+                <Svg width={svgWidth} height={HEIGHT}>
+                    {links.map((link, index) => (
                         <Path
-                            key={`link-${i}`}
+                            key={`link-${index}`}
                             d={link.path}
                             fill="none"
                             stroke={link.color}
@@ -147,14 +150,10 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
                         />
                     ))}
 
-                    {/* Nodes */}
-                    {nodes.map((node, i) => (
+                    {nodes.map((node, index) => (
                         <G key={`node-${node.block.id}`} x={node.x} y={node.y}>
-                            {/* Halo shadow */}
                             <Circle r={NODE_R + 5} fill={node.meta.color} opacity={0.1} />
-                            {/* Main circle */}
                             <Circle r={NODE_R} fill={node.meta.color} />
-                            {/* Index badge */}
                             <Circle cx={NODE_R - 2} cy={-NODE_R + 2} r={9} fill="#FFFFFF" />
                             <SvgText
                                 x={NODE_R - 2}
@@ -164,15 +163,9 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
                                 fontSize={9}
                                 fontWeight="800"
                             >
-                                {i + 1}
+                                {index + 1}
                             </SvgText>
-                            {/* Icon emoji */}
-                            <SvgText
-                                x={0}
-                                y={5}
-                                textAnchor="middle"
-                                fontSize={18}
-                            >
+                            <SvgText x={0} y={4} textAnchor="middle" fontSize={10} fontWeight="800" fill="#FFFFFF">
                                 {node.meta.icon}
                             </SvgText>
                         </G>
@@ -180,23 +173,27 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
                 </Svg>
             </ScrollView>
 
-            {/* Labels row below */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 12 }}>
                 <View style={{ flexDirection: 'row', paddingHorizontal: 4, minWidth: svgWidth }}>
                     {nodes.map((node) => (
-                        <View key={`label-${node.block.id}`}
+                        <View
+                            key={`label-${node.block.id}`}
                             style={{
                                 flex: 1,
                                 alignItems: 'center',
                                 minWidth: 60,
                                 maxWidth: 80,
-                            }}>
-                            <Text style={{
-                                fontSize: 9,
-                                fontWeight: '700',
-                                color: node.meta.color,
-                                textAlign: 'center',
-                            }} numberOfLines={1}>
+                            }}
+                        >
+                            <Text
+                                style={{
+                                    fontSize: 9,
+                                    fontWeight: '700',
+                                    color: node.meta.color,
+                                    textAlign: 'center',
+                                }}
+                                numberOfLines={1}
+                            >
                                 {node.meta.short}
                             </Text>
                         </View>
@@ -206,5 +203,3 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
         </Animated.View>
     );
 }
-
-

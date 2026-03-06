@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { updateDoc, doc } from 'firebase/firestore';
@@ -7,6 +7,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { MotiView } from 'moti';
 import i18n from '../../utils/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
+import { PressableScale } from '../../components/ui/PressableScale';
 
 export default function OnboardingScreen() {
     const { user, profile } = useAuth();
@@ -116,9 +117,10 @@ export default function OnboardingScreen() {
                         </View>
                     </View>
 
-                    <TouchableOpacity
+                    <PressableScale
                         onPress={handleCompleteOnboarding}
                         disabled={loading}
+                        intensity="medium"
                         style={{ backgroundColor: '#2D666B', padding: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 32, flexDirection: 'row' }}
                     >
                         {loading ? (
@@ -129,7 +131,7 @@ export default function OnboardingScreen() {
                                 <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 16 }}>Profil speichern</Text>
                             </>
                         )}
-                    </TouchableOpacity>
+                    </PressableScale>
                 </MotiView>
             </ScrollView>
         </KeyboardAvoidingView>

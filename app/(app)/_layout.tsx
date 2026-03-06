@@ -14,7 +14,7 @@ export default function AppLayout() {
         let isMounted = true;
 
         async function updatePlatformAndToken() {
-            if (!user) return;
+            if (!user || !profile?.id) return;
 
             const platform = Platform.OS === 'web' ? 'web' : 'app';
             let pushToken = null;
@@ -31,7 +31,7 @@ export default function AppLayout() {
             }
 
             try {
-                await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
+                await setDoc(doc(db, 'users', profile.id), updateData, { merge: true });
             } catch (error) {
                 console.error('Failed to update platform info in Firestore:', error);
             }
@@ -40,7 +40,7 @@ export default function AppLayout() {
         updatePlatformAndToken();
 
         return () => { isMounted = false; };
-    }, [user]);
+    }, [user, profile?.id]);
 
     if (loading || (user && !profile)) {
         return (

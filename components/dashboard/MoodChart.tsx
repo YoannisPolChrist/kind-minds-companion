@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import { FlLineAreaChart } from '../charts/flChartPrimitives';
 import { withAlpha } from '../charts/chartData';
@@ -82,7 +82,7 @@ export function MoodChart({ checkins }: Props) {
                             <Text style={{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}> /100</Text>
                         </Text>
                         <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: '600', marginTop: 4 }}>
-                            Ausgewaehlt: {activeDate}
+                            Ausgewählt: {activeDate}
                         </Text>
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 6 }}>

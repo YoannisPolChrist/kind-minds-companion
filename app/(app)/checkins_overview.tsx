@@ -1,5 +1,5 @@
-﻿import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, SectionList, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, SectionList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
@@ -9,6 +9,7 @@ import { MotiView } from 'moti';
 import { ArrowLeft, Calendar, Activity } from 'lucide-react-native';
 import { CheckinCard } from '../../components/checkins/CheckinCard';
 import { CheckinAnalytics } from '../../components/checkins/CheckinAnalytics';
+import { PressableScale } from '../../components/ui/PressableScale';
 
 export default function CheckinsOverviewScreen() {
     const router = useRouter();
@@ -21,12 +22,11 @@ export default function CheckinsOverviewScreen() {
         try {
             const q = query(
                 collection(db, 'checkins'),
-                where("uid", "==", profile.id)
+                where('uid', '==', profile.id)
             );
             const snap = await getDocs(q);
-            const data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            const data = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
 
-            // Sort descending
             data.sort((a: any, b: any) => {
                 const dateA = a.createdAt ? new Date(a.createdAt).getTime() : new Date(a.date).getTime();
                 const dateB = b.createdAt ? new Date(b.createdAt).getTime() : new Date(b.date).getTime();
@@ -35,31 +35,38 @@ export default function CheckinsOverviewScreen() {
 
             setCheckins(data);
         } catch (error) {
-            console.error("Error fetching checkins:", error);
+            console.error('Error fetching checkins:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => { fetchCheckins(); }, [profile?.id]);
+    useEffect(() => {
+        fetchCheckins();
+    }, [profile?.id]);
 
     const formatDate = (checkin: any) => {
         const dateObj = checkin.createdAt ? new Date(checkin.createdAt) : new Date(checkin.date);
         return dateObj.toLocaleDateString(i18n.locale || 'de', {
-            day: '2-digit', month: 'long', year: 'numeric'
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric',
         });
     };
 
     const formatTime = (checkin: any) => {
         if (checkin.createdAt) {
-            return new Date(checkin.createdAt).toLocaleTimeString(i18n.locale || 'de', { hour: '2-digit', minute: '2-digit' });
+            return new Date(checkin.createdAt).toLocaleTimeString(i18n.locale || 'de', {
+                hour: '2-digit',
+                minute: '2-digit',
+            });
         }
         return '';
     };
 
     const groupByDate = (items: any[]) => {
         const groups: { [key: string]: any[] } = {};
-        items.forEach(item => {
+        items.forEach((item) => {
             const key = formatDate(item);
             if (!groups[key]) groups[key] = [];
             groups[key].push(item);
@@ -71,18 +78,17 @@ export default function CheckinsOverviewScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
-            {/* Header */}
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
                 <View style={{ backgroundColor: '#2D666B', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                        <TouchableOpacity onPress={() => router.dismissAll()} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
+                        <PressableScale onPress={() => router.dismissAll()} intensity="subtle" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
                             <ArrowLeft size={18} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>ZurÃ¼ck</Text>
-                        </TouchableOpacity>
+                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurück</Text>
+                        </PressableScale>
                     </View>
-                    <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Mein Tagebuch</Text>
+                    <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Check-ins</Text>
                     <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600', marginTop: 4 }}>
-                        {checkins.length} {checkins.length === 1 ? 'Eintrag' : 'EintrÃ¤ge'} insgesamt
+                        {checkins.length} {checkins.length === 1 ? 'Eintrag' : 'Einträge'} insgesamt
                     </Text>
                 </View>
             </MotiView>
@@ -97,21 +103,19 @@ export default function CheckinsOverviewScreen() {
                         <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginBottom: 28, borderWidth: 2, borderColor: '#F3EEE6' }}>
                             <Activity size={48} color="#8B938E" />
                         </View>
-                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#182428', letterSpacing: -0.5, marginBottom: 12, textAlign: 'center' }}>Noch keine EintrÃ¤ge</Text>
+                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#182428', letterSpacing: -0.5, marginBottom: 12, textAlign: 'center' }}>Noch keine Einträge</Text>
                         <Text style={{ fontSize: 16, color: '#6F7472', textAlign: 'center', lineHeight: 24, maxWidth: 300, fontWeight: '500' }}>
-                            Dein erstes Check-in erscheint hier nach dem AusfÃ¼llen.
+                            Dein erstes Check-in erscheint hier nach dem Ausfüllen.
                         </Text>
                     </MotiView>
                 </View>
             ) : (
                 <SectionList
                     sections={sections}
-                    keyExtractor={item => item.id}
+                    keyExtractor={(item) => item.id}
                     contentContainerStyle={{ padding: 24, paddingBottom: 120, maxWidth: 860, alignSelf: 'center', width: '100%' }}
                     showsVerticalScrollIndicator={false}
-                    ListHeaderComponent={
-                        <CheckinAnalytics checkins={checkins} />
-                    }
+                    ListHeaderComponent={<CheckinAnalytics checkins={checkins} />}
                     renderSectionHeader={({ section: { title } }) => (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
                             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E7E0D4', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 }}>
@@ -132,5 +136,3 @@ export default function CheckinsOverviewScreen() {
         </View>
     );
 }
-
-

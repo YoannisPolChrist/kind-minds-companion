@@ -1,9 +1,9 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, Platform } from 'react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientExercises } from '../../hooks/useClientExercises';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import i18n from '../../utils/i18n';
 import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import { ChevronLeft, BookOpen, Clock3, CheckCircle2 } from 'lucide-react-native';
@@ -17,6 +17,9 @@ import { DashboardSectionHeader } from '../../components/dashboard/DashboardSect
 import { MotiView } from 'moti';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { PressableScale } from '../../components/ui/PressableScale';
+
+type ExerciseFilter = 'all' | 'open' | 'completed';
 
 export default function ExercisesOverview() {
     const { profile } = useAuth();
@@ -28,6 +31,22 @@ export default function ExercisesOverview() {
 
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
     const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
+    const [activeFilter, setActiveFilter] = useState<ExerciseFilter>('all');
+
+    const visibleOpenExercises = activeFilter === 'completed' ? [] : openExercises;
+    const visibleCompletedExercises = activeFilter === 'open' ? [] : completedExercises;
+    const filterOptions: Array<{ key: ExerciseFilter; label: string; count: number }> = [
+        { key: 'all', label: 'Alle', count: exercises.length },
+        { key: 'open', label: 'Offen', count: openExercises.length },
+        { key: 'completed', label: 'Erledigt', count: completedExercises.length },
+    ];
+
+    const emptyFilterMessage =
+        activeFilter === 'open'
+            ? 'Keine offenen Übungen.'
+            : activeFilter === 'completed'
+                ? 'Noch keine erledigten Übungen.'
+                : 'Derzeit sind keine Übungen verfügbar.';
 
     useFocusEffect(
         useCallback(() => {
@@ -89,13 +108,15 @@ export default function ExercisesOverview() {
                     end={{ x: 1, y: 1 }}
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 />
-                <TouchableOpacity
+                <PressableScale
                     accessibilityRole="button"
                     accessibilityLabel={i18n.t('exercise.back', { defaultValue: 'Zurück' })}
                     onPress={() => {
                         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                         router.back();
                     }}
+                    withHaptics={false}
+                    intensity="subtle"
                     style={{
                         backgroundColor: 'rgba(255,255,255,0.2)',
                         paddingHorizontal: isXs ? 12 : 16,
@@ -110,7 +131,7 @@ export default function ExercisesOverview() {
                     <Text style={{ color: 'white', fontWeight: 'bold', marginLeft: 4 }}>
                         {i18n.t('exercise.back', { defaultValue: 'Zurück' })}
                     </Text>
-                </TouchableOpacity>
+                </PressableScale>
                 <Text
                     style={{
                         fontSize: isXs ? 20 : 22,
@@ -136,27 +157,104 @@ export default function ExercisesOverview() {
             >
                 <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: gutter }]}>
                     <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 24 }}>
-                        <ClientMetricCard
-                            icon={BookOpen}
-                            label="Gesamt"
-                            value={String(exercises.length)}
-                            hint={exercises.length === 0 ? 'Derzeit sind keine Uebungen verfuegbar.' : 'Alle dir zugewiesenen Uebungen in einer Ansicht.'}
-                            tone="primary"
-                        />
-                        <ClientMetricCard
-                            icon={Clock3}
-                            label="Offen"
-                            value={String(openExercises.length)}
-                            hint={openExercises.length === 0 ? 'Alle Aufgaben sind aktuell abgeschlossen.' : 'Hier liegen deine naechsten Schritte.'}
-                            tone="secondary"
-                        />
-                        <ClientMetricCard
-                            icon={CheckCircle2}
-                            label="Abgeschlossen"
-                            value={String(completedExercises.length)}
-                            hint="Erledigte Uebungen bleiben fuer Wiederholung und Rueckblick erhalten."
-                            tone="success"
-                        />
+                        <PressableScale
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: activeFilter === 'all' }}
+                            onPress={() => {
+                                if (Platform.OS !== 'web') {
+                                    Haptics.selectionAsync();
+                                }
+                                setActiveFilter('all');
+                            }}
+                            withHaptics={false}
+                            intensity="medium"
+                            style={{ flex: 1 }}
+                        >
+                            <ClientMetricCard
+                                icon={BookOpen}
+                                label="Gesamt"
+                                value={String(exercises.length)}
+                                hint={exercises.length === 0 ? 'Derzeit sind keine Übungen verfügbar.' : 'Alle dir zugewiesenen Übungen in einer Ansicht.'}
+                                tone="primary"
+                            />
+                        </PressableScale>
+                        <PressableScale
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: activeFilter === 'open' }}
+                            onPress={() => {
+                                if (Platform.OS !== 'web') {
+                                    Haptics.selectionAsync();
+                                }
+                                setActiveFilter('open');
+                            }}
+                            withHaptics={false}
+                            intensity="medium"
+                            style={{ flex: 1 }}
+                        >
+                            <ClientMetricCard
+                                icon={Clock3}
+                                label="Offen"
+                                value={String(openExercises.length)}
+                                hint={openExercises.length === 0 ? 'Alle Aufgaben sind aktuell abgeschlossen.' : 'Hier liegen deine nächsten Schritte.'}
+                                tone="secondary"
+                            />
+                        </PressableScale>
+                        <PressableScale
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: activeFilter === 'completed' }}
+                            onPress={() => {
+                                if (Platform.OS !== 'web') {
+                                    Haptics.selectionAsync();
+                                }
+                                setActiveFilter('completed');
+                            }}
+                            withHaptics={false}
+                            intensity="medium"
+                            style={{ flex: 1 }}
+                        >
+                            <ClientMetricCard
+                                icon={CheckCircle2}
+                                label="Abgeschlossen"
+                                value={String(completedExercises.length)}
+                                hint="Erledigte Übungen bleiben für Wiederholung und Rückblick erhalten."
+                                tone="success"
+                            />
+                        </PressableScale>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 24 }}>
+                        {filterOptions.map((option) => {
+                            const isActive = activeFilter === option.key;
+                            return (
+                                <PressableScale
+                                    key={option.key}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected: isActive }}
+                                    onPress={() => {
+                                        if (Platform.OS !== 'web') {
+                                            Haptics.selectionAsync();
+                                        }
+                                        setActiveFilter(option.key);
+                                    }}
+                                    withHaptics={false}
+                                    intensity="subtle"
+                                    style={{
+                                        paddingHorizontal: 14,
+                                        paddingVertical: 10,
+                                        borderRadius: 999,
+                                        borderWidth: 1,
+                                        borderColor: isActive ? colors.primary : colors.border,
+                                        backgroundColor: isActive
+                                            ? (isDark ? 'rgba(255,255,255,0.12)' : 'rgba(17,24,39,0.06)')
+                                            : colors.card,
+                                    }}
+                                >
+                                    <Text style={{ color: isActive ? colors.primary : colors.text, fontWeight: '800' }}>
+                                        {option.label} ({option.count})
+                                    </Text>
+                                </PressableScale>
+                            );
+                        })}
                     </View>
 
                     {exercises.length === 0 ? (
@@ -169,16 +267,16 @@ export default function ExercisesOverview() {
                         </MotiView>
                     ) : (
                         <>
-                            {openExercises.length > 0 ? (
+                            {visibleOpenExercises.length > 0 ? (
                                 <View style={{ marginBottom: 32 }}>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300 }}>
                                         <DashboardSectionHeader
                                             title={i18n.t('dashboard.exercises.title', { defaultValue: 'Offen' })}
-                                            subtitle={`${openExercises.length} offene Aufgabe${openExercises.length > 1 ? 'n' : ''} warten auf dich.`}
+                                            subtitle={`${visibleOpenExercises.length} offene Aufgabe${visibleOpenExercises.length > 1 ? 'n' : ''} warten auf dich.`}
                                         />
                                     </MotiView>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-                                        {openExercises.map((ex, idx) => {
+                                        {visibleOpenExercises.map((ex, idx) => {
                                             const itemWidth = isDesktop ? '33.33%' : isTablet ? '50%' : '100%';
                                             return (
                                                 <MotiView
@@ -196,18 +294,18 @@ export default function ExercisesOverview() {
                                 </View>
                             ) : null}
 
-                            {completedExercises.length > 0 ? (
+                            {visibleCompletedExercises.length > 0 ? (
                                 <View>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300 }}>
                                         <View style={{ marginTop: 8 }}>
                                             <DashboardSectionHeader
                                                 title={i18n.t('dashboard.completed.title', { defaultValue: 'Abgeschlossen' })}
-                                                subtitle={`${completedExercises.length} erledigte Aufgabe${completedExercises.length > 1 ? 'n' : ''} kannst du jederzeit wieder oeffnen.`}
+                                                subtitle={`${visibleCompletedExercises.length} erledigte Aufgabe${visibleCompletedExercises.length > 1 ? 'n' : ''} kannst du jederzeit wieder öffnen.`}
                                             />
                                         </View>
                                     </MotiView>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-                                        {completedExercises.map((ex, idx) => {
+                                        {visibleCompletedExercises.map((ex, idx) => {
                                             const itemWidth = isDesktop ? '33.33%' : isTablet ? '50%' : '100%';
                                             return (
                                                 <MotiView
@@ -222,6 +320,27 @@ export default function ExercisesOverview() {
                                             );
                                         })}
                                     </View>
+                                </View>
+                            ) : null}
+
+                            {activeFilter !== 'all' &&
+                            visibleOpenExercises.length === 0 &&
+                            visibleCompletedExercises.length === 0 ? (
+                                <View
+                                    style={{
+                                        borderRadius: 24,
+                                        padding: 20,
+                                        backgroundColor: colors.card,
+                                        borderWidth: 1,
+                                        borderColor: colors.border,
+                                    }}
+                                >
+                                    <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800', marginBottom: 6 }}>
+                                        {activeFilter === 'open' ? 'Offene Aufgaben' : 'Erledigte Aufgaben'}
+                                    </Text>
+                                    <Text style={{ color: colors.textSubtle, lineHeight: 22 }}>
+                                        {emptyFilterMessage}
+                                    </Text>
                                 </View>
                             ) : null}
                         </>

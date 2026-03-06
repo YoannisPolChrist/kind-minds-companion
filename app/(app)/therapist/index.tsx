@@ -1,4 +1,4 @@
-﻿import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Linking, Platform, TextInput, Modal, useWindowDimensions } from 'react-native';
+import { View, Text, ActivityIndicator, FlatList, Linking, Platform, TextInput, Modal, useWindowDimensions } from 'react-native';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image } from 'expo-image';
 import { collection, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
@@ -309,7 +309,7 @@ export default function TherapistDashboard() {
                                 </Text>
                                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
                                     {moodValue !== null ? (
-                                        <Badge variant={isLowMood(moodValue) ? 'warning' : 'default'}>Mood {moodValue}/100</Badge>
+                                        <Badge variant={isLowMood(moodValue) ? 'warning' : 'default'}>Stimmung {moodValue}/100</Badge>
                                     ) : (
                                         <Badge variant="muted">Keine Check-ins</Badge>
                                     )}
@@ -342,7 +342,7 @@ export default function TherapistDashboard() {
                     </View>
 
                     <View style={{ flexDirection: 'row', gap: 10 }}>
-                        <TouchableOpacity
+                        <PressableScale
                             style={{
                                 backgroundColor: isDark ? 'rgba(239,68,68,0.15)' : 'rgba(239,68,68,0.07)',
                                 borderWidth: 1,
@@ -354,11 +354,11 @@ export default function TherapistDashboard() {
                                 justifyContent: 'center',
                             }}
                             onPress={() => handleDeleteClient(item)}
-                            activeOpacity={0.7}
+                            intensity="subtle"
                         >
                             <Trash2 size={17} color="#EF4444" strokeWidth={2.5} />
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </PressableScale>
+                        <PressableScale
                             style={{
                                 flex: 1,
                                 backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
@@ -373,12 +373,12 @@ export default function TherapistDashboard() {
                                 gap: 7,
                             }}
                             onPress={() => handleNotify(item)}
-                            activeOpacity={0.7}
+                            intensity="subtle"
                         >
                             <MessageCircle size={17} color={colors.text} strokeWidth={2.5} />
                             <Text style={{ color: colors.text, fontWeight: '800', fontSize: 14 }}>Nachricht</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
+                        </PressableScale>
+                        <PressableScale
                             style={{
                                 flex: 1.2,
                                 paddingVertical: 13,
@@ -397,7 +397,7 @@ export default function TherapistDashboard() {
                                 elevation: 6,
                             }}
                             onPress={() => handleOpenRecord(item.id)}
-                            activeOpacity={0.8}
+                            intensity="bold"
                         >
                             <LinearGradient
                                 colors={['#4E7E82', '#2D666B']}
@@ -405,9 +405,9 @@ export default function TherapistDashboard() {
                                 end={{ x: 0, y: 1 }}
                                 style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
                             />
-                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 14, zIndex: 10 }}>Akte offnen</Text>
+                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 14, zIndex: 10 }}>Akte öffnen</Text>
                             <FolderOpen size={16} color="#ffffff" strokeWidth={2.5} />
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
                 </Card>
             </MotiView>
@@ -494,18 +494,20 @@ export default function TherapistDashboard() {
                                 </Text>
                             </View>
                             <View style={{ flexDirection: 'row', gap: 8 }}>
-                                <TouchableOpacity
+                                <PressableScale
                                     onPress={() => setTheme(isDark ? 'light' : 'dark')}
+                                    intensity="subtle"
                                     style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
                                 >
                                     {isDark ? <Sun color={colors.text} size={20} /> : <Moon color={colors.text} size={20} />}
-                                </TouchableOpacity>
-                                <TouchableOpacity
+                                </PressableScale>
+                                <PressableScale
                                     onPress={signOut}
+                                    intensity="subtle"
                                     style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 16 }}
                                 >
                                     <Text style={{ color: colors.text, fontWeight: '700' }}>{i18n.t('therapist.logout')}</Text>
-                                </TouchableOpacity>
+                                </PressableScale>
                             </View>
                         </View>
                     </BlurView>
@@ -527,7 +529,7 @@ export default function TherapistDashboard() {
                                 </View>
                                 <Text style={{ color: colors.text, fontWeight: '900', fontSize: 16, marginBottom: 4 }}>{i18n.t('therapist.templates')}</Text>
                                 <Text style={{ color: colors.textSubtle, fontWeight: '600', fontSize: 13, lineHeight: 18 }}>
-                                    Ubungsvorlagen erstellen und verwalten
+                                    Übungsvorlagen erstellen und verwalten
                                 </Text>
                             </Card>
                         </PressableScale>
@@ -569,14 +571,14 @@ export default function TherapistDashboard() {
                         icon={TrendingUp}
                         label="Durchschnitt"
                         value={`${dashboardStats.avgCompletion}%`}
-                        hint="Mittlere Abschlussquote uber alle zugewiesenen Ubungen."
+                        hint="Mittlere Abschlussquote über alle zugewiesenen Übungen."
                         tone="success"
                     />
                     <TherapistMetricCard
                         icon={Smile}
                         label="Aufmerksam"
                         value={String(dashboardStats.attentionCount)}
-                        hint={dashboardStats.attentionCount === 0 ? 'Derzeit fallt kein Client durch niedrige Aktivitat auf.' : `${dashboardStats.attentionCount} Klienten brauchen wahrscheinlich zeitnahen Blick.`}
+                        hint={dashboardStats.attentionCount === 0 ? 'Derzeit fällt kein Client durch niedrige Aktivität auf.' : `${dashboardStats.attentionCount} Klienten brauchen wahrscheinlich zeitnahen Blick.`}
                         tone="warning"
                     />
                 </View>
@@ -604,9 +606,9 @@ export default function TherapistDashboard() {
                             leading={<Search size={18} color={colors.textSubtle} />}
                             containerStyle={{ flex: 1 }}
                         />
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => setIsAddClientModalVisible(true)}
-                            activeOpacity={0.85}
+                            intensity="medium"
                             style={{
                                 backgroundColor: colors.primary,
                                 minHeight: 52,
@@ -627,7 +629,7 @@ export default function TherapistDashboard() {
                             <Text style={{ color: 'white', fontWeight: '900', fontSize: 14 }}>
                                 {Platform.OS === 'web' ? 'Neuer Klient (Cmd+N)' : 'Neuer Klient'}
                             </Text>
-                        </TouchableOpacity>
+                        </PressableScale>
                     </View>
 
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 36 }}>
@@ -635,10 +637,10 @@ export default function TherapistDashboard() {
                             const isActive = activeFilter === filter;
 
                             return (
-                                <TouchableOpacity
+                                <PressableScale
                                     key={filter}
                                     onPress={() => setActiveFilter(filter)}
-                                    activeOpacity={0.8}
+                                    intensity="subtle"
                                     style={{
                                         flexDirection: 'row',
                                         alignItems: 'center',
@@ -657,7 +659,7 @@ export default function TherapistDashboard() {
                                     <Badge variant={filter === 'attention' ? 'warning' : filter === 'engaged' ? 'success' : 'muted'}>
                                         {filterCounts[filter]}
                                     </Badge>
-                                </TouchableOpacity>
+                                </PressableScale>
                             );
                         })}
                     </View>
@@ -674,13 +676,13 @@ export default function TherapistDashboard() {
                             }}
                         >
                             <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F7F4EE', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-                                <Text style={{ fontSize: 32 }}>??</Text>
+                                <Smile size={30} color={colors.textSubtle} strokeWidth={2.25} />
                             </View>
                             <Text style={{ color: colors.text, fontWeight: '900', fontSize: 20, marginBottom: 8, textAlign: 'center' }}>
                                 {i18n.t('therapist.no_clients')}
                             </Text>
                             <Text style={{ color: colors.textSubtle, textAlign: 'center', fontWeight: '600', lineHeight: 22, maxWidth: 320 }}>
-                                {i18n.t('therapist.clients_must_register', { defaultValue: 'Clients must register in the app before you can assign them specific therapy tasks.' })}
+                                {i18n.t('therapist.clients_must_register', { defaultValue: 'Klient:innen müssen sich zuerst in der App registrieren, bevor du ihnen konkrete Therapieaufgaben zuweisen kannst.' })}
                             </Text>
                         </Card>
                     )}
@@ -714,16 +716,17 @@ export default function TherapistDashboard() {
                         }}
                     >
                         <Text style={{ color: colors.text, fontSize: 18, fontWeight: '900', marginBottom: 8, textAlign: 'center' }}>
-                            Keine Treffer fur diese Ansicht
+                            Keine Treffer für diese Ansicht
                         </Text>
                         <Text style={{ color: colors.textSubtle, fontSize: 14, fontWeight: '600', textAlign: 'center', lineHeight: 21, marginBottom: 16 }}>
                             Passe Suche oder Filter an, um wieder Klienten in der Liste zu sehen.
                         </Text>
-                        <TouchableOpacity
+                        <PressableScale
                             onPress={() => {
                                 setSearchQuery('');
                                 setActiveFilter('all');
                             }}
+                            intensity="medium"
                             style={{
                                 paddingHorizontal: 16,
                                 paddingVertical: 12,
@@ -731,8 +734,8 @@ export default function TherapistDashboard() {
                                 backgroundColor: colors.primary,
                             }}
                         >
-                            <Text style={{ color: 'white', fontWeight: '800' }}>Filter zurucksetzen</Text>
-                        </TouchableOpacity>
+                            <Text style={{ color: 'white', fontWeight: '800' }}>Filter zurücksetzen</Text>
+                        </PressableScale>
                     </Card>
                 ) : null}
                 renderItem={renderClientItem}
@@ -759,27 +762,29 @@ export default function TherapistDashboard() {
                             <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                                 <Trash2 size={32} color="#EF4444" />
                             </View>
-                            <Text style={{ fontSize: 22, fontWeight: '900', color: colors.text, textAlign: 'center', marginBottom: 8 }}>Klienten loschen?</Text>
+                            <Text style={{ fontSize: 22, fontWeight: '900', color: colors.text, textAlign: 'center', marginBottom: 8 }}>Klienten löschen?</Text>
                             <Text style={{ fontSize: 15, color: colors.textSubtle, textAlign: 'center', lineHeight: 22 }}>
-                                Mochtest du{' '}
+                                Möchtest du{' '}
                                 <Text style={{ fontWeight: '800', color: colors.text }}>{clientToDelete?.firstName} {clientToDelete?.lastName}</Text>
                                 {' '}wirklich entfernen? Der Firebase-Zugang bleibt bestehen.
                             </Text>
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <TouchableOpacity
+                            <PressableScale
                                 onPress={() => setClientToDelete(null)}
+                                intensity="subtle"
                                 style={{ flex: 1, backgroundColor: isDark ? 'rgba(255,255,255,0.06)' : '#F3EEE6', paddingVertical: 16, borderRadius: 20, alignItems: 'center' }}
                             >
                                 <Text style={{ fontWeight: '700', color: colors.text, fontSize: 16 }}>Abbrechen</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
+                            </PressableScale>
+                            <PressableScale
                                 onPress={confirmDeleteClient}
                                 disabled={deleteLoading}
+                                intensity="medium"
                                 style={{ flex: 1, backgroundColor: '#EF4444', paddingVertical: 16, borderRadius: 20, alignItems: 'center', opacity: deleteLoading ? 0.7 : 1 }}
                             >
-                                <Text style={{ fontWeight: '800', color: 'white', fontSize: 16 }}>{deleteLoading ? 'Wird geloscht...' : 'Loschen'}</Text>
-                            </TouchableOpacity>
+                                <Text style={{ fontWeight: '800', color: 'white', fontSize: 16 }}>{deleteLoading ? 'Wird gelöscht...' : 'Löschen'}</Text>
+                            </PressableScale>
                         </View>
                     </MotiView>
                 </View>
