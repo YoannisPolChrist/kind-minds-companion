@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, SectionList, ScrollView, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
+﻿import { View, Text, TouchableOpacity, SectionList, ScrollView, ActivityIndicator, TextInput, Modal, KeyboardAvoidingView, Platform, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import * as Haptics from 'expo-haptics';
@@ -35,14 +35,14 @@ const isSessionNote = (note: any) =>
 const isJournalEntry = (note: any) =>
     note.type === 'journal' || note.authorRole === 'client';
 
-// ─── Note Card ────────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Note Card Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 const NoteCard = React.memo(({ note, isExpanded, onToggleExpand, onDeletePrompt, formatTime }: any) => {
     const { width } = useWindowDimensions();
     const session = isSessionNote(note);
 
-    const accentColor = session ? '#137386' : '#16A34A';
-    const bgColor = session ? '#EEF7F8' : '#F0FDF4';
+    const accentColor = session ? '#2D666B' : '#16A34A';
+    const bgColor = session ? '#EEF4F3' : '#F0FDF4';
 
     return (
         <MotiView
@@ -69,12 +69,12 @@ const NoteCard = React.memo(({ note, isExpanded, onToggleExpand, onDeletePrompt,
             >
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <View style={{ flex: 1, paddingRight: 16 }}>
-                        <Text style={{ fontSize: 22, color: '#0F172A', fontWeight: '900', letterSpacing: -0.5, marginBottom: 8, lineHeight: 28 }}>
+                        <Text style={{ fontSize: 22, color: '#182428', fontWeight: '900', letterSpacing: -0.5, marginBottom: 8, lineHeight: 28 }}>
                             {note.title || (session ? 'Session Note' : 'Tagebucheintrag')}
                         </Text>
 
                         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#94A3B8' }}>{formatTime(note)}</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#8B938E' }}>{formatTime(note)}</Text>
 
                             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: bgColor, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
                                 {session
@@ -87,14 +87,14 @@ const NoteCard = React.memo(({ note, isExpanded, onToggleExpand, onDeletePrompt,
                             </View>
 
                             {!session && note.isShared && (
-                                <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
-                                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#4F46E5' }}>Geteilt</Text>
+                                <View style={{ backgroundColor: '#F2EFE9', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#8A6A53' }}>Geteilt</Text>
                                 </View>
                             )}
                         </View>
                     </View>
 
-                    <ChevronRight size={20} color={isExpanded ? accentColor : '#CBD5E1'} style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }} />
+                    <ChevronRight size={20} color={isExpanded ? accentColor : '#BEC7C0'} style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }} />
                 </View>
 
                 {isExpanded && (
@@ -106,25 +106,25 @@ const NoteCard = React.memo(({ note, isExpanded, onToggleExpand, onDeletePrompt,
                         <View style={{ height: 1, backgroundColor: 'rgba(226, 232, 240, 0.8)', marginBottom: 20 }} />
 
                         {note.imageUrl && (
-                            <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, borderWidth: 1, borderColor: '#F1F5F9' }}>
+                            <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, borderWidth: 1, borderColor: '#F3EEE6' }}>
                                 <Image source={{ uri: note.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                             </View>
                         )}
                         <RenderHtml
                             contentWidth={width - 80}
                             source={{ html: note.content || '<p></p>' }}
-                            baseStyle={{ fontSize: 16, color: '#334155', lineHeight: 26, fontWeight: '500', fontFamily: 'System' }}
+                            baseStyle={{ fontSize: 16, color: '#3A4340', lineHeight: 26, fontWeight: '500', fontFamily: 'System' }}
                         />
 
                         {/* Actions */}
                         {session && (
-                            <View style={{ flexDirection: 'row', gap: 12, marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F8FAFC' }}>
+                            <View style={{ flexDirection: 'row', gap: 12, marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F5F1EA' }}>
                                 <TouchableOpacity
                                     onPress={onDeletePrompt}
                                     style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}
                                 >
                                     <Trash2 size={14} color="#EF4444" />
-                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#EF4444', marginLeft: 6 }}>Löschen</Text>
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#EF4444', marginLeft: 6 }}>LÃƒÂ¶schen</Text>
                                 </TouchableOpacity>
                             </View>
                         )}
@@ -135,7 +135,7 @@ const NoteCard = React.memo(({ note, isExpanded, onToggleExpand, onDeletePrompt,
     );
 });
 
-// ─── Main Screen ──────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Main Screen Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 export default function TherapistClientNotesScreen() {
     const router = useRouter();
@@ -184,7 +184,7 @@ export default function TherapistClientNotesScreen() {
         try {
             const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!perm.granted) {
-                setToast({ visible: true, message: 'Berechtigung', subMessage: 'Galerie-Zugriff wird benötigt.', type: 'warning' });
+                setToast({ visible: true, message: 'Berechtigung', subMessage: 'Galerie-Zugriff wird benÃƒÂ¶tigt.', type: 'warning' });
                 return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, quality: 0.8 });
@@ -241,7 +241,7 @@ export default function TherapistClientNotesScreen() {
         try {
             await NoteRepository.delete?.(noteToDelete.id);
             setNotes(prev => prev.filter(n => n.id !== noteToDelete.id));
-            setToast({ visible: true, message: 'Gelöscht', type: 'success' });
+            setToast({ visible: true, message: 'GelÃƒÂ¶scht', type: 'success' });
         } catch (error) {
             const { message } = ErrorHandler.handle(error, 'Delete Note');
             setToast({ visible: true, message: 'Fehler', subMessage: message, type: 'error' });
@@ -281,24 +281,24 @@ export default function TherapistClientNotesScreen() {
     const sessionCount = notes.filter(isSessionNote).length;
     const journalCount = notes.filter(isJournalEntry).length;
 
-    // ─── Render ───────────────────────────────────────────────────────────────
+    // Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Render Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+        <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
             {/* Header */}
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
-                <View style={{ backgroundColor: '#137386', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
+                <View style={{ backgroundColor: '#2D666B', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                         <TouchableOpacity onPress={goBack} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
                             <ArrowLeft size={18} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurück</Text>
+                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>ZurÃƒÂ¼ck</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => setShowNoteModal(true)}
                             style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20 }}
                         >
-                            <Plus size={18} color="#137386" />
-                            <Text style={{ color: '#137386', fontWeight: '800', marginLeft: 6, fontSize: 15 }}>Session Note</Text>
+                            <Plus size={18} color="#2D666B" />
+                            <Text style={{ color: '#2D666B', fontWeight: '800', marginLeft: 6, fontSize: 15 }}>Session Note</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -312,7 +312,7 @@ export default function TherapistClientNotesScreen() {
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 }}>
                             <BookOpen size={12} color="rgba(255,255,255,0.9)" />
-                            <Text style={{ color: 'white', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>{journalCount} Tagebucheinträge</Text>
+                            <Text style={{ color: 'white', fontSize: 12, fontWeight: '700', marginLeft: 5 }}>{journalCount} TagebucheintrÃƒÂ¤ge</Text>
                         </View>
                     </View>
 
@@ -328,7 +328,7 @@ export default function TherapistClientNotesScreen() {
                                 onPress={() => setFilter(key)}
                                 style={{ backgroundColor: filter === key ? 'white' : 'rgba(255,255,255,0.15)', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 }}
                             >
-                                <Text style={{ color: filter === key ? '#137386' : 'white', fontWeight: '700', fontSize: 13 }}>{label}</Text>
+                                <Text style={{ color: filter === key ? '#2D666B' : 'white', fontWeight: '700', fontSize: 13 }}>{label}</Text>
                             </TouchableOpacity>
                         ))}
                     </View>
@@ -356,21 +356,21 @@ export default function TherapistClientNotesScreen() {
 
             {loading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color="#137386" />
+                    <ActivityIndicator size="large" color="#2D666B" />
                 </View>
             ) : notes.length === 0 ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
                     <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 100, type: 'spring' }} style={{ alignItems: 'center' }}>
-                        <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginBottom: 24, borderWidth: 2, borderColor: '#F1F5F9' }}>
-                            <Edit3 size={40} color="#94A3B8" />
+                        <View style={{ width: 100, height: 100, borderRadius: 50, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginBottom: 24, borderWidth: 2, borderColor: '#F3EEE6' }}>
+                            <Edit3 size={40} color="#8B938E" />
                         </View>
-                        <Text style={{ fontSize: 22, fontWeight: '900', color: '#0F172A', letterSpacing: -0.5, marginBottom: 10, textAlign: 'center' }}>Keine Notizen</Text>
-                        <Text style={{ fontSize: 15, color: '#64748B', textAlign: 'center', lineHeight: 22, maxWidth: 300, fontWeight: '500', marginBottom: 32 }}>
+                        <Text style={{ fontSize: 22, fontWeight: '900', color: '#182428', letterSpacing: -0.5, marginBottom: 10, textAlign: 'center' }}>Keine Notizen</Text>
+                        <Text style={{ fontSize: 15, color: '#6F7472', textAlign: 'center', lineHeight: 22, maxWidth: 300, fontWeight: '500', marginBottom: 32 }}>
                             Halte Beobachtungen und Erkenntnisse aus euren Sessions fest.
                         </Text>
                         <TouchableOpacity
                             onPress={() => setShowNoteModal(true)}
-                            style={{ backgroundColor: '#137386', paddingHorizontal: 28, paddingVertical: 16, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
+                            style={{ backgroundColor: '#2D666B', paddingHorizontal: 28, paddingVertical: 16, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
                         >
                             <Plus size={18} color="white" />
                             <Text style={{ color: 'white', fontWeight: '800', fontSize: 15, marginLeft: 8 }}>Erste Session Note</Text>
@@ -379,8 +379,8 @@ export default function TherapistClientNotesScreen() {
                 </View>
             ) : filteredNotes.length === 0 ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
-                    <Search size={40} color="#CBD5E1" />
-                    <Text style={{ fontSize: 16, color: '#64748B', fontWeight: '600', marginTop: 16, textAlign: 'center' }}>Keine Notizen für diesen Filter</Text>
+                    <Search size={40} color="#BEC7C0" />
+                    <Text style={{ fontSize: 16, color: '#6F7472', fontWeight: '600', marginTop: 16, textAlign: 'center' }}>Keine Notizen fÃƒÂ¼r diesen Filter</Text>
                 </View>
             ) : (
                 <SectionList
@@ -390,16 +390,16 @@ export default function TherapistClientNotesScreen() {
                     showsVerticalScrollIndicator={false}
                     renderSectionHeader={({ section: { title, data } }) => (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E8E6E1', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 }}>
-                                <Calendar size={13} color="#137386" />
-                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#243842', marginLeft: 6 }}>{title}</Text>
-                                <Text style={{ fontSize: 11, color: '#94A3B8', fontWeight: '600', marginLeft: 6 }}>{data.length} Einträge</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E7E0D4', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 }}>
+                                <Calendar size={13} color="#2D666B" />
+                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#1F2528', marginLeft: 6 }}>{title}</Text>
+                                <Text style={{ fontSize: 11, color: '#8B938E', fontWeight: '600', marginLeft: 6 }}>{data.length} EintrÃƒÂ¤ge</Text>
                             </View>
-                            <View style={{ flex: 1, height: 1, backgroundColor: '#E8E6E1', marginLeft: 12 }} />
+                            <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4', marginLeft: 12 }} />
                         </View>
                     )}
                     renderItem={({ item }) => (
-                        <View style={{ paddingLeft: 16, borderLeftWidth: 2, borderLeftColor: '#E8E6E1' }}>
+                        <View style={{ paddingLeft: 16, borderLeftWidth: 2, borderLeftColor: '#E7E0D4' }}>
                             <NoteCard
                                 note={item}
                                 isExpanded={expandedId === item.id}
@@ -419,7 +419,7 @@ export default function TherapistClientNotesScreen() {
                 />
             )}
 
-            {/* ── Create Note Modal (Bear / Notion Redesign) ──────────────── */}
+            {/* Ã¢â€â‚¬Ã¢â€â‚¬ Create Note Modal (Bear / Notion Redesign) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
             <Modal visible={showNoteModal} animationType="slide" presentationStyle="formSheet">
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -430,15 +430,15 @@ export default function TherapistClientNotesScreen() {
                         {/* Minimalist Bear-Style Header */}
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingBottom: 16 }}>
                             <TouchableOpacity onPress={() => setShowNoteModal(false)} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
-                                <ArrowLeft size={24} color="#94A3B8" />
+                                <ArrowLeft size={24} color="#8B938E" />
                             </TouchableOpacity>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EEF7F8', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
-                                <Lock size={12} color="#137386" />
-                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#137386' }}>Therapeut</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EEF4F3', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
+                                <Lock size={12} color="#2D666B" />
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#2D666B' }}>Therapeut</Text>
                             </View>
                             <TouchableOpacity onPress={handleSaveNote} disabled={saving || (!newNoteContent.trim() && !newNoteImage)}>
-                                {saving ? <ActivityIndicator size="small" color="#137386" /> : (
-                                    <Text style={{ fontSize: 17, fontWeight: '800', color: (!newNoteContent.trim() && !newNoteImage) ? '#E2E8F0' : '#137386' }}>
+                                {saving ? <ActivityIndicator size="small" color="#2D666B" /> : (
+                                    <Text style={{ fontSize: 17, fontWeight: '800', color: (!newNoteContent.trim() && !newNoteImage) ? '#E2E8F0' : '#2D666B' }}>
                                         Speichern
                                     </Text>
                                 )}
@@ -447,9 +447,9 @@ export default function TherapistClientNotesScreen() {
 
                         {/* Title Input - Huge and Borderless */}
                         <TextInput
-                            style={{ fontSize: 32, fontWeight: '900', color: '#0F172A', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, letterSpacing: -0.5 } as any}
+                            style={{ fontSize: 32, fontWeight: '900', color: '#182428', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, letterSpacing: -0.5 } as any}
                             placeholder="Titel..."
-                            placeholderTextColor="#CBD5E1"
+                            placeholderTextColor="#BEC7C0"
                             value={newNoteTitle}
                             onChangeText={setNewNoteTitle}
                         />
@@ -471,8 +471,8 @@ export default function TherapistClientNotesScreen() {
                                     value={newNoteContent}
                                     onChangeText={setNewNoteContent}
                                     placeholder="Beginne hier zu schreiben..."
-                                    placeholderTextColor="#94A3B8"
-                                    style={{ flex: 1, paddingHorizontal: 24, fontSize: 18, color: '#334155', textAlignVertical: 'top', lineHeight: 28, outlineStyle: 'none' } as any}
+                                    placeholderTextColor="#8B938E"
+                                    style={{ flex: 1, paddingHorizontal: 24, fontSize: 18, color: '#3A4340', textAlignVertical: 'top', lineHeight: 28, outlineStyle: 'none' } as any}
                                 />
                             ) : (
                                 <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
@@ -482,7 +482,7 @@ export default function TherapistClientNotesScreen() {
                                             initialContentHTML={newNoteContent}
                                             onChange={setNewNoteContent}
                                             placeholder="Beginne hier zu schreiben..."
-                                            editorStyle={{ backgroundColor: 'transparent', color: '#334155', placeholderColor: '#94A3B8', cssText: 'padding: 0 24px; font-size: 18px; line-height: 28px;' }}
+                                            editorStyle={{ backgroundColor: 'transparent', color: '#3A4340', placeholderColor: '#8B938E', cssText: 'padding: 0 24px; font-size: 18px; line-height: 28px;' }}
                                             style={{ flex: 1, minHeight: 400 }}
                                         />
                                     )}
@@ -491,7 +491,7 @@ export default function TherapistClientNotesScreen() {
                         </View>
 
                         {/* Bottom Toolbar */}
-                        <View style={{ borderTopWidth: 1, borderTopColor: '#F8FAFC', backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 12 : 8, flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{ borderTopWidth: 1, borderTopColor: '#F5F1EA', backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 12 : 8, flexDirection: 'row', alignItems: 'center' }}>
                             {Platform.OS !== 'web' && RichToolbar && (
                                 <View style={{ flex: 1, overflow: 'hidden' }}>
                                     <RichToolbar
@@ -502,21 +502,21 @@ export default function TherapistClientNotesScreen() {
                                             actions.insertBulletsList,
                                             actions.insertOrderedList,
                                         ] : []}
-                                        iconTint="#64748B"
-                                        selectedIconTint="#137386"
+                                        iconTint="#6F7472"
+                                        selectedIconTint="#2D666B"
                                         style={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}
                                     />
                                 </View>
                             )}
-                            <TouchableOpacity onPress={pickImage} style={{ padding: 10, backgroundColor: '#F8FAFC', borderRadius: 12 }}>
-                                <Camera size={20} color="#64748B" />
+                            <TouchableOpacity onPress={pickImage} style={{ padding: 10, backgroundColor: '#F5F1EA', borderRadius: 12 }}>
+                                <Camera size={20} color="#6F7472" />
                             </TouchableOpacity>
                         </View>
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
 
-            {/* ── Delete Confirmation ───────────────────────────────────────── */}
+            {/* Ã¢â€â‚¬Ã¢â€â‚¬ Delete Confirmation Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ */}
             <Modal visible={deleteModalVisible} transparent animationType="fade">
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.4)', padding: 24 }}>
                     <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ backgroundColor: 'white', borderRadius: 32, padding: 36, width: '100%', maxWidth: 380 }}>
@@ -524,15 +524,15 @@ export default function TherapistClientNotesScreen() {
                             <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
                                 <Trash2 size={28} color="#EF4444" />
                             </View>
-                            <Text style={{ fontSize: 20, fontWeight: '900', color: '#243842', textAlign: 'center', marginBottom: 6 }}>Session Note löschen?</Text>
-                            <Text style={{ fontSize: 14, color: '#94A3B8', textAlign: 'center', lineHeight: 20 }}>Diese Aktion kann nicht rückgängig gemacht werden.</Text>
+                            <Text style={{ fontSize: 20, fontWeight: '900', color: '#1F2528', textAlign: 'center', marginBottom: 6 }}>Session Note lÃƒÂ¶schen?</Text>
+                            <Text style={{ fontSize: 14, color: '#8B938E', textAlign: 'center', lineHeight: 20 }}>Diese Aktion kann nicht rÃƒÂ¼ckgÃƒÂ¤ngig gemacht werden.</Text>
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <TouchableOpacity onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, backgroundColor: '#F1F5F9', paddingVertical: 15, borderRadius: 16, alignItems: 'center' }}>
-                                <Text style={{ fontWeight: '700', color: '#243842', fontSize: 15 }}>Abbrechen</Text>
+                            <TouchableOpacity onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, backgroundColor: '#F3EEE6', paddingVertical: 15, borderRadius: 16, alignItems: 'center' }}>
+                                <Text style={{ fontWeight: '700', color: '#1F2528', fontSize: 15 }}>Abbrechen</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={handleDeleteNote} style={{ flex: 1, backgroundColor: '#EF4444', paddingVertical: 15, borderRadius: 16, alignItems: 'center' }}>
-                                <Text style={{ fontWeight: '800', color: 'white', fontSize: 15 }}>Löschen</Text>
+                                <Text style={{ fontWeight: '800', color: 'white', fontSize: 15 }}>LÃƒÂ¶schen</Text>
                             </TouchableOpacity>
                         </View>
                     </MotiView>
@@ -549,3 +549,4 @@ export default function TherapistClientNotesScreen() {
         </View>
     );
 }
+

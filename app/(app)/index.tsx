@@ -1,6 +1,5 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, TouchableOpacity, ActivityIndicator, InteractionManager, Linking, Platform } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { MotiView } from 'moti';
 import { Settings, Calendar, BookOpen, Edit3 } from 'lucide-react-native';
@@ -9,8 +8,8 @@ import { useAppStore } from '../../utils/useAppStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect, useCallback, useMemo, useState, lazy, Suspense } from 'react';
 import { useRouter, useFocusEffect, Redirect } from 'expo-router';
-import { collection, query, where, limit, getDocs, getDoc, updateDoc, doc, orderBy } from 'firebase/firestore';
-import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
+import { collection, query, where, limit, getDocs, getDoc, doc } from 'firebase/firestore';
+import Animated from 'react-native-reanimated';
 import { db } from '../../utils/firebase';
 import { registerForPushNotificationsAsync } from '../../utils/notifications';
 import { useClientExercises } from '../../hooks/useClientExercises';
@@ -21,14 +20,16 @@ import { CheckinBanner } from '../../components/dashboard/CheckinBanner';
 import { OpenExerciseCard } from '../../components/dashboard/OpenExerciseCard';
 import { CompletedExerciseCard } from '../../components/dashboard/CompletedExerciseCard';
 import { EmptyState } from '../../components/dashboard/EmptyState';
+import { ClientMetricCard } from '../../components/dashboard/ClientMetricCard';
+import { DashboardSectionHeader } from '../../components/dashboard/DashboardSectionHeader';
+import { QuickActionCard } from '../../components/dashboard/QuickActionCard';
 import { useCheckinStatus } from '../../hooks/useCheckinStatus';
 // Lazy load heavy charting libraries to reduce initial JS bundle size
 const MoodChart = lazy(() => import('../../components/dashboard/MoodChart').then(m => ({ default: m.MoodChart })));
-import { DarkAmbientOrbs, LightAmbientOrbs } from '../../components/ui/AmbientOrbs';
 import { Skeleton } from '../../components/ui/Skeleton';
 import { markNotificationsAsRead } from '../../services/notificationService';
 import { useTheme } from '../../contexts/ThemeContext';
-import { PressableScale } from '../../components/ui/PressableScale';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 const HOME_BACKGROUNDS = [
     require('../../assets/HomeUi1.webp'),
@@ -55,13 +56,7 @@ export default function ClientDashboard() {
     const setTherapistBookingUrl = useAppStore(state => state.setTherapistBookingUrl);
 
     // ── Responsive layout ─────────────────────────────────────────────────────
-    const { width: screenWidth } = useWindowDimensions();
-    const isTablet = screenWidth > 768;
-    const isDesktop = screenWidth > 1024;
-    // Mobile: natural width | Tablet: cap at 600px | Desktop: cap at 720px
-    const contentMaxWidth = screenWidth < 600 ? undefined : screenWidth < 1024 ? 600 : 720;
-    // Scale horizontal padding: 16px mobile, 24px tablet, 32px desktop
-    const horizPadding = screenWidth < 600 ? 16 : screenWidth < 1024 ? 24 : 32;
+    const { width: screenWidth, isXs, isSm, isTablet, isDesktop, contentMaxWidth, gutter, sectionGap, headerTop } = useResponsiveLayout();
 
     const randomBg = useMemo(() => HOME_BACKGROUNDS[Math.floor(Math.random() * HOME_BACKGROUNDS.length)], []);
 
@@ -140,6 +135,7 @@ export default function ClientDashboard() {
 
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
     const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
+    const recentCheckinCount = recentCheckins?.length ?? 0;
 
 
 
@@ -150,11 +146,11 @@ export default function ClientDashboard() {
     if (loading && exercises.length === 0) {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background }}>
-                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#2C3E50', paddingTop: Platform.OS === 'android' ? 64 : 72, paddingBottom: 56, paddingHorizontal: 24, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 }}>
+                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#1F2528', paddingTop: headerTop, paddingBottom: 56, paddingHorizontal: gutter, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 }}>
                     <Skeleton width={200} height={34} borderRadius={8} />
                     <Skeleton width={140} height={16} borderRadius={4} style={{ marginTop: 12 }} />
                 </View>
-                <View style={{ padding: 24 }}>
+                <View style={{ padding: gutter }}>
                     <Skeleton width="100%" height={100} borderRadius={24} style={{ marginBottom: 24 }} />
                     <Skeleton width={180} height={24} borderRadius={6} style={{ marginBottom: 16 }} />
                     <Skeleton width="100%" height={80} borderRadius={20} style={{ marginBottom: 12 }} />
@@ -175,13 +171,11 @@ export default function ClientDashboard() {
                 {/* ── Header ────────────────────────────────── */}
                 <View
                     style={{
-                        paddingTop: Platform.OS === 'android'
-                            ? (screenWidth < 380 ? 52 : 64)
-                            : (screenWidth < 380 ? 56 : 72),
-                        paddingBottom: screenWidth < 380 ? 24 : screenWidth < 600 ? 32 : 56,
-                        paddingHorizontal: screenWidth < 380 ? 12 : 20,
-                        borderBottomLeftRadius: screenWidth < 600 ? 32 : 48,
-                        borderBottomRightRadius: screenWidth < 600 ? 32 : 48,
+                        paddingTop: headerTop,
+                        paddingBottom: isXs ? 24 : isSm ? 32 : 56,
+                        paddingHorizontal: isXs ? 12 : 20,
+                        borderBottomLeftRadius: isSm ? 32 : 48,
+                        borderBottomRightRadius: isSm ? 32 : 48,
                         overflow: 'hidden',
                         zIndex: 10,
                         shadowColor: colors.primaryDark,
@@ -189,7 +183,7 @@ export default function ClientDashboard() {
                         shadowOpacity: 0.18,
                         shadowRadius: 24,
                         elevation: 10,
-                        marginBottom: screenWidth < 600 ? 16 : 24,
+                        marginBottom: isSm ? 16 : 24,
                     }}
                 >
                     <Image
@@ -204,9 +198,9 @@ export default function ClientDashboard() {
                             intensity={Platform.OS === 'android' ? 100 : 60}
                             tint={isDark ? 'dark' : 'light'}
                             style={{
-                                borderRadius: screenWidth < 600 ? 24 : 36,
+                                borderRadius: isSm ? 24 : 36,
                                 overflow: 'hidden',
-                                padding: screenWidth < 380 ? 14 : screenWidth < 600 ? 16 : 24,
+                                padding: isXs ? 14 : isSm ? 16 : 24,
                                 borderWidth: 1,
                                 borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                                 backgroundColor: isDark ? 'rgba(15,23,42,0.6)' : 'rgba(255,255,255,0.75)',
@@ -214,12 +208,12 @@ export default function ClientDashboard() {
                         >
                             {/* Logo — hidden on very small phones to save space */}
                             {screenWidth >= 360 && (
-                                <View style={{ alignItems: 'center', marginBottom: screenWidth < 600 ? 10 : 16 }}>
+                                <View style={{ alignItems: 'center', marginBottom: isSm ? 10 : 16 }}>
                                     <Image
                                         source={require('../../assets/logo-transparent.png')}
                                         style={{
-                                            width: screenWidth < 380 ? 160 : screenWidth < 600 ? 200 : 260,
-                                            height: screenWidth < 380 ? 44 : screenWidth < 600 ? 56 : 80,
+                                            width: isXs ? 160 : isSm ? 200 : 260,
+                                            height: isXs ? 44 : isSm ? 56 : 80,
                                             tintColor: isDark ? '#FFF' : undefined,
                                         }}
                                         contentFit="contain"
@@ -228,15 +222,15 @@ export default function ClientDashboard() {
                             )}
 
                             {/* Greeting row */}
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: screenWidth < 600 ? 12 : 20 }}>
+                            <View style={{ flexDirection: isXs ? 'column' : 'row', justifyContent: 'space-between', alignItems: isXs ? 'flex-start' : 'center', marginBottom: isSm ? 12 : 20, gap: isXs ? 12 : 0 }}>
                                 <View style={{ flex: 1, paddingRight: 12 }}>
                                     <Text
                                         style={{
-                                            fontSize: screenWidth < 380 ? 20 : screenWidth < 600 ? 24 : 34,
+                                            fontSize: isXs ? 20 : isSm ? 24 : 34,
                                             fontWeight: '900',
                                             color: colors.text,
                                             letterSpacing: -0.5,
-                                            lineHeight: screenWidth < 380 ? 26 : screenWidth < 600 ? 30 : 40,
+                                            lineHeight: isXs ? 26 : isSm ? 30 : 40,
                                         }}
                                         adjustsFontSizeToFit
                                         minimumFontScale={0.75}
@@ -255,14 +249,15 @@ export default function ClientDashboard() {
                                     }}
                                     style={{
                                         backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)',
-                                        paddingHorizontal: screenWidth < 600 ? 12 : 18,
-                                        paddingVertical: screenWidth < 600 ? 10 : 16,
+                                        paddingHorizontal: isSm ? 12 : 18,
+                                        paddingVertical: isSm ? 10 : 16,
                                         borderRadius: 18,
                                         borderWidth: 1,
                                         borderColor: isDark ? 'transparent' : 'rgba(0,0,0,0.05)',
+                                        alignSelf: isXs ? 'flex-start' : 'auto',
                                     }}
                                 >
-                                    <Settings size={screenWidth < 600 ? 18 : 22} color={colors.text} />
+                                    <Settings size={isSm ? 18 : 22} color={colors.text} />
                                 </TouchableOpacity>
                             </View>
 
@@ -275,7 +270,35 @@ export default function ClientDashboard() {
                 </View>
 
                 {/* Responsive content column: no max-width on mobile, capped on tablet/desktop */}
-                <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: horizPadding }]}>
+                <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: gutter }]}>
+                    <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 20 }}>
+                        <ClientMetricCard
+                            icon={Calendar}
+                            label="Offene Ubungen"
+                            value={String(openExercises.length)}
+                            hint={openExercises.length === 0 ? 'Heute ist nichts mehr offen.' : 'Deine aktuellen Aufgaben fuer die naechsten Schritte.'}
+                            tone="primary"
+                        />
+                        <ClientMetricCard
+                            icon={BookOpen}
+                            label="Erledigt"
+                            value={String(completedExercises.length)}
+                            hint={completedExercises.length === 0 ? 'Noch keine abgeschlossenen Einheiten.' : 'Abgeschlossene Uebungen bleiben fuer dich abrufbar.'}
+                            tone="secondary"
+                        />
+                        <ClientMetricCard
+                            icon={Edit3}
+                            label="Check-ins"
+                            value={String(recentCheckinCount)}
+                            hint={recentCheckinCount === 0 ? 'Noch keine Eintraege in den letzten Tagen.' : 'Deine letzten Eintraege fuer Verlauf und Reflexion.'}
+                            tone="success"
+                        />
+                    </View>
+
+                    <DashboardSectionHeader
+                        title="Heute"
+                        subtitle="Alles Wichtige fuer deinen naechsten Schritt."
+                    />
 
                     {profile?.nextAppointment && (
                         <MotiView
@@ -377,118 +400,92 @@ export default function ClientDashboard() {
                         </MotiView>
                     ) : null}
 
-                    {bookingUrl && (
-                        <MotiView
-                            from={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ type: 'timing', duration: 300, delay: 100 }}
-                            style={{ marginBottom: 16 }}
-                        >
-                            <PressableScale
-                                onPress={() => {
-                                    if (bookingUrl.startsWith('https://') || bookingUrl.startsWith('http://')) {
-                                        Linking.openURL(bookingUrl);
-                                    }
-                                }}
-                            >
-                                <View
-                                    className="p-6 rounded-[28px] flex-row items-center justify-between shadow-sm"
-                                    style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', borderWidth: 1, borderColor: isDark ? 'transparent' : colors.border }}
+                    <DashboardSectionHeader
+                        title="Dein Raum"
+                        subtitle="Direkte Zugaenge fuer Ressourcen, Termine und Reflexion."
+                    />
+
+                    <View style={{ flexDirection: isTablet ? 'row' : 'column', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
+                        {bookingUrl ? (
+                            <View style={{ flex: isTablet ? 1 : undefined, width: isTablet ? undefined : '100%' }}>
+                                <MotiView
+                                    from={{ opacity: 0, scale: 0.95 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ type: 'timing', duration: 300, delay: 100 }}
                                 >
-                                    <View className="flex-row items-center flex-1 pr-4">
-                                        <View style={{ backgroundColor: isDark ? 'rgba(56, 189, 248, 0.2)' : `${colors.primary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
-                                            <Calendar size={24} color={isDark ? '#38BDF8' : colors.primary} />
-                                        </View>
-                                        <View className="flex-1">
-                                            <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}</Text>
-                                            <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5">{i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}</Text>
-                                        </View>
-                                    </View>
-                                    <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
-                                        <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
-                                    </View>
-                                </View>
-                            </PressableScale>
-                        </MotiView>
-                    )}
-
-                    <MotiView
-                        from={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: 'timing', duration: 300, delay: 150 }}
-                        style={{ marginBottom: 16 }}
-                    >
-                        <PressableScale
-                            onPress={() => {
-                                router.push('/(app)/resources');
-                            }}
-                        >
-                            <View
-                                className="p-6 rounded-[28px] flex-row items-center justify-between shadow-sm"
-                                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', borderWidth: 1, borderColor: isDark ? 'transparent' : colors.border }}
-                            >
-                                <View className="flex-row items-center flex-1 pr-4">
-                                    <View style={{ backgroundColor: isDark ? 'rgba(167, 139, 250, 0.2)' : `${colors.secondary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
-                                        <BookOpen size={24} color={isDark ? '#A78BFA' : colors.secondary} />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
-                                        <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
-                                    </View>
-                                </View>
-                                <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
-                                    <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
-                                </View>
+                                    <QuickActionCard
+                                        icon={Calendar}
+                                        title={i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}
+                                        description={i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein naechstes Coaching' })}
+                                        tone="primary"
+                                        onPress={() => {
+                                            if (bookingUrl.startsWith('https://') || bookingUrl.startsWith('http://')) {
+                                                Linking.openURL(bookingUrl);
+                                            }
+                                        }}
+                                    />
+                                </MotiView>
                             </View>
-                        </PressableScale>
-                    </MotiView>
+                        ) : null}
 
-                    <MotiView
-                        from={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ type: 'timing', duration: 300, delay: 160 }}
-                        style={{ marginBottom: 24 }}
-                    >
-                        <PressableScale
-                            onPress={() => {
-                                router.push('/(app)/notes' as any);
-                            }}
-                        >
-                            <View
-                                className="p-6 rounded-[28px] flex-row items-center justify-between shadow-sm"
-                                style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#ffffff', borderWidth: 1, borderColor: isDark ? 'transparent' : colors.border }}
+                        <View style={{ flex: isTablet ? 1 : undefined, width: isTablet ? undefined : '100%' }}>
+                            <MotiView
+                                from={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ type: 'timing', duration: 300, delay: 150 }}
                             >
-                                <View className="flex-row items-center flex-1 pr-4">
-                                    <View className="w-14 h-14 rounded-full items-center justify-center mr-5" style={{ backgroundColor: isDark ? 'rgba(96, 165, 250, 0.2)' : 'rgba(59,130,246,0.1)' }}>
-                                        <View style={{ transform: [{ rotate: '-10deg' }] }}>
-                                            <Edit3 size={24} color={isDark ? '#60A5FA' : '#3B82F6'} />
-                                        </View>
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">Session Notes</Text>
-                                        <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>Füge Notizen und Erkenntnisse nach deiner Session hinzu.</Text>
-                                    </View>
-                                </View>
-                                <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
-                                    <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
-                                </View>
-                            </View>
-                        </PressableScale>
-                    </MotiView>
+                                <QuickActionCard
+                                    icon={BookOpen}
+                                    title={i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}
+                                    description={i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente und Links von deinem Coach' })}
+                                    tone="secondary"
+                                    onPress={() => {
+                                        router.push('/(app)/resources');
+                                    }}
+                                />
+                            </MotiView>
+                        </View>
+
+                        <View style={{ flex: isTablet ? 1 : undefined, width: isTablet ? undefined : '100%' }}>
+                            <MotiView
+                                from={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ type: 'timing', duration: 300, delay: 160 }}
+                            >
+                                <QuickActionCard
+                                    icon={Edit3}
+                                    title="Session Notes"
+                                    description="Fuege Notizen und Erkenntnisse nach deiner Session hinzu."
+                                    tone="accent"
+                                    onPress={() => {
+                                        router.push('/(app)/notes' as any);
+                                    }}
+                                />
+                            </MotiView>
+                        </View>
+                    </View>
 
                     {exercises.length > 0 && (
-                        <MotiView
-                            from={{ opacity: 0, translateY: 20 }}
-                            animate={{ opacity: 1, translateY: 0 }}
-                            transition={{ type: 'timing', duration: 350, delay: 150 }}
-                        >
-                            <StatsRow
-                                total={exercises.length}
-                                open={openExercises.length}
-                                completed={completedExercises.length}
-                                onPress={() => router.push('/(app)/exercises_overview' as any)}
+                        <>
+                            <DashboardSectionHeader
+                                title="Fortschritt"
+                                subtitle="Dein aktueller Stand ueber alle Aufgaben."
+                                actionLabel="Alle ansehen"
+                                onActionPress={() => router.push('/(app)/exercises_overview' as any)}
                             />
-                        </MotiView>
+                            <MotiView
+                                from={{ opacity: 0, translateY: 20 }}
+                                animate={{ opacity: 1, translateY: 0 }}
+                                transition={{ type: 'timing', duration: 350, delay: 150 }}
+                            >
+                                <StatsRow
+                                    total={exercises.length}
+                                    open={openExercises.length}
+                                    completed={completedExercises.length}
+                                    onPress={() => router.push('/(app)/exercises_overview' as any)}
+                                />
+                            </MotiView>
+                        </>
                     )}
 
                     {exercises.length === 0 ? (
@@ -504,7 +501,10 @@ export default function ClientDashboard() {
                             {openExercises.length > 0 ? (
                                 <View style={{ marginBottom: 24 }}>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 200 }}>
-                                        <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text, marginBottom: 16, letterSpacing: -0.5 }}>{i18n.t('dashboard.exercises.title')}</Text>
+                                        <DashboardSectionHeader
+                                            title={i18n.t('dashboard.exercises.title')}
+                                            subtitle={`${openExercises.length} offene Aufgabe${openExercises.length > 1 ? 'n' : ''} warten auf dich.`}
+                                        />
                                     </MotiView>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
                                         {openExercises.map((ex, idx) => {
@@ -527,10 +527,11 @@ export default function ClientDashboard() {
                             {completedExercises.length > 0 ? (
                                 <View>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 300 }}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 16 }}>
-                                            <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
-                                            <Text style={{ paddingHorizontal: 16, fontSize: 12, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1, textTransform: 'uppercase' }}>{i18n.t('dashboard.completed.title')}</Text>
-                                            <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
+                                        <View style={{ marginTop: 8 }}>
+                                            <DashboardSectionHeader
+                                                title={i18n.t('dashboard.completed.title')}
+                                                subtitle={`${completedExercises.length} abgeschlossene Aufgabe${completedExercises.length > 1 ? 'n' : ''} bleiben fuer dich abrufbar.`}
+                                            />
                                         </View>
                                     </MotiView>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
@@ -558,3 +559,4 @@ export default function ClientDashboard() {
         </View>
     );
 }
+

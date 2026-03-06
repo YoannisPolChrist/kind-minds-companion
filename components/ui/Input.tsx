@@ -8,41 +8,46 @@ interface InputProps extends TextInputProps {
     containerStyle?: ViewStyle | ViewStyle[];
 }
 
-export function Input({ leading, trailing, containerStyle, style, placeholderTextColor, ...props }: InputProps) {
-    const { colors, isDark } = useTheme();
+export const Input = React.forwardRef<TextInput, InputProps>(
+    ({ leading, trailing, containerStyle, style, placeholderTextColor, ...props }, ref) => {
+        const { colors, isDark } = useTheme();
 
-    return (
-        <View
-            style={[
-                {
-                    minHeight: 52,
-                    borderRadius: 18,
-                    borderWidth: 1,
-                    borderColor: colors.border,
-                    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.surface,
-                    paddingHorizontal: 16,
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    gap: 10,
-                },
-                containerStyle,
-            ]}
-        >
-            {leading}
-            <TextInput
+        return (
+            <View
                 style={[
                     {
-                        flex: 1,
-                        color: colors.text,
-                        fontSize: 15,
-                        fontWeight: '500',
+                        minHeight: 52,
+                        borderRadius: 18,
+                        borderWidth: 1,
+                        borderColor: colors.border,
+                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : colors.surface,
+                        paddingHorizontal: 16,
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 10,
                     },
-                    style,
+                    containerStyle,
                 ]}
-                placeholderTextColor={placeholderTextColor ?? colors.textSubtle}
-                {...props}
-            />
-            {trailing}
-        </View>
-    );
-}
+            >
+                {leading}
+                <TextInput
+                    ref={ref}
+                    style={[
+                        {
+                            flex: 1,
+                            color: colors.text,
+                            fontSize: 15,
+                            fontWeight: '500',
+                        },
+                        style,
+                    ]}
+                    placeholderTextColor={placeholderTextColor ?? colors.textSubtle}
+                    {...props}
+                />
+                {trailing}
+            </View>
+        );
+    }
+);
+
+Input.displayName = 'Input';

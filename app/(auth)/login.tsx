@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Image, ScrollView } from 'react-native';
+﻿import { useState, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Platform, KeyboardAvoidingView, Keyboard, Image, ScrollView, useWindowDimensions } from 'react-native';
 import i18n from '../../utils/i18n';
 import { MotiView } from 'moti';
 import { useAuthActions } from '../../hooks/useAuthActions';
 
-// ─── Design Tokens ─────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Design Tokens Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 const DecorativeBackground = () => (
     <>
-        <View className="absolute top-0 right-0 w-96 h-96 bg-[#137386]/5 rounded-full pointer-events-none" style={{ transform: [{ translateX: 120 }, { translateY: -120 }] }} />
-        <View className="absolute bottom-0 left-0 w-80 h-80 bg-[#C09D59]/8 rounded-full pointer-events-none" style={{ transform: [{ translateX: -80 }, { translateY: 80 }] }} />
+        <View className="absolute top-0 right-0 w-96 h-96 bg-[#2D666B]/5 rounded-full pointer-events-none" style={{ transform: [{ translateX: 120 }, { translateY: -120 }] }} />
+        <View className="absolute bottom-0 left-0 w-80 h-80 bg-[#B08C57]/8 rounded-full pointer-events-none" style={{ transform: [{ translateX: -80 }, { translateY: 80 }] }} />
     </>
 );
 
-const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
+const BrandHeader = ({ isKeyboardVisible, width }: { isKeyboardVisible: boolean; width: number }) => (
     <MotiView
         from={{ opacity: 0, translateY: -20 }}
         animate={{ opacity: 1, translateY: 0 }}
@@ -23,7 +23,7 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
         <View style={{ alignItems: 'center', marginBottom: 16 }}>
             <Image
                 source={require('../../assets/logo-transparent.png')}
-                style={{ width: 280, height: 120, resizeMode: 'contain' }}
+                style={{ width: Math.min(width - 72, 280), height: width < 380 ? 96 : 120, resizeMode: 'contain' }}
             />
         </View>
 
@@ -33,7 +33,7 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
                 animate={{ opacity: 1 }}
                 transition={{ delay: 500, type: 'timing', duration: 800 }}
             >
-                <Text style={{ color: 'rgba(36,56,66,0.55)', textAlign: 'center', fontSize: 15, lineHeight: 24, paddingHorizontal: 16, marginTop: 8 }}>
+                <Text style={{ color: 'rgba(31,37,40,0.58)', textAlign: 'center', fontSize: 15, lineHeight: 24, paddingHorizontal: 16, marginTop: 8 }}>
                     {i18n.t('login.subtitle')}
                 </Text>
             </MotiView>
@@ -41,10 +41,10 @@ const BrandHeader = ({ isKeyboardVisible }: { isKeyboardVisible: boolean }) => (
     </MotiView>
 );
 
-// ─── Password Strength ─────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Password Strength Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 function getPasswordStrength(pw: string): { score: number; label: string; color: string } {
-    if (!pw) return { score: 0, label: '', color: '#e5e7eb' };
+    if (!pw) return { score: 0, label: '', color: '#E7E0D4' };
     let score = 0;
     if (pw.length >= 8) score++;
     if (/[A-Z]/.test(pw)) score++;
@@ -53,19 +53,19 @@ function getPasswordStrength(pw: string): { score: number; label: string; color:
 
     if (score <= 1) return { score, label: 'Schwach', color: '#EF4444' };
     if (score === 2) return { score, label: 'Mittel', color: '#F59E0B' };
-    if (score === 3) return { score, label: 'Gut', color: '#3B82F6' };
-    return { score, label: 'Stark', color: '#10B981' };
+    if (score === 3) return { score, label: 'Gut', color: '#4E7E82' };
+    return { score, label: 'Stark', color: '#788E76' };
 }
 
 function validatePassword(pw: string): string | undefined {
     if (pw.length < 8) return 'Mindestens 8 Zeichen erforderlich.';
-    if (!/[A-Z]/.test(pw)) return 'Mindestens ein Großbuchstabe erforderlich.';
+    if (!/[A-Z]/.test(pw)) return 'Mindestens ein GroÃƒÅ¸buchstabe erforderlich.';
     if (!/[0-9]/.test(pw)) return 'Mindestens eine Zahl erforderlich.';
     if (!/[^A-Za-z0-9]/.test(pw)) return 'Mindestens ein Sonderzeichen erforderlich.';
     return undefined;
 }
 
-// ─── Input Field Component ─────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Input Field Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 function FormField({
     label, value, onChange, placeholder, secureTextEntry = false,
@@ -77,18 +77,18 @@ function FormField({
 }) {
     return (
         <View style={{ marginBottom: 20 }}>
-            <Text style={{ color: 'rgba(36,56,66,0.5)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8, marginLeft: 4 }}>
+            <Text style={{ color: 'rgba(31,37,40,0.52)', fontSize: 11, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8, marginLeft: 4 }}>
                 {label}
             </Text>
             <TextInput
-                style={{ backgroundColor: '#F9F8F6', paddingHorizontal: 20, paddingVertical: 14, borderRadius: 16, borderWidth: 1.5, borderColor: error ? '#FCA5A5' : 'rgba(36,56,66,0.1)', color: '#243842', fontSize: 16, fontWeight: '500' }}
+                style={{ backgroundColor: '#F1ECE3', paddingHorizontal: 20, paddingVertical: 14, borderRadius: 16, borderWidth: 1.5, borderColor: error ? '#FCA5A5' : 'rgba(31,37,40,0.1)', color: '#1F2528', fontSize: 16, fontWeight: '500' }}
                 placeholder={placeholder}
                 value={value}
                 onChangeText={onChange}
                 autoCapitalize={autoCapitalize}
                 keyboardType={keyboardType}
                 secureTextEntry={secureTextEntry}
-                placeholderTextColor="rgba(36,56,66,0.3)"
+                placeholderTextColor="rgba(31,37,40,0.32)"
                 maxLength={maxLength}
             />
             {error && <Text style={{ color: '#EF4444', fontSize: 12, marginLeft: 4, marginTop: 6 }}>{error}</Text>}
@@ -96,10 +96,12 @@ function FormField({
     );
 }
 
-// ─── Main Component ────────────────────────────────────────────────────────────
+// Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ Main Component Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
 
 export default function Login() {
     const { login, register, resetPassword, loading, error: globalError, success } = useAuthActions();
+    const { width } = useWindowDimensions();
+    const isCompact = width < 560;
 
     const [isLoginMode, setIsLoginMode] = useState(true);
 
@@ -132,7 +134,7 @@ export default function Login() {
         if (!formData.email.trim()) {
             newErrors.email = 'E-Mail ist erforderlich.';
         } else if (!formData.email.includes('@') || !formData.email.includes('.')) {
-            newErrors.email = 'Ungültiges E-Mail Format.';
+            newErrors.email = 'UngÃƒÂ¼ltiges E-Mail Format.';
         }
 
         if (!isReset && !isLoginMode) {
@@ -181,7 +183,7 @@ export default function Login() {
         backgroundColor: 'rgba(255, 255, 255, 0.85)',
         padding: 40,
         borderRadius: 28,
-        shadowColor: '#243842',
+        shadowColor: '#1F2528',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.07,
         shadowRadius: 24,
@@ -191,18 +193,18 @@ export default function Login() {
     };
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
-            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, paddingVertical: 48, position: 'relative' }} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#F1ECE3' }}>
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: width < 380 ? 16 : 24, paddingVertical: width < 380 ? 24 : 48, position: 'relative' }} showsVerticalScrollIndicator={false}>
                 <DecorativeBackground />
 
                 <View style={{ width: '100%', maxWidth: 480 }}>
-                    <BrandHeader isKeyboardVisible={isKeyboardVisible} />
+                    <BrandHeader isKeyboardVisible={isKeyboardVisible} width={width} />
 
                     <MotiView
                         from={{ opacity: 0, translateY: 40 }}
                         animate={{ opacity: 1, translateY: 0 }}
                         transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 300 }}
-                        style={inputStyle}
+                        style={[inputStyle, { padding: width < 380 ? 20 : width < 560 ? 28 : 40, borderRadius: width < 380 ? 22 : 28 }]}
                     >
                         {/* Error / Success banners */}
                         {globalError ? (
@@ -220,7 +222,7 @@ export default function Login() {
                         {/* Registration-only fields */}
                         {!isLoginMode && (
                             <>
-                                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 0 }}>
+                                <View style={{ flexDirection: isCompact ? 'column' : 'row', gap: 12, marginBottom: 0 }}>
                                     <View style={{ flex: 1 }}>
                                         <FormField label="Vorname" value={formData.firstName} onChange={t => handleChange('firstName', t)} placeholder="Max" autoCapitalize="words" error={errors.firstName} />
                                     </View>
@@ -253,7 +255,7 @@ export default function Login() {
                                 <View style={{ marginTop: -12, marginBottom: 4 }}>
                                     <View style={{ flexDirection: 'row', gap: 4, marginBottom: 4 }}>
                                         {[1, 2, 3, 4].map(i => (
-                                            <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= passwordStrength.score ? passwordStrength.color : '#E5E7EB' }} />
+                                            <View key={i} style={{ flex: 1, height: 4, borderRadius: 2, backgroundColor: i <= passwordStrength.score ? passwordStrength.color : '#E7E0D4' }} />
                                         ))}
                                     </View>
                                     <Text style={{ color: passwordStrength.color, fontSize: 11, fontWeight: '700', marginLeft: 4 }}>{passwordStrength.label}</Text>
@@ -261,8 +263,8 @@ export default function Login() {
                             )}
 
                             {!isLoginMode && (
-                                <Text style={{ fontSize: 11, color: 'rgba(36,56,66,0.45)', marginLeft: 4, marginTop: 6, lineHeight: 16 }}>
-                                    Mind. 8 Zeichen, 1 Großbuchstabe, 1 Zahl, 1 Sonderzeichen
+                                <Text style={{ fontSize: 11, color: 'rgba(31,37,40,0.46)', marginLeft: 4, marginTop: 6, lineHeight: 16 }}>
+                                    Mind. 8 Zeichen, 1 GroÃƒÅ¸buchstabe, 1 Zahl, 1 Sonderzeichen
                                 </Text>
                             )}
                         </View>
@@ -276,7 +278,7 @@ export default function Login() {
 
                         {/* Primary CTA */}
                         <TouchableOpacity
-                            style={{ backgroundColor: '#137386', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#137386', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 6 }}
+                            style={{ backgroundColor: '#2D666B', paddingVertical: 18, borderRadius: 16, alignItems: 'center', shadowColor: '#2D666B', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 20, elevation: 6 }}
                             onPress={handleAuthSubmit}
                             disabled={loading}
                         >
@@ -299,7 +301,7 @@ export default function Login() {
                             }}
                             disabled={loading}
                         >
-                            <Text style={{ color: 'rgba(36,56,66,0.6)', fontWeight: '600', fontSize: 14 }}>
+                            <Text style={{ color: 'rgba(31,37,40,0.62)', fontWeight: '600', fontSize: 14 }}>
                                 {isLoginMode ? 'Noch kein Konto? Registrieren' : 'Bereits einen Account? Anmelden'}
                             </Text>
                         </TouchableOpacity>
@@ -307,7 +309,7 @@ export default function Login() {
                         {/* Forgot Password */}
                         {isLoginMode && (
                             <TouchableOpacity style={{ paddingVertical: 8, alignItems: 'center' }} onPress={handleResetPasswordSubmit} disabled={loading}>
-                                <Text style={{ color: 'rgba(19,115,134,0.75)', fontWeight: '600', fontSize: 14, letterSpacing: 0.3 }}>{i18n.t('login.forgot')}</Text>
+                                <Text style={{ color: 'rgba(45,102,107,0.82)', fontWeight: '600', fontSize: 14, letterSpacing: 0.3 }}>{i18n.t('login.forgot')}</Text>
                             </TouchableOpacity>
                         )}
                     </MotiView>
@@ -316,3 +318,6 @@ export default function Login() {
         </KeyboardAvoidingView>
     );
 }
+
+
+

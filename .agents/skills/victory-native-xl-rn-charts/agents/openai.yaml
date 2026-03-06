@@ -1,0 +1,4 @@
+interface:
+  display_name: "Victory Native XL RN Charts"
+  short_description: "Victory Native chart migration"
+  default_prompt: "Use victory-native patterns to build or migrate performant React Native charts in this project."

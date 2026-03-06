@@ -8,12 +8,12 @@ interface RichTextToolbarProps {
 
 export function RichTextToolbar({ onInsert }: RichTextToolbarProps) {
     const TOOLBAR_ICON_SIZE = 20;
-    const TOOLBAR_ICON_COLOR = "#0F172A";
+    const TOOLBAR_ICON_COLOR = "#182428";
 
     const Button = ({ icon: Icon, onPress }: any) => (
         <TouchableOpacity
             onPress={onPress}
-            style={{ padding: 8, marginHorizontal: 4, borderRadius: 8, backgroundColor: '#F1F5F9' }}
+            style={{ padding: 8, marginHorizontal: 4, borderRadius: 8, backgroundColor: '#F3EEE6' }}
             {...(Platform.OS === 'web' ? { tabIndex: -1 } : {})}
         >
             <Icon size={TOOLBAR_ICON_SIZE} color={TOOLBAR_ICON_COLOR} />
@@ -21,7 +21,7 @@ export function RichTextToolbar({ onInsert }: RichTextToolbarProps) {
     );
 
     return (
-        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', padding: 8, borderRadius: 12, marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F1EA', padding: 8, borderRadius: 12, marginBottom: 12 }}>
             <Button icon={Bold} onPress={() => onInsert('**', '**')} />
             <Button icon={Italic} onPress={() => onInsert('_', '_')} />
             <View style={{ width: 1, height: 20, backgroundColor: '#E2E8F0', marginHorizontal: 8 }} />
@@ -33,3 +33,4 @@ export function RichTextToolbar({ onInsert }: RichTextToolbarProps) {
         </View>
     );
 }
+

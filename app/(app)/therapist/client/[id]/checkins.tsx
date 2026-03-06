@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, SectionList, ActivityIndicator } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeBack } from '../../../../../hooks/useSafeBack';
@@ -71,14 +71,14 @@ export default function TherapistClientCheckinsScreen() {
     const sections = groupByDate(checkins).map(([title, data]) => ({ title, data }));
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+        <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
             {/* Header */}
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
-                <View style={{ backgroundColor: '#137386', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
+                <View style={{ backgroundColor: '#2D666B', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                         <TouchableOpacity onPress={goBack} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
                             <ArrowLeft size={18} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurück</Text>
+                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>ZurÃ¼ck</Text>
                         </TouchableOpacity>
                     </View>
                     <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Stimmungs-Tagebuch</Text>
@@ -90,17 +90,17 @@ export default function TherapistClientCheckinsScreen() {
 
             {loading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color="#137386" />
+                    <ActivityIndicator size="large" color="#2D666B" />
                 </View>
             ) : checkins.length === 0 ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40, marginTop: 40 }}>
                     <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ alignItems: 'center' }}>
-                        <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginBottom: 28, borderWidth: 2, borderColor: '#F1F5F9' }}>
-                            <Activity size={48} color="#94A3B8" />
+                        <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginBottom: 28, borderWidth: 2, borderColor: '#F3EEE6' }}>
+                            <Activity size={48} color="#8B938E" />
                         </View>
-                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#0F172A', letterSpacing: -0.5, marginBottom: 12, textAlign: 'center' }}>Keine Check-ins</Text>
-                        <Text style={{ fontSize: 16, color: '#64748B', textAlign: 'center', lineHeight: 24, maxWidth: 300, fontWeight: '500' }}>
-                            Der Klient hat bisher noch keinen Check-in durchgeführt.
+                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#182428', letterSpacing: -0.5, marginBottom: 12, textAlign: 'center' }}>Keine Check-ins</Text>
+                        <Text style={{ fontSize: 16, color: '#6F7472', textAlign: 'center', lineHeight: 24, maxWidth: 300, fontWeight: '500' }}>
+                            Der Klient hat bisher noch keinen Check-in durchgefÃ¼hrt.
                         </Text>
                     </MotiView>
                 </View>
@@ -115,15 +115,15 @@ export default function TherapistClientCheckinsScreen() {
                     }
                     renderSectionHeader={({ section: { title } }) => (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E8E6E1', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 }}>
-                                <Calendar size={14} color="#10B981" />
-                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#243842', marginLeft: 6 }}>{title}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E7E0D4', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 }}>
+                                <Calendar size={14} color="#788E76" />
+                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#1F2528', marginLeft: 6 }}>{title}</Text>
                             </View>
-                            <View style={{ flex: 1, height: 1, backgroundColor: '#E8E6E1', marginLeft: 12 }} />
+                            <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4', marginLeft: 12 }} />
                         </View>
                     )}
                     renderItem={({ item }) => (
-                        <View style={{ paddingLeft: 16, borderLeftWidth: 2, borderLeftColor: '#E8E6E1' }}>
+                        <View style={{ paddingLeft: 16, borderLeftWidth: 2, borderLeftColor: '#E7E0D4' }}>
                             <CheckinCard checkin={item} formatTime={formatTime} />
                         </View>
                     )}
@@ -133,3 +133,5 @@ export default function TherapistClientCheckinsScreen() {
         </View>
     );
 }
+
+

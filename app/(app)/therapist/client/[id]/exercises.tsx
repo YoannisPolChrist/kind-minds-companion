@@ -1,4 +1,4 @@
-import {
+﻿import {
   View,
   Text,
   TouchableOpacity,
@@ -208,7 +208,7 @@ export default function ClientExercisesView() {
       setToast({
         visible: true,
         message: "Fehler",
-        subMessage: error.message || "Übung konnte nicht gespeichert werden.",
+        subMessage: error.message || "Ãœbung konnte nicht gespeichert werden.",
         type: "error",
       });
     }
@@ -244,7 +244,7 @@ export default function ClientExercisesView() {
       setToast({
         visible: true,
         message: "Fehler",
-        subMessage: "Bitte wähle eine Vorlage aus.",
+        subMessage: "Bitte wÃ¤hle eine Vorlage aus.",
         type: "warning",
       });
       return;
@@ -256,14 +256,14 @@ export default function ClientExercisesView() {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-[#FAF9F6]">
-        <ActivityIndicator size="large" color="#137386" />
+      <View className="flex-1 justify-center items-center bg-[#F7F4EE]">
+        <ActivityIndicator size="large" color="#2D666B" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-[#FAF9F6]">
+    <View className="flex-1 bg-[#F7F4EE]">
       {/* Header Section */}
       <MotiView
         from={{ opacity: 0, translateY: -40 }}
@@ -271,7 +271,7 @@ export default function ClientExercisesView() {
         transition={{ type: "timing", duration: 400, delay: 50 }}
         style={{ zIndex: 10 }}
       >
-        <View className="bg-[#137386] pt-16 pb-8 px-8 rounded-b-[40px] shadow-lg overflow-hidden relative">
+        <View className="bg-[#2D666B] pt-16 pb-8 px-8 rounded-b-[40px] shadow-lg overflow-hidden relative">
           <DarkAmbientOrbs />
           <View className="flex-row items-center justify-between w-full max-w-5xl mx-auto z-10">
             <TouchableOpacity
@@ -279,7 +279,7 @@ export default function ClientExercisesView() {
               className="bg-white/20 px-4 py-3 rounded-2xl backdrop-blur-md flex-row items-center"
             >
               <ArrowLeft size={20} color="white" style={{ marginRight: 8 }} />
-              <Text className="text-white font-bold text-[16px]">Zurück</Text>
+              <Text className="text-white font-bold text-[16px]">ZurÃ¼ck</Text>
             </TouchableOpacity>
             <View className="flex-row items-center flex-1 justify-end ml-4">
               <View className="bg-white/10 w-12 h-12 rounded-[16px] items-center justify-center mr-4 border border-white/20">
@@ -297,7 +297,7 @@ export default function ClientExercisesView() {
                 numberOfLines={1}
               >
                 {client?.firstName
-                  ? `${client.firstName} ${client.lastName} - Übungen`
+                  ? `${client.firstName} ${client.lastName} - Ãœbungen`
                   : i18n.t("therapist.exercises")}
               </Text>
             </View>
@@ -317,7 +317,7 @@ export default function ClientExercisesView() {
       >
         <View className="w-full max-w-4xl mx-auto">
           <View className="flex-row justify-between items-center mb-8">
-            <Text className="text-[28px] font-black text-[#243842] tracking-tight">
+            <Text className="text-[28px] font-black text-[#1F2528] tracking-tight">
               {i18n.t("therapist.exercises")}
             </Text>
             <View className="flex-row gap-3">
@@ -339,14 +339,14 @@ export default function ClientExercisesView() {
           </View>
 
           {exercises.length === 0 ? (
-            <View className="bg-[#F9F8F6] p-10 py-16 px-8 rounded-[32px] border-2 border-dashed border-gray-200/80 items-center mt-4 mb-10">
+            <View className="bg-[#F7F4EE] p-10 py-16 px-8 rounded-[32px] border-2 border-dashed border-gray-200/80 items-center mt-4 mb-10">
               <View className="w-24 h-24 bg-white rounded-full items-center justify-center mb-6 shadow-sm border border-gray-100">
                 <ClipboardList size={40} color="#D1D5DB" />
               </View>
-              <Text className="text-[#243842] text-[20px] text-center font-black mb-3 tracking-tight">
+              <Text className="text-[#1F2528] text-[20px] text-center font-black mb-3 tracking-tight">
                 {i18n.t("therapist.no_exercises_assigned")}
               </Text>
-              <Text className="text-[#243842]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">
+              <Text className="text-[#1F2528]/50 text-[15px] text-center max-w-[320px] leading-relaxed font-medium">
                 {i18n.t("therapist.tap_to_assign")}
               </Text>
             </View>
@@ -355,8 +355,8 @@ export default function ClientExercisesView() {
               {/* Open Exercises Section */}
               {exercises.filter((e) => !e.completed).length > 0 && (
                 <View className="mb-8">
-                  <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">
-                    Offene Übungen
+                  <Text className="text-[13px] font-black text-[#1F2528]/40 uppercase tracking-widest mb-4 ml-2">
+                    Offene Ãœbungen
                   </Text>
                   <View className="flex-row flex-wrap gap-6">
                     {exercises
@@ -375,7 +375,7 @@ export default function ClientExercisesView() {
                         >
                           <View className="flex-row justify-between items-start mb-4">
                             <View className="flex-1 pr-4">
-                              <Text className="text-[18px] font-bold text-[#243842] mb-2">
+                              <Text className="text-[18px] font-bold text-[#1F2528] mb-2">
                                 {ex.title}
                               </Text>
                               <View className="flex-row flex-wrap gap-2 mt-1">
@@ -414,8 +414,8 @@ export default function ClientExercisesView() {
               {/* Completed Exercises Section */}
               {exercises.filter((e) => e.completed).length > 0 && (
                 <View className="mb-4">
-                  <Text className="text-[13px] font-black text-[#243842]/40 uppercase tracking-widest mb-4 ml-2">
-                    Abgeschlossene Übungen
+                  <Text className="text-[13px] font-black text-[#1F2528]/40 uppercase tracking-widest mb-4 ml-2">
+                    Abgeschlossene Ãœbungen
                   </Text>
                   <View className="flex-row flex-wrap gap-6">
                     {exercises
@@ -425,7 +425,7 @@ export default function ClientExercisesView() {
                           key={ex.id}
                           className="bg-white p-6 rounded-[28px] border border-emerald-100/60 shadow-sm flex-1 min-w-[300px] max-w-full md:max-w-[calc(50%-12px)]"
                           style={{
-                            shadowColor: "#10B981",
+                            shadowColor: "#788E76",
                             shadowOffset: { width: 0, height: 8 },
                             shadowOpacity: 0.04,
                             shadowRadius: 24,
@@ -434,7 +434,7 @@ export default function ClientExercisesView() {
                         >
                           <View className="flex-row justify-between items-start mb-4">
                             <View className="flex-1 pr-4">
-                              <Text className="text-[18px] font-bold text-[#243842] mb-2">
+                              <Text className="text-[18px] font-bold text-[#1F2528] mb-2">
                                 {ex.title}
                               </Text>
                               <View className="flex-row flex-wrap gap-2 mt-1">
@@ -457,22 +457,22 @@ export default function ClientExercisesView() {
                           </View>
 
                           <View className="mt-auto pt-5 border-t border-gray-100">
-                            <Text className="text-[#243842]/50 font-bold text-[12px] uppercase tracking-wider mb-4">
+                            <Text className="text-[#1F2528]/50 font-bold text-[12px] uppercase tracking-wider mb-4">
                               {i18n.t("therapist.client_answers")}
                             </Text>
 
                             {ex.sharedAnswers === false ? (
-                              <View className="bg-[#F9F8F6] p-6 rounded-[20px] items-center justify-center border border-gray-100 mt-2 flex-1">
+                              <View className="bg-[#F7F4EE] p-6 rounded-[20px] items-center justify-center border border-gray-100 mt-2 flex-1">
                                 <Lock
                                   size={24}
-                                  color="#C09D59"
+                                  color="#B08C57"
                                   style={{ marginBottom: 12 }}
                                 />
-                                <Text className="text-[#243842]/70 text-[14px] font-medium text-center leading-relaxed">
+                                <Text className="text-[#1F2528]/70 text-[14px] font-medium text-center leading-relaxed">
                                   Der Klient hat sich entschieden, die Antworten
                                   privat zu halten.
                                 </Text>
-                                <Text className="text-[#243842]/50 text-[12px] text-center mt-3 font-medium">
+                                <Text className="text-[#1F2528]/50 text-[12px] text-center mt-3 font-medium">
                                   Abgeschlossen am:{" "}
                                   {new Date(
                                     ex.lastCompletedAt || ex.createdAt,
@@ -493,23 +493,23 @@ export default function ClientExercisesView() {
                                     return (
                                       <View
                                         key={block.id}
-                                        className="mb-2 bg-[#F9F8F6] p-4 rounded-[20px] border border-gray-200/50"
+                                        className="mb-2 bg-[#F7F4EE] p-4 rounded-[20px] border border-gray-200/50"
                                       >
                                         <View className="flex-row items-center mb-2 mt-0.5">
                                           {block.type === "scale" ? (
                                             <Activity
                                               size={16}
-                                              color="#137386"
+                                              color="#2D666B"
                                               style={{ marginRight: 6 }}
                                             />
                                           ) : (
                                             <Edit3
                                               size={16}
-                                              color="#137386"
+                                              color="#2D666B"
                                               style={{ marginRight: 6 }}
                                             />
                                           )}
-                                          <Text className="text-[13px] text-[#137386]/80 font-bold tracking-wide">
+                                          <Text className="text-[13px] text-[#2D666B]/80 font-bold tracking-wide">
                                             {block.type === "scale"
                                               ? i18n.t("blocks.scale") ||
                                               "Skala"
@@ -518,13 +518,13 @@ export default function ClientExercisesView() {
                                           </Text>
                                         </View>
                                         <Text
-                                          className="text-[14px] text-[#243842]/70 mb-3 font-medium"
+                                          className="text-[14px] text-[#1F2528]/70 mb-3 font-medium"
                                           numberOfLines={2}
                                         >
                                           {block.content}
                                         </Text>
                                         <View className="bg-white px-4 py-3 rounded-2xl border border-gray-200 shadow-sm">
-                                          <Text className="text-[15px] text-[#243842] font-semibold">
+                                          <Text className="text-[15px] text-[#1F2528] font-semibold">
                                             {ex.answers[block.id]}
                                           </Text>
                                         </View>
@@ -545,9 +545,9 @@ export default function ClientExercisesView() {
 
         <View className="max-w-4xl mx-auto w-full mt-8">
           <TouchableOpacity
-            className="bg-[#137386] py-5 rounded-[24px] items-center justify-center flex-row shadow-sm mb-12"
+            className="bg-[#2D666B] py-5 rounded-[24px] items-center justify-center flex-row shadow-sm mb-12"
             style={{
-              shadowColor: "#137386",
+              shadowColor: "#2D666B",
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.25,
               shadowRadius: 24,
@@ -573,9 +573,9 @@ export default function ClientExercisesView() {
         {Platform.OS !== 'ios' ? (
           // On Android/Web: overlay with our own rounded card
           <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
-            <View style={{ flex: 1, backgroundColor: '#F9F8F6', borderTopLeftRadius: 40, borderTopRightRadius: 40, overflow: 'hidden', marginTop: 40 }}>
+            <View style={{ flex: 1, backgroundColor: '#F7F4EE', borderTopLeftRadius: 40, borderTopRightRadius: 40, overflow: 'hidden', marginTop: 40 }}>
               {/* Header */}
-              <View style={{ backgroundColor: '#137386', paddingTop: 24, paddingBottom: 24, paddingHorizontal: 32, shadowColor: '#137386', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 16, elevation: 8, borderTopLeftRadius: 40, borderTopRightRadius: 40 }}>
+              <View style={{ backgroundColor: '#2D666B', paddingTop: 24, paddingBottom: 24, paddingHorizontal: 32, shadowColor: '#2D666B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.18, shadowRadius: 16, elevation: 8, borderTopLeftRadius: 40, borderTopRightRadius: 40 }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', maxWidth: 896, width: '100%', alignSelf: 'center' }}>
                   <Text style={{ fontSize: 24, fontWeight: '900', color: 'white', letterSpacing: -0.5 }}>
                     {i18n.t("therapist.assign_title")}
@@ -602,16 +602,16 @@ export default function ClientExercisesView() {
                       marginHorizontal: 'auto',
                     }}
                   >
-                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
                       {i18n.t("therapist.step_1_select")}
                     </Text>
 
                     <TouchableOpacity
                       onPress={() => setBuilderMode("build")}
-                      style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BAE0FE', padding: 24, borderRadius: 24, marginBottom: 32, shadowColor: '#0EA5E9', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 2, flexDirection: 'row', alignItems: 'center' }}
+                      style={{ backgroundColor: '#EEF4F3', borderWidth: 1, borderColor: '#D8E6E4', padding: 24, borderRadius: 24, marginBottom: 32, shadowColor: '#4E7E82', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12, elevation: 2, flexDirection: 'row', alignItems: 'center' }}
                     >
                       <View style={{ width: 56, height: 56, backgroundColor: 'white', borderRadius: 20, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 2, marginRight: 20 }}>
-                        <Sparkles size={24} color="#0EA5E9" />
+                        <Sparkles size={24} color="#4E7E82" />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ color: '#0C4A6E', fontWeight: '900', fontSize: 18, marginBottom: 4 }}>
@@ -625,7 +625,7 @@ export default function ClientExercisesView() {
 
                     {templates.length > 0 && (
                       <>
-                        <Text style={{ color: '#94A3B8', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+                        <Text style={{ color: '#8B938E', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
                           {i18n.t("therapist.or_template")}
                         </Text>
                         {templates.map((t) => (
@@ -635,15 +635,15 @@ export default function ClientExercisesView() {
                             style={{
                               padding: 20, borderRadius: 24, marginBottom: 16,
                               borderWidth: 1.5,
-                              borderColor: selectedTemplate?.id === t.id ? '#137386' : '#E2E8F0',
+                              borderColor: selectedTemplate?.id === t.id ? '#2D666B' : '#E2E8F0',
                               backgroundColor: selectedTemplate?.id === t.id ? 'rgba(19,115,134,0.06)' : 'white',
-                              shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2
+                              shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2
                             }}
                           >
-                            <Text style={{ fontWeight: '800', fontSize: 18, marginBottom: 4, color: selectedTemplate?.id === t.id ? '#137386' : '#243842' }}>
+                            <Text style={{ fontWeight: '800', fontSize: 18, marginBottom: 4, color: selectedTemplate?.id === t.id ? '#2D666B' : '#1F2528' }}>
                               {t.title}
                             </Text>
-                            <Text style={{ color: '#94A3B8', fontSize: 14, fontWeight: '500' }}>
+                            <Text style={{ color: '#8B938E', fontSize: 14, fontWeight: '500' }}>
                               {t.blocks?.length || 0} Module
                             </Text>
                           </TouchableOpacity>
@@ -652,8 +652,8 @@ export default function ClientExercisesView() {
                     )}
 
                     <View style={{ marginTop: 40 }}>
-                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
-                        Wiederholung der Übung
+                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
+                        Wiederholung der Ãœbung
                       </Text>
                       <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
                         {["none", "daily", "custom"].map((freq) => (
@@ -663,20 +663,20 @@ export default function ClientExercisesView() {
                             style={{
                               flex: 1, paddingVertical: 16, borderRadius: 20, alignItems: 'center',
                               borderWidth: 1.5,
-                              borderColor: recurrence === freq ? '#243842' : '#E2E8F0',
-                              backgroundColor: recurrence === freq ? '#243842' : 'white',
-                              shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: recurrence === freq ? 0.15 : 0.02, shadowRadius: 12, elevation: 2
+                              borderColor: recurrence === freq ? '#1F2528' : '#E2E8F0',
+                              backgroundColor: recurrence === freq ? '#1F2528' : 'white',
+                              shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: recurrence === freq ? 0.15 : 0.02, shadowRadius: 12, elevation: 2
                             }}
                           >
-                            <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#94A3B8' }}>
-                              {freq === "none" ? "Keine" : freq === "daily" ? "Täglich" : "Spezifische Tage"}
+                            <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#8B938E' }}>
+                              {freq === "none" ? "Keine" : freq === "daily" ? "TÃ¤glich" : "Spezifische Tage"}
                             </Text>
                           </TouchableOpacity>
                         ))}
                       </View>
                       {recurrence === "custom" && (
                         <View
-                          style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, backgroundColor: 'white', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 1 }}
+                          style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 32, backgroundColor: 'white', padding: 20, borderRadius: 24, borderWidth: 1, borderColor: '#E2E8F0', shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 8, elevation: 1 }}
                         >
                           {WEEKDAYS.map((day) => {
                             const isActive = recurrenceDays.includes(day.key);
@@ -684,9 +684,9 @@ export default function ClientExercisesView() {
                               <TouchableOpacity
                                 key={day.key}
                                 onPress={() => toggleDay(day.key)}
-                                style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? '#137386' : '#F8FAFC', borderWidth: isActive ? 0 : 1, borderColor: '#E2E8F0' }}
+                                style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? '#2D666B' : '#F5F1EA', borderWidth: isActive ? 0 : 1, borderColor: '#E2E8F0' }}
                               >
-                                <Text style={{ fontWeight: '800', fontSize: 15, color: isActive ? 'white' : '#94A3B8' }}>
+                                <Text style={{ fontWeight: '800', fontSize: 15, color: isActive ? 'white' : '#8B938E' }}>
                                   {day.label}
                                 </Text>
                               </TouchableOpacity>
@@ -697,14 +697,14 @@ export default function ClientExercisesView() {
                     </View>
 
                     <View style={{ marginTop: 8 }}>
-                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                      <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
                         Push-Erinnerung (Uhrzeit)
                       </Text>
                       <View
-                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 24, padding: 20, marginBottom: 32, shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 12, elevation: 2 }}
+                        style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 24, padding: 20, marginBottom: 32, shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.02, shadowRadius: 12, elevation: 2 }}
                       >
-                        <View style={{ width: 48, height: 48, backgroundColor: '#EFF6FF', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1, borderColor: '#BFDBFE' }}>
-                          <Clock size={24} color="#3B82F6" />
+                        <View style={{ width: 48, height: 48, backgroundColor: '#EEF4F3', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16, borderWidth: 1, borderColor: '#D8E6E4' }}>
+                          <Clock size={24} color="#4E7E82" />
                         </View>
                         <TextInput
                           value={reminderTime}
@@ -712,9 +712,9 @@ export default function ClientExercisesView() {
                           placeholder="18:00"
                           keyboardType="numeric"
                           maxLength={5}
-                          style={{ flex: 1, fontWeight: '900', fontSize: 24, color: '#243842', letterSpacing: 2 }}
+                          style={{ flex: 1, fontWeight: '900', fontSize: 24, color: '#1F2528', letterSpacing: 2 }}
                         />
-                        <Text style={{ color: '#94A3B8', fontWeight: '700', fontSize: 16, textTransform: 'uppercase', letterSpacing: 2, marginLeft: 12 }}>
+                        <Text style={{ color: '#8B938E', fontWeight: '700', fontSize: 16, textTransform: 'uppercase', letterSpacing: 2, marginLeft: 12 }}>
                           Uhr
                         </Text>
                       </View>
@@ -725,12 +725,12 @@ export default function ClientExercisesView() {
                       disabled={!selectedTemplate}
                       style={{
                         paddingVertical: 20, borderRadius: 24, alignItems: 'center', marginTop: 8,
-                        backgroundColor: selectedTemplate ? '#137386' : '#E2E8F0',
-                        shadowColor: selectedTemplate ? '#137386' : 'transparent',
+                        backgroundColor: selectedTemplate ? '#2D666B' : '#E2E8F0',
+                        shadowColor: selectedTemplate ? '#2D666B' : 'transparent',
                         shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: selectedTemplate ? 4 : 0
                       }}
                     >
-                      <Text style={{ color: selectedTemplate ? 'white' : '#94A3B8', fontWeight: '900', fontSize: 18 }}>
+                      <Text style={{ color: selectedTemplate ? 'white' : '#8B938E', fontWeight: '900', fontSize: 18 }}>
                         {i18n.t("therapist.assign_save")}
                       </Text>
                     </TouchableOpacity>
@@ -755,9 +755,9 @@ export default function ClientExercisesView() {
           </View>
         ) : (
           // On iOS: formSheet handles the presentation natively
-          <View style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+          <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
             {/* Header */}
-            <View style={{ backgroundColor: '#137386', paddingTop: 32, paddingBottom: 24, paddingHorizontal: 32, shadowColor: '#137386', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
+            <View style={{ backgroundColor: '#2D666B', paddingTop: 32, paddingBottom: 24, paddingHorizontal: 32, shadowColor: '#2D666B', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <Text style={{ fontSize: 24, fontWeight: '900', color: 'white', letterSpacing: -0.5 }}>
                   {i18n.t("therapist.assign_title")}
@@ -779,16 +779,16 @@ export default function ClientExercisesView() {
                   style={{ flex: 1 }}
                   contentContainerStyle={{ padding: 32, paddingBottom: 60, maxWidth: 896, marginHorizontal: 'auto' }}
                 >
-                  <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                  <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
                     {i18n.t("therapist.step_1_select")}
                   </Text>
 
                   <TouchableOpacity
                     onPress={() => setBuilderMode("build")}
-                    style={{ backgroundColor: '#EFF6FF', borderWidth: 1, borderColor: '#BAE0FE', padding: 24, borderRadius: 24, marginBottom: 32, flexDirection: 'row', alignItems: 'center' }}
+                    style={{ backgroundColor: '#EEF4F3', borderWidth: 1, borderColor: '#D8E6E4', padding: 24, borderRadius: 24, marginBottom: 32, flexDirection: 'row', alignItems: 'center' }}
                   >
                     <View style={{ width: 56, height: 56, backgroundColor: 'white', borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
-                      <Sparkles size={24} color="#0EA5E9" />
+                      <Sparkles size={24} color="#4E7E82" />
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: '#0C4A6E', fontWeight: '900', fontSize: 18, marginBottom: 4 }}>
@@ -802,7 +802,7 @@ export default function ClientExercisesView() {
 
                   {templates.length > 0 && (
                     <>
-                      <Text style={{ color: '#94A3B8', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
+                      <Text style={{ color: '#8B938E', fontWeight: '900', fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.5, marginBottom: 16 }}>
                         {i18n.t("therapist.or_template")}
                       </Text>
                       {templates.map((t) => (
@@ -812,14 +812,14 @@ export default function ClientExercisesView() {
                           style={{
                             padding: 20, borderRadius: 24, marginBottom: 16,
                             borderWidth: 1.5,
-                            borderColor: selectedTemplate?.id === t.id ? '#137386' : '#E2E8F0',
+                            borderColor: selectedTemplate?.id === t.id ? '#2D666B' : '#E2E8F0',
                             backgroundColor: selectedTemplate?.id === t.id ? 'rgba(19,115,134,0.06)' : 'white',
                           }}
                         >
-                          <Text style={{ fontWeight: '800', fontSize: 18, marginBottom: 4, color: selectedTemplate?.id === t.id ? '#137386' : '#243842' }}>
+                          <Text style={{ fontWeight: '800', fontSize: 18, marginBottom: 4, color: selectedTemplate?.id === t.id ? '#2D666B' : '#1F2528' }}>
                             {t.title}
                           </Text>
-                          <Text style={{ color: '#94A3B8', fontSize: 14 }}>
+                          <Text style={{ color: '#8B938E', fontSize: 14 }}>
                             {t.blocks?.length || 0} Module
                           </Text>
                         </TouchableOpacity>
@@ -828,18 +828,18 @@ export default function ClientExercisesView() {
                   )}
 
                   <View style={{ marginTop: 40 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
-                      Wiederholung der Übung
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
+                      Wiederholung der Ãœbung
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 12, marginBottom: 20 }}>
                       {["none", "daily", "custom"].map((freq) => (
                         <TouchableOpacity
                           key={freq}
                           onPress={() => setRecurrence(freq)}
-                          style={{ flex: 1, paddingVertical: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1.5, borderColor: recurrence === freq ? '#243842' : '#E2E8F0', backgroundColor: recurrence === freq ? '#243842' : 'white' }}
+                          style={{ flex: 1, paddingVertical: 16, borderRadius: 20, alignItems: 'center', borderWidth: 1.5, borderColor: recurrence === freq ? '#1F2528' : '#E2E8F0', backgroundColor: recurrence === freq ? '#1F2528' : 'white' }}
                         >
-                          <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#94A3B8' }}>
-                            {freq === "none" ? "Keine" : freq === "daily" ? "Täglich" : "Spezifische Tage"}
+                          <Text style={{ fontWeight: '800', fontSize: 15, color: recurrence === freq ? 'white' : '#8B938E' }}>
+                            {freq === "none" ? "Keine" : freq === "daily" ? "TÃ¤glich" : "Spezifische Tage"}
                           </Text>
                         </TouchableOpacity>
                       ))}
@@ -852,9 +852,9 @@ export default function ClientExercisesView() {
                             <TouchableOpacity
                               key={day.key}
                               onPress={() => toggleDay(day.key)}
-                              style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? '#137386' : '#F8FAFC' }}
+                              style={{ width: 48, height: 48, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isActive ? '#2D666B' : '#F5F1EA' }}
                             >
-                              <Text style={{ fontWeight: '800', fontSize: 15, color: isActive ? 'white' : '#94A3B8' }}>
+                              <Text style={{ fontWeight: '800', fontSize: 15, color: isActive ? 'white' : '#8B938E' }}>
                                 {day.label}
                               </Text>
                             </TouchableOpacity>
@@ -865,12 +865,12 @@ export default function ClientExercisesView() {
                   </View>
 
                   <View style={{ marginTop: 8 }}>
-                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#243842', marginBottom: 16 }}>
+                    <Text style={{ fontSize: 18, fontWeight: '900', color: '#1F2528', marginBottom: 16 }}>
                       Push-Erinnerung (Uhrzeit)
                     </Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E2E8F0', borderRadius: 24, padding: 20, marginBottom: 32 }}>
-                      <View style={{ width: 48, height: 48, backgroundColor: '#EFF6FF', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
-                        <Clock size={24} color="#3B82F6" />
+                      <View style={{ width: 48, height: 48, backgroundColor: '#EEF4F3', borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                        <Clock size={24} color="#4E7E82" />
                       </View>
                       <TextInput
                         value={reminderTime}
@@ -878,18 +878,18 @@ export default function ClientExercisesView() {
                         placeholder="18:00"
                         keyboardType="numeric"
                         maxLength={5}
-                        style={{ flex: 1, fontWeight: '900', fontSize: 24, color: '#243842' }}
+                        style={{ flex: 1, fontWeight: '900', fontSize: 24, color: '#1F2528' }}
                       />
-                      <Text style={{ color: '#94A3B8', fontWeight: '700', fontSize: 16, textTransform: 'uppercase', marginLeft: 12 }}>Uhr</Text>
+                      <Text style={{ color: '#8B938E', fontWeight: '700', fontSize: 16, textTransform: 'uppercase', marginLeft: 12 }}>Uhr</Text>
                     </View>
                   </View>
 
                   <TouchableOpacity
                     onPress={confirmTemplateAssignment}
                     disabled={!selectedTemplate}
-                    style={{ paddingVertical: 20, borderRadius: 24, alignItems: 'center', backgroundColor: selectedTemplate ? '#137386' : '#E2E8F0', shadowColor: selectedTemplate ? '#137386' : 'transparent', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: selectedTemplate ? 4 : 0 }}
+                    style={{ paddingVertical: 20, borderRadius: 24, alignItems: 'center', backgroundColor: selectedTemplate ? '#2D666B' : '#E2E8F0', shadowColor: selectedTemplate ? '#2D666B' : 'transparent', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: selectedTemplate ? 4 : 0 }}
                   >
-                    <Text style={{ color: selectedTemplate ? 'white' : '#94A3B8', fontWeight: '900', fontSize: 18 }}>
+                    <Text style={{ color: selectedTemplate ? 'white' : '#8B938E', fontWeight: '900', fontSize: 18 }}>
                       {i18n.t("therapist.assign_save")}
                     </Text>
                   </TouchableOpacity>
@@ -941,17 +941,17 @@ export default function ClientExercisesView() {
               <View className="w-20 h-20 bg-red-50 rounded-full items-center justify-center mb-6">
                 <Trash2 size={40} color="#EF4444" />
               </View>
-              <Text className="text-[24px] font-black text-[#243842] mb-3 text-center tracking-tight">
+              <Text className="text-[24px] font-black text-[#1F2528] mb-3 text-center tracking-tight">
                 {i18n.t("therapist.delete_title")}
               </Text>
-              <Text className="text-[#243842]/60 font-medium text-center text-[16px] leading-relaxed mb-8">
-                Möchtest du diese Übung wirklich entfernen?
+              <Text className="text-[#1F2528]/60 font-medium text-center text-[16px] leading-relaxed mb-8">
+                MÃ¶chtest du diese Ãœbung wirklich entfernen?
               </Text>
               {exerciseToDelete && (
                 <View className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 flex-row items-center">
                   <View className="flex-1">
                     <Text
-                      className="font-bold text-[#243842] text-[17px] text-center"
+                      className="font-bold text-[#1F2528] text-[17px] text-center"
                       numberOfLines={1}
                     >
                       {exerciseToDelete.title}
@@ -967,14 +967,14 @@ export default function ClientExercisesView() {
                 onPress={() => setDeleteExerciseModalVisible(false)}
                 style={{
                   flex: 1,
-                  backgroundColor: "#F3F4F6",
+                  backgroundColor: "#F5F1EA",
                   paddingVertical: 18,
                   borderRadius: 20,
                   alignItems: "center",
                 }}
               >
                 <Text
-                  style={{ fontWeight: "bold", fontSize: 17, color: "#243842" }}
+                  style={{ fontWeight: "bold", fontSize: 17, color: "#1F2528" }}
                 >
                   {i18n.t("therapist.cancel")}
                 </Text>
@@ -997,7 +997,7 @@ export default function ClientExercisesView() {
                 <Text
                   style={{ fontWeight: "bold", fontSize: 17, color: "white" }}
                 >
-                  Löschen
+                  LÃ¶schen
                 </Text>
               </TouchableOpacity>
             </View>
@@ -1018,3 +1018,5 @@ export default function ClientExercisesView() {
     </View >
   );
 }
+
+

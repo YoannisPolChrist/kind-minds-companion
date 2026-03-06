@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, Modal, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { MotiView, AnimatePresence } from 'moti';
 import { AlertCircle, Trash2, HelpCircle } from 'lucide-react-native';
@@ -21,7 +21,7 @@ export function ConfirmModal({
     message,
     onConfirm,
     onCancel,
-    confirmText = 'Bestätigen',
+    confirmText = 'BestÃ¤tigen',
     cancelText = 'Abbrechen',
     isDestructive = false,
     icon
@@ -37,7 +37,7 @@ export function ConfirmModal({
         }
     };
 
-    const themeColor = isDestructive ? '#EF4444' : '#2C3E50';
+    const themeColor = isDestructive ? '#EF4444' : '#1F2528';
     const themeBg = isDestructive ? 'rgba(239, 68, 68, 0.1)' : '#F0F4F8';
 
     // Choose default icon if none provided
@@ -91,7 +91,7 @@ export function ConfirmModal({
                                 {IconComponent}
                             </View>
 
-                            <Text style={{ fontSize: 22, fontWeight: '900', color: '#243842', marginBottom: 12, textAlign: 'center', letterSpacing: -0.5 }}>
+                            <Text style={{ fontSize: 22, fontWeight: '900', color: '#1F2528', marginBottom: 12, textAlign: 'center', letterSpacing: -0.5 }}>
                                 {title}
                             </Text>
 
@@ -105,13 +105,13 @@ export function ConfirmModal({
                                     disabled={isLoading}
                                     style={{
                                         flex: 1,
-                                        backgroundColor: '#F3F4F6',
+                                        backgroundColor: '#F5F1EA',
                                         paddingVertical: 16,
                                         borderRadius: 20,
                                         alignItems: 'center'
                                     }}
                                 >
-                                    <Text style={{ fontWeight: '700', fontSize: 16, color: '#243842' }}>
+                                    <Text style={{ fontWeight: '700', fontSize: 16, color: '#1F2528' }}>
                                         {cancelText}
                                     </Text>
                                 </TouchableOpacity>
@@ -150,3 +150,5 @@ export function ConfirmModal({
         </Modal>
     );
 }
+
+

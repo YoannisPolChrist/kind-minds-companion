@@ -27,8 +27,8 @@ export function SuccessAnimation({
 
     const config = {
         success: {
-            color: '#10b981',
-            bg: 'rgba(16, 185, 129, 0.1)',
+            color: '#788E76',
+            bg: 'rgba(120, 142, 118, 0.12)',
             icon: CheckCircle2,
             defaultMessage: 'Erfolgreich!'
         },
@@ -99,11 +99,11 @@ export function SuccessAnimation({
                             >
                                 <Icon size={40} color={config.color} strokeWidth={2.5} />
                             </MotiView>
-                            <Text style={{ fontSize: 22, fontWeight: '900', color: '#243842', marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>
+                            <Text style={{ fontSize: 22, fontWeight: '900', color: '#1F2528', marginBottom: 8, textAlign: 'center', letterSpacing: -0.5 }}>
                                 {displayMessage}
                             </Text>
                             {subMessage ? (
-                                <Text style={{ fontSize: 15, fontWeight: '500', color: '#6B7C85', textAlign: 'center', lineHeight: 22 }}>
+                                <Text style={{ fontSize: 15, fontWeight: '500', color: '#6F7472', textAlign: 'center', lineHeight: 22 }}>
                                     {subMessage}
                                 </Text>
                             ) : null}
@@ -114,3 +114,4 @@ export function SuccessAnimation({
         </Modal>
     );
 }
+

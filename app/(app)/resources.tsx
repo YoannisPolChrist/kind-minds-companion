@@ -1,38 +1,115 @@
-import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator, Linking, RefreshControl, Platform } from 'react-native';
-import { useState } from 'react';
+import { View, Text, TouchableOpacity, ActivityIndicator, Linking, RefreshControl, Platform, Modal } from 'react-native';
+import { useMemo, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { MotiView } from 'moti';
 import i18n from '../../utils/i18n';
-import { useAuth } from '../../contexts/AuthContext';
-import { FileText, Link as LinkIcon, Download, X, Eye } from 'lucide-react-native';
-import { Modal } from 'react-native';
+import { FileText, Link as LinkIcon, Download, X, Eye, Video, Image as ImageIcon, ArrowLeft } from 'lucide-react-native';
 import { WebView } from 'react-native-webview';
 import { Image } from 'expo-image';
 import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { useClientResources } from '../../hooks/firebase/useClientResources';
 import { useTheme } from '../../contexts/ThemeContext';
+import { Card } from '../../components/ui/Card';
+import { Badge } from '../../components/ui/Badge';
+import { ClientMetricCard } from '../../components/dashboard/ClientMetricCard';
+import { DashboardSectionHeader } from '../../components/dashboard/DashboardSectionHeader';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+
+type ResourceKind = 'document' | 'pdf' | 'video' | 'image' | 'link';
+
+const getResourceMeta = (type?: string) => {
+    const kind = (type || 'link') as ResourceKind;
+
+    switch (kind) {
+        case 'document':
+            return {
+                label: 'Geteiltes Dokument',
+                badge: 'secondary' as const,
+                circleColor: 'rgba(99,102,241,0.12)',
+                iconColor: '#6366F1',
+                cta: 'Details und Vorschau',
+                icon: FileText,
+            };
+        case 'pdf':
+            return {
+                label: 'PDF Dokument',
+                badge: 'danger' as const,
+                circleColor: 'rgba(239,68,68,0.12)',
+                iconColor: '#DC2626',
+                cta: 'Details und Vorschau',
+                icon: FileText,
+            };
+        case 'video':
+            return {
+                label: 'Video',
+                badge: 'warning' as const,
+                circleColor: 'rgba(192,157,89,0.14)',
+                iconColor: '#B08C57',
+                cta: 'Video ansehen',
+                icon: Video,
+            };
+        case 'image':
+            return {
+                label: 'Bild',
+                badge: 'default' as const,
+                circleColor: 'rgba(219,39,119,0.12)',
+                iconColor: '#DB2777',
+                cta: 'Bild ansehen',
+                icon: ImageIcon,
+            };
+        default:
+            return {
+                label: 'Web Link',
+                badge: 'default' as const,
+                circleColor: 'rgba(45,102,107,0.12)',
+                iconColor: '#2D666B',
+                cta: 'Vorschau oeffnen',
+                icon: LinkIcon,
+            };
+    }
+};
+
+const normalizeResourceUrl = (url?: string) => {
+    const trimmed = (url || '').trim();
+    if (!trimmed) return '';
+    if (/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(trimmed)) return trimmed;
+    return `https://${trimmed}`;
+};
 
 export default function ResourcesScreen() {
     const router = useRouter();
-    const { colors } = useTheme();
+    const { colors, isDark } = useTheme();
     const { resources, loading, refreshing, onRefresh } = useClientResources();
     const [selectedResource, setSelectedResource] = useState<any>(null);
+    const { isXs, isSm, isTablet, contentMaxWidth, gutter, sectionGap, headerTop } = useResponsiveLayout();
+    const previewUrl = normalizeResourceUrl(selectedResource?.url);
+
+    const resourceStats = useMemo(() => {
+        const totals = {
+            all: resources.length,
+            docs: resources.filter(resource => resource.type === 'document' || resource.type === 'pdf').length,
+            media: resources.filter(resource => resource.type === 'video' || resource.type === 'image').length,
+            links: resources.filter(resource => !resource.type || resource.type === 'link').length,
+        };
+
+        return totals;
+    }, [resources]);
 
     const handleOpenResource = (url: string) => {
-        let validUrl = url;
-        if (!validUrl.startsWith('http://') && !validUrl.startsWith('https://')) {
-            validUrl = 'https://' + validUrl;
+        const validUrl = normalizeResourceUrl(url);
+        if (!validUrl) {
+            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geoeffnet werden.' }));
+            return;
         }
         Linking.openURL(validUrl).catch(err => {
-            console.error("Cannot open url", err);
-            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geöffnet werden.' }));
+            console.error('Cannot open url', err);
+            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geoeffnet werden.' }));
         });
     };
 
     return (
-        <View className="flex-1 bg-[#F9F8F6]">
-            {/* Animated Premium Header */}
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <MotiView
                 from={{ opacity: 0, translateY: -40 }}
                 animate={{ opacity: 1, translateY: 0 }}
@@ -40,161 +117,292 @@ export default function ResourcesScreen() {
             >
                 <LinearGradient
                     colors={[colors.primaryDark, colors.primary]}
-                    style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 24, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, shadowColor: colors.primaryDark, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.2, shadowRadius: 16, elevation: 8, zIndex: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                    style={{
+                        paddingTop: headerTop,
+                        paddingBottom: isXs ? 20 : 28,
+                        paddingHorizontal: gutter,
+                        borderBottomLeftRadius: isSm ? 24 : 32,
+                        borderBottomRightRadius: isSm ? 24 : 32,
+                        shadowColor: colors.primaryDark,
+                        shadowOffset: { width: 0, height: 6 },
+                        shadowOpacity: 0.2,
+                        shadowRadius: 16,
+                        elevation: 8,
+                        zIndex: 10,
+                    }}
                 >
-                    <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' }}>
-                        <Text style={{ color: 'rgba(255,255,255,0.9)', fontWeight: '700' }}>Zurück</Text>
-                    </TouchableOpacity>
-                    <Text style={{ fontSize: 20, fontWeight: '900', color: 'white', flex: 1, textAlign: 'right', marginLeft: 16 }}>
-                        {i18n.t('resources.title', { defaultValue: 'Bibliothek' })}
-                    </Text>
+                    <View style={{ flexDirection: isSm ? 'column' : 'row', justifyContent: 'space-between', alignItems: isSm ? 'stretch' : 'flex-start', gap: 16 }}>
+                        <TouchableOpacity
+                            onPress={() => router.back()}
+                            style={{
+                                backgroundColor: 'rgba(255,255,255,0.14)',
+                                paddingHorizontal: isXs ? 12 : 16,
+                                paddingVertical: 10,
+                                borderRadius: 20,
+                                borderWidth: 1,
+                                borderColor: 'rgba(255,255,255,0.18)',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                alignSelf: isSm ? 'flex-start' : 'auto',
+                            }}
+                        >
+                            <ArrowLeft size={18} color="white" />
+                            <Text style={{ color: 'white', fontWeight: '800', marginLeft: 6 }}>Zurueck</Text>
+                        </TouchableOpacity>
+
+                        <View style={{ flex: 1, alignItems: isSm ? 'flex-start' : 'flex-end' }}>
+                            <Badge variant="muted" style={{ backgroundColor: 'rgba(255,255,255,0.16)', borderColor: 'rgba(255,255,255,0.2)' }}>
+                                {resourceStats.all} Eintraege
+                            </Badge>
+                            <Text style={{ fontSize: isXs ? 24 : 28, fontWeight: '900', color: 'white', marginTop: 12, letterSpacing: -0.8 }}>
+                                {i18n.t('resources.title', { defaultValue: 'Bibliothek' })}
+                            </Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, fontWeight: '600', marginTop: 4, maxWidth: isSm ? '100%' : 320, textAlign: isSm ? 'left' : 'right' }}>
+                                Material, Links und Dokumente, die dir dein Therapeut zur Verfuegung gestellt hat.
+                            </Text>
+                        </View>
+                    </View>
                 </LinearGradient>
             </MotiView>
 
             <Animated.FlatList
                 data={resources}
                 keyExtractor={(item: any) => item.id}
-                style={{ flex: 1, width: '100%', maxWidth: 860, alignSelf: 'center' }}
-                className="px-6 pt-6"
-                contentContainerStyle={{ paddingBottom: 60 }}
+                style={{ flex: 1, width: '100%', maxWidth: contentMaxWidth ? Math.max(contentMaxWidth + gutter * 2, 760) : undefined, alignSelf: 'center' }}
+                contentContainerStyle={{ paddingHorizontal: gutter, paddingTop: gutter, paddingBottom: isSm ? 40 : 60 }}
                 refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
-                ListHeaderComponent={() => (
-                    <Text className="text-gray-500 font-medium mb-6 leading-5">
-                        Hier findest du hilfreiche Dokumente, Arbeitsblätter und Links, die dir von deinem Therapeuten zur Verfügung gestellt wurden.
-                    </Text>
-                )}
-                ListEmptyComponent={() => (
-                    loading ? (
-                        <ActivityIndicator size="large" color={colors.primary} className="mt-10" />
-                    ) : (
-                        <Animated.View
-                            entering={FadeInDown.springify()}
-                            className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm items-center mt-4"
-                        >
-                            <Text className="text-4xl mb-4">📚</Text>
-                            <Text className="text-[#2C3E50] font-bold text-lg text-center mb-1">{i18n.t('resources.no_resources', { defaultValue: 'Keine Ressourcen' })}</Text>
-                            <Text className="text-gray-500 text-center leading-5">{i18n.t('resources.no_documents_uploaded', { defaultValue: 'Dein Therapeut hat noch keine Dokumente hinterlegt.' })}</Text>
-                        </Animated.View>
-                    )
-                )}
-                renderItem={({ item, index }: { item: any, index: number }) => (
-                    <Animated.View
-                        entering={FadeInDown.delay(100 + (index * 50)).springify()}
-                        layout={Layout.springify()}
-                        style={{ backgroundColor: 'white', padding: 24, borderRadius: 28, borderWidth: 1, borderColor: '#F3F4F6', marginBottom: 16, shadowColor: '#1e293b', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }}
-                    >
-                        <View className="flex-row items-start mb-4">
-                            <View className={`w-12 h-12 rounded-2xl items-center justify-center mr-4 flex-shrink-0 ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : item.type === 'video' ? 'bg-purple-50' : item.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
-                                {item.type === 'document' ? <FileText size={24} color="#6366F1" /> : item.type === 'pdf' ? <Text className="text-xl">📄</Text> : item.type === 'video' ? <Text className="text-xl">🎥</Text> : item.type === 'image' ? <Text className="text-xl">🖼️</Text> : <Text className="text-xl">🔗</Text>}
-                            </View>
-                            <View className="flex-1">
-                                <Text className="text-lg font-bold text-[#2C3E50] leading-tight mb-1">{item.title}</Text>
-                                <View className="flex-row items-center">
-                                    <View className={`px-2 py-0.5 rounded-md ${item.type === 'document' ? 'bg-indigo-50' : item.type === 'pdf' ? 'bg-red-50' : item.type === 'video' ? 'bg-purple-50' : item.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
-                                        <Text className={`text-[10px] font-bold uppercase tracking-wider ${item.type === 'document' ? 'text-indigo-600' : item.type === 'pdf' ? 'text-red-600' : item.type === 'video' ? 'text-purple-600' : item.type === 'image' ? 'text-pink-600' : 'text-blue-600'}`}>
-                                            {item.type === 'document' ? 'Geteiltes Dokument' : item.type === 'pdf' ? 'PDF Dokument' : item.type === 'video' ? 'Video' : item.type === 'image' ? 'Bild' : 'Web Link'}
-                                        </Text>
-                                    </View>
-                                </View>
-                            </View>
+                ListHeaderComponent={(
+                    <View>
+                        <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 24 }}>
+                            <ClientMetricCard
+                                icon={FileText}
+                                label="Gesamt"
+                                value={String(resourceStats.all)}
+                                hint={resourceStats.all === 0 ? 'Noch wurden keine Ressourcen geteilt.' : 'Alle freigegebenen Materialien an einem Ort.'}
+                                tone="primary"
+                            />
+                            <ClientMetricCard
+                                icon={Download}
+                                label="Dokumente"
+                                value={String(resourceStats.docs)}
+                                hint="PDFs und freigegebene Unterlagen fuer deine Arbeit zwischen Sessions."
+                                tone="secondary"
+                            />
+                            <ClientMetricCard
+                                icon={LinkIcon}
+                                label="Links und Medien"
+                                value={String(resourceStats.media + resourceStats.links)}
+                                hint="Externe Inhalte, Videos und Bilder fuer Vertiefung und Umsetzung."
+                                tone="success"
+                            />
                         </View>
 
-                        {item.description ? (
-                            <Text className="text-gray-500 text-sm mb-5 leading-5">{item.description}</Text>
-                        ) : null}
-
-                        {/* Button sits inside card padding — extra mx ensures it never kisses the card border */}
-                        <TouchableOpacity
-                            onPress={() => setSelectedResource(item)}
-                            style={{ marginHorizontal: 0, paddingVertical: 14, borderRadius: 20, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', backgroundColor: item.type === 'document' ? colors.primary : item.type === 'pdf' ? '#DC2626' : item.type === 'video' ? '#C09D59' : item.type === 'image' ? '#DB2777' : colors.primary }}
-                        >
-                            <Eye size={18} color="white" style={{ marginRight: 8 }} />
-                            <Text className="text-white font-bold">{item.type === 'document' || item.type === 'pdf' ? 'Details & Vorschau' : item.type === 'video' ? 'Video ansehen' : item.type === 'image' ? 'Bild ansehen' : 'Vorschau öffnen'}</Text>
-                        </TouchableOpacity>
-                    </Animated.View>
+                        <DashboardSectionHeader
+                            title="Zuletzt geteilt"
+                            subtitle="Neue Inhalte erscheinen hier automatisch nach Aktualisierung."
+                        />
+                    </View>
                 )}
+                ListEmptyComponent={(
+                    loading ? (
+                        <ActivityIndicator size="large" color={colors.primary} style={{ marginTop: 40 }} />
+                    ) : (
+                        <Card
+                            variant="elevated"
+                            padding={isSm ? 'md' : 'lg'}
+                            style={{
+                                alignItems: 'center',
+                                marginTop: 8,
+                                backgroundColor: colors.card,
+                                borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                            }}
+                        >
+                            <View style={{ width: 88, height: 88, borderRadius: 44, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F1EA', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+                                <FileText size={34} color={colors.textSubtle} />
+                            </View>
+                            <Text style={{ color: colors.text, fontSize: 22, fontWeight: '900', marginBottom: 8, textAlign: 'center' }}>
+                                {i18n.t('resources.no_resources', { defaultValue: 'Keine Ressourcen' })}
+                            </Text>
+                            <Text style={{ color: colors.textSubtle, textAlign: 'center', lineHeight: 22, fontWeight: '600', maxWidth: 320 }}>
+                                {i18n.t('resources.no_documents_uploaded', { defaultValue: 'Dein Therapeut hat noch keine Dokumente hinterlegt.' })}
+                            </Text>
+                        </Card>
+                    )
+                )}
+                renderItem={({ item, index }: { item: any; index: number }) => {
+                    const meta = getResourceMeta(item.type);
+                    const Icon = meta.icon;
+
+                    return (
+                        <Animated.View
+                            entering={FadeInDown.delay(100 + (index * 50)).springify()}
+                            layout={Layout.springify()}
+                            style={{ marginBottom: 16 }}
+                        >
+                            <Card
+                                variant="elevated"
+                                padding={isSm ? 'md' : 'lg'}
+                                style={{
+                                    backgroundColor: colors.card,
+                                    borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                                    shadowColor: isDark ? '#000' : '#182428',
+                                    shadowOffset: { width: 0, height: 8 },
+                                    shadowOpacity: isDark ? 0.16 : 0.04,
+                                    shadowRadius: 20,
+                                    elevation: 2,
+                                }}
+                            >
+                                <View style={{ flexDirection: isXs ? 'column' : 'row', alignItems: 'flex-start', marginBottom: 18 }}>
+                                    <View style={{ width: 52, height: 52, borderRadius: 18, backgroundColor: meta.circleColor, alignItems: 'center', justifyContent: 'center', marginRight: isXs ? 0 : 16, marginBottom: isXs ? 12 : 0 }}>
+                                        <Icon size={24} color={meta.iconColor} />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ color: colors.text, fontSize: isXs ? 18 : 20, fontWeight: '900', lineHeight: isXs ? 24 : 26, marginBottom: 8 }}>
+                                            {item.title}
+                                        </Text>
+                                        <Badge variant={meta.badge}>{meta.label}</Badge>
+                                    </View>
+                                </View>
+
+                                {item.description ? (
+                                    <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 21, fontWeight: '500', marginBottom: 20 }}>
+                                        {item.description}
+                                    </Text>
+                                ) : null}
+
+                                <TouchableOpacity
+                                    onPress={() => setSelectedResource(item)}
+                                    style={{
+                                        backgroundColor: meta.iconColor,
+                                        paddingVertical: 14,
+                                        borderRadius: 18,
+                                        alignItems: 'center',
+                                        flexDirection: 'row',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <Eye size={18} color="white" style={{ marginRight: 8 }} />
+                                    <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>
+                                        {meta.cta}
+                                    </Text>
+                                </TouchableOpacity>
+                            </Card>
+                        </Animated.View>
+                    );
+                }}
             />
 
-            {/* Resource Detail & Preview Modal */}
             <Modal
                 visible={!!selectedResource}
                 animationType="slide"
                 presentationStyle="pageSheet"
                 onRequestClose={() => setSelectedResource(null)}
             >
-                <View className="flex-1 bg-[#F9F8F6]">
-                    {/* Modal Header */}
-                    <View className="bg-[#137386] flex-row items-center justify-between" style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 24, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, zIndex: 10 }}>
-                        <Text className="text-white text-[20px] font-black max-w-[80%]" numberOfLines={1}>
+                <View style={{ flex: 1, backgroundColor: colors.background }}>
+                    <View
+                        style={{
+                            backgroundColor: colors.primary,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            paddingTop: headerTop,
+                            paddingBottom: isXs ? 18 : 24,
+                            paddingHorizontal: gutter,
+                            borderBottomLeftRadius: isSm ? 24 : 32,
+                            borderBottomRightRadius: isSm ? 24 : 32,
+                            zIndex: 10,
+                        }}
+                    >
+                        <Text style={{ color: 'white', fontSize: 20, fontWeight: '900', maxWidth: '80%' }} numberOfLines={1}>
                             {selectedResource?.title || 'Vorschau'}
                         </Text>
-                        <TouchableOpacity onPress={() => setSelectedResource(null)} className="w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md">
+                        <TouchableOpacity onPress={() => setSelectedResource(null)} style={{ width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 999, alignItems: 'center', justifyContent: 'center' }}>
                             <X size={20} color="white" />
                         </TouchableOpacity>
                     </View>
 
-                    {/* Modal Content */}
-                    <View className="flex-1">
+                    <View style={{ flex: 1 }}>
                         {selectedResource && (
-                            <View className="flex-1">
-                                {/* Details Section */}
-                                <View className="bg-white p-6 rounded-b-[32px] border-b border-gray-100 shadow-sm z-0">
-                                    <View className="flex-row items-center mb-3">
-                                        <View className={`px-2.5 py-1 rounded-lg ${selectedResource.type === 'document' ? 'bg-indigo-50' : selectedResource.type === 'pdf' ? 'bg-red-50' : selectedResource.type === 'video' ? 'bg-purple-50' : selectedResource.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
-                                            <Text className={`text-[11px] font-black uppercase tracking-widest ${selectedResource.type === 'document' ? 'text-indigo-600' : selectedResource.type === 'pdf' ? 'text-red-600' : selectedResource.type === 'video' ? 'text-purple-600' : selectedResource.type === 'image' ? 'text-pink-600' : 'text-blue-600'}`}>
-                                                {selectedResource.type === 'document' ? 'Geteiltes Dokument' : selectedResource.type === 'pdf' ? 'PDF Dokument' : selectedResource.type === 'video' ? 'Video' : selectedResource.type === 'image' ? 'Bild' : 'Web Link'}
-                                            </Text>
-                                        </View>
-                                    </View>
+                            <View style={{ flex: 1 }}>
+                                <Card
+                                    variant="elevated"
+                                    padding={isSm ? 'md' : 'lg'}
+                                    style={{
+                                        marginHorizontal: gutter,
+                                        marginTop: gutter,
+                                        backgroundColor: colors.card,
+                                        borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                                    }}
+                                >
+                                    <Badge variant={getResourceMeta(selectedResource.type).badge}>
+                                        {getResourceMeta(selectedResource.type).label}
+                                    </Badge>
+
                                     {selectedResource.description ? (
-                                        <Text className="text-[#243842]/70 text-[15px] leading-relaxed mb-4">
+                                        <Text style={{ color: colors.textSubtle, fontSize: 15, lineHeight: 24, marginTop: 14, marginBottom: 18 }}>
                                             {selectedResource.description}
                                         </Text>
                                     ) : null}
 
-                                    {/* Download / Open Externally Action */}
                                     <TouchableOpacity
                                         onPress={() => handleOpenResource(selectedResource.url)}
-                                        className="bg-[#C09D59] flex-row items-center justify-center py-4 rounded-[20px] shadow-sm"
-                                        style={{ shadowColor: '#C09D59', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                                        style={{
+                                            backgroundColor: colors.secondary,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            paddingVertical: 14,
+                                            borderRadius: 18,
+                                        }}
                                     >
                                         {selectedResource.type !== 'link' && <Download size={20} color="white" style={{ marginRight: 8 }} />}
-                                        <Text className="text-white font-bold text-[16px]">
-                                            {selectedResource.type === 'link' ? 'Im Browser öffnen' : 'Speichern / Herunterladen'}
+                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 16 }}>
+                                            {selectedResource.type === 'link' ? 'Im Browser oeffnen' : 'Speichern oder herunterladen'}
                                         </Text>
                                     </TouchableOpacity>
-                                </View>
+                                </Card>
 
-                                {/* Embedded Preview Section */}
-                                <View className="flex-1 bg-gray-50/50 mt-4 mx-4 mb-8 rounded-[32px] overflow-hidden border border-gray-200">
+                                <View
+                                    style={{
+                                        flex: 1,
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F5F1EA',
+                                        marginTop: gutter,
+                                        marginHorizontal: gutter,
+                                        marginBottom: isSm ? 16 : 24,
+                                        borderRadius: isSm ? 22 : 28,
+                                        overflow: 'hidden',
+                                        borderWidth: 1,
+                                        borderColor: colors.border,
+                                    }}
+                                >
                                     {selectedResource.type === 'image' ? (
                                         <Image
-                                            source={{ uri: selectedResource.url }}
+                                            source={{ uri: previewUrl }}
                                             style={{ width: '100%', height: '100%' }}
                                             contentFit="contain"
                                         />
                                     ) : selectedResource.type === 'pdf' || selectedResource.type === 'document' ? (
                                         Platform.OS === 'web' ? (
                                             // @ts-ignore
-                                            <iframe src={selectedResource.url} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
+                                            <iframe src={previewUrl} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
                                         ) : (
                                             <WebView
-                                                source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(selectedResource.url)}` }}
+                                                source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(previewUrl)}` }}
                                                 style={{ flex: 1, backgroundColor: 'transparent' }}
                                                 startInLoadingState={true}
-                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                                renderLoading={() => <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, justifyContent: 'center' }} />}
                                             />
                                         )
                                     ) : (
                                         Platform.OS === 'web' ? (
                                             // @ts-ignore
-                                            <iframe src={selectedResource.url} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
+                                            <iframe src={previewUrl} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
                                         ) : (
                                             <WebView
-                                                source={{ uri: selectedResource.url }}
+                                                source={{ uri: previewUrl }}
                                                 style={{ flex: 1, backgroundColor: 'transparent' }}
                                                 startInLoadingState={true}
-                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                                renderLoading={() => <ActivityIndicator size="large" color={colors.primary} style={{ flex: 1, justifyContent: 'center' }} />}
                                             />
                                         )
                                     )}
@@ -207,3 +415,4 @@ export default function ResourcesScreen() {
         </View>
     );
 }
+

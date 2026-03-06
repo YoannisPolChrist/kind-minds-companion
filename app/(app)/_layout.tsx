@@ -1,4 +1,4 @@
-import { Redirect, Stack } from 'expo-router';
+import { Redirect, Stack, useSegments } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { View, ActivityIndicator, Platform } from 'react-native';
 import { useEffect } from 'react';
@@ -8,6 +8,7 @@ import { registerForPushNotificationsAsync } from '../../utils/notifications';
 
 export default function AppLayout() {
     const { user, profile, loading } = useAuth();
+    const segments = useSegments();
 
     useEffect(() => {
         let isMounted = true;
@@ -25,7 +26,6 @@ export default function AppLayout() {
             if (!isMounted) return;
 
             const updateData: any = { lastActivePlatform: platform };
-            // Optional: You could update the timestamp here too, but just platform acts as a good indicator
             if (pushToken) {
                 updateData.pushToken = pushToken;
             }
@@ -42,46 +42,39 @@ export default function AppLayout() {
         return () => { isMounted = false; };
     }, [user]);
 
-    if (loading) {
+    if (loading || (user && !profile)) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F9F8F6' }}>
-                <ActivityIndicator size="large" color="#137386" />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F7F4EE' }}>
+                <ActivityIndicator size="large" color="#2D666B" />
             </View>
         );
     }
 
-    if (!user) return <Redirect href="/(auth)/login" />;
-
-    // Therapeut → immer direkt zum Therapeuten-Dashboard
-    if (profile?.role === 'therapist') {
-        return (
-            <Stack screenOptions={{ headerShown: false }}>
-                <Stack.Screen name="therapist/index" />
-                <Stack.Screen name="therapist/templates" />
-                <Stack.Screen name="therapist/template/[id]" />
-                <Stack.Screen name="therapist/client/[id]" />
-            </Stack>
-        );
+    if (!user || !profile) {
+        return <Redirect href="/(auth)/login" />;
     }
 
-    // Klient → Client-Dashboard mit allen Sub-Screens
-    // Onboarding check for clients
-    if (!profile?.onboardingCompleted) {
-        return (
-            <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
-                <Stack.Screen name="onboarding" />
-            </Stack>
-        );
+    const inTherapistArea = segments.includes('therapist');
+    const onOnboardingScreen = segments.includes('onboarding');
+
+    if (profile.role === 'therapist' && !inTherapistArea) {
+        return <Redirect href="/(app)/therapist" />;
     }
 
-    return (
-        <Stack screenOptions={{ headerShown: false }}>
-            <Stack.Screen name="index" />
-            <Stack.Screen name="exercise/[id]" />
-            <Stack.Screen name="checkin" />
-            <Stack.Screen name="history" />
-            <Stack.Screen name="settings" />
-            <Stack.Screen name="notes" />
-        </Stack>
-    );
+    if (profile.role !== 'therapist') {
+        if (inTherapistArea) {
+            return <Redirect href="/(app)" />;
+        }
+
+        if (!profile.onboardingCompleted && !onOnboardingScreen) {
+            return <Redirect href="/(app)/onboarding" />;
+        }
+
+        if (profile.onboardingCompleted && onOnboardingScreen) {
+            return <Redirect href="/(app)" />;
+        }
+    }
+
+    return <Stack screenOptions={{ headerShown: false }} />;
 }
+

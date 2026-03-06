@@ -1,34 +1,39 @@
-import { View, Text, TouchableOpacity, ActivityIndicator, useWindowDimensions, Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, TouchableOpacity, ActivityIndicator, Platform } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { useClientExercises } from '../../hooks/useClientExercises';
 import { useTheme } from '../../contexts/ThemeContext';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import i18n from '../../utils/i18n';
 import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
-import { ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft, BookOpen, Clock3, CheckCircle2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { OpenExerciseCard } from '../../components/dashboard/OpenExerciseCard';
 import { CompletedExerciseCard } from '../../components/dashboard/CompletedExerciseCard';
 import { EmptyState } from '../../components/dashboard/EmptyState';
+import { ClientMetricCard } from '../../components/dashboard/ClientMetricCard';
+import { DashboardSectionHeader } from '../../components/dashboard/DashboardSectionHeader';
 import { MotiView } from 'moti';
 import { Skeleton } from '../../components/ui/Skeleton';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export default function ExercisesOverview() {
     const { profile } = useAuth();
     const router = useRouter();
-    const { exercises, loading } = useClientExercises(profile?.id);
+    const { exercises, loading, fetchExercises } = useClientExercises(profile?.id);
     const { colors, isDark } = useTheme();
 
-    const { width: screenWidth } = useWindowDimensions();
-    const isTablet = screenWidth > 768;
-    const isDesktop = screenWidth > 1024;
-    const contentMaxWidth = screenWidth < 600 ? undefined : screenWidth < 1024 ? 600 : 720;
-    const horizPadding = screenWidth < 600 ? 16 : screenWidth < 1024 ? 24 : 32;
+    const { isXs, isSm, isTablet, isDesktop, contentMaxWidth, gutter, sectionGap, headerTop } = useResponsiveLayout();
 
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
     const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchExercises();
+        }, [fetchExercises])
+    );
 
     const scrollY = useSharedValue(0);
     const scrollHandler = useAnimatedScrollHandler((event) => {
@@ -37,14 +42,14 @@ export default function ExercisesOverview() {
 
     const headerAnimatedStyle = useAnimatedStyle(() => {
         const height = interpolate(scrollY.value, [0, 100], [Platform.OS === 'android' ? 120 : 130, Platform.OS === 'android' ? 80 : 90], Extrapolate.CLAMP);
-        const padding = interpolate(scrollY.value, [0, 100], [Platform.OS === 'android' ? 44 : 54, Platform.OS === 'android' ? 24 : 34], Extrapolate.CLAMP);
+        const padding = interpolate(scrollY.value, [0, 100], [headerTop - 8, Platform.OS === 'android' ? 24 : 34], Extrapolate.CLAMP);
         return {
             height,
             paddingTop: padding,
             paddingBottom: 24,
-            paddingHorizontal: horizPadding,
-            borderBottomLeftRadius: 36,
-            borderBottomRightRadius: 36,
+            paddingHorizontal: gutter,
+            borderBottomLeftRadius: isSm ? 28 : 36,
+            borderBottomRightRadius: isSm ? 28 : 36,
             overflow: 'hidden',
             zIndex: 10,
             shadowColor: colors.primaryDark,
@@ -52,20 +57,21 @@ export default function ExercisesOverview() {
             shadowOpacity: 0.15,
             shadowRadius: 24,
             elevation: 8,
-            flexDirection: 'row' as const,
-            alignItems: 'center' as const,
+            flexDirection: isXs ? 'column' as const : 'row' as const,
+            alignItems: isXs ? 'flex-start' as const : 'center' as const,
             justifyContent: 'space-between' as const,
+            gap: isXs ? 12 : 0,
         };
     });
 
     if (loading && exercises.length === 0) {
         return (
             <View style={{ flex: 1, backgroundColor: colors.background }}>
-                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.primary, paddingTop: Platform.OS === 'android' ? 64 : 72, paddingBottom: 56, paddingHorizontal: 24, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 }}>
+                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : colors.primary, paddingTop: headerTop, paddingBottom: 56, paddingHorizontal: gutter, borderBottomLeftRadius: 48, borderBottomRightRadius: 48 }}>
                     <Skeleton width={200} height={34} borderRadius={8} />
                     <Skeleton width={140} height={16} borderRadius={4} style={{ marginTop: 12 }} />
                 </View>
-                <View style={{ padding: 24 }}>
+                <View style={{ padding: gutter }}>
                     <Skeleton width="100%" height={140} borderRadius={24} style={{ marginBottom: 24 }} />
                     <Skeleton width={180} height={24} borderRadius={6} style={{ marginBottom: 16 }} />
                     <Skeleton width="100%" height={100} borderRadius={20} style={{ marginBottom: 12 }} />
@@ -92,7 +98,7 @@ export default function ExercisesOverview() {
                     }}
                     style={{
                         backgroundColor: 'rgba(255,255,255,0.2)',
-                        paddingHorizontal: 16,
+                        paddingHorizontal: isXs ? 12 : 16,
                         paddingVertical: 12,
                         borderRadius: 16,
                         flexDirection: 'row',
@@ -107,12 +113,12 @@ export default function ExercisesOverview() {
                 </TouchableOpacity>
                 <Text
                     style={{
-                        fontSize: 22,
+                        fontSize: isXs ? 20 : 22,
                         fontWeight: '900',
                         color: 'white',
                         flex: 1,
-                        textAlign: 'right',
-                        marginLeft: 16,
+                        textAlign: isXs ? 'left' : 'right',
+                        marginLeft: isXs ? 0 : 16,
                         letterSpacing: -0.5
                     }}
                     numberOfLines={1}
@@ -128,7 +134,30 @@ export default function ExercisesOverview() {
                 contentContainerStyle={{ paddingTop: 24, paddingBottom: 56 }}
                 style={{ flex: 1 }}
             >
-                <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: horizPadding }]}>
+                <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: gutter }]}>
+                    <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 24 }}>
+                        <ClientMetricCard
+                            icon={BookOpen}
+                            label="Gesamt"
+                            value={String(exercises.length)}
+                            hint={exercises.length === 0 ? 'Derzeit sind keine Uebungen verfuegbar.' : 'Alle dir zugewiesenen Uebungen in einer Ansicht.'}
+                            tone="primary"
+                        />
+                        <ClientMetricCard
+                            icon={Clock3}
+                            label="Offen"
+                            value={String(openExercises.length)}
+                            hint={openExercises.length === 0 ? 'Alle Aufgaben sind aktuell abgeschlossen.' : 'Hier liegen deine naechsten Schritte.'}
+                            tone="secondary"
+                        />
+                        <ClientMetricCard
+                            icon={CheckCircle2}
+                            label="Abgeschlossen"
+                            value={String(completedExercises.length)}
+                            hint="Erledigte Uebungen bleiben fuer Wiederholung und Rueckblick erhalten."
+                            tone="success"
+                        />
+                    </View>
 
                     {exercises.length === 0 ? (
                         <MotiView
@@ -143,14 +172,10 @@ export default function ExercisesOverview() {
                             {openExercises.length > 0 ? (
                                 <View style={{ marginBottom: 32 }}>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300 }}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
-                                            <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text, letterSpacing: -0.5 }}>
-                                                {i18n.t('dashboard.exercises.title', { defaultValue: 'Offen' })}
-                                            </Text>
-                                            <View style={{ backgroundColor: `${colors.primary}20`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12, marginLeft: 12 }}>
-                                                <Text style={{ color: colors.primary, fontWeight: 'bold', fontSize: 13 }}>{openExercises.length}</Text>
-                                            </View>
-                                        </View>
+                                        <DashboardSectionHeader
+                                            title={i18n.t('dashboard.exercises.title', { defaultValue: 'Offen' })}
+                                            subtitle={`${openExercises.length} offene Aufgabe${openExercises.length > 1 ? 'n' : ''} warten auf dich.`}
+                                        />
                                     </MotiView>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
                                         {openExercises.map((ex, idx) => {
@@ -174,12 +199,11 @@ export default function ExercisesOverview() {
                             {completedExercises.length > 0 ? (
                                 <View>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300 }}>
-                                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 8, marginBottom: 24 }}>
-                                            <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
-                                            <Text style={{ paddingHorizontal: 16, fontSize: 12, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1, textTransform: 'uppercase' }}>
-                                                {i18n.t('dashboard.completed.title', { defaultValue: 'Abgeschlossen' })}
-                                            </Text>
-                                            <View style={{ height: 1, flex: 1, backgroundColor: colors.border }} />
+                                        <View style={{ marginTop: 8 }}>
+                                            <DashboardSectionHeader
+                                                title={i18n.t('dashboard.completed.title', { defaultValue: 'Abgeschlossen' })}
+                                                subtitle={`${completedExercises.length} erledigte Aufgabe${completedExercises.length > 1 ? 'n' : ''} kannst du jederzeit wieder oeffnen.`}
+                                            />
                                         </View>
                                     </MotiView>
                                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>

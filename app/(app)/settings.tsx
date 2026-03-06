@@ -226,7 +226,7 @@ export default function SettingsScreen() {
     };
 
     return (
-        <View className="flex-1 bg-[#FAF9F6]">
+        <View className="flex-1 bg-[#F7F4EE]">
             {/* Animated Header */}
             <MotiView
                 from={{ opacity: 0, translateY: -40 }}
@@ -282,14 +282,14 @@ export default function SettingsScreen() {
                             {/* Avatar */}
                             <View className="items-center mb-6">
                                 <TouchableOpacity onPress={pickProfilePhoto} disabled={uploadingPhoto} activeOpacity={0.8}>
-                                    <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: '#E8F4F6', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#137386', overflow: 'hidden' }}>
+                                    <View style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: '#E8F4F6', alignItems: 'center', justifyContent: 'center', borderWidth: 3, borderColor: '#2D666B', overflow: 'hidden' }}>
                                         {photoURL ? (
                                             <Image source={{ uri: photoURL }} style={{ width: 96, height: 96, borderRadius: 48 }} />
                                         ) : (
-                                            <User size={40} color="#137386" />
+                                            <User size={40} color="#2D666B" />
                                         )}
                                     </View>
-                                    <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#137386', borderRadius: 20, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'white' }}>
+                                    <View style={{ position: 'absolute', bottom: 0, right: 0, backgroundColor: '#2D666B', borderRadius: 20, width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'white' }}>
                                         <Camera size={16} color="white" />
                                     </View>
                                 </TouchableOpacity>
@@ -301,42 +301,42 @@ export default function SettingsScreen() {
                             {/* Name fields */}
                             <View className="flex-row gap-3 mb-3">
                                 <View className="flex-1">
-                                    <Text className="text-sm font-bold text-[#2C3E50] mb-1.5">Vorname</Text>
+                                    <Text className="text-sm font-bold text-[#1F2528] mb-1.5">Vorname</Text>
                                     <TextInput
                                         value={firstName}
                                         onChangeText={setFirstName}
                                         placeholder="Vorname"
-                                        className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                        className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#1F2528] font-medium"
                                     />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-sm font-bold text-[#2C3E50] mb-1.5">Nachname</Text>
+                                    <Text className="text-sm font-bold text-[#1F2528] mb-1.5">Nachname</Text>
                                     <TextInput
                                         value={lastName}
                                         onChangeText={setLastName}
                                         placeholder="Nachname"
-                                        className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                        className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#1F2528] font-medium"
                                     />
                                 </View>
                             </View>
 
                             {/* Email */}
                             <View className="mb-5">
-                                <Text className="text-sm font-bold text-[#2C3E50] mb-1.5">E-Mail-Adresse</Text>
+                                <Text className="text-sm font-bold text-[#1F2528] mb-1.5">E-Mail-Adresse</Text>
                                 <TextInput
                                     value={email}
                                     onChangeText={setEmail}
                                     placeholder="E-Mail"
                                     keyboardType="email-address"
                                     autoCapitalize="none"
-                                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                    className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#1F2528] font-medium"
                                 />
                             </View>
 
                             <TouchableOpacity
                                 onPress={saveProfile}
                                 disabled={savingProfile}
-                                className="bg-[#137386] py-4 rounded-2xl items-center"
+                                className="bg-[#2D666B] py-4 rounded-2xl items-center"
                                 style={{ opacity: savingProfile ? 0.7 : 1 }}
                             >
                                 <Text className="text-white font-bold text-base">
@@ -358,13 +358,13 @@ export default function SettingsScreen() {
                         <Card className="mb-6">
                             <View className="flex-row justify-between items-center mb-6">
                                 <View className="flex-1 pr-4">
-                                    <Text className="text-lg font-bold text-[#2C3E50] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.cal_title')}</Text>
+                                    <Text className="text-lg font-bold text-[#1F2528] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.cal_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.cal_desc')}</Text>
                                 </View>
                                 <Switch
                                     value={calendarSyncEnabled}
                                     onValueChange={(val) => { toggleCalendar(); }}
-                                    trackColor={{ false: '#E5E7EB', true: '#137386' }}
+                                    trackColor={{ false: '#E7E0D4', true: '#2D666B' }}
                                 />
                             </View>
 
@@ -372,13 +372,13 @@ export default function SettingsScreen() {
 
                             <View className="flex-row justify-between items-center">
                                 <View className="flex-1 pr-4">
-                                    <Text className="text-lg font-bold text-[#2C3E50] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.notif_title')}</Text>
+                                    <Text className="text-lg font-bold text-[#1F2528] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.notif_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.notif_desc')}</Text>
                                 </View>
                                 <Switch
                                     value={notificationsEnabled}
                                     onValueChange={(val) => { toggleNotifications(); }}
-                                    trackColor={{ false: '#E5E7EB', true: '#137386' }}
+                                    trackColor={{ false: '#E7E0D4', true: '#2D666B' }}
                                 />
                             </View>
                         </Card>
@@ -404,9 +404,9 @@ export default function SettingsScreen() {
                                                     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                                     saveReminderHour(hour);
                                                 }}
-                                                className={`border px-4 py-3 rounded-xl flex-1 items-center min-w-[30%] ${isSelected ? 'bg-[#137386] border-[#137386]' : 'bg-gray-50 border-gray-200'}`}
+                                                className={`border px-4 py-3 rounded-xl flex-1 items-center min-w-[30%] ${isSelected ? 'bg-[#2D666B] border-[#2D666B]' : 'bg-gray-50 border-gray-200'}`}
                                             >
-                                                <Text className={`font-bold ${isSelected ? 'text-white' : 'text-[#2C3E50]'}`}>{time}</Text>
+                                                <Text className={`font-bold ${isSelected ? 'text-white' : 'text-[#1F2528]'}`}>{time}</Text>
                                             </TouchableOpacity>
                                         );
                                     })}
@@ -416,7 +416,7 @@ export default function SettingsScreen() {
                     )}
 
                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 300 }}>
-                        <Text className="text-xl font-bold text-[#2C3E50] mb-4 mt-2">{i18n.t('settings.app_settings')}</Text>
+                        <Text className="text-xl font-bold text-[#1F2528] mb-4 mt-2">{i18n.t('settings.app_settings')}</Text>
                     </MotiView>
 
                     <MotiView
@@ -435,17 +435,17 @@ export default function SettingsScreen() {
                                         value={bookingUrl}
                                         onChangeText={setBookingUrl}
                                         placeholder="https://cal.com/dein-name"
-                                        className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
+                                        className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#1F2528] font-medium"
                                         autoCapitalize="none"
                                         keyboardType="url"
-                                        style={{ color: '#2C3E50' }}
+                                        style={{ color: '#1F2528' }}
                                     />
                                     <TouchableOpacity
                                         onPress={() => {
                                             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                             saveBookingUrl();
                                         }}
-                                        className="bg-[#137386] px-4 py-3 rounded-xl ml-2">
+                                        className="bg-[#2D666B] px-4 py-3 rounded-xl ml-2">
                                         <Text className="text-white font-bold">{i18n.t('settings.save', { defaultValue: 'Speichern' })}</Text>
                                     </TouchableOpacity>
                                 </View>
@@ -468,7 +468,7 @@ export default function SettingsScreen() {
                                             className={`flex-1 py-2.5 items-center justify-center rounded-lg ${isActive ? 'bg-white shadow-sm' : ''}`}
                                             style={isActive ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 } : {}}
                                         >
-                                            <Text className={`font-bold ${isActive ? 'text-[#137386]' : 'text-gray-500'}`}>
+                                            <Text className={`font-bold ${isActive ? 'text-[#2D666B]' : 'text-gray-500'}`}>
                                                 {labels[t]}
                                             </Text>
                                         </TouchableOpacity>
@@ -489,7 +489,7 @@ export default function SettingsScreen() {
                                         <TouchableOpacity
                                             key={lang}
                                             onPress={() => setLanguage(lang)}
-                                            className={`px-3 py-1 rounded-lg ${locale === lang ? 'bg-[#137386]' : 'bg-gray-100'} mx-1`}
+                                            className={`px-3 py-1 rounded-lg ${locale === lang ? 'bg-[#2D666B]' : 'bg-gray-100'} mx-1`}
                                         >
                                             <Text className={`font-bold ${locale === lang ? 'text-white' : 'text-gray-500'}`}>
                                                 {lang.toUpperCase()}
@@ -539,7 +539,7 @@ export default function SettingsScreen() {
                                     <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.pw_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.pw_desc')}</Text>
                                 </View>
-                                <ChevronRight size={20} color="#9ca3af" />
+                                <ChevronRight size={20} color="#8B938E" />
                             </TouchableOpacity>
 
                             <View className="h-[1px] bg-gray-100 w-full" />
@@ -555,7 +555,7 @@ export default function SettingsScreen() {
                                     <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.hist_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.hist_desc')}</Text>
                                 </View>
-                                <ChevronRight size={20} color="#9ca3af" />
+                                <ChevronRight size={20} color="#8B938E" />
                             </TouchableOpacity>
                         </Card>
                     </MotiView>
@@ -588,3 +588,4 @@ export default function SettingsScreen() {
         </View>
     );
 }
+

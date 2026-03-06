@@ -14,9 +14,9 @@ export function Badge({ children, variant = 'default', style, ...props }: BadgeP
 
     const variants: Record<BadgeVariant, { backgroundColor: string; borderColor: string; textColor: string }> = {
         default: {
-            backgroundColor: isDark ? 'rgba(25,163,188,0.16)' : 'rgba(19,115,134,0.08)',
-            borderColor: isDark ? 'rgba(25,163,188,0.28)' : 'rgba(19,115,134,0.14)',
-            textColor: isDark ? '#67E8F9' : colors.primary,
+            backgroundColor: isDark ? 'rgba(111,155,157,0.18)' : 'rgba(45,102,107,0.08)',
+            borderColor: isDark ? 'rgba(111,155,157,0.3)' : 'rgba(45,102,107,0.16)',
+            textColor: isDark ? '#B7D1D2' : colors.primary,
         },
         secondary: {
             backgroundColor: isDark ? 'rgba(212,175,90,0.14)' : 'rgba(192,157,89,0.1)',
@@ -24,9 +24,9 @@ export function Badge({ children, variant = 'default', style, ...props }: BadgeP
             textColor: isDark ? '#FDE68A' : colors.secondary,
         },
         success: {
-            backgroundColor: isDark ? 'rgba(52,211,153,0.14)' : 'rgba(16,185,129,0.08)',
-            borderColor: isDark ? 'rgba(52,211,153,0.24)' : 'rgba(16,185,129,0.16)',
-            textColor: isDark ? '#6EE7B7' : '#059669',
+            backgroundColor: isDark ? 'rgba(154,186,143,0.16)' : 'rgba(120,142,118,0.08)',
+            borderColor: isDark ? 'rgba(154,186,143,0.28)' : 'rgba(120,142,118,0.16)',
+            textColor: isDark ? '#C7D5BC' : '#788E76',
         },
         warning: {
             backgroundColor: isDark ? 'rgba(251,191,36,0.14)' : 'rgba(245,158,11,0.1)',
@@ -39,8 +39,8 @@ export function Badge({ children, variant = 'default', style, ...props }: BadgeP
             textColor: isDark ? '#FCA5A5' : '#DC2626',
         },
         muted: {
-            backgroundColor: isDark ? 'rgba(148,163,184,0.12)' : 'rgba(100,116,139,0.08)',
-            borderColor: isDark ? 'rgba(148,163,184,0.18)' : 'rgba(100,116,139,0.14)',
+            backgroundColor: isDark ? 'rgba(168,176,172,0.12)' : 'rgba(111,116,114,0.08)',
+            borderColor: isDark ? 'rgba(168,176,172,0.22)' : 'rgba(111,116,114,0.14)',
             textColor: colors.textSubtle,
         },
     };

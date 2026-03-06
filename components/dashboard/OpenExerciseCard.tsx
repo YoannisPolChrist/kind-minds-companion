@@ -118,11 +118,11 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
                   Platform.OS === "web" ? ({ backdropFilter: "blur(8px)" } as any) : {},
                 ]}
               >
-                <Layers size={11} color={isDark ? "rgba(255,255,255,0.9)" : "#334155"} strokeWidth={2.5} style={{ marginRight: 5 }} />
+                <Layers size={11} color={isDark ? "rgba(255,255,255,0.9)" : "#3A4340"} strokeWidth={2.5} style={{ marginRight: 5 }} />
                 <Text
                   style={[
                     styles.imageOverlayText,
-                    { color: isDark ? "rgba(255,255,255,0.9)" : "#334155" },
+                    { color: isDark ? "rgba(255,255,255,0.9)" : "#3A4340" },
                   ]}
                 >
                   {blockCount} {blockCount === 1 ? "Modul" : "Module"}
@@ -135,7 +135,7 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
           <View style={styles.contentContainer}>
             {/* Title */}
             <Text
-              style={[styles.title, { color: isDark ? "#ffffff" : "#0F172A" }]}
+              style={[styles.title, { color: isDark ? "#ffffff" : "#182428" }]}
               numberOfLines={2}
             >
               {exercise.title}
@@ -163,7 +163,7 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
                 style={[
                   styles.chip,
                   {
-                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9",
+                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F3EEE6",
                     borderWidth: 1,
                     borderColor: isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0",
                   },
@@ -171,7 +171,7 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
               >
                 <Clock
                   size={12}
-                  color={isDark ? "rgba(255,255,255,0.55)" : "#64748B"}
+                  color={isDark ? "rgba(255,255,255,0.55)" : "#6F7472"}
                   strokeWidth={2.5}
                   style={{ marginRight: 5 }}
                 />
@@ -179,7 +179,7 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
                   style={[
                     styles.chipText,
                     {
-                      color: isDark ? "rgba(255,255,255,0.55)" : "#64748B",
+                      color: isDark ? "rgba(255,255,255,0.55)" : "#6F7472",
                     },
                   ]}
                 >
@@ -192,7 +192,7 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
                   style={[
                     styles.chip,
                     {
-                      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F1F5F9",
+                      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F3EEE6",
                       borderWidth: 1,
                       borderColor: isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0",
                     },
@@ -200,14 +200,14 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
                 >
                   <Layers
                     size={12}
-                    color={isDark ? "rgba(255,255,255,0.55)" : "#64748B"}
+                    color={isDark ? "rgba(255,255,255,0.55)" : "#6F7472"}
                     strokeWidth={2.5}
                     style={{ marginRight: 5 }}
                   />
                   <Text
                     style={[
                       styles.chipText,
-                      { color: isDark ? "rgba(255,255,255,0.55)" : "#64748B" },
+                      { color: isDark ? "rgba(255,255,255,0.55)" : "#6F7472" },
                     ]}
                   >
                     {blockCount} {blockCount === 1 ? "Modul" : "Module"}
@@ -346,3 +346,4 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
 });
+

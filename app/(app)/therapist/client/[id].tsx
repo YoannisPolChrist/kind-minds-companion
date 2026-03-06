@@ -1,4 +1,4 @@
-import {
+﻿import {
   View,
   Text,
   TouchableOpacity,
@@ -67,23 +67,23 @@ export default function ClientView() {
 
   if (loading) {
     return (
-      <View className="flex-1 justify-center items-center bg-[#FAF9F6]">
-        <ActivityIndicator size="large" color="#137386" />
+      <View className="flex-1 justify-center items-center bg-[#F7F4EE]">
+        <ActivityIndicator size="large" color="#2D666B" />
       </View>
     );
   }
 
   return (
-    <View className="flex-1 bg-[#FAF9F6]">
+    <View className="flex-1 bg-[#F7F4EE]">
       {/* Header Section */}
-      <View className="bg-[#137386] pt-16 pb-8 px-8 rounded-b-[40px] shadow-lg z-10">
+      <View className="bg-[#2D666B] pt-16 pb-8 px-8 rounded-b-[40px] shadow-lg z-10">
         <View className="flex-row items-center justify-between w-full max-w-5xl mx-auto">
           <TouchableOpacity
             onPress={goBack}
             className="bg-white/20 px-4 py-3 rounded-2xl backdrop-blur-md flex-row items-center"
           >
             <ArrowLeft size={20} color="white" style={{ marginRight: 8 }} />
-            <Text className="text-white font-bold text-[16px]">Zurück</Text>
+            <Text className="text-white font-bold text-[16px]">ZurÃ¼ck</Text>
           </TouchableOpacity>
           <View className="flex-row items-center flex-1 justify-end ml-4">
             <View className="bg-white/10 w-12 h-12 rounded-[16px] items-center justify-center mr-4 border border-white/20">
@@ -119,7 +119,7 @@ export default function ClientView() {
         }}
       >
         <View className="w-full max-w-4xl mx-auto">
-          <Text className="text-[28px] font-black text-[#243842] mb-8 tracking-tight">
+          <Text className="text-[28px] font-black text-[#1F2528] mb-8 tracking-tight">
             Patienten-Akte
           </Text>
 
@@ -130,7 +130,7 @@ export default function ClientView() {
               }
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
-                shadowColor: "#243842",
+                shadowColor: "#1F2528",
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.04,
                 shadowRadius: 24,
@@ -140,10 +140,10 @@ export default function ClientView() {
               <View className="w-20 h-20 bg-orange-50 rounded-full items-center justify-center mb-5 border border-orange-100/50">
                 <Activity size={36} color="#F97316" />
               </View>
-              <Text className="text-[22px] font-bold text-[#243842] mb-1.5">
-                Übungen
+              <Text className="text-[22px] font-bold text-[#1F2528] mb-1.5">
+                Ãœbungen
               </Text>
-              <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">
+              <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Zuweisen & Auswerten
               </Text>
             </TouchableOpacity>
@@ -154,7 +154,7 @@ export default function ClientView() {
               }
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
-                shadowColor: "#243842",
+                shadowColor: "#1F2528",
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.04,
                 shadowRadius: 24,
@@ -162,12 +162,12 @@ export default function ClientView() {
               }}
             >
               <View className="w-20 h-20 bg-blue-50 rounded-full items-center justify-center mb-5 border border-blue-100/50">
-                <Edit3 size={36} color="#3B82F6" />
+                <Edit3 size={36} color="#4E7E82" />
               </View>
-              <Text className="text-[22px] font-bold text-[#243842] mb-1.5">
+              <Text className="text-[22px] font-bold text-[#1F2528] mb-1.5">
                 Session Notes
               </Text>
-              <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">
+              <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Verwalte Notizen
               </Text>
             </TouchableOpacity>
@@ -178,7 +178,7 @@ export default function ClientView() {
               }
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
-                shadowColor: "#243842",
+                shadowColor: "#1F2528",
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.04,
                 shadowRadius: 24,
@@ -186,12 +186,12 @@ export default function ClientView() {
               }}
             >
               <View className="w-20 h-20 bg-amber-50 rounded-full items-center justify-center mb-5 border border-amber-100/50">
-                <FileText size={36} color="#C09D59" />
+                <FileText size={36} color="#B08C57" />
               </View>
-              <Text className="text-[22px] font-bold text-[#243842] mb-1.5">
+              <Text className="text-[22px] font-bold text-[#1F2528] mb-1.5">
                 Dateien
               </Text>
-              <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">
+              <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Hinterlegte Dokumente
               </Text>
             </TouchableOpacity>
@@ -202,7 +202,7 @@ export default function ClientView() {
               }
               className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 items-center justify-center flex-1 min-w-[240px] max-w-full md:max-w-[calc(25%-18px)] aspect-square max-h-[260px]"
               style={{
-                shadowColor: "#243842",
+                shadowColor: "#1F2528",
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.04,
                 shadowRadius: 24,
@@ -210,12 +210,12 @@ export default function ClientView() {
               }}
             >
               <View className="w-20 h-20 bg-emerald-50 rounded-full items-center justify-center mb-5 border border-emerald-100/50">
-                <Activity size={36} color="#10B981" />
+                <Activity size={36} color="#788E76" />
               </View>
-              <Text className="text-[22px] font-bold text-[#243842] mb-1.5">
+              <Text className="text-[22px] font-bold text-[#1F2528] mb-1.5">
                 Check-ins
               </Text>
-              <Text className="text-[15px] text-[#243842]/50 font-medium text-center leading-relaxed">
+              <Text className="text-[15px] text-[#1F2528]/50 font-medium text-center leading-relaxed">
                 Stimmungs-Tagebuch
               </Text>
             </TouchableOpacity>
@@ -228,7 +228,7 @@ export default function ClientView() {
             transition={{ type: "timing", duration: 400, delay: 200 }}
             className="bg-white p-8 rounded-[32px] shadow-sm border border-gray-100 mb-12"
             style={{
-              shadowColor: "#243842",
+              shadowColor: "#1F2528",
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 0.04,
               shadowRadius: 24,
@@ -237,10 +237,10 @@ export default function ClientView() {
           >
             <View className="flex-row items-center mb-6">
               <View className="w-12 h-12 bg-pink-50 rounded-full items-center justify-center mr-4 border border-pink-100">
-                <Calendar size={24} color="#DB2777" />
+                <Calendar size={24} color="#8A6A53" />
               </View>
               <View>
-                <Text className="text-[20px] font-bold text-[#243842] tracking-tight">Nächster Termin</Text>
+                <Text className="text-[20px] font-bold text-[#1F2528] tracking-tight">NÃ¤chster Termin</Text>
                 <Text className="text-[14px] text-gray-500 mt-1">Wird dem Klienten direkt auf dem Dashboard angezeigt</Text>
               </View>
             </View>
@@ -255,11 +255,11 @@ export default function ClientView() {
                   style={{
                     flex: 1,
                     backgroundColor: '#F9FAFB',
-                    border: '1px solid #E5E7EB',
+                    border: '1px solid #E7E0D4',
                     borderRadius: '16px',
                     padding: '16px 20px',
                     fontSize: '16px',
-                    color: '#243842',
+                    color: '#1F2528',
                     fontFamily: 'inherit',
                     outline: 'none'
                   }}
@@ -270,14 +270,14 @@ export default function ClientView() {
                   <Text style={{ display: 'none' }}>Dummy Import Fix for TextInput</Text>
                   {/* We are reusing a generic text input on mobile for now since it doesn't have a reliable datetime picker package */}
                   <View style={{ display: 'flex', flexDirection: 'row' }}>
-                    <Text className="text-[#243842] text-base">{nextAppointment || 'Nicht gesetzt'}</Text>
+                    <Text className="text-[#1F2528] text-base">{nextAppointment || 'Nicht gesetzt'}</Text>
                   </View>
                 </View>
               )}
               <TouchableOpacity
                 onPress={handleSaveAppointment}
                 disabled={savingAppointment}
-                className="bg-[#137386] px-8 py-4 rounded-[16px] items-center justify-center"
+                className="bg-[#2D666B] px-8 py-4 rounded-[16px] items-center justify-center"
                 style={{ opacity: savingAppointment ? 0.7 : 1 }}
               >
                 <Text className="text-white font-bold text-base">{savingAppointment ? '...' : 'Speichern'}</Text>
@@ -290,3 +290,5 @@ export default function ClientView() {
     </View>
   );
 }
+
+

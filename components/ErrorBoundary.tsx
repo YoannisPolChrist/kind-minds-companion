@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <View
                     style={{
                         flex: 1,
-                        backgroundColor: '#FAF9F6',
+                        backgroundColor: '#F7F4EE',
                         justifyContent: 'center',
                         alignItems: 'center',
                         padding: 32,
@@ -72,7 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         style={{
                             fontSize: 22,
                             fontWeight: '800',
-                            color: '#2C3E50',
+                            color: '#1F2528',
                             marginBottom: 8,
                             textAlign: 'center',
                         }}
@@ -83,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     <Text
                         style={{
                             fontSize: 15,
-                            color: '#64748b',
+                            color: '#6F7472',
                             textAlign: 'center',
                             lineHeight: 22,
                             marginBottom: 32,
@@ -96,7 +96,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     {__DEV__ && this.state.error && (
                         <ScrollView
                             style={{
-                                backgroundColor: '#1e293b',
+                                backgroundColor: '#20363A',
                                 borderRadius: 12,
                                 padding: 16,
                                 marginBottom: 24,
@@ -113,7 +113,7 @@ export class ErrorBoundary extends Component<Props, State> {
                     <TouchableOpacity
                         onPress={this.reset}
                         style={{
-                            backgroundColor: '#2C3E50',
+                            backgroundColor: '#1F2528',
                             paddingHorizontal: 32,
                             paddingVertical: 14,
                             borderRadius: 16,
@@ -130,3 +130,4 @@ export class ErrorBoundary extends Component<Props, State> {
         return this.props.children;
     }
 }
+

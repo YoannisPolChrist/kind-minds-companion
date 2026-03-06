@@ -61,18 +61,18 @@ export default function OnboardingScreen() {
     };
 
     return (
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
             <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: 'center', alignItems: 'center' }}>
                 <MotiView
                     from={{ opacity: 0, translateY: 20 }}
                     animate={{ opacity: 1, translateY: 0 }}
                     transition={{ type: 'timing', duration: 500 }}
-                    style={{ width: '100%', maxWidth: 480, backgroundColor: 'white', padding: 40, borderRadius: 32, shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 4 }}
+                    style={{ width: '100%', maxWidth: 480, backgroundColor: 'white', padding: 40, borderRadius: 32, shadowColor: '#1F2528', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 4 }}
                 >
                     <View style={{ alignItems: 'center', marginBottom: 32 }}>
                         <Image source={require('../../assets/logo-transparent.png')} style={{ width: 160, height: 60, resizeMode: 'contain', marginBottom: 24 }} />
-                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#243842', textAlign: 'center', marginBottom: 8 }}>Willkommen!</Text>
-                        <Text style={{ fontSize: 16, color: '#64748B', textAlign: 'center', marginBottom: 32 }}>Lass uns dein Profil vervollständigen.</Text>
+                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#1F2528', textAlign: 'center', marginBottom: 8 }}>Willkommen!</Text>
+                        <Text style={{ fontSize: 16, color: '#6F7472', textAlign: 'center', marginBottom: 32 }}>Lass uns dein Profil vervollständigen.</Text>
                     </View>
 
                     {saveError && (
@@ -84,9 +84,9 @@ export default function OnboardingScreen() {
 
                     <View style={{ gap: 20 }}>
                         <View>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 }}>Vorname *</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#6F7472', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 }}>Vorname *</Text>
                             <TextInput
-                                style={{ backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: errors.firstName ? '#EF4444' : '#E2E8F0', fontSize: 16, color: '#243842' }}
+                                style={{ backgroundColor: '#F5F1EA', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: errors.firstName ? '#EF4444' : '#E2E8F0', fontSize: 16, color: '#1F2528' }}
                                 placeholder="Max"
                                 value={formData.firstName}
                                 onChangeText={(t) => handleChange('firstName', t)}
@@ -95,9 +95,9 @@ export default function OnboardingScreen() {
                         </View>
 
                         <View>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 }}>Nachname *</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#6F7472', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 }}>Nachname *</Text>
                             <TextInput
-                                style={{ backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: errors.lastName ? '#EF4444' : '#E2E8F0', fontSize: 16, color: '#243842' }}
+                                style={{ backgroundColor: '#F5F1EA', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: errors.lastName ? '#EF4444' : '#E2E8F0', fontSize: 16, color: '#1F2528' }}
                                 placeholder="Mustermann"
                                 value={formData.lastName}
                                 onChangeText={(t) => handleChange('lastName', t)}
@@ -106,9 +106,9 @@ export default function OnboardingScreen() {
                         </View>
 
                         <View>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 }}>Geburtsdatum (Optional)</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#6F7472', textTransform: 'uppercase', marginBottom: 8, marginLeft: 4 }}>Geburtsdatum (Optional)</Text>
                             <TextInput
-                                style={{ backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#243842' }}
+                                style={{ backgroundColor: '#F5F1EA', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: '#E2E8F0', fontSize: 16, color: '#1F2528' }}
                                 placeholder="TT.MM.JJJJ"
                                 value={formData.birthDate}
                                 onChangeText={(t) => handleChange('birthDate', t)}
@@ -119,7 +119,7 @@ export default function OnboardingScreen() {
                     <TouchableOpacity
                         onPress={handleCompleteOnboarding}
                         disabled={loading}
-                        style={{ backgroundColor: '#137386', padding: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 32, flexDirection: 'row' }}
+                        style={{ backgroundColor: '#2D666B', padding: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', marginTop: 32, flexDirection: 'row' }}
                     >
                         {loading ? (
                             <ActivityIndicator color="white" />
@@ -135,3 +135,4 @@ export default function OnboardingScreen() {
         </KeyboardAvoidingView>
     );
 }
+

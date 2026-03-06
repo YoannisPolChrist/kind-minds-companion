@@ -1,19 +1,19 @@
-/**
+﻿/**
  * ExerciseDifficultyGauge
  *
  * An animated D3 arc gauge (speedometer style) that computes an estimated
  * cognitive complexity score for the exercise.
  *
  * Complexity weights:
- *   - ABC Homework (homework)  → 3 pts  (high cognitive load)
- *   - Reflection               → 2 pts
- *   - Scale / Choice           → 1.5 pts
- *   - Info / Checklist         → 1 pt
- *   - Gratitude / Media        → 0.5 pts
- *   - Breathing / Timer        → 0.5 pts
+ *   - ABC Homework (homework)  â†’ 3 pts  (high cognitive load)
+ *   - Reflection               â†’ 2 pts
+ *   - Scale / Choice           â†’ 1.5 pts
+ *   - Info / Checklist         â†’ 1 pt
+ *   - Gratitude / Media        â†’ 0.5 pts
+ *   - Breathing / Timer        â†’ 0.5 pts
  *
- * Score is normalized 0–10 via d3.scaleLinear and drives
- * a D3 arc from -130° to +130°. The needle position
+ * Score is normalized 0â€“10 via d3.scaleLinear and drives
+ * a D3 arc from -130Â° to +130Â°. The needle position
  * is animated with React Native's Animated API.
  */
 
@@ -23,7 +23,7 @@ import Svg, { Path, G, Circle, Text as SvgText, Defs, LinearGradient, Stop } fro
 import * as d3 from 'd3';
 import { ExerciseBlock, ExerciseBlockType } from './blocks/exerciseRegistry';
 
-// ─── Complexity Weights ───────────────────────────────────────────────────────
+// â”€â”€â”€ Complexity Weights â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const COMPLEXITY_WEIGHT: Record<ExerciseBlockType, number> = {
     homework: 3.0,
@@ -44,20 +44,20 @@ const COMPLEXITY_WEIGHT: Record<ExerciseBlockType, number> = {
 };
 
 const GAUGE_ZONES = [
-    { color: '#10B981', label: 'Zugänglich', from: 0.0, to: 0.33 },
+    { color: '#788E76', label: 'ZugÃ¤nglich', from: 0.0, to: 0.33 },
     { color: '#F59E0B', label: 'Anspruchsvoll', from: 0.33, to: 0.66 },
     { color: '#EF4444', label: 'Intensiv', from: 0.66, to: 1.0 },
 ];
 
-// ─── Arc Math ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Arc Math â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const SIZE = 180;
 const CX = SIZE / 2;
 const CY = SIZE / 2 + 12;       // shift center down for better half-gauge look
 const OUTER_R = SIZE / 2 - 14;
 const INNER_R = OUTER_R - 20;
-const START_ANG = -Math.PI * 0.75;  // -135°
-const END_ANG = Math.PI * 0.75;  // +135°
+const START_ANG = -Math.PI * 0.75;  // -135Â°
+const END_ANG = Math.PI * 0.75;  // +135Â°
 const TOTAL_ANG = END_ANG - START_ANG;
 
 function describeArc(startRatio: number, endRatio: number, outerR: number, innerR: number): string {
@@ -80,14 +80,14 @@ function needlePoint(ratio: number): { x: number; y: number } {
     };
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface Props { blocks: ExerciseBlock[]; }
 
 function getLevelInfo(ratio: number) {
-    if (ratio < 0.33) return { label: 'Zugänglich', emoji: '🟢', color: '#10B981', sub: 'Geeignet für alle Klienten' };
-    if (ratio < 0.66) return { label: 'Anspruchsvoll', emoji: '🟡', color: '#F59E0B', sub: 'Erfahrung empfehlenswert' };
-    return { label: 'Intensiv', emoji: '🔴', color: '#EF4444', sub: 'Für fortgeschrittene Klienten' };
+    if (ratio < 0.33) return { label: 'ZugÃ¤nglich', emoji: 'ðŸŸ¢', color: '#788E76', sub: 'Geeignet fÃ¼r alle Klienten' };
+    if (ratio < 0.66) return { label: 'Anspruchsvoll', emoji: 'ðŸŸ¡', color: '#F59E0B', sub: 'Erfahrung empfehlenswert' };
+    return { label: 'Intensiv', emoji: 'ðŸ”´', color: '#EF4444', sub: 'FÃ¼r fortgeschrittene Klienten' };
 }
 
 export default function ExerciseDifficultyGauge({ blocks }: Props) {
@@ -98,7 +98,7 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
     const { ratio, rawScore } = useMemo(() => {
         if (blocks.length === 0) return { ratio: 0, rawScore: 0 };
         const raw = blocks.reduce((sum, b) => sum + (COMPLEXITY_WEIGHT[b.type] ?? 1), 0);
-        // Max expected score for normalization: assume 10 blocks × avg weight 2 = 20
+        // Max expected score for normalization: assume 10 blocks Ã— avg weight 2 = 20
         const normalized = d3.scaleLinear().domain([0, 20]).range([0, 1]).clamp(true)(raw);
         return { ratio: normalized, rawScore: raw };
     }, [blocks]);
@@ -116,7 +116,7 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
 
     const level = getLevelInfo(ratio);
 
-    // We interpolate ratio → needle SVG using JS listener + state
+    // We interpolate ratio â†’ needle SVG using JS listener + state
     const [displayRatio, setDisplayRatio] = React.useState(0);
     useEffect(() => {
         const id = animatedRatio.addListener(({ value }) => setDisplayRatio(value));
@@ -130,7 +130,7 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
             backgroundColor: '#FFFFFF',
             borderRadius: 24,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: '#E7E0D4',
             padding: 18,
             marginBottom: 16,
             alignItems: 'center',
@@ -143,8 +143,8 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
             {/* Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', marginBottom: 4 }}>
                 <View>
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#243842' }}>Kognitive Belastung</Text>
-                    <Text style={{ fontSize: 10, color: '#9CA3AF', fontWeight: '500' }}>Komplexitäts-Einschätzung</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#1F2528' }}>Kognitive Belastung</Text>
+                    <Text style={{ fontSize: 10, color: '#8B938E', fontWeight: '500' }}>KomplexitÃ¤ts-EinschÃ¤tzung</Text>
                 </View>
                 <View style={{
                     backgroundColor: level.color + '18',
@@ -163,7 +163,7 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
                 {/* Background track */}
                 <Path
                     d={describeArc(0, 1, OUTER_R, INNER_R)}
-                    fill="#F3F4F6"
+                    fill="#F5F1EA"
                     transform={`translate(${CX},${CY})`}
                 />
 
@@ -217,14 +217,14 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
                 <Circle cx={CX} cy={CY} r={3} fill="#FFFFFF" />
 
                 {/* Zone labels */}
-                <SvgText x={CX - OUTER_R + 4} y={CY + 22} textAnchor="start" fill="#10B981" fontSize={8} fontWeight="700">L</SvgText>
+                <SvgText x={CX - OUTER_R + 4} y={CY + 22} textAnchor="start" fill="#788E76" fontSize={8} fontWeight="700">L</SvgText>
                 <SvgText x={CX} y={CY - OUTER_R + 14} textAnchor="middle" fill="#F59E0B" fontSize={8} fontWeight="700">M</SvgText>
                 <SvgText x={CX + OUTER_R - 4} y={CY + 22} textAnchor="end" fill="#EF4444" fontSize={8} fontWeight="700">H</SvgText>
             </Svg>
 
             {/* Sub label */}
-            <Text style={{ fontSize: 10, color: '#6B7280', marginTop: -6, textAlign: 'center', fontWeight: '500' }}>
-                {blocks.length === 0 ? 'Noch keine Blöcke' : level.sub}
+            <Text style={{ fontSize: 10, color: '#6F7472', marginTop: -6, textAlign: 'center', fontWeight: '500' }}>
+                {blocks.length === 0 ? 'Noch keine BlÃ¶cke' : level.sub}
             </Text>
 
             {/* Raw score pills */}
@@ -232,7 +232,7 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
                 <View style={{ flexDirection: 'row', gap: 6, marginTop: 10 }}>
                     {blocks.map((b, i) => {
                         const w = COMPLEXITY_WEIGHT[b.type];
-                        const bg = w >= 2 ? '#FEF3C7' : w >= 1 ? '#ECFDF5' : '#EFF6FF';
+                        const bg = w >= 2 ? '#F6F0E7' : w >= 1 ? '#EEF3EE' : '#EEF4F3';
                         const clr = w >= 2 ? '#92400E' : w >= 1 ? '#065F46' : '#1D4ED8';
                         return (
                             <View key={b.id} style={{ backgroundColor: bg, paddingHorizontal: 7, paddingVertical: 3, borderRadius: 8 }}>
@@ -245,3 +245,5 @@ export default function ExerciseDifficultyGauge({ blocks }: Props) {
         </View>
     );
 }
+
+

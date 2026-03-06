@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, TextInput, Modal, Platform, Linking, KeyboardAvoidingView } from 'react-native';
+﻿import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, TextInput, Modal, Platform, Linking, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeBack } from '../../../../../hooks/useSafeBack';
 import React, { useState, useEffect } from 'react';
@@ -20,7 +20,7 @@ import { Image } from 'expo-image';
 import { Video, ResizeMode } from 'expo-av';
 import { useClientFiles } from '../../../../../hooks/firebase/useClientFiles';
 
-// ─── File type helpers ─────────────────────────────────────────────────────────
+// â”€â”€â”€ File type helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function getFileInfo(file: any): { Icon: any; color: string; bg: string; border: string; label: string } {
     const name = (file.originalName || file.title || '').toLowerCase();
@@ -30,12 +30,12 @@ function getFileInfo(file: any): { Icon: any; color: string; bg: string; border:
     if (['.mp4', '.mov', '.avi', '.mkv'].some(e => name.endsWith(e)))
         return { Icon: Film, color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', label: 'Video' };
     if (['.doc', '.docx'].some(e => name.endsWith(e)))
-        return { Icon: FileText, color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE', label: 'Word' };
+        return { Icon: FileText, color: '#2D666B', bg: '#EEF4F3', border: '#D8E6E4', label: 'Word' };
     if (['.xls', '.xlsx', '.csv'].some(e => name.endsWith(e)))
-        return { Icon: FileCode, color: '#10B981', bg: '#ECFDF5', border: '#A7F3D0', label: 'Excel' };
+        return { Icon: FileCode, color: '#788E76', bg: '#EEF3EE', border: '#D8E2D7', label: 'Excel' };
     if (['.ppt', '.pptx'].some(e => name.endsWith(e)))
         return { Icon: FileText, color: '#F97316', bg: '#FFF7ED', border: '#FED7AA', label: 'PPT' };
-    return { Icon: File, color: '#64748B', bg: '#F8FAFC', border: '#E2E8F0', label: 'Datei' };
+    return { Icon: File, color: '#6F7472', bg: '#F5F1EA', border: '#E2E8F0', label: 'Datei' };
 }
 
 function formatFileSize(bytes?: number): string {
@@ -53,7 +53,7 @@ const FileCard = React.memo(({ file, index, onDeletePrompt, onPreview }: any) =>
         <Animated.View
             entering={FadeInDown.delay(index * 40).springify()}
             layout={Layout.springify()}
-            style={{ backgroundColor: 'white', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#E8E6E1', shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }}
+            style={{ backgroundColor: 'white', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#E7E0D4', shadowColor: '#1F2528', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }}
         >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {/* File type icon */}
@@ -64,22 +64,22 @@ const FileCard = React.memo(({ file, index, onDeletePrompt, onPreview }: any) =>
                 {/* File info */}
                 <View style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <Text style={{ fontSize: 17, fontWeight: '800', color: '#243842', flex: 1 }} numberOfLines={1}>{file.title}</Text>
+                        <Text style={{ fontSize: 17, fontWeight: '800', color: '#1F2528', flex: 1 }} numberOfLines={1}>{file.title}</Text>
                         <View style={{ backgroundColor: info.bg, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1, borderColor: info.border }}>
                             <Text style={{ fontSize: 11, fontWeight: '800', color: info.color }}>{info.label}</Text>
                         </View>
                     </View>
 
                     {file.description ? (
-                        <Text style={{ fontSize: 13, color: '#64748B', fontWeight: '500', lineHeight: 18, marginBottom: 6 }} numberOfLines={2}>{file.description}</Text>
+                        <Text style={{ fontSize: 13, color: '#6F7472', fontWeight: '500', lineHeight: 18, marginBottom: 6 }} numberOfLines={2}>{file.description}</Text>
                     ) : null}
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                        <Text style={{ fontSize: 12, color: '#94A3B8', fontWeight: '600' }}>
+                        <Text style={{ fontSize: 12, color: '#8B938E', fontWeight: '600' }}>
                             {new Date((file.createdAt?.seconds || 0) * 1000 || Date.now()).toLocaleDateString(i18n.locale, { day: '2-digit', month: 'short', year: 'numeric' })}
                         </Text>
                         {file.fileSize ? (
-                            <Text style={{ fontSize: 12, color: '#94A3B8', fontWeight: '600' }}>· {formatFileSize(file.fileSize)}</Text>
+                            <Text style={{ fontSize: 12, color: '#8B938E', fontWeight: '600' }}>Â· {formatFileSize(file.fileSize)}</Text>
                         ) : null}
                     </View>
                 </View>
@@ -91,7 +91,7 @@ const FileCard = React.memo(({ file, index, onDeletePrompt, onPreview }: any) =>
                             onPress={handlePreview}
                             style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#F0F9FF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#BAE6FD' }}
                         >
-                            <Eye size={18} color="#0EA5E9" />
+                            <Eye size={18} color="#4E7E82" />
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity
@@ -156,11 +156,11 @@ export default function TherapistClientFilesScreen() {
 
     const handleUploadClientFile = async () => {
         if (!newFileTitle.trim()) {
-            setToast({ visible: true, message: 'Fehler', subMessage: 'Bitte gib einen Titel für die Datei an.', type: 'warning' });
+            setToast({ visible: true, message: 'Fehler', subMessage: 'Bitte gib einen Titel fÃ¼r die Datei an.', type: 'warning' });
             return;
         }
         if (!selectedAsset) {
-            setToast({ visible: true, message: 'Fehler', subMessage: 'Bitte wähle zuerst eine Datei aus.', type: 'warning' });
+            setToast({ visible: true, message: 'Fehler', subMessage: 'Bitte wÃ¤hle zuerst eine Datei aus.', type: 'warning' });
             return;
         }
 
@@ -189,8 +189,8 @@ export default function TherapistClientFilesScreen() {
                 userId: id,
                 type: 'FILE_UPLOAD',
                 title: 'Neue Datei',
-                body: 'Hey, für dich wurde eine neue Datei hinterlegt!',
-                message: 'Hey, für dich wurde eine neue Datei hinterlegt!',
+                body: 'Hey, fÃ¼r dich wurde eine neue Datei hinterlegt!',
+                message: 'Hey, fÃ¼r dich wurde eine neue Datei hinterlegt!',
                 read: false,
                 createdAt: serverTimestamp(),
             });
@@ -221,9 +221,9 @@ export default function TherapistClientFilesScreen() {
             }
             await deleteDoc(doc(db, 'client_resources', fileToDelete.id));
             setClientFiles(prev => prev.filter(f => f.id !== fileToDelete.id));
-            setToast({ visible: true, message: 'Gelöscht', type: 'success' });
+            setToast({ visible: true, message: 'GelÃ¶scht', type: 'success' });
         } catch {
-            setToast({ visible: true, message: 'Fehler', subMessage: 'Datei konnte nicht gelöscht werden.', type: 'error' });
+            setToast({ visible: true, message: 'Fehler', subMessage: 'Datei konnte nicht gelÃ¶scht werden.', type: 'error' });
         } finally {
             setDeleteModalVisible(false);
             setFileToDelete(null);
@@ -235,21 +235,21 @@ export default function TherapistClientFilesScreen() {
     );
 
     return (
-        <View style={{ flex: 1, backgroundColor: '#F9F8F6' }}>
+        <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
             {/* Header */}
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
-                <View style={{ backgroundColor: '#C09D59', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
+                <View style={{ backgroundColor: '#B08C57', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                         <TouchableOpacity onPress={goBack} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
                             <ArrowLeft size={18} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurück</Text>
+                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>ZurÃ¼ck</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             onPress={() => setShowUploadModal(true)}
                             style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20 }}
                         >
-                            <FileUp size={18} color="#C09D59" />
-                            <Text style={{ color: '#C09D59', fontWeight: '800', marginLeft: 6, fontSize: 15 }}>Hochladen</Text>
+                            <FileUp size={18} color="#B08C57" />
+                            <Text style={{ color: '#B08C57', fontWeight: '800', marginLeft: 6, fontSize: 15 }}>Hochladen</Text>
                         </TouchableOpacity>
                     </View>
                     <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Dateien</Text>
@@ -275,22 +275,22 @@ export default function TherapistClientFilesScreen() {
 
             {loading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color="#C09D59" />
+                    <ActivityIndicator size="large" color="#B08C57" />
                 </View>
             ) : clientFiles.length === 0 ? (
                 /* Empty State */
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 40 }}>
                     <MotiView from={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 100 }} style={{ alignItems: 'center' }}>
                         <View style={{ width: 100, height: 100, borderRadius: 28, backgroundColor: '#FFF9EC', alignItems: 'center', justifyContent: 'center', marginBottom: 24, borderWidth: 2, borderColor: '#F5DFA0', borderStyle: 'dashed' }}>
-                            <FolderOpen size={44} color="#C09D59" />
+                            <FolderOpen size={44} color="#B08C57" />
                         </View>
-                        <Text style={{ fontSize: 22, fontWeight: '900', color: '#243842', marginBottom: 10, textAlign: 'center' }}>Noch keine Dateien</Text>
-                        <Text style={{ fontSize: 15, color: '#94A3B8', textAlign: 'center', lineHeight: 22, maxWidth: 280, fontWeight: '500', marginBottom: 32 }}>
-                            Lade PDFs, Arbeitsblätter oder andere Dokumente für den Klienten hoch.
+                        <Text style={{ fontSize: 22, fontWeight: '900', color: '#1F2528', marginBottom: 10, textAlign: 'center' }}>Noch keine Dateien</Text>
+                        <Text style={{ fontSize: 15, color: '#8B938E', textAlign: 'center', lineHeight: 22, maxWidth: 280, fontWeight: '500', marginBottom: 32 }}>
+                            Lade PDFs, ArbeitsblÃ¤tter oder andere Dokumente fÃ¼r den Klienten hoch.
                         </Text>
                         <TouchableOpacity
                             onPress={() => setShowUploadModal(true)}
-                            style={{ backgroundColor: '#C09D59', paddingHorizontal: 28, paddingVertical: 16, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
+                            style={{ backgroundColor: '#B08C57', paddingHorizontal: 28, paddingVertical: 16, borderRadius: 20, flexDirection: 'row', alignItems: 'center' }}
                         >
                             <FileUp size={20} color="white" />
                             <Text style={{ color: 'white', fontWeight: '800', fontSize: 16, marginLeft: 8 }}>Erste Datei hochladen</Text>
@@ -305,7 +305,7 @@ export default function TherapistClientFilesScreen() {
                     itemLayoutAnimation={Layout.springify()}
                     ListEmptyComponent={
                         <View style={{ alignItems: 'center', paddingVertical: 60 }}>
-                            <Text style={{ fontSize: 15, color: '#94A3B8', fontWeight: '600' }}>Keine Dateien gefunden für „{search}"</Text>
+                            <Text style={{ fontSize: 15, color: '#8B938E', fontWeight: '600' }}>Keine Dateien gefunden fÃ¼r â€ž{search}"</Text>
                         </View>
                     }
                     renderItem={({ item, index }: any) => (
@@ -321,7 +321,7 @@ export default function TherapistClientFilesScreen() {
                 />
             )}
 
-            {/* Upload Modal — Bottom sheet style */}
+            {/* Upload Modal â€” Bottom sheet style */}
             <Modal visible={showUploadModal} animationType="slide" transparent>
                 <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
                     <MotiView
@@ -331,9 +331,9 @@ export default function TherapistClientFilesScreen() {
                         style={{ backgroundColor: 'white', borderTopLeftRadius: 36, borderTopRightRadius: 36, padding: 28, paddingBottom: 48 }}
                     >
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                            <Text style={{ fontSize: 24, fontWeight: '900', color: '#243842', letterSpacing: -0.5 }}>Datei hochladen</Text>
-                            <TouchableOpacity onPress={() => { setShowUploadModal(false); setSelectedAsset(null); setNewFileTitle(''); setNewFileDesc(''); }} style={{ backgroundColor: '#F1F5F9', padding: 10, borderRadius: 20 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                                <X size={20} color="#64748B" />
+                            <Text style={{ fontSize: 24, fontWeight: '900', color: '#1F2528', letterSpacing: -0.5 }}>Datei hochladen</Text>
+                            <TouchableOpacity onPress={() => { setShowUploadModal(false); setSelectedAsset(null); setNewFileTitle(''); setNewFileDesc(''); }} style={{ backgroundColor: '#F3EEE6', padding: 10, borderRadius: 20 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                <X size={20} color="#6F7472" />
                             </TouchableOpacity>
                         </View>
 
@@ -341,10 +341,10 @@ export default function TherapistClientFilesScreen() {
                         <TouchableOpacity
                             onPress={pickDocument}
                             style={{
-                                backgroundColor: selectedAsset ? '#F0FDF4' : '#F8FAFC',
+                                backgroundColor: selectedAsset ? '#F0FDF4' : '#F5F1EA',
                                 borderWidth: 2,
                                 borderStyle: 'dashed',
-                                borderColor: selectedAsset ? '#86EFAC' : '#CBD5E1',
+                                borderColor: selectedAsset ? '#86EFAC' : '#BEC7C0',
                                 borderRadius: 24,
                                 padding: 24,
                                 alignItems: 'center',
@@ -357,36 +357,36 @@ export default function TherapistClientFilesScreen() {
                                         <FileText size={26} color="#16A34A" />
                                     </View>
                                     <Text style={{ fontSize: 15, fontWeight: '800', color: '#16A34A', marginBottom: 2 }}>{selectedAsset.name}</Text>
-                                    {selectedAsset.size && <Text style={{ fontSize: 13, color: '#94A3B8', fontWeight: '500' }}>{formatFileSize(selectedAsset.size)}</Text>}
-                                    <Text style={{ fontSize: 12, color: '#94A3B8', marginTop: 8, fontWeight: '600' }}>Tippe um eine andere Datei zu wählen</Text>
+                                    {selectedAsset.size && <Text style={{ fontSize: 13, color: '#8B938E', fontWeight: '500' }}>{formatFileSize(selectedAsset.size)}</Text>}
+                                    <Text style={{ fontSize: 12, color: '#8B938E', marginTop: 8, fontWeight: '600' }}>Tippe um eine andere Datei zu wÃ¤hlen</Text>
                                 </>
                             ) : (
                                 <>
-                                    <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
-                                        <FolderOpen size={26} color="#64748B" />
+                                    <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: '#F3EEE6', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+                                        <FolderOpen size={26} color="#6F7472" />
                                     </View>
-                                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#243842', marginBottom: 4 }}>Datei auswählen</Text>
-                                    <Text style={{ fontSize: 13, color: '#94A3B8', fontWeight: '500' }}>PDF, Word, Excel, Bilder, Videos…</Text>
+                                    <Text style={{ fontSize: 15, fontWeight: '800', color: '#1F2528', marginBottom: 4 }}>Datei auswÃ¤hlen</Text>
+                                    <Text style={{ fontSize: 13, color: '#8B938E', fontWeight: '500' }}>PDF, Word, Excel, Bilder, Videosâ€¦</Text>
                                 </>
                             )}
                         </TouchableOpacity>
 
                         {/* Title field */}
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Titel *</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#8B938E', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Titel *</Text>
                         <TextInput
-                            style={{ backgroundColor: '#F8FAFC', borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 18, padding: 16, marginBottom: 16, fontSize: 15, color: '#243842', fontWeight: '500' }}
-                            placeholder="z.B. Arbeitsblatt Angstbewältigung"
-                            placeholderTextColor="#94A3B8"
+                            style={{ backgroundColor: '#F5F1EA', borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 18, padding: 16, marginBottom: 16, fontSize: 15, color: '#1F2528', fontWeight: '500' }}
+                            placeholder="z.B. Arbeitsblatt AngstbewÃ¤ltigung"
+                            placeholderTextColor="#8B938E"
                             value={newFileTitle}
                             onChangeText={setNewFileTitle}
                         />
 
                         {/* Description field */}
-                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Beschreibung (Optional)</Text>
+                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#8B938E', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8 }}>Beschreibung (Optional)</Text>
                         <TextInput
-                            style={{ backgroundColor: '#F8FAFC', borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 18, padding: 16, marginBottom: 24, fontSize: 15, color: '#243842', fontWeight: '500', minHeight: 88, textAlignVertical: 'top' }}
-                            placeholder="Kurze Info oder Anleitung für den Klienten..."
-                            placeholderTextColor="#94A3B8"
+                            style={{ backgroundColor: '#F5F1EA', borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 18, padding: 16, marginBottom: 24, fontSize: 15, color: '#1F2528', fontWeight: '500', minHeight: 88, textAlignVertical: 'top' }}
+                            placeholder="Kurze Info oder Anleitung fÃ¼r den Klienten..."
+                            placeholderTextColor="#8B938E"
                             value={newFileDesc}
                             onChangeText={setNewFileDesc}
                             multiline
@@ -397,13 +397,13 @@ export default function TherapistClientFilesScreen() {
                             onPress={handleUploadClientFile}
                             disabled={uploadingFile || !newFileTitle.trim() || !selectedAsset}
                             style={{
-                                backgroundColor: (uploadingFile || !newFileTitle.trim() || !selectedAsset) ? '#E2E8F0' : '#C09D59',
+                                backgroundColor: (uploadingFile || !newFileTitle.trim() || !selectedAsset) ? '#E2E8F0' : '#B08C57',
                                 paddingVertical: 18,
                                 borderRadius: 22,
                                 alignItems: 'center',
                                 flexDirection: 'row',
                                 justifyContent: 'center',
-                                shadowColor: '#C09D59',
+                                shadowColor: '#B08C57',
                                 shadowOffset: { width: 0, height: 8 },
                                 shadowOpacity: (uploadingFile || !newFileTitle.trim() || !selectedAsset) ? 0 : 0.25,
                                 shadowRadius: 16,
@@ -413,18 +413,18 @@ export default function TherapistClientFilesScreen() {
                             {uploadingFile ? (
                                 <>
                                     <ActivityIndicator color="white" style={{ marginRight: 10 }} />
-                                    <Text style={{ fontWeight: '800', fontSize: 16, color: 'white' }}>Lädt hoch…</Text>
+                                    <Text style={{ fontWeight: '800', fontSize: 16, color: 'white' }}>LÃ¤dt hochâ€¦</Text>
                                 </>
                             ) : (
                                 <>
-                                    <FileUp size={20} color={(uploadingFile || !newFileTitle.trim() || !selectedAsset) ? '#94A3B8' : 'white'} style={{ marginRight: 8 }} />
-                                    <Text style={{ fontWeight: '800', fontSize: 16, color: (uploadingFile || !newFileTitle.trim() || !selectedAsset) ? '#94A3B8' : 'white' }}>
+                                    <FileUp size={20} color={(uploadingFile || !newFileTitle.trim() || !selectedAsset) ? '#8B938E' : 'white'} style={{ marginRight: 8 }} />
+                                    <Text style={{ fontWeight: '800', fontSize: 16, color: (uploadingFile || !newFileTitle.trim() || !selectedAsset) ? '#8B938E' : 'white' }}>
                                         Hochladen
                                     </Text>
                                 </>
                             )}
                         </TouchableOpacity>
-                        <Text style={{ textAlign: 'center', fontSize: 12, color: '#94A3B8', fontWeight: '600', marginTop: 14 }}>Der Klient wird nach dem Upload benachrichtigt</Text>
+                        <Text style={{ textAlign: 'center', fontSize: 12, color: '#8B938E', fontWeight: '600', marginTop: 14 }}>Der Klient wird nach dem Upload benachrichtigt</Text>
                     </MotiView>
                 </View>
             </Modal>
@@ -437,15 +437,15 @@ export default function TherapistClientFilesScreen() {
                             <View style={{ width: 72, height: 72, borderRadius: 36, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
                                 <Trash2 size={32} color="#EF4444" />
                             </View>
-                            <Text style={{ fontSize: 22, fontWeight: '900', color: '#243842', textAlign: 'center', marginBottom: 8 }}>Datei löschen?</Text>
-                            {fileToDelete && <Text style={{ fontSize: 15, color: '#94A3B8', textAlign: 'center', lineHeight: 22 }}>„{fileToDelete.title}" wird endgültig entfernt.</Text>}
+                            <Text style={{ fontSize: 22, fontWeight: '900', color: '#1F2528', textAlign: 'center', marginBottom: 8 }}>Datei lÃ¶schen?</Text>
+                            {fileToDelete && <Text style={{ fontSize: 15, color: '#8B938E', textAlign: 'center', lineHeight: 22 }}>â€ž{fileToDelete.title}" wird endgÃ¼ltig entfernt.</Text>}
                         </View>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <TouchableOpacity onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, backgroundColor: '#F1F5F9', paddingVertical: 16, borderRadius: 18, alignItems: 'center' }}>
-                                <Text style={{ fontWeight: '700', color: '#243842', fontSize: 16 }}>Abbrechen</Text>
+                            <TouchableOpacity onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, backgroundColor: '#F3EEE6', paddingVertical: 16, borderRadius: 18, alignItems: 'center' }}>
+                                <Text style={{ fontWeight: '700', color: '#1F2528', fontSize: 16 }}>Abbrechen</Text>
                             </TouchableOpacity>
                             <TouchableOpacity onPress={confirmDeleteFile} style={{ flex: 1, backgroundColor: '#EF4444', paddingVertical: 16, borderRadius: 18, alignItems: 'center', shadowColor: '#EF4444', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 4 }}>
-                                <Text style={{ fontWeight: '800', color: 'white', fontSize: 16 }}>Löschen</Text>
+                                <Text style={{ fontWeight: '800', color: 'white', fontSize: 16 }}>LÃ¶schen</Text>
                             </TouchableOpacity>
                         </View>
                     </MotiView>
@@ -459,8 +459,8 @@ export default function TherapistClientFilesScreen() {
                 presentationStyle="pageSheet"
                 onRequestClose={() => setPreviewModalVisible(false)}
             >
-                <View className="flex-1 bg-[#F9F8F6]">
-                    <View className="bg-[#137386] flex-row items-center justify-between" style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 24, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, zIndex: 10 }}>
+                <View className="flex-1 bg-[#F7F4EE]">
+                    <View className="bg-[#2D666B] flex-row items-center justify-between" style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 24, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, zIndex: 10 }}>
                         <Text className="text-white text-[20px] font-black max-w-[80%]" numberOfLines={1}>
                             {selectedResourceForPreview?.title || selectedResourceForPreview?.originalName || 'Vorschau'}
                         </Text>
@@ -474,15 +474,15 @@ export default function TherapistClientFilesScreen() {
                             <View className="flex-1">
                                 <View className="bg-white p-6 rounded-b-[32px] border-b border-gray-100 shadow-sm z-0">
                                     {selectedResourceForPreview.description ? (
-                                        <Text className="text-[#243842]/70 text-[15px] leading-relaxed mb-4">
+                                        <Text className="text-[#1F2528]/70 text-[15px] leading-relaxed mb-4">
                                             {selectedResourceForPreview.description}
                                         </Text>
                                     ) : null}
 
                                     <TouchableOpacity
                                         onPress={() => Linking.openURL(selectedResourceForPreview.url)}
-                                        className="bg-[#C09D59] flex-row items-center justify-center py-4 rounded-[20px] shadow-sm"
-                                        style={{ shadowColor: '#C09D59', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                                        className="bg-[#B08C57] flex-row items-center justify-center py-4 rounded-[20px] shadow-sm"
+                                        style={{ shadowColor: '#B08C57', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
                                     >
                                         <Download size={20} color="white" style={{ marginRight: 8 }} />
                                         <Text className="text-white font-bold text-[16px]">
@@ -516,7 +516,7 @@ export default function TherapistClientFilesScreen() {
                                                 source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(selectedResourceForPreview.url)}` }}
                                                 style={{ flex: 1, backgroundColor: 'transparent' }}
                                                 startInLoadingState={true}
-                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                                renderLoading={() => <ActivityIndicator size="large" color="#2D666B" style={{ flex: 1, justifyContent: 'center' }} />}
                                             />
                                         )
                                     ) : (
@@ -527,7 +527,7 @@ export default function TherapistClientFilesScreen() {
                                                 source={{ uri: selectedResourceForPreview.url }}
                                                 style={{ flex: 1, backgroundColor: 'transparent' }}
                                                 startInLoadingState={true}
-                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                                renderLoading={() => <ActivityIndicator size="large" color="#2D666B" style={{ flex: 1, justifyContent: 'center' }} />}
                                             />
                                         )
                                     )}
@@ -548,3 +548,5 @@ export default function TherapistClientFilesScreen() {
         </View>
     );
 }
+
+

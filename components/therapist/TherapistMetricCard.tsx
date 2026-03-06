@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { LucideIcon } from 'lucide-react-native';
@@ -17,19 +17,19 @@ interface TherapistMetricCardProps {
 
 const toneMap: Record<Tone, { gradient: [string, string]; iconBg: string; iconColor: string }> = {
     primary: {
-        gradient: ['#1a8b9f', '#105e6d'],
-        iconBg: 'rgba(19,115,134,0.12)',
-        iconColor: '#137386',
+        gradient: ['#4E7E82', '#2D666B'],
+        iconBg: 'rgba(45,102,107,0.12)',
+        iconColor: '#2D666B',
     },
     success: {
-        gradient: ['#10B981', '#047857'],
-        iconBg: 'rgba(16,185,129,0.12)',
-        iconColor: '#059669',
+        gradient: ['#788E76', '#5F7560'],
+        iconBg: 'rgba(120,142,118,0.14)',
+        iconColor: '#788E76',
     },
     warning: {
-        gradient: ['#F59E0B', '#B45309'],
-        iconBg: 'rgba(245,158,11,0.12)',
-        iconColor: '#D97706',
+        gradient: ['#B08C57', '#8F6F37'],
+        iconBg: 'rgba(176,140,87,0.14)',
+        iconColor: '#B08C57',
     },
 };
 
@@ -52,7 +52,7 @@ export function TherapistMetricCard({
                 minWidth: 220,
                 borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
                 backgroundColor: colors.card,
-                shadowColor: isDark ? '#000' : '#0f172a',
+                shadowColor: isDark ? '#000' : '#182428',
                 shadowOffset: { width: 0, height: 10 },
                 shadowOpacity: isDark ? 0.2 : 0.05,
                 shadowRadius: 24,
@@ -84,3 +84,5 @@ export function TherapistMetricCard({
         </Card>
     );
 }
+
+

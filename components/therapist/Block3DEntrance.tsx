@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Block3DEntrance
  *
  * Wraps a block card in a "coming from behind the screen" entrance animation.
@@ -50,3 +50,4 @@ export default function Block3DEntrance({ children, index }: Props) {
 
     return <Animated.View style={style}>{children}</Animated.View>;
 }
+

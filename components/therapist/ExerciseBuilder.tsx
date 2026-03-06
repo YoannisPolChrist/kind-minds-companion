@@ -1,5 +1,5 @@
-import React, { useState, useCallback, memo, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardTypeOptions, ActivityIndicator, Animated, StyleSheet, Modal } from 'react-native';
+﻿import React, { useState, useCallback, memo, useRef, useMemo } from 'react';
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardTypeOptions, ActivityIndicator, Animated, StyleSheet, Modal, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { ChevronLeft, Save, Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Radar, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon, Link as LinkIcon, Film } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
-import { ProgressChart, BarChart, PieChart, LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import ExerciseFlowTimeline from './ExerciseFlowTimeline';
 import ExerciseDifficultyGauge from './ExerciseDifficultyGauge';
@@ -23,6 +22,8 @@ import {
     getCat,
     CHART_PALETTE
 } from './blocks/exerciseRegistry';
+import { parseExerciseChartData, withAlpha } from '../charts/chartData';
+import { FlBarChart, FlDonutChart, FlLineAreaChart, FlRadarChart } from '../charts/flChartPrimitives';
 
 export type { ExerciseBlockType, ExerciseBlock };
 
@@ -35,7 +36,7 @@ interface ExerciseBuilderProps {
     onCancel: () => void;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
 
@@ -50,10 +51,10 @@ function defaultBlock(type: ExerciseBlockType): ExerciseBlock {
     return block as ExerciseBlock;
 }
 
-// ─── Sub-components ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const SectionLabel = memo(function SectionLabel({ text }: { text: string }) {
-    return <Text style={{ fontSize: 11, fontWeight: '700', color: '#9CA3AF', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{text}</Text>;
+    return <Text style={{ fontSize: 11, fontWeight: '700', color: '#8B938E', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{text}</Text>;
 });
 
 const StyledInput = memo(function StyledInput({ value, onChangeText, placeholder, multiline, keyboardType }: {
@@ -66,16 +67,16 @@ const StyledInput = memo(function StyledInput({ value, onChangeText, placeholder
             keyboardType={keyboardType}
             textAlignVertical={multiline ? 'top' : 'center'}
             style={{
-                backgroundColor: '#F9F8F6', borderWidth: 1.5, borderColor: '#E8E6E1',
+                backgroundColor: '#F7F4EE', borderWidth: 1.5, borderColor: '#E7E0D4',
                 borderRadius: 20, paddingHorizontal: 20, paddingVertical: 18,
-                fontSize: 16, color: '#243842', minHeight: multiline ? 140 : undefined,
+                fontSize: 16, color: '#1F2528', minHeight: multiline ? 140 : undefined,
                 fontWeight: '500'
             }}
         />
     );
 });
 
-// ─── Block Form ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Block Form â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock, onMoveBlock, isFirst, isLast, onDuplicateBlock, allBlocks }: {
     block: ExerciseBlock;
@@ -94,6 +95,8 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
     const onRemove = useCallback(() => onRemoveBlock(id), [id, onRemoveBlock]);
     const onMove = useCallback((dir: 'up' | 'down') => onMoveBlock(id, dir), [id, onMoveBlock]);
     const onDuplicate = useCallback(() => onDuplicateBlock(id), [id, onDuplicateBlock]);
+    const previewData = useMemo(() => parseExerciseChartData(block.options), [block.options]);
+    const previewWidth = Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120;
 
     const addOption = useCallback(() => onChange({ options: [...(block.options ?? []), ''] }), [block.options, onChange]);
     const removeOption = useCallback((i: number) => onChange({ options: (block.options ?? []).filter((_, idx) => idx !== i) }), [block.options, onChange]);
@@ -105,7 +108,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
     const pickMedia = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
-            Alert.alert("Berechtigung verweigert", "Zugriff auf die Galerie wird benötigt.");
+            Alert.alert("Berechtigung verweigert", "Zugriff auf die Galerie wird benÃ¶tigt.");
             return;
         }
 
@@ -163,14 +166,14 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                 {/* Actions */}
                 <View style={{ flexDirection: 'row', gap: 8 }}>
                     {[
-                        { icon: '↑', onPress: () => onMove('up'), disabled: isFirst },
-                        { icon: '↓', onPress: () => onMove('down'), disabled: isLast },
-                        { icon: '⧉', onPress: onDuplicate, disabled: false },
-                        { icon: '✕', onPress: onRemove, disabled: false, danger: true },
+                        { icon: 'â†‘', onPress: () => onMove('up'), disabled: isFirst },
+                        { icon: 'â†“', onPress: () => onMove('down'), disabled: isLast },
+                        { icon: 'â§‰', onPress: onDuplicate, disabled: false },
+                        { icon: 'âœ•', onPress: onRemove, disabled: false, danger: true },
                     ].map((btn, i) => (
                         <TouchableOpacity key={i} onPress={btn.onPress} disabled={btn.disabled}
                             style={{ width: 36, height: 36, borderRadius: 12, backgroundColor: btn.danger ? 'rgba(239,68,68,0.1)' : 'rgba(0,0,0,0.04)', alignItems: 'center', justifyContent: 'center', opacity: btn.disabled ? 0.3 : 1 }}>
-                            <Text style={{ fontSize: 14, fontWeight: '800', color: btn.danger ? '#EF4444' : '#475569' }}>{btn.icon}</Text>
+                            <Text style={{ fontSize: 14, fontWeight: '800', color: btn.danger ? '#EF4444' : '#5E655F' }}>{btn.icon}</Text>
                         </TouchableOpacity>
                     ))}
                 </View>
@@ -184,7 +187,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     <>
                         <SectionLabel text="Aufgabe / Frage an den Klienten" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder="Was möchtest du reflektieren? Beschreibe die Aufgabe..." multiline />
+                            placeholder="Was mÃ¶chtest du reflektieren? Beschreibe die Aufgabe..." multiline />
                     </>
                 )}
 
@@ -193,14 +196,14 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     <>
                         <SectionLabel text="Psycho-edukations-Text (Klient liest nur)" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder="Erkläre dem Klienten z.B. das ABC-Modell, Grounding-Techniken, Verhaltensexperimente..." multiline />
+                            placeholder="ErklÃ¤re dem Klienten z.B. das ABC-Modell, Grounding-Techniken, Verhaltensexperimente..." multiline />
                     </>
                 )}
 
                 {/* SCALE */}
                 {block.type === 'scale' && (
                     <>
-                        <SectionLabel text="Frage für die Skala" />
+                        <SectionLabel text="Frage fÃ¼r die Skala" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
                             placeholder="z.B. Wie stark ist deine Anspannung gerade? (0 = keine, 10 = maximal)" />
                         <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
@@ -221,7 +224,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                 </View>
                             ))}
                         </View>
-                        <Text style={{ textAlign: 'center', fontSize: 11, color: '#94A3B8', marginTop: 8, fontWeight: '500' }}>Vorschau – Klient wählt einen Wert</Text>
+                        <Text style={{ textAlign: 'center', fontSize: 11, color: '#8B938E', marginTop: 8, fontWeight: '500' }}>Vorschau â€“ Klient wÃ¤hlt einen Wert</Text>
                     </>
                 )}
 
@@ -231,7 +234,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                         <SectionLabel text="Frage" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })} placeholder="z.B. Wie war deine Stimmung heute?" />
                         <View style={{ marginTop: 12 }}>
-                            <SectionLabel text="Antwortmöglichkeiten (Einzelauswahl)" />
+                            <SectionLabel text="AntwortmÃ¶glichkeiten (Einzelauswahl)" />
                             <AnimatePresence>
                                 {(block.options ?? []).map((opt, i) => (
                                     <MotiView
@@ -248,7 +251,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                         </View>
                                         {(block.options?.length ?? 0) > 2 && (
                                             <TouchableOpacity onPress={() => removeOption(i)}>
-                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>×</Text>
+                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>Ã—</Text>
                                             </TouchableOpacity>
                                         )}
                                     </MotiView>
@@ -256,7 +259,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <TouchableOpacity onPress={addOption}
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Option hinzufügen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Option hinzufÃ¼gen</Text>
                             </TouchableOpacity>
                         </View>
                     </>
@@ -266,7 +269,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                 {block.type === 'checklist' && (
                     <>
                         <SectionLabel text="Anweisung / Titel der Gewohnheitsliste" />
-                        <StyledInput value={block.content} onChangeText={t => onChange({ content: t })} placeholder="z.B. Was hast du heute für dich getan?" />
+                        <StyledInput value={block.content} onChangeText={t => onChange({ content: t })} placeholder="z.B. Was hast du heute fÃ¼r dich getan?" />
                         <View style={{ marginTop: 12 }}>
                             <SectionLabel text="Checklisten-Elemente" />
                             <AnimatePresence>
@@ -285,7 +288,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                         </View>
                                         {(block.options?.length ?? 0) > 2 && (
                                             <TouchableOpacity onPress={() => removeOption(i)}>
-                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>×</Text>
+                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>Ã—</Text>
                                             </TouchableOpacity>
                                         )}
                                     </MotiView>
@@ -293,7 +296,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <TouchableOpacity onPress={addOption}
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Element hinzufügen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Element hinzufÃ¼gen</Text>
                             </TouchableOpacity>
                         </View>
                     </>
@@ -304,13 +307,13 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     <>
                         <SectionLabel text="Aufgabe / Anweisung" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder="z.B. Notiere täglich eine Situation die dich belastet hat und analysiere sie nach dem ABC-Schema..." multiline />
+                            placeholder="z.B. Notiere tÃ¤glich eine Situation die dich belastet hat und analysiere sie nach dem ABC-Schema..." multiline />
                         <View style={{ marginTop: 16, backgroundColor: cat.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: cat.border }}>
-                            <Text style={{ fontSize: 13, fontWeight: '800', color: cat.text, marginBottom: 12 }}>📝 ABC-Protokoll Vorlage</Text>
+                            <Text style={{ fontSize: 13, fontWeight: '800', color: cat.text, marginBottom: 12 }}>ðŸ“ ABC-Protokoll Vorlage</Text>
                             {[
-                                { label: 'A – Auslöser', hint: 'Was ist passiert? (Situation, Ort, Zeit)' },
-                                { label: 'B – Bewertung', hint: 'Was habe ich gedacht / bewertet?' },
-                                { label: 'C – Consequence', hint: 'Was habe ich gefühlt / getan? (0–10)' },
+                                { label: 'A â€“ AuslÃ¶ser', hint: 'Was ist passiert? (Situation, Ort, Zeit)' },
+                                { label: 'B â€“ Bewertung', hint: 'Was habe ich gedacht / bewertet?' },
+                                { label: 'C â€“ Consequence', hint: 'Was habe ich gefÃ¼hlt / getan? (0â€“10)' },
                             ].map(row => (
                                 <View key={row.label} style={{ flexDirection: 'row', marginBottom: 10, alignItems: 'flex-start', gap: 8 }}>
                                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: cat.accent, marginTop: 5 }} />
@@ -329,11 +332,11 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     <>
                         <SectionLabel text="Anweisung an den Klienten" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder="z.B. Notiere 3 Dinge, für die du heute dankbar bist – egal wie klein..." />
+                            placeholder="z.B. Notiere 3 Dinge, fÃ¼r die du heute dankbar bist â€“ egal wie klein..." />
                         <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
                             {['1.', '2.', '3.'].map(n => (
                                 <View key={n} style={{ flex: 1, backgroundColor: cat.bg, borderRadius: 20, borderWidth: 1, borderColor: cat.border, paddingVertical: 20, alignItems: 'center', shadowColor: cat.accent, shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 1 }}>
-                                    <Text style={{ fontSize: 24 }}>🙏</Text>
+                                    <Text style={{ fontSize: 24 }}>ðŸ™</Text>
                                     <Text style={{ fontSize: 14, fontWeight: '800', color: cat.text, marginTop: 6 }}>{n}</Text>
                                 </View>
                             ))}
@@ -346,32 +349,32 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     <>
                         <SectionLabel text="Aufgabenbeschreibung / Titel zum Medium" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder="z.B. Schau dir dieses Bild an und beschreibe deine Gefühle..." multiline />
+                            placeholder="z.B. Schau dir dieses Bild an und beschreibe deine GefÃ¼hle..." multiline />
 
                         <View style={{ marginTop: 16 }}>
-                            <SectionLabel text="Foto oder Video anhängen" />
+                            <SectionLabel text="Foto oder Video anhÃ¤ngen" />
                             {block.mediaUri ? (
-                                <View style={{ marginTop: 12, borderRadius: 20, overflow: 'hidden', backgroundColor: '#F1F5F9', borderWidth: 1, borderColor: '#E2E8F0', position: 'relative' }}>
+                                <View style={{ marginTop: 12, borderRadius: 20, overflow: 'hidden', backgroundColor: '#F3EEE6', borderWidth: 1, borderColor: '#E2E8F0', position: 'relative' }}>
                                     {block.mediaType === 'video' ? (
                                         <View style={{ height: 240, alignItems: 'center', justifyContent: 'center', backgroundColor: '#E2E8F0' }}>
-                                            <Text style={{ fontSize: 40 }}>🎥</Text>
-                                            <Text style={{ marginTop: 12, fontWeight: '700', color: '#475569', fontSize: 16 }}>Video ausgewählt</Text>
+                                            <Text style={{ fontSize: 40 }}>ðŸŽ¥</Text>
+                                            <Text style={{ marginTop: 12, fontWeight: '700', color: '#5E655F', fontSize: 16 }}>Video ausgewÃ¤hlt</Text>
                                         </View>
                                     ) : (
                                         <Image source={{ uri: block.mediaUri }} style={{ width: '100%', height: 240 }} contentFit="cover" />
                                     )}
                                     <View style={{ position: 'absolute', top: 16, right: 16, flexDirection: 'row', gap: 10 }}>
                                         <TouchableOpacity onPress={pickMedia} style={{ backgroundColor: 'rgba(255,255,255,0.95)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }}>
-                                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#334155' }}>Ändern</Text>
+                                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#3A4340' }}>Aendern</Text>
                                         </TouchableOpacity>
                                         <TouchableOpacity onPress={() => onChange({ mediaUri: undefined, mediaType: undefined })} style={{ backgroundColor: 'rgba(239,68,68,0.95)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, shadowColor: '#EF4444', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.2, shadowRadius: 4 }}>
-                                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Löschen</Text>
+                                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#fff' }}>Loeschen</Text>
                                         </TouchableOpacity>
                                     </View>
 
                                     {/* Size Selector */}
                                     <View style={{ padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#E2E8F0' }}>
-                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748B', marginBottom: 12 }}>Anzeigegröße in der App:</Text>
+                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#6F7472', marginBottom: 12 }}>AnzeigegrÃ¶ÃŸe in der App:</Text>
                                         <View style={{ flexDirection: 'row', gap: 10 }}>
                                             {(['small', 'medium', 'large'] as const).map(size => {
                                                 const isActive = block.mediaSize === size || (!block.mediaSize && size === 'medium');
@@ -382,7 +385,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                                         onPress={() => onChange({ mediaSize: size })}
                                                         style={{ flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 12, borderWidth: 1.5, borderColor: isActive ? cat.accent : '#E2E8F0', backgroundColor: isActive ? cat.bg : '#fff' }}
                                                     >
-                                                        <Text style={{ fontSize: 14, fontWeight: '700', color: isActive ? cat.accent : '#64748B' }}>
+                                                        <Text style={{ fontSize: 14, fontWeight: '700', color: isActive ? cat.accent : '#6F7472' }}>
                                                             {labels[size]}
                                                         </Text>
                                                     </TouchableOpacity>
@@ -393,20 +396,20 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                 </View>
                             ) : (
                                 <TouchableOpacity onPress={pickMedia} disabled={mediaUploading}
-                                    style={{ marginTop: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: '#CBD5E1', borderRadius: 20, paddingVertical: 40, alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+                                    style={{ marginTop: 12, borderWidth: 2, borderStyle: 'dashed', borderColor: '#BEC7C0', borderRadius: 20, paddingVertical: 40, alignItems: 'center', backgroundColor: '#F5F1EA' }}>
                                     {mediaUploading ? (
                                         <>
-                                            <ActivityIndicator size="large" color="#3B82F6" style={{ marginBottom: 12 }} />
-                                            <Text style={{ fontSize: 15, fontWeight: '800', color: '#3B82F6' }}>Datei wird hochgeladen…</Text>
-                                            <Text style={{ fontSize: 13, color: '#94A3B8', marginTop: 4 }}>Bitte warten</Text>
+                                            <ActivityIndicator size="large" color="#4E7E82" style={{ marginBottom: 12 }} />
+                                            <Text style={{ fontSize: 15, fontWeight: '800', color: '#4E7E82' }}>Datei wird hochgeladenâ€¦</Text>
+                                            <Text style={{ fontSize: 13, color: '#8B938E', marginTop: 4 }}>Bitte warten</Text>
                                         </>
                                     ) : (
                                         <>
-                                            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#EFF6FF', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
-                                                <Text style={{ fontSize: 32, color: '#3B82F6' }}>📸</Text>
+                                            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#EEF4F3', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                                                <Text style={{ fontSize: 32, color: '#4E7E82' }}>ðŸ“¸</Text>
                                             </View>
-                                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#334155', marginBottom: 6 }}>Medium auswählen</Text>
-                                            <Text style={{ fontSize: 13, color: '#94A3B8', textAlign: 'center', fontWeight: '500' }}>Unterstützt Fotos und Videos aus der Galerie</Text>
+                                            <Text style={{ fontSize: 16, fontWeight: '800', color: '#3A4340', marginBottom: 6 }}>Medium auswÃ¤hlen</Text>
+                                            <Text style={{ fontSize: 13, color: '#8B938E', textAlign: 'center', fontWeight: '500' }}>UnterstÃ¼tzt Fotos und Videos aus der Galerie</Text>
                                         </>
                                     )}
                                 </TouchableOpacity>
@@ -418,18 +421,18 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                 {/* VIDEO (Web) */}
                 {block.type === 'video' && (
                     <>
-                        <SectionLabel text="Titel / Beschreibung für das Video" />
+                        <SectionLabel text="Titel / Beschreibung fÃ¼r das Video" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
                             placeholder="z.B. Schau dir dieses Video zur Achtsamkeit an..." multiline />
 
                         <View style={{ marginTop: 16 }}>
                             <SectionLabel text="YouTube / Vimeo URL" />
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F8F6', borderWidth: 1.5, borderColor: '#E8E6E1', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12 }}>
-                                <LinkIcon size={20} color="#94A3B8" />
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F4EE', borderWidth: 1.5, borderColor: '#E7E0D4', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12 }}>
+                                <LinkIcon size={20} color="#8B938E" />
                                 <TextInput
-                                    style={{ flex: 1, marginLeft: 12, fontSize: 16, color: '#243842' }}
+                                    style={{ flex: 1, marginLeft: 12, fontSize: 16, color: '#1F2528' }}
                                     placeholder="https://www.youtube.com/watch?v=..."
-                                    placeholderTextColor="#94A3B8"
+                                    placeholderTextColor="#8B938E"
                                     value={block.videoUrl || ''}
                                     onChangeText={t => onChange({ videoUrl: t })}
                                     autoCapitalize="none"
@@ -438,9 +441,9 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                 />
                             </View>
                             {block.videoUrl ? (
-                                <View style={{ marginTop: 12, borderRadius: 16, backgroundColor: '#F1F5F9', padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
-                                    <Film size={32} color="#64748B" />
-                                    <Text style={{ marginTop: 8, fontSize: 13, color: '#475569', fontWeight: '600' }}>Video-Link wird in der App als Player eingebunden</Text>
+                                <View style={{ marginTop: 12, borderRadius: 16, backgroundColor: '#F3EEE6', padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#E2E8F0' }}>
+                                    <Film size={32} color="#6F7472" />
+                                    <Text style={{ marginTop: 8, fontSize: 13, color: '#5E655F', fontWeight: '600' }}>Video-Link wird in der App als Player eingebunden</Text>
                                 </View>
                             ) : null}
                         </View>
@@ -450,18 +453,18 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                 {/* TIMER / BREATHING */}
                 {(block.type === 'timer' || block.type === 'breathing') && (
                     <>
-                        <SectionLabel text={block.type === 'breathing' ? 'Anweisung zur Atemübung' : 'Anweisung / Beschreibung'} />
+                        <SectionLabel text={block.type === 'breathing' ? 'Anweisung zur AtemÃ¼bung' : 'Anweisung / Beschreibung'} />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder={block.type === 'breathing' ? 'z.B. Atme ruhig und gleichmäßig. Konzentriere dich auf deinen Atem.' : 'z.B. Halte inne, schließe die Augen und entspanne dich.'} />
-                        <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0', padding: 16 }}>
-                            <Text style={{ fontSize: 14, color: '#334155', fontWeight: '800' }}>Dauer</Text>
+                            placeholder={block.type === 'breathing' ? 'z.B. Atme ruhig und gleichmÃ¤ÃŸig. Konzentriere dich auf deinen Atem.' : 'z.B. Halte inne, schlieÃŸe die Augen und entspanne dich.'} />
+                        <View style={{ marginTop: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F1EA', borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0', padding: 16 }}>
+                            <Text style={{ fontSize: 14, color: '#3A4340', fontWeight: '800' }}>Dauer</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
                                 {[30, 60, 120, 300].map(sec => {
                                     const isActive = block.duration === sec;
                                     return (
                                         <TouchableOpacity key={sec} onPress={() => onChange({ duration: sec })}
-                                            style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: isActive ? cat.accent : '#F1F5F9', shadowColor: isActive ? cat.accent : 'transparent', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isActive ? 0.3 : 0, shadowRadius: 4, elevation: isActive ? 2 : 0 }}>
-                                            <Text style={{ fontSize: 13, fontWeight: '800', color: isActive ? '#fff' : '#64748B' }}>
+                                            style={{ paddingHorizontal: 14, paddingVertical: 10, borderRadius: 12, backgroundColor: isActive ? cat.accent : '#F3EEE6', shadowColor: isActive ? cat.accent : 'transparent', shadowOffset: { width: 0, height: 2 }, shadowOpacity: isActive ? 0.3 : 0, shadowRadius: 4, elevation: isActive ? 2 : 0 }}>
+                                            <Text style={{ fontSize: 13, fontWeight: '800', color: isActive ? '#fff' : '#6F7472' }}>
                                                 {sec < 60 ? `${sec}s` : `${sec / 60}min`}
                                             </Text>
                                         </TouchableOpacity>
@@ -473,7 +476,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             <View style={{ marginTop: 12, backgroundColor: cat.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: cat.border, flexDirection: 'row', justifyContent: 'space-around' }}>
                                 {['4s Einatmen', '4s Halten', '4s Ausatmen'].map(phase => (
                                     <View key={phase} style={{ alignItems: 'center' }}>
-                                        <Text style={{ fontSize: 24 }}>🌬️</Text>
+                                        <Text style={{ fontSize: 24 }}>ðŸŒ¬ï¸</Text>
                                         <Text style={{ fontSize: 12, color: cat.text, fontWeight: '800', marginTop: 4 }}>{phase}</Text>
                                     </View>
                                 ))}
@@ -510,7 +513,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                                     const nextIdx = (CHART_PALETTE.indexOf(color) + 1) % CHART_PALETTE.length;
                                                     updateOption(i, `${label}:${val}:${CHART_PALETTE[nextIdx]}`);
                                                 }}
-                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E7E0D4', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
                                             />
                                             <View style={{ flex: 2 }}>
                                                 <StyledInput value={label} onChangeText={t => updateOption(i, `${t}:${val}:${color}`)} placeholder={`Kategorie ${i + 1}...`} />
@@ -520,7 +523,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 3 && (
                                                 <TouchableOpacity onPress={() => removeOption(i)}>
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>×</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>Ã—</Text>
                                                 </TouchableOpacity>
                                             )}
                                         </MotiView>
@@ -529,7 +532,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <TouchableOpacity onPress={() => updateOption((block.options?.length ?? 0), '::')}
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Kategorie hinzufügen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Kategorie hinzufÃ¼gen</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -538,34 +541,16 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             from={{ opacity: 0, scale: 0.95, translateY: 20 }}
                             animate={{ opacity: 1, scale: 1, translateY: 0 }}
                             transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 150 }}
-                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
+                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E7E0D4', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <ProgressChart
-                                data={{
-                                    labels: (block.options ?? []).map(o => o.split(':')[0] || '?'),
-                                    data: (block.options ?? []).map(o => {
-                                        const v = parseFloat(o.split(':')[1] || '0');
-                                        return isNaN(v) ? 0 : Math.min(Math.max(v / 100, 0), 1); // Normalize to 0-1 range for ProgressChart
-                                    }),
-                                    colors: (block.options ?? []).map((o, i) => o.split(':')[2] || CHART_PALETTE[i % CHART_PALETTE.length])
-                                }}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                strokeWidth={12}
-                                radius={32}
-                                hideLegend={false}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                    style: { borderRadius: 16 },
-                                    propsForLabels: { fontSize: 10, fontWeight: 'bold' }
-                                }}
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlRadarChart
+                                data={previewData}
+                                size={Math.min(previewWidth, 280)}
+                                maxValue={Math.max(100, ...previewData.map(item => item.value), 100)}
+                                textColor="#1F2528"
+                                subtleTextColor="#6B7C85"
+                                gridColor={withAlpha('#8B938E', 0.16)}
                             />
                         </MotiView>
                     </>
@@ -575,7 +560,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                 {block.type === 'bar_chart' && (
                     <>
                         <SectionLabel text="Titel / Fragestellung" />
-                        <StyledInput value={block.content} onChangeText={t => onChange({ content: t })} placeholder="z.B. Häufigkeit von Symptomen diese Woche" />
+                        <StyledInput value={block.content} onChangeText={t => onChange({ content: t })} placeholder="z.B. HÃ¤ufigkeit von Symptomen diese Woche" />
 
                         <View style={{ marginTop: 16 }}>
                             <SectionLabel text="Kategorien & Werte" />
@@ -599,7 +584,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                                     const nextIdx = (CHART_PALETTE.indexOf(color) + 1) % CHART_PALETTE.length;
                                                     updateOption(i, `${label}:${val}:${CHART_PALETTE[nextIdx]}`);
                                                 }}
-                                                style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                                                style={{ width: 16, height: 16, borderRadius: 4, backgroundColor: color, borderWidth: 2, borderColor: '#E7E0D4', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
                                             />
                                             <View style={{ flex: 2 }}>
                                                 <StyledInput value={label} onChangeText={t => updateOption(i, `${t}:${val}:${color}`)} placeholder={`Parameter ${i + 1}...`} />
@@ -609,7 +594,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 2 && (
                                                 <TouchableOpacity onPress={() => removeOption(i)}>
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>×</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>Ã—</Text>
                                                 </TouchableOpacity>
                                             )}
                                         </MotiView>
@@ -618,7 +603,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <TouchableOpacity onPress={() => updateOption((block.options?.length ?? 0), '::')}
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Parameter hinzufügen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Parameter hinzufÃ¼gen</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -627,38 +612,18 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             from={{ opacity: 0, scale: 0.95, translateY: 20 }}
                             animate={{ opacity: 1, scale: 1, translateY: 0 }}
                             transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 150 }}
-                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
+                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E7E0D4', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <BarChart
-                                data={{
-                                    labels: (block.options ?? []).map(o => o.split(':')[0] || '?'),
-                                    datasets: [{
-                                        data: (block.options ?? []).map(o => parseFloat(o.split(':')[1] || '0') || 0),
-                                        colors: (block.options ?? []).map((o, i) => {
-                                            const c = o.split(':')[2] || CHART_PALETTE[i % CHART_PALETTE.length];
-                                            return () => c;
-                                        })
-                                    }]
-                                }}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                yAxisLabel=""
-                                yAxisSuffix=""
-                                fromZero
-                                withCustomBarColorFromData={true}
-                                flatColor={true}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(14, 165, 233, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                    barPercentage: 0.6,
-                                    propsForLabels: { fontSize: 10, fontWeight: 'bold' }
-                                }}
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlBarChart
+                                data={previewData.map(item => ({
+                                    ...item,
+                                    secondaryValue: Math.max(...previewData.map(entry => entry.value), 1),
+                                }))}
+                                width={previewWidth}
+                                textColor="#1F2528"
+                                subtleTextColor="#6B7C85"
+                                gridColor={withAlpha('#8B938E', 0.16)}
                             />
                         </MotiView>
                     </>
@@ -692,7 +657,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                                     const nextIdx = (CHART_PALETTE.indexOf(color) + 1) % CHART_PALETTE.length;
                                                     updateOption(i, `${label}:${val}:${CHART_PALETTE[nextIdx]}`);
                                                 }}
-                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E8E6E1', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
+                                                style={{ width: 16, height: 16, borderRadius: 8, backgroundColor: color, borderWidth: 2, borderColor: '#E7E0D4', shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 2, shadowOffset: { width: 0, height: 1 }, elevation: 1 }}
                                             />
                                             <View style={{ flex: 2 }}>
                                                 <StyledInput value={label} onChangeText={t => updateOption(i, `${t}:${val}:${color}`)} placeholder={`Segment ${i + 1}...`} />
@@ -702,7 +667,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 2 && (
                                                 <TouchableOpacity onPress={() => removeOption(i)}>
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>×</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>Ã—</Text>
                                                 </TouchableOpacity>
                                             )}
                                         </MotiView>
@@ -711,7 +676,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <TouchableOpacity onPress={() => updateOption((block.options?.length ?? 0), '::')}
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Segment hinzufügen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Segment hinzufÃ¼gen</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -720,30 +685,15 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             from={{ opacity: 0, scale: 0.95, translateY: 20 }}
                             animate={{ opacity: 1, scale: 1, translateY: 0 }}
                             transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 150 }}
-                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
+                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E7E0D4', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <PieChart
-                                data={(block.options ?? []).map((o, i) => ({
-                                    name: o.split(':')[0] || '?',
-                                    population: parseFloat(o.split(':')[1] || '0') || 0,
-                                    color: o.split(':')[2] || CHART_PALETTE[i % CHART_PALETTE.length],
-                                    legendFontColor: '#6B7C85',
-                                    legendFontSize: 12
-                                }))}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                                }}
-                                accessor="population"
-                                backgroundColor="transparent"
-                                paddingLeft="15"
-                                absolute
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlDonutChart
+                                data={previewData}
+                                size={Math.min(previewWidth, 260)}
+                                showLegend
+                                textColor="#1F2528"
+                                subtleTextColor="#6B7C85"
                             />
                         </MotiView>
                     </>
@@ -779,7 +729,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 2 && (
                                                 <TouchableOpacity onPress={() => removeOption(i)}>
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>×</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>Ã—</Text>
                                                 </TouchableOpacity>
                                             )}
                                         </MotiView>
@@ -788,7 +738,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <TouchableOpacity onPress={() => updateOption((block.options?.length ?? 0), ':')}
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Datenpunkt hinzufügen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Datenpunkt hinzufÃ¼gen</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -797,31 +747,18 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             from={{ opacity: 0, scale: 0.95, translateY: 20 }}
                             animate={{ opacity: 1, scale: 1, translateY: 0 }}
                             transition={{ type: 'spring', damping: 20, stiffness: 90, delay: 150 }}
-                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
+                            style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E7E0D4', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <LineChart
-                                data={{
-                                    labels: (block.options ?? []).map(o => o.split(':')[0] || '?'),
-                                    datasets: [{ data: (block.options ?? []).map(o => parseFloat(o.split(':')[1] || '0') || 0) }]
-                                }}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                    propsForDots: {
-                                        r: "6",
-                                        strokeWidth: "2",
-                                        stroke: "#059669"
-                                    }
-                                }}
-                                bezier
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlLineAreaChart
+                                data={previewData}
+                                width={previewWidth}
+                                color={previewData[0]?.color ?? '#788E76'}
+                                gradientColor={previewData[previewData.length - 1]?.color ?? '#B08C57'}
+                                showAverageLine
+                                textColor="#1F2528"
+                                subtleTextColor="#6B7C85"
+                                gridColor={withAlpha('#8B938E', 0.16)}
                             />
                         </MotiView>
                     </>
@@ -832,14 +769,14 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
     );
 });
 
-// ─── Block Picker ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Block Picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const BLOCK_CATEGORIES: { label: string; types: ExerciseBlockType[] }[] = [
     { label: 'Schnellzugriff', types: ['reflection', 'checklist', 'scale', 'info'] },
-    { label: '📝 Interaktion', types: ['reflection', 'scale', 'choice', 'checklist', 'homework', 'gratitude'] },
-    { label: '📖 Inhalt', types: ['info', 'media', 'video'] },
-    { label: '⏱ Zeit & Achtsamkeit', types: ['timer', 'breathing'] },
-    { label: '📊 Visualisierung', types: ['spider_chart', 'bar_chart', 'pie_chart', 'line_chart'] },
+    { label: 'ðŸ“ Interaktion', types: ['reflection', 'scale', 'choice', 'checklist', 'homework', 'gratitude'] },
+    { label: 'ðŸ“– Inhalt', types: ['info', 'media', 'video'] },
+    { label: 'â± Zeit & Achtsamkeit', types: ['timer', 'breathing'] },
+    { label: 'ðŸ“Š Visualisierung', types: ['spider_chart', 'bar_chart', 'pie_chart', 'line_chart'] },
 ];
 
 const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: ExerciseBlockType) => void; onClose: () => void }) {
@@ -859,21 +796,21 @@ const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: E
     const quickTypes: ExerciseBlockType[] = ['reflection', 'checklist', 'scale', 'info'];
 
     return (
-        <View style={{ marginVertical: 24, backgroundColor: '#FFFFFF', borderRadius: 32, padding: 32, borderWidth: 1, borderColor: '#E8E6E1', shadowColor: '#243842', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.1, shadowRadius: 32, elevation: 12 }}>
+        <View style={{ marginVertical: 24, backgroundColor: '#FFFFFF', borderRadius: 32, padding: 32, borderWidth: 1, borderColor: '#E7E0D4', shadowColor: '#1F2528', shadowOffset: { width: 0, height: 16 }, shadowOpacity: 0.1, shadowRadius: 32, elevation: 12 }}>
             {/* Header */}
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
                 <View>
-                    <Text style={{ color: '#243842', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>Block hinzufügen</Text>
-                    <Text style={{ color: '#94A3B8', fontSize: 13, fontWeight: '600', marginTop: 2 }}>{CATALOGUE.length} Blocktypen verfügbar</Text>
+                    <Text style={{ color: '#1F2528', fontSize: 22, fontWeight: '900', letterSpacing: -0.5 }}>Block hinzufÃ¼gen</Text>
+                    <Text style={{ color: '#8B938E', fontSize: 13, fontWeight: '600', marginTop: 2 }}>{CATALOGUE.length} Blocktypen verfÃ¼gbar</Text>
                 </View>
-                <TouchableOpacity onPress={onClose} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F9F8F6', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: '#6B7C85', fontWeight: '800', fontSize: 16 }}>✕</Text>
+                <TouchableOpacity onPress={onClose} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F7F4EE', alignItems: 'center', justifyContent: 'center' }}>
+                    <Text style={{ color: '#6B7C85', fontWeight: '800', fontSize: 16 }}>âœ•</Text>
                 </TouchableOpacity>
             </View>
 
             {/* Quick-add Pills */}
             <View style={{ marginBottom: 20 }}>
-                <Text style={{ fontSize: 11, fontWeight: '800', color: '#94A3B8', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>Häufig verwendet</Text>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: '#8B938E', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 10 }}>HÃ¤ufig verwendet</Text>
                 <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
                     {quickTypes.map(type => {
                         const cat = getCat(type);
@@ -892,18 +829,18 @@ const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: E
             </View>
 
             {/* Search Bar */}
-            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F9F8F6', borderWidth: 1.5, borderColor: '#E8E6E1', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 20 }}>
-                <Text style={{ fontSize: 16, marginRight: 10 }}>🔍</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F7F4EE', borderWidth: 1.5, borderColor: '#E7E0D4', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 12, marginBottom: 20 }}>
+                <Text style={{ fontSize: 16, marginRight: 10 }}>ðŸ”</Text>
                 <TextInput
                     value={search}
                     onChangeText={setSearch}
                     placeholder="Block suchen..."
-                    placeholderTextColor="#94A3B8"
-                    style={{ flex: 1, fontSize: 15, color: '#243842', fontWeight: '600' }}
+                    placeholderTextColor="#8B938E"
+                    style={{ flex: 1, fontSize: 15, color: '#1F2528', fontWeight: '600' }}
                 />
                 {search.length > 0 && (
                     <TouchableOpacity onPress={() => setSearch('')} style={{ paddingLeft: 8 }}>
-                        <Text style={{ color: '#94A3B8', fontWeight: '700', fontSize: 18 }}>×</Text>
+                        <Text style={{ color: '#8B938E', fontWeight: '700', fontSize: 18 }}>Ã—</Text>
                     </TouchableOpacity>
                 )}
             </View>
@@ -917,7 +854,7 @@ const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: E
                             <TouchableOpacity
                                 key={cat.label}
                                 onPress={() => setActiveCategory(cat.label)}
-                                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: isActive ? '#137386' : '#F9F8F6', borderWidth: 1, borderColor: isActive ? '#137386' : '#E8E6E1' }}
+                                style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16, backgroundColor: isActive ? '#2D666B' : '#F7F4EE', borderWidth: 1, borderColor: isActive ? '#2D666B' : '#E7E0D4' }}
                             >
                                 <Text style={{ fontSize: 13, fontWeight: '800', color: isActive ? 'white' : '#6B7C85' }}>{cat.label}</Text>
                             </TouchableOpacity>
@@ -942,8 +879,8 @@ const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: E
                 ))}
                 {filteredCatalogue.length === 0 && (
                     <View style={{ flex: 1, alignItems: 'center', paddingVertical: 32 }}>
-                        <Text style={{ fontSize: 32, marginBottom: 8 }}>🔍</Text>
-                        <Text style={{ fontSize: 15, fontWeight: '700', color: '#94A3B8' }}>Kein Block gefunden</Text>
+                        <Text style={{ fontSize: 32, marginBottom: 8 }}>ðŸ”</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: '#8B938E' }}>Kein Block gefunden</Text>
                     </View>
                 )}
             </View>
@@ -951,9 +888,18 @@ const BlockPicker = memo(function BlockPicker({ onAdd, onClose }: { onAdd: (t: E
     );
 });
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-const THEME_COLORS = ['#137386', '#3B82F6', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#10B981', '#64748B'];
+const THEME_COLORS = ['#2D666B', '#4E7E82', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#788E76', '#6F7472'];
+
+const HOME_BACKGROUNDS = [
+    require('../../assets/HomeUi1.webp'),
+    require('../../assets/HomeUi2.webp'),
+    require('../../assets/HomeUi3.webp'),
+    require('../../assets/HomeUi4.webp'),
+    require('../../assets/HomeUi5.webp'),
+    require('../../assets/HomeUi6.webp'),
+];
 
 import { SuccessAnimation } from '../ui/SuccessAnimation';
 
@@ -967,10 +913,17 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
     const [toast, setToast] = useState<{ visible: boolean, message: string, type: 'error' | 'success' | 'warning' }>({ visible: false, message: '', type: 'error' });
     const [showDiscardBanner, setShowDiscardBanner] = useState(false);
     const { colors, isDark } = useTheme();
+    const { width: screenWidth } = useWindowDimensions();
     const insets = useSafeAreaInsets();
-    const HEADER_HEIGHT = insets.top + 64;
+    const contentMaxWidth = screenWidth > 1180 ? 1040 : 920;
+    const isCompact = screenWidth < 720;
+    const heroBackground = useMemo(
+        () => HOME_BACKGROUNDS[Math.floor(Math.random() * HOME_BACKGROUNDS.length)],
+        []
+    );
+    const HEADER_HEIGHT = insets.top + (isCompact ? 172 : 204);
 
-    // ── Scroll-hide animation ──────────────────────────────────────────────────
+    // â”€â”€ Scroll-hide animation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     const scrollY = useRef(new Animated.Value(0)).current;
     const lastScrollY = useRef(0);
     const headerVisible = useRef(new Animated.Value(0)).current; // 0 = visible, 1 = hidden
@@ -995,13 +948,13 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 lastScrollY.current = currentY;
 
                 if (currentY < 10) {
-                    // Near the top — always show
+                    // Near the top â€” always show
                     Animated.spring(headerVisible, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }).start();
                 } else if (diff > 4) {
-                    // Scrolling down — hide header
+                    // Scrolling down â€” hide header
                     Animated.spring(headerVisible, { toValue: 1, useNativeDriver: true, tension: 80, friction: 12 }).start();
                 } else if (diff < -4) {
-                    // Scrolling up — show header
+                    // Scrolling up â€” show header
                     Animated.spring(headerVisible, { toValue: 0, useNativeDriver: true, tension: 80, friction: 12 }).start();
                 }
             },
@@ -1011,7 +964,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
     const pickCoverImage = async () => {
         const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (permissionResult.granted === false) {
-            setToast({ visible: true, message: 'Zugriff auf die Galerie wird benötigt.', type: 'error' });
+            setToast({ visible: true, message: 'Zugriff auf die Galerie wird benÃ¶tigt.', type: 'error' });
             return;
         }
         const result = await ImagePicker.launchImageLibraryAsync({
@@ -1077,11 +1030,11 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
 
     const handleSave = () => {
         if (!title.trim()) {
-            setToast({ visible: true, message: 'Bitte gib der Übung einen Titel.', type: 'warning' });
+            setToast({ visible: true, message: 'Bitte gib der Ãœbung einen Titel.', type: 'warning' });
             return;
         }
         if (blocks.length === 0) {
-            setToast({ visible: true, message: 'Füge mindestens einen Block hinzu.', type: 'warning' });
+            setToast({ visible: true, message: 'FÃ¼ge mindestens einen Block hinzu.', type: 'warning' });
             return;
         }
 
@@ -1112,7 +1065,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
 
-            {/* ── Premium Header ──────────────────────────────────────── */}
+            {/* â”€â”€ Premium Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <Animated.View
                 style={[
                     {
@@ -1121,15 +1074,14 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                         left: 0,
                         right: 0,
                         zIndex: 100,
-                        // Adjusted height to match the rest of the app
                         height: HEADER_HEIGHT,
                         overflow: 'hidden',
-                        borderBottomLeftRadius: 32,
-                        borderBottomRightRadius: 32,
-                        shadowColor: '#137386',
-                        shadowOffset: { width: 0, height: 8 },
-                        shadowOpacity: 0.25,
-                        shadowRadius: 24,
+                        borderBottomLeftRadius: isCompact ? 30 : 40,
+                        borderBottomRightRadius: isCompact ? 30 : 40,
+                        shadowColor: colors.primaryDark,
+                        shadowOffset: { width: 0, height: 14 },
+                        shadowOpacity: 0.18,
+                        shadowRadius: 28,
                         elevation: 12,
                     },
                     {
@@ -1138,21 +1090,17 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                     },
                 ]}
             >
-                {/* Background: BlurView on iOS, solid Deep Slate on Android */}
-                {Platform.OS === 'ios' ? (
-                    <BlurView
-                        intensity={88}
-                        tint="dark"
-                        style={[
-                            StyleSheet.absoluteFillObject,
-                            { backgroundColor: 'rgba(19, 115, 134, 0.85)' }
-                        ]}
-                    />
-                ) : (
-                    <View
-                        style={[StyleSheet.absoluteFillObject, { backgroundColor: '#137386' }]}
-                    />
-                )}
+                <Image
+                    source={heroBackground}
+                    style={StyleSheet.absoluteFillObject}
+                    contentFit="cover"
+                />
+                <LinearGradient
+                    colors={['rgba(18,33,38,0.68)', 'rgba(19,115,134,0.52)', 'rgba(18,33,38,0.74)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                    style={StyleSheet.absoluteFillObject}
+                />
 
                 {/* Content row */}
                 <View
@@ -1165,7 +1113,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                         paddingHorizontal: 24,
                     }}
                 >
-                    {/* ← Back button */}
+                    {/* â† Back button */}
                     <TouchableOpacity
                         onPress={handleCancel}
                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -1184,7 +1132,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             fontWeight: '700',
                             fontSize: 16,
                             marginLeft: 4,
-                        }}>Zurück</Text>
+                        }}>Zurueck</Text>
                     </TouchableOpacity>
 
                     {/* Title */}
@@ -1199,10 +1147,10 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             marginHorizontal: 16,
                         }}
                     >
-                        {title.trim() || 'Neue Übung'}
+                        {title.trim() || 'Neue Vorlage'}
                     </Text>
 
-                    {/* Speichern – Gold CTA */}
+                    {/* Speichern â€“ Gold CTA */}
                     <TouchableOpacity
                         onPress={handleSave}
                         style={{
@@ -1212,8 +1160,8 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             paddingHorizontal: 20,
                             paddingVertical: 12,
                             borderRadius: 16,
-                            backgroundColor: '#C09D59',
-                            shadowColor: '#C09D59',
+                            backgroundColor: '#B08C57',
+                            shadowColor: '#B08C57',
                             shadowOffset: { width: 0, height: 4 },
                             shadowOpacity: 0.4,
                             shadowRadius: 12,
@@ -1230,16 +1178,16 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 </View>
             </Animated.View>
 
-            {/* ── Scrollable Content ──────────────────────────────────────────── */}
+            {/* â”€â”€ Scrollable Content â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <Animated.ScrollView
                 style={{ flex: 1 }}
                 contentContainerStyle={{
-                    paddingHorizontal: 20,
+                    paddingHorizontal: isCompact ? 16 : 20,
                     paddingTop: HEADER_HEIGHT + 24,
                     paddingBottom: 80,
-                    maxWidth: 896,
+                    maxWidth: contentMaxWidth,
                     width: '100%',
-                    marginHorizontal: 'auto',
+                    alignSelf: 'center',
                 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -1248,41 +1196,109 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
             >
 
 
+                <View
+                    style={{
+                        overflow: 'hidden',
+                        borderRadius: 32,
+                        marginBottom: 24,
+                        shadowColor: colors.primaryDark,
+                        shadowOffset: { width: 0, height: 12 },
+                        shadowOpacity: isDark ? 0.24 : 0.12,
+                        shadowRadius: 24,
+                        elevation: 8,
+                    }}
+                >
+                    <Image
+                        source={heroBackground}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        contentFit="cover"
+                    />
+                    <LinearGradient
+                        colors={['rgba(18,33,38,0.7)', 'rgba(19,115,134,0.45)', 'rgba(18,33,38,0.78)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    />
+                    <BlurView
+                        intensity={Platform.OS === 'android' ? 100 : 72}
+                        tint={isDark ? 'dark' : 'light'}
+                        style={{
+                            padding: isCompact ? 18 : 24,
+                            borderWidth: 1,
+                            borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.22)',
+                            backgroundColor: isDark ? 'rgba(16,25,28,0.58)' : 'rgba(255,255,255,0.14)',
+                        }}
+                    >
+                        <Text style={{ color: '#FFFFFF', fontSize: isCompact ? 25 : 30, fontWeight: '900', letterSpacing: -1, marginBottom: 8 }}>
+                            {title.trim() || 'Neue Vorlage'}
+                        </Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: '600', lineHeight: 21, marginBottom: 18, maxWidth: 620 }}>
+                            Arbeite hier dieselbe visuelle Sprache wie im Hauptdashboard aus: klarer Einstieg, ruhige Hierarchie und sofort erkennbare naechste Schritte.
+                        </Text>
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                            <View style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+                                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>{blocks.length} Bloecke</Text>
+                            </View>
+                            <View style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+                                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>{coverImage ? 'Mit Cover' : 'Ohne Cover'}</Text>
+                            </View>
+                            <View style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(176,140,87,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
+                                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>Direkt speicherbar</Text>
+                            </View>
+                        </View>
+                    </BlurView>
+                </View>
+
                 <View style={{
-                    backgroundColor: colors.surface, borderRadius: 36, borderWidth: 1, borderColor: colors.border, padding: 36, marginBottom: 36, shadowColor: isDark ? '#000' : '#243842', shadowOffset: { width: 0, height: 16 }, shadowOpacity: isDark ? 0.3 : 0.05, shadowRadius: 40, elevation: 6
+                    backgroundColor: colors.surface,
+                    borderRadius: 36,
+                    borderWidth: 1,
+                    borderColor: colors.border,
+                    padding: isCompact ? 22 : 36,
+                    marginBottom: 32,
+                    shadowColor: isDark ? '#000' : '#1F2528',
+                    shadowOffset: { width: 0, height: 16 },
+                    shadowOpacity: isDark ? 0.3 : 0.05,
+                    shadowRadius: 40,
+                    elevation: 6
                 }}>
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Übungs-Titel</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Vorlagen-Setup</Text>
+                    <Text style={{ fontSize: isCompact ? 24 : 30, fontWeight: '900', color: colors.text, letterSpacing: -0.8, marginBottom: 16 }}>Inhalt, Cover und Tonalitaet festlegen</Text>
+                    <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSubtle, lineHeight: 21, marginBottom: 20 }}>
+                        Die ersten Entscheidungen definieren, wie hochwertig und klar die Vorlage spaeter beim Klienten ankommt.
+                    </Text>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Titel</Text>
                     <TextInput
                         value={title} onChangeText={setTitle}
                         placeholder="z.B. Gedankenprotokoll Woche 1..."
                         placeholderTextColor={colors.textSubtle}
-                        style={{ fontSize: 28, fontWeight: '900', color: colors.text, letterSpacing: -0.5, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', padding: 20, borderRadius: 20, borderWidth: 1.5, borderColor: isDark ? 'transparent' : '#E8E6E1' }}
+                        style={{ fontSize: isCompact ? 23 : 28, fontWeight: '900', color: colors.text, letterSpacing: -0.5, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F7F4EE', padding: 20, borderRadius: 20, borderWidth: 1.5, borderColor: isDark ? 'transparent' : '#E7E0D4' }}
                     />
 
-                    <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 24, marginBottom: 12 }}>Titelbild (Optional)</Text>
+                    <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.5, textTransform: 'uppercase', marginTop: 24, marginBottom: 12 }}>Titelbild</Text>
                     {coverImage ? (
                         <View style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 12, position: 'relative' }}>
                             <Image source={{ uri: coverImage }} style={{ width: '100%', height: 160 }} contentFit="cover" />
                             <View style={{ position: 'absolute', top: 12, right: 12, flexDirection: 'row', gap: 8 }}>
                                 <TouchableOpacity onPress={pickCoverImage} style={{ backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#334155' }}>Ändern</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#3A4340' }}>Aendern</Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity onPress={() => setCoverImage(undefined)} style={{ backgroundColor: 'rgba(239,68,68,0.9)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>Löschen</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>Loeschen</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
                     ) : (
-                        <TouchableOpacity onPress={pickCoverImage} disabled={coverImageUploading} style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9F8F6', borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.border, borderRadius: 16, padding: 20, alignItems: 'center' }}>
+                        <TouchableOpacity onPress={pickCoverImage} disabled={coverImageUploading} style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F7F4EE', borderWidth: 1.5, borderStyle: 'dashed', borderColor: colors.border, borderRadius: 16, padding: 20, alignItems: 'center' }}>
                             {coverImageUploading ? (
                                 <>
                                     <ActivityIndicator size="large" color={colors.primary} style={{ marginBottom: 8 }} />
-                                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>Bild wird hochgeladen…</Text>
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.primary }}>Bild wird hochgeladen...</Text>
                                 </>
                             ) : (
                                 <>
-                                    <Text style={{ fontSize: 28, marginBottom: 8 }}>🖼️</Text>
-                                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSubtle }}>Bild auswählen</Text>
+                                    <Text style={{ fontSize: 28, marginBottom: 8 }}>ðŸ–¼ï¸</Text>
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSubtle }}>Bild auswaehlen</Text>
                                 </>
                             )}
                         </TouchableOpacity>
@@ -1294,25 +1310,25 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             <TouchableOpacity
                                 key={color}
                                 onPress={() => setThemeColor(color)}
-                                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: color, borderWidth: 3, borderColor: themeColor === color ? '#243842' : 'transparent', shadowColor: color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                                style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: color, borderWidth: 3, borderColor: themeColor === color ? '#1F2528' : 'transparent', shadowColor: color, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
                             />
                         ))}
                     </View>
                 </View>
 
-                {/* Flow Timeline — horizontal journey view */}
+                {/* Flow Timeline â€” horizontal journey view */}
                 <ExerciseFlowTimeline blocks={blocks} />
 
                 {/* Block Count divider */}
                 {blocks.length > 0 && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 6 }}>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#E8E6E1' }} />
-                        <Text style={{ fontSize: 11, color: '#8F9CA3', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}</Text>
-                        <View style={{ flex: 1, height: 1, backgroundColor: '#E8E6E1' }} />
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4' }} />
+                        <Text style={{ fontSize: 11, color: '#8F9CA3', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{blocks.length} {blocks.length === 1 ? 'Block' : 'Bloecke'}</Text>
+                        <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4' }} />
                     </View>
                 )}
 
-                {/* Blocks — 3D entrances + tilt interactions */}
+                {/* Blocks â€” 3D entrances + tilt interactions */}
                 {blocks.map((block, index) => (
                     <Block3DEntrance key={block.id} index={index}>
                         <Block3DTiltWrapper>
@@ -1333,17 +1349,17 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 {!showPicker ? (
                     <TouchableOpacity onPress={() => setShowPicker(true)}
                         style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: 'rgba(19, 115, 134, 0.3)', borderRadius: 32, paddingVertical: 32, alignItems: 'center', marginBottom: 16, backgroundColor: 'rgba(19, 115, 134, 0.05)' }}>
-                        <Text style={{ color: '#137386', fontWeight: '800', fontSize: 18 }}>＋ Neuen Block hinzufügen</Text>
+                        <Text style={{ color: '#2D666B', fontWeight: '800', fontSize: 18 }}>+ Neuen Block hinzufuegen</Text>
                     </TouchableOpacity>
                 ) : (
                     <BlockPicker onAdd={addBlock} onClose={() => setShowPicker(false)} />
                 )}
 
-                {/* Save / Cancel — only visible at the very end of the scroll */}
+                {/* Save / Cancel â€” only visible at the very end of the scroll */}
 
-                <View style={{ marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#E8E6E1', gap: 16 }}>
-                    <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? 'rgba(255,255,255,0.35)' : '#94A3B8', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center' }}>
-                        Fertig? Übung jetzt speichern
+                <View style={{ marginTop: 32, paddingTop: 24, borderTopWidth: 1, borderTopColor: isDark ? 'rgba(255,255,255,0.08)' : '#E7E0D4', gap: 16 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: isDark ? 'rgba(255,255,255,0.35)' : '#8B938E', letterSpacing: 1.5, textTransform: 'uppercase', textAlign: 'center' }}>
+                        Fertig? Vorlage jetzt speichern
                     </Text>
                     <View style={{ flexDirection: 'row', gap: 16 }}>
                         <TouchableOpacity onPress={handleCancel}
@@ -1351,9 +1367,9 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             <Text style={{ fontWeight: '800', color: isDark ? colors.text : colors.textSubtle, fontSize: 16 }}>Abbrechen</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={handleSave}
-                            style={{ flex: 1, paddingVertical: 18, borderRadius: 24, backgroundColor: '#C09D59', alignItems: 'center', shadowColor: '#C09D59', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 }}>
+                            style={{ flex: 1, paddingVertical: 18, borderRadius: 24, backgroundColor: '#B08C57', alignItems: 'center', shadowColor: '#B08C57', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 }}>
                             <Text style={{ fontWeight: '900', color: '#fff', fontSize: 16, letterSpacing: 0.5 }}>
-                                💾 Speichern · {blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}
+                                Speichern - {blocks.length} {blocks.length === 1 ? 'Block' : 'Bloecke'}
                             </Text>
                         </TouchableOpacity>
                     </View>
@@ -1374,11 +1390,11 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                     <MotiView
                         from={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        style={{ width: '100%', maxWidth: 400, backgroundColor: '#FEF3C7', borderRadius: 32, padding: 32, borderWidth: 1.5, borderColor: '#F59E0B', shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
+                        style={{ width: '100%', maxWidth: 400, backgroundColor: '#F6F0E7', borderRadius: 32, padding: 32, borderWidth: 1.5, borderColor: '#F59E0B', shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
                     >
-                        <Text style={{ fontSize: 20, fontWeight: '900', color: '#92400E', marginBottom: 12, textAlign: 'center' }}>⚠️ Nicht gespeichert</Text>
+                        <Text style={{ fontSize: 20, fontWeight: '900', color: '#92400E', marginBottom: 12, textAlign: 'center' }}>âš ï¸ Nicht gespeichert</Text>
                         <Text style={{ fontSize: 15, color: '#78350F', fontWeight: '500', lineHeight: 22, marginBottom: 24, textAlign: 'center' }}>
-                            Du hast Änderungen, die noch nicht gespeichert wurden. Wenn du jetzt zurückgehst, gehen sie verloren.
+                            Du hast Ã„nderungen, die noch nicht gespeichert wurden. Wenn du jetzt zurÃ¼ckgehst, gehen sie verloren.
                         </Text>
                         <View style={{ flexDirection: 'row', gap: 12 }}>
                             <TouchableOpacity
@@ -1400,3 +1416,5 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
         </View>
     );
 }
+
+

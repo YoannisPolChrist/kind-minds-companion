@@ -48,10 +48,10 @@ export function CinematicBreathingBlock({ block }: { block: ExerciseBlock }) {
     };
 
     return (
-        <View style={{ alignItems: "center", paddingVertical: 40, backgroundColor: '#0F172A', borderRadius: 40, overflow: 'hidden', position: 'relative' }}>
+        <View style={{ alignItems: "center", paddingVertical: 40, backgroundColor: '#182428', borderRadius: 40, overflow: 'hidden', position: 'relative' }}>
 
             {/* Cinematic Background Gradients */}
-            <LinearGradient colors={['rgba(20, 184, 166, 0.15)', 'transparent']} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 200 }} />
+            <LinearGradient colors={['rgba(78, 126, 130, 0.18)', 'transparent']} style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 200 }} />
 
             {block.content ? (
                 <Text style={{ fontSize: 16, color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 32, paddingHorizontal: 24, zIndex: 10, fontWeight: '500' }}>
@@ -73,7 +73,7 @@ export function CinematicBreathingBlock({ block }: { block: ExerciseBlock }) {
                         duration: 4000, // 4 seconds per phase roughly
                         easing: (t) => t * (2 - t) // Ease out
                     }}
-                    style={{ position: 'absolute', width: ORB_SIZE, height: ORB_SIZE, borderRadius: ORB_SIZE / 2, backgroundColor: 'rgba(20, 184, 166, 0.2)' }}
+                    style={{ position: 'absolute', width: ORB_SIZE, height: ORB_SIZE, borderRadius: ORB_SIZE / 2, backgroundColor: 'rgba(78, 126, 130, 0.22)' }}
                 />
 
                 {/* Main Breathing Orb */}
@@ -95,7 +95,7 @@ export function CinematicBreathingBlock({ block }: { block: ExerciseBlock }) {
                     }}
                 >
                     <LinearGradient
-                        colors={['#14B8A6', '#0D9488']}
+                        colors={['#4E7E82', '#2D666B']}
                         style={{ flex: 1, borderRadius: ORB_SIZE * 0.4, opacity: 0.8 }}
                     />
                 </MotiView>
@@ -142,7 +142,7 @@ export function CinematicBreathingBlock({ block }: { block: ExerciseBlock }) {
                         width: 72,
                         height: 72,
                         borderRadius: 36,
-                        backgroundColor: isRunning ? 'rgba(255,255,255,0.1)' : '#14B8A6',
+                        backgroundColor: isRunning ? 'rgba(255,255,255,0.1)' : '#4E7E82',
                         alignItems: "center",
                         justifyContent: "center",
                         borderWidth: 1,
@@ -155,4 +155,5 @@ export function CinematicBreathingBlock({ block }: { block: ExerciseBlock }) {
         </View>
     );
 }
+
 

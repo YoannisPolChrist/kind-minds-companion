@@ -1,5 +1,5 @@
-/**
- * ExerciseCompositionChart — Premium Redesign
+﻿/**
+ * ExerciseCompositionChart â€” Premium Redesign
  *
  * Dark-themed donut chart with glowing segments, progressive bar legend,
  * and an inline AI tip. Uses D3 arc/pie + react-native-svg.
@@ -11,7 +11,7 @@ import Svg, { Path, Circle, G, Text as SvgText, Defs, RadialGradient, Stop } fro
 import * as d3 from 'd3';
 import { ExerciseBlock, ExerciseBlockType } from './blocks/exerciseRegistry';
 
-// ─── Category Mapping ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Category Mapping â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const CATEGORY_MAP: Record<ExerciseBlockType, { category: string; color: string }> = {
     reflection: { category: 'Kognition', color: '#60A5FA' },
@@ -21,7 +21,7 @@ const CATEGORY_MAP: Record<ExerciseBlockType, { category: string; color: string 
     choice: { category: 'Bewertung', color: '#FBBF24' },
     checklist: { category: 'Verhalten', color: '#34D399' },
     gratitude: { category: 'Verhalten', color: '#34D399' },
-    timer: { category: 'Ausführung', color: '#A78BFA' },
+    timer: { category: 'AusfÃ¼hrung', color: '#A78BFA' },
     breathing: { category: 'Achtsamkeit', color: '#22D3EE' },
     media: { category: 'Multimedia', color: '#FB7185' },
     video: { category: 'Multimedia', color: '#FB7185' },
@@ -32,14 +32,14 @@ const CATEGORY_MAP: Record<ExerciseBlockType, { category: string; color: string 
 };
 
 const ALL_CATEGORIES = [
-    { name: 'Kognition', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)', label: '🧠' },
-    { name: 'Bewertung', color: '#FBBF24', bg: 'rgba(251,191,36,0.12)', label: '📊' },
-    { name: 'Verhalten', color: '#34D399', bg: 'rgba(52,211,153,0.12)', label: '✅' },
-    { name: 'Achtsamkeit', color: '#22D3EE', bg: 'rgba(34,211,238,0.12)', label: '🌬️' },
+    { name: 'Kognition', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)', label: 'ðŸ§ ' },
+    { name: 'Bewertung', color: '#FBBF24', bg: 'rgba(251,191,36,0.12)', label: 'ðŸ“Š' },
+    { name: 'Verhalten', color: '#34D399', bg: 'rgba(52,211,153,0.12)', label: 'âœ…' },
+    { name: 'Achtsamkeit', color: '#22D3EE', bg: 'rgba(34,211,238,0.12)', label: 'ðŸŒ¬ï¸' },
 ];
 
 function getTip(blocks: ExerciseBlock[]): string {
-    if (blocks.length === 0) return 'Füge Blöcke hinzu, um die Übungs-Balance zu sehen.';
+    if (blocks.length === 0) return 'FÃ¼ge BlÃ¶cke hinzu, um die Ãœbungs-Balance zu sehen.';
     const counts: Record<string, number> = {};
     for (const b of blocks) {
         const cat = CATEGORY_MAP[b.type]?.category ?? 'Sonstiges';
@@ -48,12 +48,12 @@ function getTip(blocks: ExerciseBlock[]): string {
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const dominant = sorted[0]?.[0];
     const missing = ALL_CATEGORIES.filter(c => !counts[c.name]).map(c => c.name);
-    if (missing.length === 0) return '✨ Ausgewogene Übung! Alle Bereiche sind abgedeckt.';
+    if (missing.length === 0) return 'âœ¨ Ausgewogene Ãœbung! Alle Bereiche sind abgedeckt.';
     if (dominant === 'Kognition' && counts['Achtsamkeit'] === undefined)
-        return '💡 Tipp: Füge eine Atemübung hinzu für mehr Körperbezug.';
+        return 'ðŸ’¡ Tipp: FÃ¼ge eine AtemÃ¼bung hinzu fÃ¼r mehr KÃ¶rperbezug.';
     if (blocks.length < 3)
-        return '💡 Tipp: Eine gute Übung hat mindestens 3 Blöcke.';
-    return `💡 Fehlend: ${missing.join(', ')} – für mehr Balance.`;
+        return 'ðŸ’¡ Tipp: Eine gute Ãœbung hat mindestens 3 BlÃ¶cke.';
+    return `ðŸ’¡ Fehlend: ${missing.join(', ')} â€“ fÃ¼r mehr Balance.`;
 }
 
 interface Props {
@@ -116,11 +116,11 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
 
     return (
         <View style={{
-            backgroundColor: '#0F172A',
+            backgroundColor: '#182428',
             borderRadius: 32,
             overflow: 'hidden',
             marginBottom: 16,
-            shadowColor: '#137386',
+            shadowColor: '#2D666B',
             shadowOffset: { width: 0, height: 8 },
             shadowOpacity: 0.2,
             shadowRadius: 24,
@@ -130,7 +130,7 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
             <View style={{ paddingHorizontal: 24, paddingTop: 22, paddingBottom: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
                     <Text style={{ fontSize: 13, fontWeight: '800', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 4 }}>
-                        Übungs-Balance
+                        Ãœbungs-Balance
                     </Text>
                     <Text style={{ fontSize: 18, fontWeight: '900', color: '#fff', letterSpacing: -0.3 }}>
                         Therapeutische Zusammensetzung
@@ -138,7 +138,7 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
                 </View>
                 <View style={{ backgroundColor: 'rgba(19,115,134,0.25)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(19,115,134,0.4)' }}>
                     <Text style={{ fontSize: 13, fontWeight: '800', color: '#22D3EE' }}>
-                        {totalBlocks} {totalBlocks === 1 ? 'Block' : 'Blöcke'}
+                        {totalBlocks} {totalBlocks === 1 ? 'Block' : 'BlÃ¶cke'}
                     </Text>
                 </View>
             </View>
@@ -178,7 +178,7 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
                             fontSize={8}
                             fontWeight="700"
                         >
-                            {totalBlocks === 1 ? 'BLOCK' : 'BLÖCKE'}
+                            {totalBlocks === 1 ? 'BLOCK' : 'BLÃ–CKE'}
                         </SvgText>
                     </Svg>
                 </View>
@@ -199,7 +199,7 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
                                         </Text>
                                     </View>
                                     <Text style={{ fontSize: 11, fontWeight: '800', color: active ? cat.color : 'rgba(255,255,255,0.2)', minWidth: 30, textAlign: 'right' }}>
-                                        {active ? `${pct}%` : '—'}
+                                        {active ? `${pct}%` : 'â€”'}
                                     </Text>
                                 </View>
                                 {/* Mini progress bar */}
@@ -228,12 +228,14 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
                 gap: 10,
             }}>
                 <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(19,115,134,0.3)', alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ fontSize: 16 }}>💡</Text>
+                    <Text style={{ fontSize: 16 }}>ðŸ’¡</Text>
                 </View>
                 <Text style={{ flex: 1, fontSize: 12, color: 'rgba(255,255,255,0.6)', lineHeight: 17, fontWeight: '500' }}>
-                    {tip.replace('💡 ', '')}
+                    {tip.replace('ðŸ’¡ ', '')}
                 </Text>
             </View>
         </View>
     );
 }
+
+

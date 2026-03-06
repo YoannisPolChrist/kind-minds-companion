@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet, Platform, useWindowDimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform } from 'react-native';
 import i18n from '../../utils/i18n';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
@@ -6,12 +6,12 @@ import { MotiView } from 'moti';
 import * as Haptics from 'expo-haptics';
 import { Sparkles, CheckCircle2, HeartPulse, ArrowRight } from 'lucide-react-native';
 import { useTheme } from '../../contexts/ThemeContext';
+import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
 
 export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () => void }) {
     const [pressed, setPressed] = useState(false);
     const { colors, isDark } = useTheme();
-    const { width } = useWindowDimensions();
-    const isSmall = width < 380;
+    const { isXs, isSm } = useResponsiveLayout();
 
     if (done) {
         return (
@@ -21,28 +21,29 @@ export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () =>
                 transition={{ type: 'spring', damping: 20, stiffness: 120 }}
                 style={{ marginBottom: 24 }}
             >
-                <Pressable onPress={onPress} style={{ borderRadius: 32, overflow: 'hidden' }}>
+                <Pressable onPress={onPress} style={{ borderRadius: isSm ? 24 : 32, overflow: 'hidden' }}>
                     <LinearGradient
-                        colors={isDark ? ['rgba(16,185,129,0.15)', 'rgba(5,150,105,0.05)'] : ['#ECFDF5', '#F8FAFC']}
+                        colors={isDark ? ['rgba(120,142,118,0.16)', 'rgba(95,117,96,0.06)'] : ['#EEF3EE', '#F5F1EA']}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={[styles.completedCard, { borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#D1FAE5' }]}
+                        style={[styles.completedCard, isXs ? styles.completedCardCompact : null, { borderColor: isDark ? 'rgba(16,185,129,0.3)' : '#D8E2D7' }]}
                     >
-                        <View style={{ backgroundColor: isDark ? 'rgba(16,185,129,0.2)' : '#D1FAE5', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }}>
-                            <CheckCircle2 size={28} color="#10B981" />
+                        <View style={{ backgroundColor: isDark ? 'rgba(16,185,129,0.2)' : '#D8E2D7', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', shadowColor: '#788E76', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 8 }}>
+                            <CheckCircle2 size={28} color="#788E76" />
                         </View>
-                        <View style={{ flex: 1, paddingHorizontal: 16 }}>
-                            <Text style={{ color: isDark ? '#34D399' : '#065F46', fontWeight: '900', fontSize: isSmall ? 16 : 18, letterSpacing: -0.5, marginBottom: 4 }}>
+                        <View style={{ flex: 1, paddingHorizontal: isXs ? 0 : 16, paddingTop: isXs ? 12 : 0 }}>
+                            <Text style={{ color: isDark ? '#34D399' : '#065F46', fontWeight: '900', fontSize: isXs ? 16 : 18, letterSpacing: -0.5, marginBottom: 4 }}>
                                 {i18n.t('dashboard.checkin.completed', { defaultValue: 'Check-in erledigt!' })}
                             </Text>
-                            <Text style={{ color: isDark ? '#6EE7B7' : '#059669', fontSize: 13, fontWeight: '700' }}>
-                                Auswertung anzeigen →
+                            <Text style={{ color: isDark ? '#C7D5BC' : '#788E76', fontSize: 13, fontWeight: '700' }}>
+                                {'Auswertung anzeigen ->'}
                             </Text>
                         </View>
                         <MotiView
                             from={{ rotate: '0deg' }}
                             animate={{ rotate: '360deg' }}
                             transition={{ loop: true, type: 'timing', duration: 8000 }}
+                            style={{ alignSelf: isXs ? 'flex-start' : 'auto' }}
                         >
                             <Sparkles size={24} color={isDark ? 'rgba(52,211,153,0.6)' : 'rgba(16,185,129,0.5)'} />
                         </MotiView>
@@ -68,28 +69,26 @@ export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () =>
             <MotiView
                 animate={{ scale: pressed ? 0.96 : 1 }}
                 transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                style={[styles.shadow, { shadowColor: isDark ? '#000' : '#137386' }]}
+                style={[styles.shadow, { shadowColor: isDark ? '#000' : '#2D666B' }]}
             >
-                <View style={{ borderRadius: 32, overflow: 'hidden' }}>
+                <View style={{ borderRadius: isSm ? 24 : 32, overflow: 'hidden' }}>
                     <LinearGradient
-                        colors={isDark ? ['#1E3A8A', '#0F172A'] : [colors.primary, colors.primaryDark]}
+                        colors={isDark ? ['#1E3A8A', '#182428'] : [colors.primary, colors.primaryDark]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={styles.gradientCard}
+                        style={[styles.gradientCard, isXs ? styles.gradientCardCompact : null]}
                     >
-                        {/* Background decorative elements */}
                         <View style={{ position: 'absolute', right: -20, top: -20, width: 150, height: 150, borderRadius: 75, backgroundColor: 'rgba(255,255,255,0.05)' }} />
                         <View style={{ position: 'absolute', right: 40, bottom: -40, width: 100, height: 100, borderRadius: 50, backgroundColor: 'rgba(255,255,255,0.05)' }} />
 
-                        {/* Left: Icon + Text */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
+                        <View style={{ flexDirection: isXs ? 'column' : 'row', alignItems: isXs ? 'flex-start' : 'center', flex: 1, paddingRight: isXs ? 0 : 16, gap: isXs ? 14 : 0 }}>
                             <MotiView
                                 from={{ scale: 0.9, opacity: 0.8 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ type: 'spring', loop: true, duration: 2000 }}
-                                style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', marginRight: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}
+                                style={{ backgroundColor: 'rgba(255,255,255,0.15)', width: isXs ? 56 : 64, height: isXs ? 56 : 64, borderRadius: isXs ? 28 : 32, alignItems: 'center', justifyContent: 'center', marginRight: isXs ? 0 : 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' }}
                             >
-                                <HeartPulse size={30} color="#fff" />
+                                <HeartPulse size={isXs ? 24 : 30} color="#fff" />
                             </MotiView>
                             <View style={{ flex: 1 }}>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
@@ -98,7 +97,7 @@ export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () =>
                                         Tages-Check-in
                                     </Text>
                                 </View>
-                                <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: isSmall ? 20 : 24, letterSpacing: -0.5, lineHeight: 28 }}>
+                                <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: isXs ? 20 : 24, letterSpacing: -0.5, lineHeight: isXs ? 24 : 28 }}>
                                     {i18n.t('dashboard.checkin.title')}
                                 </Text>
                                 <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '600', marginTop: 4 }}>
@@ -107,10 +106,9 @@ export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () =>
                             </View>
                         </View>
 
-                        {/* Right: CTA pill */}
                         <MotiView
                             animate={{ translateX: pressed ? 5 : 0 }}
-                            style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' }}
+                            style={{ backgroundColor: 'rgba(255,255,255,0.2)', width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', alignSelf: isXs ? 'flex-start' : 'auto' }}
                         >
                             <ArrowRight size={24} color="#ffffff" />
                         </MotiView>
@@ -136,10 +134,22 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         position: 'relative',
     },
+    gradientCardCompact: {
+        padding: 18,
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: 18,
+    },
     completedCard: {
         padding: 24,
         flexDirection: 'row',
         alignItems: 'center',
         borderWidth: 1,
+    },
+    completedCardCompact: {
+        padding: 18,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        gap: 12,
     },
 });

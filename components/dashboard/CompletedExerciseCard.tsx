@@ -1,4 +1,4 @@
-import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
+﻿import { View, Text, Pressable, StyleSheet, Platform } from "react-native";
 import { Exercise } from "../../types";
 import i18n from "../../utils/i18n";
 import { useState, memo } from "react";
@@ -57,14 +57,14 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => { });
   };
 
-  const themeColor = exercise.themeColor || "#10B981";
+  const themeColor = exercise.themeColor || "#788E76";
   const completedDate = formatShortDate(exercise.lastCompletedAt);
 
   return (
     <WebHoverCard>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${exercise.title} — Erledigt am ${completedDate}`}
+        accessibilityLabel={`${exercise.title} â€” Erledigt am ${completedDate}`}
         onPressIn={handlePressIn}
         onPressOut={() => setPressed(false)}
         onPress={onPress}
@@ -75,7 +75,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
           style={[
             styles.card,
             {
-              backgroundColor: isDark ? "rgba(22,32,50,0.5)" : "#F8FAFC",
+              backgroundColor: isDark ? "rgba(22,32,50,0.5)" : "#F5F1EA",
               borderColor: isDark
                 ? "rgba(255,255,255,0.04)"
                 : "rgba(226,232,240,0.9)",
@@ -83,7 +83,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
             },
           ]}
         >
-          {/* Top completed stripe — muted */}
+          {/* Top completed stripe â€” muted */}
           <View
             style={{
               height: 3,
@@ -107,7 +107,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
               <LinearGradient
                 colors={[
                   "transparent",
-                  isDark ? "rgba(22,32,50,1)" : "#F8FAFC",
+                  isDark ? "rgba(22,32,50,1)" : "#F5F1EA",
                 ]}
                 style={styles.imageGradient}
               />
@@ -123,14 +123,14 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
               style={[
                 styles.completedBadge,
                 {
-                  backgroundColor: isDark ? "rgba(16,185,129,0.15)" : "#ECFDF5",
+                  backgroundColor: isDark ? "rgba(16,185,129,0.15)" : "#EEF3EE",
                   borderColor: isDark ? "rgba(16,185,129,0.25)" : "#A7F3D0",
                 },
               ]}
             >
               <CheckCircle2
                 size={13}
-                color="#10B981"
+                color="#788E76"
                 strokeWidth={2.5}
                 style={{ marginRight: 6 }}
               />
@@ -142,12 +142,12 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
               </Text>
             </View>
 
-            {/* Title — crossed out to signal done */}
+            {/* Title â€” crossed out to signal done */}
             <Text
               style={[
                 styles.title,
                 {
-                  color: isDark ? "rgba(255,255,255,0.45)" : "#94A3B8",
+                  color: isDark ? "rgba(255,255,255,0.45)" : "#8B938E",
                   textDecorationLine: "line-through",
                 },
               ]}
@@ -170,7 +170,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
               <Text
                 style={[
                   styles.actionText,
-                  { color: isDark ? "rgba(255,255,255,0.35)" : "#94A3B8" },
+                  { color: isDark ? "rgba(255,255,255,0.35)" : "#8B938E" },
                 ]}
               >
                 Erneut ansehen
@@ -181,7 +181,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
                   {
                     backgroundColor: isDark
                       ? "rgba(255,255,255,0.06)"
-                      : "#F1F5F9",
+                      : "#F3EEE6",
                     borderWidth: 1,
                     borderColor: isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0",
                   },
@@ -189,7 +189,7 @@ export const CompletedExerciseCard = memo(function CompletedExerciseCard({
               >
                 <RotateCcw
                   size={14}
-                  color={isDark ? "rgba(255,255,255,0.4)" : "#94A3B8"}
+                  color={isDark ? "rgba(255,255,255,0.4)" : "#8B938E"}
                   strokeWidth={2.5}
                 />
               </View>
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   completedBadgeText: {
     fontSize: 12,
     fontWeight: "700",
-    color: "#059669",
+    color: "#788E76",
     letterSpacing: 0.2,
   },
   title: {
@@ -280,3 +280,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 });
+
+

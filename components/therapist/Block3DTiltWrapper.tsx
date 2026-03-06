@@ -1,11 +1,11 @@
-/**
+﻿/**
  * Block3DTiltWrapper
  *
  * Wraps any block card in a 3D perspective tilt effect.
  * Uses core React Native PanResponder + Reanimated 2 shared values:
- *  • Tilts on the X/Y axis as the user touches and drags
- *  • Springs back to flat when touch ends
- *  • Press scales down slightly for tactile feel
+ *  â€¢ Tilts on the X/Y axis as the user touches and drags
+ *  â€¢ Springs back to flat when touch ends
+ *  â€¢ Press scales down slightly for tactile feel
  *
  * Uses zero extra dependencies beyond Reanimated (already in Expo).
  */
@@ -73,3 +73,4 @@ export default function Block3DTiltWrapper({ children, maxTilt = 10 }: Props) {
         </Animated.View>
     );
 }
+

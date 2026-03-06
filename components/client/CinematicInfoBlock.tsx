@@ -86,7 +86,7 @@ const Paragraph = ({
             <Text style={{
                 fontSize: 18,
                 lineHeight: 28,
-                color: '#2C3E50',
+                color: '#1F2528',
                 fontWeight: '500',
             }}>
                 {text}
@@ -209,3 +209,4 @@ export function CinematicInfoBlock({ block, scrollY, index }: Props) {
         </View>
     );
 }
+

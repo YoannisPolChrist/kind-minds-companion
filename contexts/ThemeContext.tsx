@@ -7,7 +7,7 @@ export type ThemeType = 'light' | 'dark' | 'system';
 export interface Colors {
     background: string;
     surface: string;
-    primary: string;       // Teal (#137386)
+    primary: string;       // Teal (#2D666B)
     primaryDark: string;   // Darker teal for gradients (#0d6474)
     header: string;        // Header background — same teal on light, deeper on dark
     headerText: string;    // Text on header
@@ -16,46 +16,46 @@ export interface Colors {
     border: string;
     success: string;
     danger: string;
-    secondary: string;     // Gold (#C09D59)
+    secondary: string;     // Gold (#B08C57)
     card: string;          // Card background (white on light, surface on dark)
     cardBorder: string;    // Subtle card border
     input: string;         // Input field background
 }
 
 export const lightColors: Colors = {
-    background: '#F9F8F6',
+    background: '#F7F4EE',
     surface: '#FFFFFF',
-    primary: '#137386',
-    primaryDark: '#0d6474',
-    header: '#137386',
+    primary: '#2D666B',
+    primaryDark: '#22474D',
+    header: '#2D666B',
     headerText: '#FFFFFF',
-    text: '#243842',
-    textSubtle: '#6B7C85',
-    border: '#E8E6E1',
-    success: '#10B981',
+    text: '#1F2528',
+    textSubtle: '#6F7472',
+    border: '#E7E0D4',
+    success: '#788E76',
     danger: '#EF4444',
-    secondary: '#C09D59',
+    secondary: '#B08C57',
     card: '#FFFFFF',
-    cardBorder: '#F0EDE8',
-    input: '#F4F3F0',
+    cardBorder: '#EFE8DE',
+    input: '#F1ECE3',
 };
 
 export const darkColors: Colors = {
-    background: '#0A1628',
-    surface: '#142036',
-    primary: '#19A3BC',
-    primaryDark: '#0F172A',
-    header: '#0E1F35',
-    headerText: '#F1F5F9',
-    text: '#F1F5F9',
-    textSubtle: '#94A3B8',
-    border: '#1E3A5A',
-    success: '#34D399',
+    background: '#10191C',
+    surface: '#162327',
+    primary: '#6F9B9D',
+    primaryDark: '#20363A',
+    header: '#122126',
+    headerText: '#F5F1E8',
+    text: '#F5F1E8',
+    textSubtle: '#A8B0AC',
+    border: '#294046',
+    success: '#9ABA8F',
     danger: '#F87171',
-    secondary: '#D4AF5A',
-    card: '#142036',
-    cardBorder: '#1E3A5A',
-    input: '#1A2E48',
+    secondary: '#C2A16C',
+    card: '#162327',
+    cardBorder: '#294046',
+    input: '#1B2C31',
 };
 
 interface ThemeContextProps {
@@ -110,3 +110,4 @@ export const ThemeProvider = ({ children }: { children: React.ReactNode }) => {
 };
 
 export const useTheme = () => useContext(ThemeContext);
+

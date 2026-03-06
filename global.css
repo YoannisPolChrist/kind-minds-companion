@@ -10,6 +10,24 @@ body,
   width: 100%;
 }
 
+html,
+body {
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  overflow-x: hidden;
+  background: #f9f8f6;
+  overscroll-behavior-y: none;
+}
+
+body,
+#root {
+  margin: 0;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
 /* Enhances all Web TouchableOpacity/Pressable with standard hover state */
 @media (hover: hover) {
   [role="button"] {

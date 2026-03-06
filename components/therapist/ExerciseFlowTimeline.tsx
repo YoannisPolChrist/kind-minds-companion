@@ -1,4 +1,4 @@
-/**
+﻿/**
  * ExerciseFlowTimeline
  *
  * A horizontal node-link diagram that maps each ExerciseBlock to a node,
@@ -15,33 +15,33 @@ import Svg, { Path, Circle, G, Text as SvgText, Defs, LinearGradient, Stop } fro
 import * as d3 from 'd3';
 import { ExerciseBlock, ExerciseBlockType } from './blocks/exerciseRegistry';
 
-// ─── Category Palette ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Category Palette â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const BLOCK_META: Record<ExerciseBlockType, { color: string; icon: string; short: string }> = {
-    reflection: { color: '#3B82F6', icon: '✍️', short: 'Refl.' },
-    info: { color: '#14B8A6', icon: '📖', short: 'Info' },
-    homework: { color: '#C09D59', icon: '📝', short: 'ABC' },
-    scale: { color: '#F59E0B', icon: '📊', short: 'Skala' },
-    choice: { color: '#6366F1', icon: '🔘', short: 'Wahl' },
-    checklist: { color: '#10B981', icon: '✅', short: 'Liste' },
-    gratitude: { color: '#EC4899', icon: '🙏', short: 'Dank.' },
-    breathing: { color: '#137386', icon: '🌬️', short: 'Atem' },
-    timer: { color: '#8B5CF6', icon: '⏱️', short: 'Timer' },
-    media: { color: '#F43F5E', icon: '📸', short: 'Medien' },
-    video: { color: '#E11D48', icon: '🎥', short: 'Video' },
-    spider_chart: { color: '#F97316', icon: '🕸️', short: 'Netz' },
-    bar_chart: { color: '#0EA5E9', icon: '📈', short: 'Balken' },
-    pie_chart: { color: '#8B5CF6', icon: '🥧', short: 'Kreis' },
-    line_chart: { color: '#10B981', icon: '📉', short: 'Linie' },
+    reflection: { color: '#4E7E82', icon: 'âœï¸', short: 'Refl.' },
+    info: { color: '#14B8A6', icon: 'ðŸ“–', short: 'Info' },
+    homework: { color: '#B08C57', icon: 'ðŸ“', short: 'ABC' },
+    scale: { color: '#F59E0B', icon: 'ðŸ“Š', short: 'Skala' },
+    choice: { color: '#6366F1', icon: 'ðŸ”˜', short: 'Wahl' },
+    checklist: { color: '#788E76', icon: 'âœ…', short: 'Liste' },
+    gratitude: { color: '#EC4899', icon: 'ðŸ™', short: 'Dank.' },
+    breathing: { color: '#2D666B', icon: 'ðŸŒ¬ï¸', short: 'Atem' },
+    timer: { color: '#8B5CF6', icon: 'â±ï¸', short: 'Timer' },
+    media: { color: '#F43F5E', icon: 'ðŸ“¸', short: 'Medien' },
+    video: { color: '#E11D48', icon: 'ðŸŽ¥', short: 'Video' },
+    spider_chart: { color: '#F97316', icon: 'ðŸ•¸ï¸', short: 'Netz' },
+    bar_chart: { color: '#4E7E82', icon: 'ðŸ“ˆ', short: 'Balken' },
+    pie_chart: { color: '#8B5CF6', icon: 'ðŸ¥§', short: 'Kreis' },
+    line_chart: { color: '#788E76', icon: 'ðŸ“‰', short: 'Linie' },
 };
 
-// ─── Node Size Constants ───────────────────────────────────────────────────────
+// â”€â”€â”€ Node Size Constants â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const NODE_R = 22;
 const H = 80;    // SVG height
 const PAD = 16;  // horizontal padding each side
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface Props { blocks: ExerciseBlock[]; }
 
@@ -71,7 +71,7 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
         const minNodeSpacing = (NODE_R * 2) + 28;
         const totalWidth = Math.max(300, PAD * 2 + blocks.length * minNodeSpacing);
 
-        // D3 band scale maps block index → x center
+        // D3 band scale maps block index â†’ x center
         const xScale = d3.scaleBand()
             .domain(blocks.map((_, i) => String(i)))
             .range([PAD + NODE_R, totalWidth - PAD - NODE_R])
@@ -111,7 +111,7 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
             backgroundColor: '#FFFFFF',
             borderRadius: 24,
             borderWidth: 1,
-            borderColor: '#E5E7EB',
+            borderColor: '#E7E0D4',
             marginBottom: 16,
             overflow: 'hidden',
             shadowColor: '#000',
@@ -123,11 +123,11 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
             {/* Header */}
             <View style={{ paddingHorizontal: 18, paddingTop: 14, paddingBottom: 6, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                 <View>
-                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#243842', letterSpacing: 0.2 }}>Übungs-Flow</Text>
-                    <Text style={{ fontSize: 10, color: '#9CA3AF', fontWeight: '500' }}>Reihenfolge der Blöcke</Text>
+                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#1F2528', letterSpacing: 0.2 }}>Ãœbungs-Flow</Text>
+                    <Text style={{ fontSize: 10, color: '#8B938E', fontWeight: '500' }}>Reihenfolge der BlÃ¶cke</Text>
                 </View>
                 {isScrollable && (
-                    <Text style={{ fontSize: 9, color: '#D1D5DB', fontWeight: '600' }}>← scrollen →</Text>
+                    <Text style={{ fontSize: 9, color: '#D1D5DB', fontWeight: '600' }}>â† scrollen â†’</Text>
                 )}
             </View>
 
@@ -206,3 +206,5 @@ export default function ExerciseFlowTimeline({ blocks }: Props) {
         </Animated.View>
     );
 }
+
+

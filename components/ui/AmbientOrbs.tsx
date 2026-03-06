@@ -20,13 +20,13 @@ type OrbConfig = {
 
 const ORBS_DARK: OrbConfig[] = [
     { size: 260, color: '#1a7a8a', top: -80, left: -80, opacity: 0.35, duration: 6000, delay: 0 },
-    { size: 220, color: '#C09D59', top: 40, right: -60, opacity: 0.2, duration: 7500, delay: 1000 },
-    { size: 180, color: '#2C3E50', bottom: -60, right: 20, opacity: 0.3, duration: 5500, delay: 500 },
+    { size: 220, color: '#B08C57', top: 40, right: -60, opacity: 0.2, duration: 7500, delay: 1000 },
+    { size: 180, color: '#1F2528', bottom: -60, right: 20, opacity: 0.3, duration: 5500, delay: 500 },
 ];
 
 const ORBS_LIGHT: OrbConfig[] = [
-    { size: 250, color: '#137386', top: -100, right: -80, opacity: 0.08, duration: 7000, delay: 0 },
-    { size: 200, color: '#C09D59', bottom: -50, left: -50, opacity: 0.07, duration: 8000, delay: 800 },
+    { size: 250, color: '#2D666B', top: -100, right: -80, opacity: 0.08, duration: 7000, delay: 0 },
+    { size: 200, color: '#B08C57', bottom: -50, left: -50, opacity: 0.07, duration: 8000, delay: 800 },
 ];
 
 function Orb({ config }: { config: OrbConfig }) {
@@ -79,3 +79,4 @@ export function LightAmbientOrbs() {
         </View>
     );
 }
+

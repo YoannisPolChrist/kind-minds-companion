@@ -1,461 +1,972 @@
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, Platform, Modal, ScrollView, useWindowDimensions, Image } from 'react-native';
-import { useEffect, useState, useCallback } from 'react';
-import React from 'react';
-import { useRouter, useFocusEffect } from 'expo-router';
-import i18n from '../../../utils/i18n';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+    ActivityIndicator,
+    Modal,
+    Platform,
+    ScrollView,
+    Text,
+    TouchableOpacity,
+    View,
+    useWindowDimensions,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { MotiView } from 'moti';
-import { Search, Plus, Trash2, Send, X, FileText, Sparkles, LayoutTemplate, Palette } from 'lucide-react-native';
-import { DarkAmbientOrbs } from '../../../components/ui/AmbientOrbs';
-import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
-import { useDebounce } from '../../../hooks/useDebounce';
+import { ArrowLeft, FileImage, FileText, LayoutTemplate, Palette, Plus, Search, Send, Sparkles, Trash2, X } from 'lucide-react-native';
+import i18n from '../../../utils/i18n';
 import { TemplateRepository, ExerciseTemplate } from '../../../utils/repositories/TemplateRepository';
 import { ClientRepository } from '../../../utils/repositories/ClientRepository';
 import { ErrorHandler } from '../../../utils/errors';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useDebounce } from '../../../hooks/useDebounce';
+import { useTheme } from '../../../contexts/ThemeContext';
+import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
+import { Badge } from '../../../components/ui/Badge';
+import { Card } from '../../../components/ui/Card';
+import { Input } from '../../../components/ui/Input';
+import { TherapistMetricCard } from '../../../components/therapist/TherapistMetricCard';
 
-const THEME_COLORS = ['#137386', '#3B82F6', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#10B981', '#64748B'];
+const THEME_COLORS = ['#2D666B', '#4E7E82', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#788E76', '#6F7472'];
+
+const HOME_BACKGROUNDS = [
+    require('../../../assets/HomeUi1.webp'),
+    require('../../../assets/HomeUi2.webp'),
+    require('../../../assets/HomeUi3.webp'),
+    require('../../../assets/HomeUi4.webp'),
+    require('../../../assets/HomeUi5.webp'),
+    require('../../../assets/HomeUi6.webp'),
+];
+
+type ToastState = {
+    visible: boolean;
+    message: string;
+    subMessage?: string;
+    type: 'success' | 'error' | 'warning';
+};
+
+type ClientSummary = {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+};
 
 export default function TherapistTemplates() {
-    const [templates, setTemplates] = useState<any[]>([]);
-    const [filteredTemplates, setFilteredTemplates] = useState<any[]>([]);
-    const [searchQuery, setSearchQuery] = useState('');
-    const debouncedQuery = useDebounce(searchQuery, 300);
-    const [loading, setLoading] = useState(true);
-    const { profile } = useAuth();
-
-    // Assignment Mock State
-    const [assignModalVisible, setAssignModalVisible] = useState(false);
-    const [selectedTemplateForAssign, setSelectedTemplateForAssign] = useState<any>(null);
-    const [clients, setClients] = useState<any[]>([]); // To be populated from TherapistDashboard context
-
-    // Modals state
-    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-    const [templateToDelete, setTemplateToDelete] = useState<any>(null);
-
-    const [colorModalVisible, setColorModalVisible] = useState(false);
-    const [templateToColor, setTemplateToColor] = useState<any>(null);
-
-    const [toast, setToast] = useState<{ visible: boolean, message: string, subMessage?: string, type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
-
     const router = useRouter();
-    const { width } = useWindowDimensions();
-    const isDesktop = width >= 768;
+    const { profile } = useAuth();
+    const { colors, isDark } = useTheme();
+    const { width: screenWidth } = useWindowDimensions();
+    const isTablet = screenWidth > 768;
+    const isDesktop = screenWidth > 1120;
+    const heroBackground = useMemo(
+        () => HOME_BACKGROUNDS[Math.floor(Math.random() * HOME_BACKGROUNDS.length)],
+        []
+    );
+
+    const [templates, setTemplates] = useState<ExerciseTemplate[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const debouncedQuery = useDebounce(searchQuery, 250);
+    const [assignModalVisible, setAssignModalVisible] = useState(false);
+    const [selectedTemplateForAssign, setSelectedTemplateForAssign] = useState<ExerciseTemplate | null>(null);
+    const [clients, setClients] = useState<ClientSummary[]>([]);
+    const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState<ExerciseTemplate | null>(null);
+    const [colorModalVisible, setColorModalVisible] = useState(false);
+    const [templateToColor, setTemplateToColor] = useState<ExerciseTemplate | null>(null);
+    const [toast, setToast] = useState<ToastState>({ visible: false, message: '', type: 'success' });
+    const mountedRef = useRef(true);
+
+    useEffect(() => {
+        return () => {
+            mountedRef.current = false;
+        };
+    }, []);
 
     useFocusEffect(
         React.useCallback(() => {
+            mountedRef.current = true;
             fetchTemplates();
             fetchClientsForAssignment();
-        }, [])
+        }, [profile?.id])
     );
 
     const fetchClientsForAssignment = async () => {
         try {
             const rawClients = await ClientRepository.findAllClients();
-            setClients(rawClients);
+            if (mountedRef.current) {
+                setClients(rawClients);
+            }
         } catch (error) {
             const { message } = ErrorHandler.handle(error, 'Fetch Clients For Assignment');
-            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
+            setToast({ visible: true, message: 'Fehler', subMessage: message, type: 'error' });
         }
     };
 
     const fetchTemplates = async () => {
         try {
-            if (!profile?.id) return;
+            if (!profile?.id) {
+                setLoading(false);
+                return;
+            }
+
             const activeTemplates = await TemplateRepository.findActiveTemplates(50, profile.id);
-            setTemplates(activeTemplates);
-            setFilteredTemplates(activeTemplates);
+            if (mountedRef.current) {
+                setTemplates(activeTemplates);
+            }
         } catch (error) {
             const { message } = ErrorHandler.handle(error, 'Fetch Templates');
-            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
+            setToast({ visible: true, message: 'Fehler', subMessage: message, type: 'error' });
         } finally {
-            setLoading(false);
+            if (mountedRef.current) {
+                setLoading(false);
+            }
         }
     };
 
-    // Re-filter whenever the debounced query or template list changes
-    useEffect(() => {
-        if (!debouncedQuery.trim()) {
-            setFilteredTemplates(templates);
-        } else {
-            const q = debouncedQuery.toLowerCase();
-            setFilteredTemplates(templates.filter(t =>
-                t.title?.toLowerCase().includes(q) ||
-                t.blocks?.some((b: any) => b.content?.toLowerCase().includes(q))
-            ));
+    const filteredTemplates = useMemo(() => {
+        const query = debouncedQuery.trim().toLowerCase();
+
+        if (!query) {
+            return templates;
         }
+
+        return templates.filter(template => {
+            const titleMatch = template.title?.toLowerCase().includes(query);
+            const blockMatch = template.blocks?.some((block: any) => String(block.content || '').toLowerCase().includes(query));
+            return titleMatch || blockMatch;
+        });
     }, [debouncedQuery, templates]);
 
+    const totalBlocks = useMemo(
+        () => templates.reduce((sum, template) => sum + (template.blocks?.length || 0), 0),
+        [templates]
+    );
+    const averageBlocks = templates.length ? Math.round(totalBlocks / templates.length) : 0;
+    const coverCount = useMemo(
+        () => templates.filter(template => Boolean(template.coverImage)).length,
+        [templates]
+    );
+
     const confirmDeleteTemplate = async () => {
-        if (!templateToDelete) return;
+        if (!templateToDelete?.id) return;
+
         try {
             await TemplateRepository.archiveTemplate(templateToDelete.id);
-            setTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
-            setFilteredTemplates(prev => prev.filter(t => t.id !== templateToDelete.id));
+            setTemplates(prev => prev.filter(template => template.id !== templateToDelete.id));
             setDeleteModalVisible(false);
             setTemplateToDelete(null);
-            setToast({ visible: true, message: "Gelöscht", subMessage: "Vorlage wurde erfolgreich gelöscht.", type: 'success' });
+            setToast({
+                visible: true,
+                message: 'Geloescht',
+                subMessage: 'Die Vorlage wurde archiviert.',
+                type: 'success',
+            });
         } catch (error) {
             setDeleteModalVisible(false);
             const { message } = ErrorHandler.handle(error, 'Archive Template');
-            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
+            setToast({ visible: true, message: 'Fehler', subMessage: message, type: 'error' });
         }
-    };
-
-    const handleDelete = (template: any) => {
-        setTemplateToDelete(template);
-        setDeleteModalVisible(true);
     };
 
     const handleUpdateThemeColor = async (color: string) => {
-        if (!templateToColor) return;
+        if (!templateToColor?.id) return;
+
         try {
             await TemplateRepository.updateThemeColor(templateToColor.id, color);
-            setTemplates(prev => prev.map(t => t.id === templateToColor.id ? { ...t, themeColor: color } : t));
-            setFilteredTemplates(prev => prev.map(t => t.id === templateToColor.id ? { ...t, themeColor: color } : t));
+            setTemplates(prev =>
+                prev.map(template => (
+                    template.id === templateToColor.id ? { ...template, themeColor: color } : template
+                ))
+            );
             setColorModalVisible(false);
             setTemplateToColor(null);
-            setToast({ visible: true, message: "Gespeichert", subMessage: "Farbe wurde erfolgreich aktualisiert.", type: 'success' });
+            setToast({
+                visible: true,
+                message: 'Gespeichert',
+                subMessage: 'Die Akzentfarbe wurde aktualisiert.',
+                type: 'success',
+            });
         } catch (error) {
             setColorModalVisible(false);
             const { message } = ErrorHandler.handle(error, 'Update Template ThemeColor');
-            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
+            setToast({ visible: true, message: 'Fehler', subMessage: message, type: 'error' });
         }
-    };
-
-    const openAssignModal = (template: any) => {
-        setSelectedTemplateForAssign(template);
-        setAssignModalVisible(true);
     };
 
     const confirmAssignToClient = async (clientId: string) => {
         if (!selectedTemplateForAssign) return;
+
         try {
             await TemplateRepository.assignToClient(selectedTemplateForAssign, clientId);
             setAssignModalVisible(false);
-            setToast({ visible: true, message: "Erfolg", subMessage: `Die Vorlage "${selectedTemplateForAssign.title}" wurde zugewiesen.`, type: 'success' });
+            setToast({
+                visible: true,
+                message: 'Zugewiesen',
+                subMessage: `Die Vorlage "${selectedTemplateForAssign.title}" wurde uebernommen.`,
+                type: 'success',
+            });
         } catch (error) {
             setAssignModalVisible(false);
             const { message } = ErrorHandler.handle(error, 'Assign Template to Client');
-            setToast({ visible: true, message: "Fehler", subMessage: message, type: 'error' });
+            setToast({ visible: true, message: 'Fehler', subMessage: message, type: 'error' });
         }
     };
 
-    const renderTemplateItem = ({ item, index }: { item: any, index: number }) => {
-        const themeColor = item.themeColor || '#6366F1'; // Default to Indigo if not set
+    const openAssignModal = (template: ExerciseTemplate) => {
+        setSelectedTemplateForAssign(template);
+        setAssignModalVisible(true);
+    };
+
+    const openDeleteModal = (template: ExerciseTemplate) => {
+        setTemplateToDelete(template);
+        setDeleteModalVisible(true);
+    };
+
+    const openColorModal = (template: ExerciseTemplate) => {
+        setTemplateToColor(template);
+        setColorModalVisible(true);
+    };
+
+    const contentMaxWidth = screenWidth > 1280 ? 1180 : 1120;
+    const cardWidth = isDesktop ? '31.9%' : isTablet ? '48.5%' : '100%';
+
+    const renderTemplateCard = (template: ExerciseTemplate, index: number) => {
+        const themeColor = template.themeColor || colors.primary;
+        const moduleCount = template.blocks?.length || 0;
 
         return (
             <MotiView
-                key={item.id}
-                from={{ opacity: 0, translateY: 20 }}
-                animate={{ opacity: 1, translateY: 0 }}
-                transition={{ type: 'timing', duration: 350, delay: index * 50 }}
-                style={{
-                    backgroundColor: '#ffffff',
-                    padding: 32,
-                    borderRadius: 36,
-                    borderWidth: 2,
-                    borderColor: `${themeColor}40`,
-                    shadowColor: '#243842',
-                    shadowOffset: { width: 0, height: 12 },
-                    shadowOpacity: 0.05,
-                    shadowRadius: 24,
-                    elevation: 4,
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    flex: 1,
-                    minWidth: isDesktop ? 340 : '100%',
-                    maxWidth: isDesktop ? '48%' : '100%',
-                }}
+                key={template.id}
+                from={{ opacity: 0, translateY: 24, scale: 0.98 }}
+                animate={{ opacity: 1, translateY: 0, scale: 1 }}
+                transition={{ type: 'timing', duration: 320, delay: Math.min(index * 45, 260) }}
+                style={{ width: cardWidth as any }}
             >
-                <View className="mb-8">
-                    {item.coverImage ? (
-                        <View className="w-full h-32 rounded-[20px] overflow-hidden mb-6 bg-gray-100/50 border border-gray-100">
-                            <Image source={{ uri: item.coverImage }} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
-                        </View>
-                    ) : null}
-                    <View className="flex-row justify-between items-start">
-                        <View className="flex-1 pr-4">
-                            <View className="w-14 h-14 rounded-[20px] items-center justify-center mb-4 border" style={{ backgroundColor: `${themeColor}15`, borderColor: `${themeColor}40` }}>
-                                <LayoutTemplate size={24} color={themeColor} />
-                            </View>
-                            <Text className="text-[22px] font-black text-[#243842] mb-3 leading-tight tracking-tight">{item.title}</Text>
-                            <View className="flex-row items-center bg-gray-50 px-3 py-1.5 rounded-xl self-start border border-gray-100">
-                                <FileText size={14} color="#6B7280" />
-                                <Text className="text-gray-600 font-bold text-[13px] ml-2">{item.blocks?.length || 0} Module</Text>
-                            </View>
-                        </View>
-                        <View
-                            style={{
-                                backgroundColor: 'rgba(249, 248, 246, 0.9)',
-                                borderRadius: 24,
-                                borderWidth: 1,
-                                borderColor: 'rgba(36, 56, 66, 0.07)',
-                                padding: 8,
-                                gap: 8,
-                                shadowColor: '#243842',
-                                shadowOffset: { width: 0, height: 4 },
-                                shadowOpacity: 0.06,
-                                shadowRadius: 16,
-                                elevation: 2,
-                                alignItems: 'center',
-                                flexDirection: 'row',
-                            }}
-                        >
-                            <TouchableOpacity
-                                onPress={() => handleDelete(item)}
+                <Card
+                    variant="elevated"
+                    padding="none"
+                    style={{
+                        backgroundColor: colors.card,
+                        borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                        shadowColor: isDark ? '#000' : '#182428',
+                        shadowOffset: { width: 0, height: 12 },
+                        shadowOpacity: isDark ? 0.22 : 0.06,
+                        shadowRadius: 28,
+                        elevation: 4,
+                    }}
+                >
+                    <LinearGradient
+                        colors={[`${themeColor}1A`, isDark ? 'rgba(255,255,255,0.02)' : 'rgba(255,255,255,0.98)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ padding: 22 }}
+                    >
+                        {template.coverImage ? (
+                            <View
                                 style={{
-                                    width: 48, height: 48, borderRadius: 16,
-                                    backgroundColor: '#FEF2F2',
-                                    borderWidth: 1, borderColor: 'rgba(239,68,68,0.15)',
-                                    alignItems: 'center', justifyContent: 'center',
+                                    height: 168,
+                                    borderRadius: 24,
+                                    overflow: 'hidden',
+                                    marginBottom: 18,
+                                    borderWidth: 1,
+                                    borderColor: isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)',
                                 }}
                             >
-                                <Trash2 size={22} color="#EF4444" />
-                            </TouchableOpacity>
-                            <View style={{ width: 1, height: 32, backgroundColor: 'rgba(36,56,66,0.06)' }} />
-                            <TouchableOpacity
-                                onPress={() => { setTemplateToColor(item); setColorModalVisible(true); }}
+                                <Image source={{ uri: template.coverImage }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                            </View>
+                        ) : (
+                            <LinearGradient
+                                colors={[`${themeColor}20`, `${themeColor}05`]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
                                 style={{
-                                    width: 48, height: 48, borderRadius: 16,
-                                    backgroundColor: `${themeColor}15`,
-                                    borderWidth: 1, borderColor: `${themeColor}25`,
-                                    alignItems: 'center', justifyContent: 'center',
+                                    height: 168,
+                                    borderRadius: 24,
+                                    marginBottom: 18,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    borderWidth: 1,
+                                    borderColor: `${themeColor}33`,
                                 }}
                             >
-                                <Palette size={22} color={themeColor} />
+                                <View
+                                    style={{
+                                        width: 60,
+                                        height: 60,
+                                        borderRadius: 20,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: `${themeColor}22`,
+                                        marginBottom: 12,
+                                    }}
+                                >
+                                    <LayoutTemplate size={28} color={themeColor} />
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '800' }}>Ohne Cover</Text>
+                                <Text style={{ color: colors.textSubtle, fontSize: 12, fontWeight: '600', marginTop: 4 }}>
+                                    Die Vorlage wirkt trotzdem sofort einsetzbar.
+                                </Text>
+                            </LinearGradient>
+                        )}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                            <View style={{ flex: 1, paddingRight: 12 }}>
+                                <View
+                                    style={{
+                                        width: 48,
+                                        height: 48,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: `${themeColor}18`,
+                                        borderWidth: 1,
+                                        borderColor: `${themeColor}30`,
+                                        marginBottom: 14,
+                                    }}
+                                >
+                                    <LayoutTemplate size={22} color={themeColor} />
+                                </View>
+                                <Text style={{ color: colors.text, fontSize: 21, fontWeight: '900', letterSpacing: -0.5 }} numberOfLines={2}>
+                                    {template.title}
+                                </Text>
+                            </View>
+
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                                <TouchableOpacity
+                                    onPress={() => openColorModal(template)}
+                                    activeOpacity={0.75}
+                                    style={{
+                                        width: 42,
+                                        height: 42,
+                                        borderRadius: 14,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: `${themeColor}15`,
+                                        borderWidth: 1,
+                                        borderColor: `${themeColor}28`,
+                                    }}
+                                >
+                                    <Palette size={18} color={themeColor} />
+                                </TouchableOpacity>
+                                <TouchableOpacity
+                                    onPress={() => openDeleteModal(template)}
+                                    activeOpacity={0.75}
+                                    style={{
+                                        width: 42,
+                                        height: 42,
+                                        borderRadius: 14,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: isDark ? 'rgba(248,113,113,0.14)' : 'rgba(239,68,68,0.08)',
+                                        borderWidth: 1,
+                                        borderColor: 'rgba(239,68,68,0.16)',
+                                    }}
+                                >
+                                    <Trash2 size={18} color={colors.danger} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+                            <Badge variant="default">{moduleCount} Module</Badge>
+                            <Badge variant={template.coverImage ? 'secondary' : 'muted'}>
+                                {template.coverImage ? 'Cover aktiv' : 'Nur Inhalt'}
+                            </Badge>
+                        </View>
+
+                        <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 21, fontWeight: '600', marginBottom: 20 }}>
+                            {moduleCount === 0
+                                ? 'Noch leer. Ideal, um eine neue Struktur fuer eine Sitzung aufzubauen.'
+                                : 'Direkt editierbar und bereit, einem Klienten als naechsten Schritt zugewiesen zu werden.'}
+                        </Text>
+
+                        <View style={{ flexDirection: 'row', gap: 10 }}>
+                            <TouchableOpacity
+                                onPress={() => router.push(`/(app)/therapist/template/${template.id}` as any)}
+                                activeOpacity={0.82}
+                                style={{
+                                    flex: 1,
+                                    minHeight: 50,
+                                    borderRadius: 16,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                }}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 14, fontWeight: '800' }}>{i18n.t('templates.edit')}</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                onPress={() => openAssignModal(template)}
+                                activeOpacity={0.86}
+                                style={{
+                                    flex: 1.15,
+                                    minHeight: 50,
+                                    borderRadius: 16,
+                                    overflow: 'hidden',
+                                    shadowColor: themeColor,
+                                    shadowOffset: { width: 0, height: 6 },
+                                    shadowOpacity: 0.28,
+                                    shadowRadius: 14,
+                                    elevation: 5,
+                                }}
+                            >
+                                <LinearGradient
+                                    colors={[themeColor, colors.primaryDark]}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{
+                                        flex: 1,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 8,
+                                    }}
+                                >
+                                    <Send size={16} color="#FFFFFF" />
+                                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '900' }}>Zuweisen</Text>
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
-                    </View>
-                </View>
-
-                <View style={{ flexDirection: 'row', gap: 14, paddingTop: 24, marginTop: 8, borderTopWidth: 1, borderTopColor: '#F3F4F6' }}>
-                    <TouchableOpacity
-                        style={{ flex: 1, backgroundColor: '#F9F8F6', borderWidth: 1, borderColor: '#E5E7EB', paddingVertical: 16, paddingHorizontal: 12, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row' }}
-                        onPress={() => router.push(`/(app)/therapist/template/${item.id}` as any)}
-                    >
-                        <Text style={{ color: '#243842', fontWeight: '900', fontSize: 16 }}>{i18n.t('templates.edit')}</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                        style={{ flex: 1, backgroundColor: '#137386', paddingVertical: 16, paddingHorizontal: 12, borderRadius: 20, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', shadowColor: '#137386', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.25, shadowRadius: 16, elevation: 4 }}
-                        onPress={() => openAssignModal(item)}
-                    >
-                        <Send size={18} color="white" style={{ marginRight: 8 }} />
-                        <Text style={{ color: 'white', fontWeight: '900', fontSize: 16 }}>Zuweisen</Text>
-                    </TouchableOpacity>
-                </View>
+                    </LinearGradient>
+                </Card>
             </MotiView>
         );
     };
 
     return (
-        <View className="flex-1 bg-[#F9F8F6]">
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
             <ScrollView
-                showsVerticalScrollIndicator={false}
                 style={{ flex: 1 }}
-                contentContainerStyle={{ flexGrow: 1, paddingBottom: 60 }}
+                contentContainerStyle={{ paddingBottom: 64 }}
+                showsVerticalScrollIndicator={false}
                 bounces={false}
             >
-                {/* Premium Header matching Dashboard */}
                 <MotiView
-                    from={{ opacity: 0, translateY: -40 }}
+                    from={{ opacity: 0, translateY: -28 }}
                     animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'timing', duration: 350, delay: 50 }}
+                    transition={{ type: 'timing', duration: 320 }}
                     style={{
-                        backgroundColor: '#137386',
-                        paddingTop: Platform.OS === 'android' ? 48 : 64,
-                        paddingBottom: 24,
-                        paddingHorizontal: 24,
-                        borderBottomLeftRadius: 32,
-                        borderBottomRightRadius: 32,
                         overflow: 'hidden',
-                        zIndex: 10,
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 16,
+                        borderBottomLeftRadius: 40,
+                        borderBottomRightRadius: 40,
+                        marginBottom: 24,
+                        shadowColor: colors.primaryDark,
+                        shadowOffset: { width: 0, height: 14 },
+                        shadowOpacity: 0.18,
+                        shadowRadius: 28,
                         elevation: 10,
                     }}
                 >
-                    <DarkAmbientOrbs />
+                    <Image
+                        source={heroBackground}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                        contentFit="cover"
+                    />
+                    <LinearGradient
+                        colors={['rgba(18,33,38,0.68)', 'rgba(19,115,134,0.55)', 'rgba(18,33,38,0.72)']}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+                    />
 
-                    <View style={{ zIndex: 10, width: '100%', maxWidth: 1024, marginHorizontal: 'auto' }} pointerEvents="box-none">
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-                            <TouchableOpacity onPress={() => router.back()} style={{ backgroundColor: 'rgba(255,255,255,0.12)', paddingHorizontal: 20, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
-                                <Text style={{ color: 'white', fontWeight: '700', fontSize: 15 }}>{i18n.t('exercise.back')}</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={() => router.push('/(app)/therapist/template/new')}
-                                activeOpacity={0.8}
-                                style={{ backgroundColor: 'rgba(255,255,255,0.18)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.25)', height: 48, paddingHorizontal: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 }}
+                    <View
+                        style={{
+                            paddingTop: Platform.OS === 'android' ? 52 : 72,
+                            paddingBottom: 28,
+                            paddingHorizontal: screenWidth < 720 ? 18 : 24,
+                            width: '100%',
+                            maxWidth: contentMaxWidth,
+                            alignSelf: 'center',
+                        }}
+                    >
+                        <BlurView
+                            intensity={Platform.OS === 'android' ? 100 : 72}
+                            tint={isDark ? 'dark' : 'light'}
+                            style={{
+                                borderRadius: 34,
+                                overflow: 'hidden',
+                                padding: screenWidth < 720 ? 16 : 22,
+                                borderWidth: 1,
+                                borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.24)',
+                                backgroundColor: isDark ? 'rgba(16,25,28,0.78)' : 'rgba(255,255,255,0.82)',
+                            }}
+                        >
+                            <View
+                                style={{
+                                    flexDirection: screenWidth < 720 ? 'column' : 'row',
+                                    justifyContent: 'space-between',
+                                    alignItems: screenWidth < 720 ? 'flex-start' : 'center',
+                                    gap: 12,
+                                    marginBottom: 22,
+                                }}
                             >
-                                <Plus size={18} color="#FFF" />
-                                <Text style={{ color: 'white', fontWeight: '900', fontSize: 14 }}>Neue Vorlage</Text>
-                            </TouchableOpacity>
-                        </View>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                    <TouchableOpacity
+                                        onPress={() => router.back()}
+                                        activeOpacity={0.8}
+                                        style={{
+                                            width: 44,
+                                            height: 44,
+                                            borderRadius: 16,
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+                                        }}
+                                    >
+                                        <ArrowLeft size={20} color={colors.text} />
+                                    </TouchableOpacity>
+                                    <Badge variant="secondary">Vorlagen-Board</Badge>
+                                </View>
 
-                        <Text className="text-[32px] font-black text-white tracking-tight mb-2">{i18n.t('templates.title')}</Text>
-                        <Text className="text-white/70 font-medium text-[16px] mb-8">Erstelle und verwalte interaktive Vorlagen für deine Klienten.</Text>
+                                <TouchableOpacity
+                                    onPress={() => router.push('/(app)/therapist/template/new' as any)}
+                                    activeOpacity={0.85}
+                                    style={{
+                                        minHeight: 48,
+                                        borderRadius: 16,
+                                        paddingHorizontal: 18,
+                                        flexDirection: 'row',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: 8,
+                                        backgroundColor: colors.primary,
+                                        shadowColor: colors.primary,
+                                        shadowOffset: { width: 0, height: 6 },
+                                        shadowOpacity: 0.24,
+                                        shadowRadius: 14,
+                                        elevation: 5,
+                                    }}
+                                >
+                                    <Plus size={18} color="#FFFFFF" />
+                                    <Text style={{ color: '#FFFFFF', fontSize: 14, fontWeight: '900' }}>Neue Vorlage</Text>
+                                </TouchableOpacity>
+                            </View>
 
-                        {/* Search Bar - Glassmorphism */}
-                        <View style={{ backgroundColor: 'rgba(255,255,255,0.15)', borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.3)', borderRadius: 28, paddingHorizontal: 24, paddingVertical: 18, flexDirection: 'row', alignItems: 'center' } as any}>
-                            <Search size={24} color="rgba(255,255,255,0.85)" />
-                            <TextInput
-                                placeholder="Vorlagen durchsuchen..."
-                                placeholderTextColor="rgba(255,255,255,0.5)"
-                                style={{ flex: 1, color: 'white', fontWeight: '700', marginLeft: 16, fontSize: 18 } as any}
+                            <Text style={{ color: colors.text, fontSize: screenWidth < 720 ? 28 : 34, fontWeight: '900', letterSpacing: -1, marginBottom: 8 }}>
+                                {i18n.t('templates.title')}
+                            </Text>
+                            <Text style={{ color: colors.textSubtle, fontSize: 15, lineHeight: 22, fontWeight: '600', marginBottom: 20, maxWidth: 620 }}>
+                                Entwirf Vorlagen mit derselben ruhigen, hochwertigen Sprache wie im Hauptdashboard und halte die Zuweisung fuer deinen Workflow in einem Board.
+                            </Text>
+
+                            <Input
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
+                                placeholder="Vorlagen, Inhalte oder Module durchsuchen..."
+                                leading={<Search size={18} color={colors.textSubtle} />}
+                                trailing={searchQuery ? (
+                                    <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                                        <X size={18} color={colors.textSubtle} />
+                                    </TouchableOpacity>
+                                ) : undefined}
+                                containerStyle={{
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.9)',
+                                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+                                }}
                             />
-                            {searchQuery.length > 0 && (
-                                <TouchableOpacity onPress={() => setSearchQuery('')} style={{ backgroundColor: 'rgba(255,255,255,0.15)', padding: 8, borderRadius: 12 }} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                                    <X size={20} color="rgba(255,255,255,0.9)" />
-                                </TouchableOpacity>
-                            )}
-                        </View>
+                        </BlurView>
                     </View>
                 </MotiView>
 
-                <View className="w-full max-w-5xl mx-auto pt-10 px-6">
-                    {loading ? (
-                        <ActivityIndicator size="large" color="#137386" className="mt-12" />
-                    ) : filteredTemplates.length === 0 ? (
-                        <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 200 }} className="bg-white p-10 rounded-[32px] border border-gray-100 shadow-sm items-center mx-8 mt-4" style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.05, shadowRadius: 24, elevation: 4 }}>
-                            <View className="w-20 h-20 bg-indigo-50 rounded-[28px] items-center justify-center mb-6 border border-indigo-100/50">
-                                <Sparkles size={32} color="#6366F1" />
+                <View
+                    style={{
+                        width: '100%',
+                        maxWidth: contentMaxWidth,
+                        alignSelf: 'center',
+                        paddingHorizontal: screenWidth < 720 ? 18 : 24,
+                    }}
+                >
+                    <View style={{ flexDirection: screenWidth < 1080 ? 'column' : 'row', gap: 16, marginBottom: 28 }}>
+                        <TherapistMetricCard
+                            icon={LayoutTemplate}
+                            label="Vorlagen gesamt"
+                            value={String(templates.length)}
+                            hint={templates.length === 0 ? 'Noch keine gespeicherten Vorlagen.' : `${templates.length} sofort einsatzbereite Vorlagen in deiner Bibliothek.`}
+                            tone="primary"
+                        />
+                        <TherapistMetricCard
+                            icon={FileText}
+                            label="Module im Schnitt"
+                            value={String(averageBlocks)}
+                            hint={templates.length === 0 ? 'Sobald du Inhalte anlegst, erscheint hier die Komplexitaet pro Vorlage.' : 'Guter Richtwert fuer Dichte und Umfang einer Vorlage.'}
+                            tone="success"
+                        />
+                        <TherapistMetricCard
+                            icon={FileImage}
+                            label="Mit Cover"
+                            value={String(coverCount)}
+                            hint={coverCount === 0 ? 'Noch ohne visuelle Einstiege.' : `${coverCount} Vorlagen haben bereits einen visuellen Einstieg.`}
+                            tone="warning"
+                        />
+                    </View>
+
+                    <MotiView
+                        from={{ opacity: 0, translateY: 10 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'timing', duration: 280, delay: 80 }}
+                    >
+                        <View
+                            style={{
+                                flexDirection: screenWidth < 760 ? 'column' : 'row',
+                                alignItems: screenWidth < 760 ? 'flex-start' : 'center',
+                                justifyContent: 'space-between',
+                                gap: 12,
+                                marginBottom: 20,
+                            }}
+                        >
+                            <View>
+                                <Text style={{ color: colors.text, fontSize: 27, fontWeight: '900', letterSpacing: -0.6 }}>
+                                    Deine Bibliothek
+                                </Text>
+                                <Text style={{ color: colors.textSubtle, fontSize: 14, fontWeight: '600', marginTop: 4 }}>
+                                    {filteredTemplates.length} von {templates.length} Vorlagen sichtbar
+                                </Text>
                             </View>
-                            <Text className="text-[#243842] font-black text-[22px] tracking-tight mb-2 text-center">Keine Vorlagen</Text>
-                            <Text className="text-[#243842]/50 text-[15px] text-center font-medium leading-relaxed max-w-[300px]">
-                                {searchQuery ? 'Es wurden keine Vorlagen für diese Suche gefunden.' : 'Erstelle jetzt deine erste Übungsvorlage für deine Klienten.'}
+                            <Badge variant={searchQuery.trim() ? 'default' : 'muted'}>
+                                {searchQuery.trim() ? 'Suchansicht aktiv' : 'Alles im Blick'}
+                            </Badge>
+                        </View>
+                    </MotiView>
+
+                    {loading ? (
+                        <View style={{ paddingVertical: 72, alignItems: 'center', justifyContent: 'center' }}>
+                            <ActivityIndicator size="large" color={colors.primary} />
+                            <Text style={{ color: colors.textSubtle, fontSize: 14, fontWeight: '600', marginTop: 12 }}>
+                                Vorlagen werden geladen...
                             </Text>
-                        </MotiView>
+                        </View>
+                    ) : filteredTemplates.length === 0 ? (
+                        <Card
+                            variant="elevated"
+                            padding="lg"
+                            style={{
+                                alignItems: 'center',
+                                paddingVertical: 48,
+                                backgroundColor: colors.card,
+                                borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                            }}
+                        >
+                            <View
+                                style={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: 28,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginBottom: 18,
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F7F4EE',
+                                }}
+                            >
+                                <Sparkles size={30} color={colors.primary} />
+                            </View>
+                            <Text style={{ color: colors.text, fontSize: 22, fontWeight: '900', marginBottom: 8, textAlign: 'center' }}>
+                                {searchQuery.trim() ? 'Keine passende Vorlage' : 'Noch keine Vorlage angelegt'}
+                            </Text>
+                            <Text style={{ color: colors.textSubtle, fontSize: 14, fontWeight: '600', lineHeight: 22, textAlign: 'center', maxWidth: 360, marginBottom: 20 }}>
+                                {searchQuery.trim()
+                                    ? 'Passe Suchbegriff oder Inhalt an, um wieder Vorlagen im Board zu sehen.'
+                                    : 'Lege deine erste Struktur an und baue damit denselben hochwertigen Einstieg wie im Dashboard.'}
+                            </Text>
+                            {!searchQuery.trim() ? (
+                                <TouchableOpacity
+                                    onPress={() => router.push('/(app)/therapist/template/new' as any)}
+                                    style={{
+                                        minHeight: 48,
+                                        paddingHorizontal: 18,
+                                        borderRadius: 16,
+                                        backgroundColor: colors.primary,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                    }}
+                                >
+                                    <Text style={{ color: '#FFFFFF', fontWeight: '900' }}>Erste Vorlage erstellen</Text>
+                                </TouchableOpacity>
+                            ) : null}
+                        </Card>
                     ) : (
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 24, paddingBottom: 120 }}>
-                            {filteredTemplates.map((item, index) => renderTemplateItem({ item, index }))}
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 16 }}>
+                            {filteredTemplates.map((template, index) => renderTemplateCard(template, index))}
                         </View>
                     )}
                 </View>
             </ScrollView>
 
-
-
-            {/* Assignment Modal (Premium Style) */}
-            <Modal visible={assignModalVisible} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/40 p-4">
-                    <MotiView
-                        from={{ opacity: 0, scale: 0.95, translateY: 20 }}
-                        animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                        className="bg-white rounded-[32px] w-full max-w-md overflow-hidden shadow-2xl"
+            <Modal visible={assignModalVisible} transparent animationType="fade" onRequestClose={() => setAssignModalVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.45)', padding: 20 }}>
+                    <Card
+                        variant="elevated"
+                        padding="none"
+                        style={{
+                            width: '100%',
+                            maxWidth: 520,
+                            backgroundColor: colors.card,
+                            borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                        }}
                     >
-                        <View className="bg-gray-50/50 p-6 border-b border-gray-100 flex-row justify-between items-center">
-                            <Text className="text-[20px] font-black text-[#243842] tracking-tight">Klient Zuweisen</Text>
-                            <TouchableOpacity onPress={() => setAssignModalVisible(false)} className="bg-white shadow-sm p-2.5 rounded-full border border-gray-100" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                                <X size={20} color="#243842" />
+                        <View
+                            style={{
+                                paddingHorizontal: 24,
+                                paddingVertical: 20,
+                                borderBottomWidth: 1,
+                                borderBottomColor: colors.border,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                            }}
+                        >
+                            <View>
+                                <Text style={{ color: colors.text, fontSize: 21, fontWeight: '900' }}>Vorlage zuweisen</Text>
+                                <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '600', marginTop: 4 }}>
+                                    {selectedTemplateForAssign?.title || 'Vorlage'}
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setAssignModalVisible(false)}
+                                style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 14,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                                }}
+                            >
+                                <X size={18} color={colors.text} />
                             </TouchableOpacity>
                         </View>
 
-                        <View className="p-6">
-                            <Text className="text-[#243842]/60 font-medium text-[15px] mb-6 leading-relaxed">
-                                Wem möchtest du die Vorlage <Text className="font-bold text-[#137386]">"{selectedTemplateForAssign?.title}"</Text> zuweisen?
+                        <View style={{ padding: 24 }}>
+                            <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 22, fontWeight: '600', marginBottom: 18 }}>
+                                Waehle den Klienten aus, dem du diese Struktur direkt in den Alltag geben willst.
                             </Text>
 
-                            <FlatList
-                                data={clients}
-                                keyExtractor={(c) => c.id}
-                                renderItem={({ item }) => (
+                            <ScrollView style={{ maxHeight: 340 }} showsVerticalScrollIndicator={false}>
+                                {clients.map(client => (
                                     <TouchableOpacity
-                                        onPress={() => confirmAssignToClient(item.id)}
-                                        className="bg-white p-5 rounded-[20px] border border-gray-100 mb-3 flex-row items-center justify-between"
-                                        style={{ shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 12, elevation: 1 }}
+                                        key={client.id}
+                                        onPress={() => confirmAssignToClient(client.id)}
+                                        activeOpacity={0.8}
+                                        style={{
+                                            minHeight: 72,
+                                            borderRadius: 20,
+                                            paddingHorizontal: 18,
+                                            paddingVertical: 14,
+                                            marginBottom: 12,
+                                            backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F7F4EE',
+                                            borderWidth: 1,
+                                            borderColor: colors.border,
+                                            flexDirection: 'row',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                        }}
                                     >
-                                        <View className="flex-row items-center">
-                                            <View className="w-10 h-10 bg-[#137386]/10 rounded-full items-center justify-center mr-3">
-                                                <Text className="text-[#137386] font-bold">{item.firstName?.charAt(0)}{item.lastName?.charAt(0)}</Text>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                            <LinearGradient
+                                                colors={['#4E7E82', '#2D666B']}
+                                                start={{ x: 0, y: 0 }}
+                                                end={{ x: 1, y: 1 }}
+                                                style={{ width: 44, height: 44, borderRadius: 16, alignItems: 'center', justifyContent: 'center' }}
+                                            >
+                                                <Text style={{ color: '#FFFFFF', fontWeight: '900', fontSize: 15 }}>
+                                                    {(client.firstName || '?').charAt(0)}{(client.lastName || '?').charAt(0)}
+                                                </Text>
+                                            </LinearGradient>
+                                            <View>
+                                                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '800' }}>
+                                                    {client.firstName} {client.lastName}
+                                                </Text>
+                                                <Text style={{ color: colors.textSubtle, fontSize: 12, fontWeight: '600', marginTop: 2 }}>
+                                                    Sofortige Zuweisung als neue Aufgabe
+                                                </Text>
                                             </View>
-                                            <Text className="font-black text-[#243842] text-[16px]">{item.firstName} {item.lastName}</Text>
                                         </View>
-                                        <View className="bg-[#137386] w-9 h-9 rounded-full items-center justify-center opacity-90">
-                                            <Send size={14} color="#ffffff" style={{ marginLeft: -2 }} />
+                                        <View
+                                            style={{
+                                                width: 36,
+                                                height: 36,
+                                                borderRadius: 12,
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                backgroundColor: colors.primary,
+                                            }}
+                                        >
+                                            <Send size={15} color="#FFFFFF" />
                                         </View>
                                     </TouchableOpacity>
-                                )}
-                                style={{ maxHeight: 300 }}
-                                showsVerticalScrollIndicator={false}
-                            />
+                                ))}
+                            </ScrollView>
                         </View>
-                    </MotiView>
+                    </Card>
                 </View>
             </Modal>
 
-            {/* Delete Confirmation Modal */}
-            <Modal visible={deleteModalVisible} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/40 p-6">
-                    <MotiView
-                        from={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        style={{ width: '100%', maxWidth: 384, backgroundColor: 'white', borderRadius: 40, padding: 40, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
+            <Modal visible={deleteModalVisible} transparent animationType="fade" onRequestClose={() => setDeleteModalVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.45)', padding: 20 }}>
+                    <Card
+                        variant="elevated"
+                        padding="lg"
+                        style={{
+                            width: '100%',
+                            maxWidth: 420,
+                            backgroundColor: colors.card,
+                            borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                        }}
                     >
-                        <View className="items-center mb-10">
-                            <View className="w-20 h-20 bg-red-50 rounded-full items-center justify-center mb-6">
-                                <Trash2 size={40} color="#EF4444" />
+                        <View style={{ alignItems: 'center', marginBottom: 24 }}>
+                            <View
+                                style={{
+                                    width: 76,
+                                    height: 76,
+                                    borderRadius: 26,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    marginBottom: 18,
+                                    backgroundColor: isDark ? 'rgba(248,113,113,0.14)' : 'rgba(239,68,68,0.08)',
+                                }}
+                            >
+                                <Trash2 size={30} color={colors.danger} />
                             </View>
-                            <Text className="text-[24px] font-black text-[#243842] mb-3 text-center tracking-tight">{i18n.t('templates.delete_title')}</Text>
-                            <Text className="text-[#243842]/60 font-medium text-center text-[16px] leading-relaxed mb-8">
-                                {i18n.t('templates.delete_confirm')}
+                            <Text style={{ color: colors.text, fontSize: 22, fontWeight: '900', marginBottom: 8, textAlign: 'center' }}>
+                                Vorlage archivieren?
                             </Text>
+                            <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 22, fontWeight: '600', textAlign: 'center' }}>
+                                Die Vorlage verschwindet aus der Bibliothek, bestehende Zuweisungen bleiben aber unberuehrt.
+                            </Text>
+                        </View>
 
-                            {templateToDelete && (
-                                <View className="w-full bg-gray-50 border border-gray-100 rounded-3xl p-5 flex-row items-center">
-                                    <View className="w-12 h-12 rounded-2xl items-center justify-center mr-4" style={{ backgroundColor: `${templateToDelete.themeColor || '#6366F1'}15` }}>
-                                        <LayoutTemplate size={24} color={templateToDelete.themeColor || '#6366F1'} />
-                                    </View>
-                                    <View className="flex-1">
-                                        <Text className="font-bold text-[#243842] text-[17px]" numberOfLines={1}>{templateToDelete.title}</Text>
-                                        <Text className="text-gray-500 text-[13px] mt-1">{templateToDelete.blocks?.length || 0} Module</Text>
-                                    </View>
+                        {templateToDelete ? (
+                            <View
+                                style={{
+                                    borderRadius: 20,
+                                    padding: 16,
+                                    marginBottom: 18,
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F7F4EE',
+                                    borderWidth: 1,
+                                    borderColor: colors.border,
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    gap: 12,
+                                }}
+                            >
+                                <View
+                                    style={{
+                                        width: 46,
+                                        height: 46,
+                                        borderRadius: 16,
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: `${templateToDelete.themeColor || colors.primary}18`,
+                                    }}
+                                >
+                                    <LayoutTemplate size={20} color={templateToDelete.themeColor || colors.primary} />
                                 </View>
-                            )}
-                        </View>
+                                <View style={{ flex: 1 }}>
+                                    <Text style={{ color: colors.text, fontWeight: '800', fontSize: 15 }} numberOfLines={1}>
+                                        {templateToDelete.title}
+                                    </Text>
+                                    <Text style={{ color: colors.textSubtle, fontSize: 12, fontWeight: '600', marginTop: 2 }}>
+                                        {templateToDelete.blocks?.length || 0} Module
+                                    </Text>
+                                </View>
+                            </View>
+                        ) : null}
+
                         <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <TouchableOpacity onPress={() => setDeleteModalVisible(false)} style={{ flex: 1, backgroundColor: '#F3F4F6', paddingVertical: 18, borderRadius: 20, alignItems: 'center' }}>
-                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: '#243842' }}>{i18n.t('therapist.cancel')}</Text>
+                            <TouchableOpacity
+                                onPress={() => setDeleteModalVisible(false)}
+                                style={{
+                                    flex: 1,
+                                    minHeight: 50,
+                                    borderRadius: 18,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#F3EEE6',
+                                }}
+                            >
+                                <Text style={{ color: colors.text, fontSize: 15, fontWeight: '800' }}>{i18n.t('therapist.cancel')}</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={confirmDeleteTemplate} style={{ flex: 1, backgroundColor: '#EF4444', paddingVertical: 18, borderRadius: 20, alignItems: 'center', shadowColor: '#EF4444', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 4 }}>
-                                <Text style={{ fontWeight: 'bold', fontSize: 17, color: 'white' }}>{i18n.t('templates.delete_btn')}</Text>
+                            <TouchableOpacity
+                                onPress={confirmDeleteTemplate}
+                                style={{
+                                    flex: 1,
+                                    minHeight: 50,
+                                    borderRadius: 18,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: colors.danger,
+                                }}
+                            >
+                                <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '900' }}>{i18n.t('templates.delete_btn')}</Text>
                             </TouchableOpacity>
                         </View>
-                    </MotiView>
+                    </Card>
                 </View>
             </Modal>
 
-            {/* Color Picker Modal */}
-            <Modal visible={colorModalVisible} transparent animationType="fade">
-                <View className="flex-1 justify-center items-center bg-black/40 p-6">
-                    <MotiView
-                        from={{ opacity: 0, scale: 0.95, translateY: 20 }}
-                        animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                        style={{ width: '100%', maxWidth: 384, backgroundColor: 'white', borderRadius: 40, padding: 40, shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
+            <Modal visible={colorModalVisible} transparent animationType="fade" onRequestClose={() => setColorModalVisible(false)}>
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.45)', padding: 20 }}>
+                    <Card
+                        variant="elevated"
+                        padding="lg"
+                        style={{
+                            width: '100%',
+                            maxWidth: 420,
+                            backgroundColor: colors.card,
+                            borderColor: isDark ? colors.cardBorder : 'rgba(0,0,0,0.06)',
+                        }}
                     >
-                        <View className="flex-row justify-between items-center mb-10">
-                            <Text className="text-[24px] font-black text-[#243842] tracking-tight">Farbe wählen</Text>
-                            <TouchableOpacity onPress={() => setColorModalVisible(false)} className="bg-gray-100 p-2.5 rounded-full" hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
-                                <X size={22} color="#243842" />
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                            <View>
+                                <Text style={{ color: colors.text, fontSize: 22, fontWeight: '900' }}>Akzentfarbe</Text>
+                                <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '600', marginTop: 4 }}>
+                                    Fuer Karte, Preview und CTA
+                                </Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => setColorModalVisible(false)}
+                                style={{
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 14,
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)',
+                                }}
+                            >
+                                <X size={18} color={colors.text} />
                             </TouchableOpacity>
                         </View>
-                        <View className="flex-row flex-wrap gap-7 justify-center mb-4">
-                            {THEME_COLORS.map(color => (
-                                <TouchableOpacity
-                                    key={color}
-                                    onPress={() => handleUpdateThemeColor(color)}
-                                    style={{
-                                        width: 68, height: 68, borderRadius: 34, backgroundColor: color,
-                                        borderWidth: 4, borderColor: templateToColor?.themeColor === color ? '#243842' : 'transparent',
-                                        shadowColor: color, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 6
-                                    }}
-                                />
-                            ))}
+
+                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 14 }}>
+                            {THEME_COLORS.map(color => {
+                                const isActive = templateToColor?.themeColor === color;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={color}
+                                        onPress={() => handleUpdateThemeColor(color)}
+                                        style={{
+                                            width: 58,
+                                            height: 58,
+                                            borderRadius: 20,
+                                            backgroundColor: color,
+                                            borderWidth: 3,
+                                            borderColor: isActive ? colors.text : 'transparent',
+                                            shadowColor: color,
+                                            shadowOffset: { width: 0, height: 6 },
+                                            shadowOpacity: 0.26,
+                                            shadowRadius: 12,
+                                            elevation: 4,
+                                        }}
+                                    />
+                                );
+                            })}
                         </View>
-                    </MotiView>
+                    </Card>
                 </View>
             </Modal>
 
@@ -469,3 +980,4 @@ export default function TherapistTemplates() {
         </View>
     );
 }
+
