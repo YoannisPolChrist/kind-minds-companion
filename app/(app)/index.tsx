@@ -9,7 +9,7 @@ import { useAppStore } from '../../utils/useAppStore';
 import { useAuth } from '../../contexts/AuthContext';
 import { useEffect, useCallback, useMemo, useState, lazy, Suspense } from 'react';
 import { useRouter, useFocusEffect, Redirect } from 'expo-router';
-import { collection, query, where, limit, getDocs, updateDoc, doc, orderBy } from 'firebase/firestore';
+import { collection, query, where, limit, getDocs, getDoc, updateDoc, doc, orderBy } from 'firebase/firestore';
 import Animated, { useAnimatedScrollHandler, useSharedValue, useAnimatedStyle, interpolate, Extrapolate } from 'react-native-reanimated';
 import { db } from '../../utils/firebase';
 import { registerForPushNotificationsAsync } from '../../utils/notifications';
@@ -72,16 +72,14 @@ export default function ClientDashboard() {
 
         // Fetch therapist booking URL
         const fetchBookingUrl = async () => {
-            if (!profile?.id) return;
+            if (!profile?.id || !profile?.therapistId) return;
             try {
                 // Return early if already in store config cache
                 if (bookingUrl) return;
 
-                // If not in cache, query
-                const q = query(collection(db, 'users'), where('role', '==', 'therapist'), limit(1));
-                const snap = await getDocs(q);
-                if (!snap.empty) {
-                    const therapistData = snap.docs[0].data();
+                const therapistSnap = await getDoc(doc(db, 'users', profile.therapistId));
+                if (therapistSnap.exists()) {
+                    const therapistData = therapistSnap.data();
                     if (therapistData.bookingUrl) {
                         setTherapistBookingUrl(profile.id, therapistData.bookingUrl);
                     }
@@ -116,7 +114,7 @@ export default function ClientDashboard() {
         try {
             const q = query(
                 collection(db, 'notifications'),
-                where('clientId', '==', profile.id),
+                where('userId', '==', profile.id),
                 where('read', '==', false)
             );
             const snap = await getDocs(q);
@@ -343,7 +341,7 @@ export default function ClientDashboard() {
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ color: isDark ? '#38BDF8' : '#0369A1', fontWeight: 'bold', fontSize: 16, marginBottom: 2 }}>{notifications.length} neue Nachricht{notifications.length > 1 ? 'en' : ''}</Text>
                                     <Text style={{ color: isDark ? '#7DD3FC' : '#0284C7', fontSize: 13 }} numberOfLines={2}>
-                                        {notifications[0]?.message || 'Dein Therapeut hat neue Ressourcen für dich freigeschaltet.'}
+                                        {notifications[0]?.body || notifications[0]?.message || 'Dein Therapeut hat neue Ressourcen für dich freigeschaltet.'}
                                     </Text>
                                 </View>
                                 <View style={{ backgroundColor: isDark ? 'rgba(56,189,248,0.2)' : 'rgba(2,132,199,0.1)', padding: 8, borderRadius: 100 }}>

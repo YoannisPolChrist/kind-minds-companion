@@ -60,7 +60,6 @@ export default function AppLayout() {
                 <Stack.Screen name="therapist/templates" />
                 <Stack.Screen name="therapist/template/[id]" />
                 <Stack.Screen name="therapist/client/[id]" />
-                <Stack.Screen name="therapist/client/assign/[clientId]" />
             </Stack>
         );
     }

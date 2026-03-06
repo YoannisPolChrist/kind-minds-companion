@@ -20,9 +20,13 @@ export default function ResourcesScreen() {
     const [selectedResource, setSelectedResource] = useState<any>(null);
 
     const handleOpenResource = (url: string) => {
-        Linking.openURL(url).catch(err => {
+        let validUrl = url;
+        if (!validUrl.startsWith('http://') && !validUrl.startsWith('https://')) {
+            validUrl = 'https://' + validUrl;
+        }
+        Linking.openURL(validUrl).catch(err => {
             console.error("Cannot open url", err);
-            alert(i18n.t('resources.open_error', { defaultValue: 'Error opening resource.' }));
+            alert(i18n.t('resources.open_error', { defaultValue: 'Die Ressource konnte nicht geöffnet werden.' }));
         });
     };
 

@@ -13,7 +13,6 @@ import ExerciseFlowTimeline from './ExerciseFlowTimeline';
 import ExerciseDifficultyGauge from './ExerciseDifficultyGauge';
 import Block3DTiltWrapper from './Block3DTiltWrapper';
 import Block3DEntrance from './Block3DEntrance';
-import { BlockConditionEditor } from './BlockConditionEditor';
 import { uploadFile, generateStoragePath, getExtension } from '../../utils/uploadFile';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -1122,8 +1121,8 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                         left: 0,
                         right: 0,
                         zIndex: 100,
-                        // Increased height for the new design
-                        height: HEADER_HEIGHT + 20,
+                        // Adjusted height to match the rest of the app
+                        height: HEADER_HEIGHT,
                         overflow: 'hidden',
                         borderBottomLeftRadius: 32,
                         borderBottomRightRadius: 32,
@@ -1155,22 +1154,10 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                     />
                 )}
 
-                {/* Subtle gold accent line at the very bottom */}
-                <View
-                    style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: 1.5,
-                        backgroundColor: 'rgba(192, 157, 89, 0.45)',
-                    }}
-                />
-
                 {/* Content row */}
                 <View
                     style={{
-                        paddingTop: insets.top + 10,
+                        paddingTop: insets.top,
                         flex: 1,
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -1248,7 +1235,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 style={{ flex: 1 }}
                 contentContainerStyle={{
                     paddingHorizontal: 20,
-                    paddingTop: HEADER_HEIGHT + 36,
+                    paddingTop: HEADER_HEIGHT + 24,
                     paddingBottom: 80,
                     maxWidth: 896,
                     width: '100%',

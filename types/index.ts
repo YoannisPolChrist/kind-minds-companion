@@ -61,6 +61,7 @@ export interface Invitation {
     therapistId: string;
     targetOfflineProfileId?: string;
     status: 'pending' | 'used' | 'expired';
+    usedBy?: string;
     createdAt: any; // Firestore Timestamp
 }
 

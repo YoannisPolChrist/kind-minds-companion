@@ -11,6 +11,7 @@ export interface UserProfile {
     email: string;
     firstName?: string;
     lastName?: string;
+    therapistId?: string;
     photoURL?: string;
     bookingUrl?: string;
     createdAt?: string;
@@ -71,14 +72,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             }
 
             // Fallback/Override für ps.johanneschrist -> Automatisch Therapeut (User Request)
-            if (user.email && user.email.toLowerCase().includes('ps.johanneschrist')) {
-                if (profile.role !== 'therapist') {
-                    profile.role = 'therapist';
-                    // Aktualisiere Firestore, damit Rolle auf Therapeut steht
-                    await setDoc(docRef, { role: 'therapist' }, { merge: true });
-                }
-            }
-
             // Register Push Token & Platform after successfully getting the document
             try {
                 const pushToken = await registerForPushNotificationsAsync();

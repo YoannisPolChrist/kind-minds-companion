@@ -141,7 +141,7 @@ export function useAuthActions(): AuthResponse {
             await setDoc(doc(db, 'users', user.uid), userProfile);
 
             if (invitationId) {
-                await markInvitationAsUsed(invitationId);
+                await markInvitationAsUsed(invitationId, user.uid);
             }
 
             // Set success message BEFORE signing out, so it renders before auth state changes
@@ -169,15 +169,15 @@ export function useAuthActions(): AuthResponse {
     const resetPassword = useCallback(async (email: string) => {
         clearMessages();
         setLoading(true);
+        const normalizedEmail = email.trim().toLowerCase();
+
         try {
-            await addDoc(collection(db, 'mail_requests'), {
-                email: email.trim().toLowerCase(),
-                type: 'PASSWORD_RESET',
-                status: 'pending',
-                requestedAt: serverTimestamp()
-            });
+            await sendPasswordResetEmail(auth, normalizedEmail);
         } catch (err: any) {
-            console.warn('Password reset attempt:', err.message);
+            // Avoid account enumeration: we still return a generic success message.
+            if (!['auth/user-not-found', 'auth/invalid-email'].includes(err?.code)) {
+                console.warn('Password reset attempt:', err?.message || err);
+            }
         } finally {
             setLoading(false);
             setSuccess(i18n.t('login.reset_sent'));

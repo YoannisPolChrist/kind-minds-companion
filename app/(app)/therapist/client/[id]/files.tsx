@@ -186,8 +186,10 @@ export default function TherapistClientFilesScreen() {
             });
 
             await addDoc(collection(db, 'notifications'), {
-                clientId: id,
+                userId: id,
                 type: 'FILE_UPLOAD',
+                title: 'Neue Datei',
+                body: 'Hey, für dich wurde eine neue Datei hinterlegt!',
                 message: 'Hey, für dich wurde eine neue Datei hinterlegt!',
                 read: false,
                 createdAt: serverTimestamp(),

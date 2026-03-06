@@ -91,7 +91,9 @@ async function executeAction(action: SyncAction): Promise<boolean> {
         case 'SAVE_CHECKIN':
             // The payload is the checkinData itself
             const checkin = payload;
-            const docId = `${checkin.uid}_${checkin.date}`;
+            const docId = checkin.slot
+                ? `${checkin.uid}_${checkin.date}_${checkin.slot}`
+                : `${checkin.uid}_${checkin.date}`;
             const ref = doc(db, 'checkins', docId);
             await setDoc(ref, checkin);
             return true;

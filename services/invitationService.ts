@@ -1,4 +1,4 @@
-import { collection, addDoc, serverTimestamp, query, where, getDocs, updateDoc, doc } from 'firebase/firestore';
+import { serverTimestamp, updateDoc, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../utils/firebase';
 import { Invitation } from '../types';
 
@@ -19,12 +19,13 @@ function generateInvitationCode(): string {
  * Optionally linking it to an offline profile
  */
 export async function createInvitation(therapistId: string, targetOfflineProfileId?: string): Promise<string> {
-    const code = generateInvitationCode();
-    
-    // Ensure uniqueness (simple retry logic)
-    const existing = await getDocs(query(collection(db, 'invitations'), where('code', '==', code)));
-    if (!existing.empty) {
-        return createInvitation(therapistId, targetOfflineProfileId);
+    let code = generateInvitationCode();
+    let invRef = doc(db, 'invitations', code);
+
+    // Ensure uniqueness with deterministic document ids (the code itself).
+    while ((await getDoc(invRef)).exists()) {
+        code = generateInvitationCode();
+        invRef = doc(db, 'invitations', code);
     }
 
     const invitationData: Omit<Invitation, 'id'> = {
@@ -38,7 +39,7 @@ export async function createInvitation(therapistId: string, targetOfflineProfile
         invitationData.targetOfflineProfileId = targetOfflineProfileId;
     }
 
-    await addDoc(collection(db, 'invitations'), invitationData);
+    await setDoc(invRef, invitationData);
     
     return code;
 }
@@ -48,24 +49,27 @@ export async function createInvitation(therapistId: string, targetOfflineProfile
  */
 export async function validateInvitationCode(code: string): Promise<Invitation | null> {
     const normalizedCode = code.toUpperCase().trim();
-    const q = query(collection(db, 'invitations'), where('code', '==', normalizedCode), where('status', '==', 'pending'));
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
+    const docSnap = await getDoc(doc(db, 'invitations', normalizedCode));
+    if (!docSnap.exists()) {
         return null;
     }
 
-    const docSnap = snapshot.docs[0];
-    return { id: docSnap.id, ...docSnap.data() } as Invitation;
+    const data = docSnap.data() as Invitation;
+    if (data.status !== 'pending') {
+        return null;
+    }
+
+    return { id: docSnap.id, ...data } as Invitation;
 }
 
 /**
  * Marks an invitation as used
  */
-export async function markInvitationAsUsed(invitationId: string): Promise<void> {
+export async function markInvitationAsUsed(invitationId: string, usedBy: string): Promise<void> {
     const invRef = doc(db, 'invitations', invitationId);
     await updateDoc(invRef, {
         status: 'used',
+        usedBy,
         usedAt: serverTimestamp()
     });
 }

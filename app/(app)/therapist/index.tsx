@@ -69,12 +69,20 @@ export default function TherapistDashboard() {
     const randomBg = useMemo(() => HOME_BACKGROUNDS[Math.floor(Math.random() * HOME_BACKGROUNDS.length)], []);
 
     useEffect(() => {
-        fetchClients();
-    }, []);
+        if (profile?.id) {
+            fetchClients();
+        }
+    }, [profile?.id]);
 
     const fetchClients = async () => {
+        if (!profile?.id) return;
+
         try {
-            const q = query(collection(db, "users"), where("role", "==", "client"));
+            const q = query(
+                collection(db, "users"),
+                where("role", "==", "client"),
+                where("therapistId", "==", profile.id)
+            );
             const querySnapshot = await getDocs(q);
 
             // Filter out soft-deleted clients

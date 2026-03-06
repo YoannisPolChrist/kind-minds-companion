@@ -1,36 +1,84 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // Auth Helpers
+
+    // Auth helpers
     function isAuthenticated() {
       return request.auth != null;
     }
-    
+
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
-    
-    function isTherapist() {
+
+    function requesterProfileExists() {
       return isAuthenticated() &&
-             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'therapist';
+             exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    function requesterProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isTherapist() {
+      return requesterProfileExists() && requesterProfile().role == 'therapist';
+    }
+
+    function isTherapistForClientId(clientId) {
+      return isTherapist() &&
+             exists(/databases/$(database)/documents/users/$(clientId)) &&
+             get(/databases/$(database)/documents/users/$(clientId)).data.therapistId == request.auth.uid;
+    }
+
+    function isAssignedTherapistDoc(userId) {
+      return requesterProfileExists() &&
+             requesterProfile().therapistId == userId;
     }
 
     // USERS
     match /users/{userId} {
-      allow read: if isOwner(userId) || isTherapist();
-      allow create: if isOwner(userId) || isTherapist();
-      allow update: if isOwner(userId) || isTherapist();
-      allow delete: if isTherapist();
+      allow read: if isOwner(userId)
+                  || (isTherapist() &&
+                      (userId == request.auth.uid ||
+                       resource.data.therapistId == request.auth.uid))
+                  || (resource.data.role == 'therapist' &&
+                      isAssignedTherapistDoc(userId));
+
+      // Self-signup is only client role. Therapists can only create their own client profiles.
+      allow create: if (isOwner(userId) &&
+                        request.resource.data.role == 'client')
+                    || (isTherapist() &&
+                        request.resource.data.role == 'client' &&
+                        request.resource.data.therapistId == request.auth.uid);
+
+      allow update: if (isOwner(userId) &&
+                        request.resource.data.role == resource.data.role &&
+                        (!('therapistId' in request.resource.data) ||
+                         request.resource.data.therapistId == resource.data.therapistId))
+                    || (isTherapist() &&
+                        (userId == request.auth.uid ||
+                         (resource.data.role == 'client' &&
+                          resource.data.therapistId == request.auth.uid &&
+                          request.resource.data.therapistId == request.auth.uid)))
+                    || (isAuthenticated() &&
+                        resource.data.isOfflineProfile == true &&
+                        request.resource.data.isOfflineProfile == false &&
+                        request.resource.data.linkedAuthUid == request.auth.uid &&
+                        request.resource.data.therapistId == resource.data.therapistId);
+
+      allow delete: if isTherapist() &&
+                    resource.data.role == 'client' &&
+                    resource.data.therapistId == request.auth.uid;
     }
 
     // EXERCISES
     match /exercises/{exerciseId} {
-      allow read: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
-      allow create: if isTherapist();
-      allow update: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
-      allow delete: if isTherapist();
+      allow read: if (isAuthenticated() && resource.data.clientId == request.auth.uid) ||
+                  isTherapistForClientId(resource.data.clientId);
+      allow create: if isTherapistForClientId(request.resource.data.clientId);
+      allow update: if (isAuthenticated() && resource.data.clientId == request.auth.uid) ||
+                    isTherapistForClientId(resource.data.clientId);
+      allow delete: if isTherapistForClientId(resource.data.clientId);
     }
 
     // TEMPLATES
@@ -40,49 +88,94 @@ service cloud.firestore {
 
     // RESOURCES
     match /resources/{resourceId} {
-      // Global resources, readable by clients, writable by therapists
+      // Global resources, readable by authenticated users, writable by therapists.
       allow read: if isAuthenticated();
       allow write: if isTherapist();
     }
 
     // CLIENT RESOURCES
     match /client_resources/{resourceId} {
-      allow read: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
-      allow create: if isTherapist();
-      allow update, delete: if isTherapist();
+      allow read: if (isAuthenticated() && resource.data.clientId == request.auth.uid) ||
+                  isTherapistForClientId(resource.data.clientId);
+      allow create: if isTherapistForClientId(request.resource.data.clientId);
+      allow update, delete: if isTherapistForClientId(resource.data.clientId);
     }
 
     // NOTIFICATIONS
     match /notifications/{notificationId} {
-      allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create, delete: if isTherapist() || (isAuthenticated() && resource.data.userId == request.auth.uid);
+      allow read, update: if isAuthenticated() &&
+                          resource.data.userId == request.auth.uid;
+      allow create: if (isAuthenticated() &&
+                        request.resource.data.userId == request.auth.uid)
+                    || isTherapistForClientId(request.resource.data.userId);
+      allow delete: if (isAuthenticated() &&
+                        resource.data.userId == request.auth.uid)
+                    || isTherapistForClientId(resource.data.userId);
     }
 
     // CHECKINS
     match /checkins/{checkinId} {
-      // Checkins use "uid" instead of "clientId"
-      allow read: if isTherapist() || (isAuthenticated() && resource.data.uid == request.auth.uid);
-      allow create: if isAuthenticated() && request.resource.data.uid == request.auth.uid;
-      allow update, delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
+      allow read: if (isAuthenticated() && resource.data.uid == request.auth.uid) ||
+                  isTherapistForClientId(resource.data.uid);
+      allow create: if isAuthenticated() &&
+                    request.resource.data.uid == request.auth.uid;
+      allow update, delete: if isAuthenticated() &&
+                            resource.data.uid == request.auth.uid;
     }
 
     // CLIENT NOTES
     match /client_notes/{noteId} {
-      allow read: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
-      allow create: if isTherapist() || (isAuthenticated() && request.resource.data.clientId == request.auth.uid);
-      allow update, delete: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
+      allow read: if (isAuthenticated() && resource.data.clientId == request.auth.uid) ||
+                  isTherapistForClientId(resource.data.clientId);
+      allow create: if (isAuthenticated() &&
+                        request.resource.data.clientId == request.auth.uid)
+                    || isTherapistForClientId(request.resource.data.clientId);
+      allow update, delete: if (isAuthenticated() && resource.data.clientId == request.auth.uid) ||
+                            isTherapistForClientId(resource.data.clientId);
     }
-    
+
+    // INVITATIONS
+    match /invitations/{invitationCode} {
+      // Clients can only fetch a specific pending invitation by code (no list).
+      allow get: if resource.data.status == 'pending' ||
+                 (isTherapist() && resource.data.therapistId == request.auth.uid);
+      allow list: if isTherapist() &&
+                  resource.data.therapistId == request.auth.uid;
+
+      allow create: if isTherapist() &&
+                    invitationCode == request.resource.data.code &&
+                    request.resource.data.status == 'pending' &&
+                    request.resource.data.therapistId == request.auth.uid;
+
+      // Client may only mark pending invitation as used by themselves.
+      allow update: if (isTherapist() &&
+                        resource.data.therapistId == request.auth.uid)
+                    || (isAuthenticated() &&
+                        resource.data.status == 'pending' &&
+                        request.resource.data.status == 'used' &&
+                        request.resource.data.usedBy == request.auth.uid &&
+                        request.resource.data.code == resource.data.code &&
+                        request.resource.data.therapistId == resource.data.therapistId);
+
+      allow delete: if isTherapist() &&
+                    resource.data.therapistId == request.auth.uid;
+    }
+
     // BACKEND NOTIFICATIONS / MAIL
     match /mail/{mailId} {
-      // Handled entirely by Firebase Functions using Admin SDK (bypasses rules)
+      // Handled entirely by Firebase Functions using Admin SDK (bypasses rules).
       allow read, write: if false;
     }
 
     // CUSTOM AUTH EMAILS
     match /mail_requests/{requestId} {
-      // Anyone can request an email (like a password reset). Security relies on the backend checking if the user exists.
-      allow create: if true;
+      allow create: if isAuthenticated() &&
+                    request.resource.data.type in ['WELCOME_CLIENT', 'VERIFY_EMAIL'] &&
+                    (
+                      (request.resource.data.type == 'WELCOME_CLIENT' && isTherapist()) ||
+                      (request.resource.data.type == 'VERIFY_EMAIL' &&
+                       request.resource.data.email == request.auth.token.email)
+                    );
     }
 
     // DEFAULT DENY

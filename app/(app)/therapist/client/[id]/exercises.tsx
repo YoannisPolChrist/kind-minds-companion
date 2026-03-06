@@ -178,7 +178,22 @@ export default function ClientExercisesView() {
       if (themeColor) exerciseData.themeColor = themeColor;
       if (coverImage) exerciseData.coverImage = coverImage;
 
-      await addDoc(collection(db, "exercises"), exerciseData);
+      // Firebase throws if any nested object contains undefined
+      const removeUndefined = (obj: any): any => {
+        if (Array.isArray(obj)) return obj.map(removeUndefined);
+        if (obj === null || typeof obj !== 'object') return obj;
+        if (obj instanceof Date) return obj;
+
+        return Object.fromEntries(
+          Object.entries(obj)
+            .filter(([_, v]) => v !== undefined)
+            .map(([k, v]) => [k, removeUndefined(v)])
+        );
+      };
+
+      const sanitizedData = removeUndefined(exerciseData);
+
+      await addDoc(collection(db, "exercises"), sanitizedData);
       setShowBuilder(false);
       setSelectedTemplate(null);
       fetchExercises(); // Refresh the list

@@ -69,12 +69,23 @@ export default function TherapistResources() {
 
     useEffect(() => {
         fetchResources();
-        fetchClientsForAssignment();
     }, []);
 
+    useEffect(() => {
+        if (profile?.id) {
+            fetchClientsForAssignment();
+        }
+    }, [profile?.id]);
+
     const fetchClientsForAssignment = async () => {
+        if (!profile?.id) return;
+
         try {
-            const q = query(collection(db, "users"), where("role", "==", "client"));
+            const q = query(
+                collection(db, "users"),
+                where("role", "==", "client"),
+                where("therapistId", "==", profile.id)
+            );
             const querySnapshot = await getDocs(q);
             const rawClients = querySnapshot.docs
                 .map(doc => ({ id: doc.id, ...doc.data() }))
@@ -234,8 +245,10 @@ export default function TherapistResources() {
 
                 promises.push(
                     addDoc(collection(db, "notifications"), {
-                        clientId: client,
+                        userId: client,
                         type: 'FILE_UPLOAD',
+                        title: 'Neue Ressource',
+                        body: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, für dich wurde neues Material hinterlegt!' }),
                         message: i18n.t('therapist.new_file_notification', { defaultValue: 'Hey, für dich wurde neues Material hinterlegt!' }),
                         read: false,
                         createdAt: serverTimestamp()
