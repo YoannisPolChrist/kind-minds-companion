@@ -29,12 +29,6 @@ import Animated, { useSharedValue, useAnimatedScrollHandler, SharedValue } from 
 import { CinematicInfoBlock } from "../../../components/client/CinematicInfoBlock";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../../contexts/ThemeContext";
-import {
-  ProgressChart,
-  BarChart,
-  PieChart,
-  LineChart,
-} from "react-native-chart-kit";
 import { WebView } from "react-native-webview";
 import { CinematicBreathingBlock } from "../../../components/client/CinematicBreathingBlock";
 import AsyncStorage from "@react-native-async-storage/async-storage";

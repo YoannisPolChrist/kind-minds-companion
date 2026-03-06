@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo, useRef } from 'react';
+import React, { useState, useCallback, memo, useRef, useMemo } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardTypeOptions, ActivityIndicator, Animated, StyleSheet, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,7 +7,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { ChevronLeft, Save, Edit3, CheckCircle2, ListChecks, Heart, BookOpen, Clock, Wind, Image as ImageIcon, CircleDot, Activity, Radar, BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon, Link as LinkIcon, Film } from 'lucide-react-native';
 import { MotiView, AnimatePresence } from 'moti';
-import { ProgressChart, BarChart, PieChart, LineChart } from 'react-native-chart-kit';
 import { Dimensions } from 'react-native';
 import ExerciseFlowTimeline from './ExerciseFlowTimeline';
 import ExerciseDifficultyGauge from './ExerciseDifficultyGauge';
@@ -23,6 +22,8 @@ import {
     getCat,
     CHART_PALETTE
 } from './blocks/exerciseRegistry';
+import { parseExerciseChartData, withAlpha } from '../charts/chartData';
+import { FlBarChart, FlDonutChart, FlLineAreaChart, FlRadarChart } from '../charts/flChartPrimitives';
 
 export type { ExerciseBlockType, ExerciseBlock };
 
@@ -94,6 +95,8 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
     const onRemove = useCallback(() => onRemoveBlock(id), [id, onRemoveBlock]);
     const onMove = useCallback((dir: 'up' | 'down') => onMoveBlock(id, dir), [id, onMoveBlock]);
     const onDuplicate = useCallback(() => onDuplicateBlock(id), [id, onDuplicateBlock]);
+    const previewData = useMemo(() => parseExerciseChartData(block.options), [block.options]);
+    const previewWidth = Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120;
 
     const addOption = useCallback(() => onChange({ options: [...(block.options ?? []), ''] }), [block.options, onChange]);
     const removeOption = useCallback((i: number) => onChange({ options: (block.options ?? []).filter((_, idx) => idx !== i) }), [block.options, onChange]);
@@ -541,31 +544,13 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <ProgressChart
-                                data={{
-                                    labels: (block.options ?? []).map(o => o.split(':')[0] || '?'),
-                                    data: (block.options ?? []).map(o => {
-                                        const v = parseFloat(o.split(':')[1] || '0');
-                                        return isNaN(v) ? 0 : Math.min(Math.max(v / 100, 0), 1); // Normalize to 0-1 range for ProgressChart
-                                    }),
-                                    colors: (block.options ?? []).map((o, i) => o.split(':')[2] || CHART_PALETTE[i % CHART_PALETTE.length])
-                                }}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                strokeWidth={12}
-                                radius={32}
-                                hideLegend={false}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(249, 115, 22, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                    style: { borderRadius: 16 },
-                                    propsForLabels: { fontSize: 10, fontWeight: 'bold' }
-                                }}
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlRadarChart
+                                data={previewData}
+                                size={Math.min(previewWidth, 280)}
+                                maxValue={Math.max(100, ...previewData.map(item => item.value), 100)}
+                                textColor="#243842"
+                                subtleTextColor="#6B7C85"
+                                gridColor={withAlpha('#94A3B8', 0.16)}
                             />
                         </MotiView>
                     </>
@@ -630,35 +615,15 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <BarChart
-                                data={{
-                                    labels: (block.options ?? []).map(o => o.split(':')[0] || '?'),
-                                    datasets: [{
-                                        data: (block.options ?? []).map(o => parseFloat(o.split(':')[1] || '0') || 0),
-                                        colors: (block.options ?? []).map((o, i) => {
-                                            const c = o.split(':')[2] || CHART_PALETTE[i % CHART_PALETTE.length];
-                                            return () => c;
-                                        })
-                                    }]
-                                }}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                yAxisLabel=""
-                                yAxisSuffix=""
-                                fromZero
-                                withCustomBarColorFromData={true}
-                                flatColor={true}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(14, 165, 233, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                    barPercentage: 0.6,
-                                    propsForLabels: { fontSize: 10, fontWeight: 'bold' }
-                                }}
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlBarChart
+                                data={previewData.map(item => ({
+                                    ...item,
+                                    secondaryValue: Math.max(...previewData.map(entry => entry.value), 1),
+                                }))}
+                                width={previewWidth}
+                                textColor="#243842"
+                                subtleTextColor="#6B7C85"
+                                gridColor={withAlpha('#94A3B8', 0.16)}
                             />
                         </MotiView>
                     </>
@@ -723,27 +688,12 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <PieChart
-                                data={(block.options ?? []).map((o, i) => ({
-                                    name: o.split(':')[0] || '?',
-                                    population: parseFloat(o.split(':')[1] || '0') || 0,
-                                    color: o.split(':')[2] || CHART_PALETTE[i % CHART_PALETTE.length],
-                                    legendFontColor: '#6B7C85',
-                                    legendFontSize: 12
-                                }))}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-                                }}
-                                accessor="population"
-                                backgroundColor="transparent"
-                                paddingLeft="15"
-                                absolute
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlDonutChart
+                                data={previewData}
+                                size={Math.min(previewWidth, 260)}
+                                showLegend
+                                textColor="#243842"
+                                subtleTextColor="#6B7C85"
                             />
                         </MotiView>
                     </>
@@ -800,28 +750,15 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             style={{ marginTop: 24, padding: 16, backgroundColor: '#FFFFFF', borderRadius: 20, borderWidth: 1, borderColor: '#E8E6E1', alignItems: 'center' }}
                         >
                             <Text style={{ fontSize: 13, fontWeight: '800', color: '#6B7C85', marginBottom: 12 }}>VORSCHAU</Text>
-                            <LineChart
-                                data={{
-                                    labels: (block.options ?? []).map(o => o.split(':')[0] || '?'),
-                                    datasets: [{ data: (block.options ?? []).map(o => parseFloat(o.split(':')[1] || '0') || 0) }]
-                                }}
-                                width={Dimensions.get('window').width > 800 ? 400 : Dimensions.get('window').width - 120}
-                                height={220}
-                                chartConfig={{
-                                    backgroundColor: 'transparent',
-                                    backgroundGradientFrom: '#F8FAFC',
-                                    backgroundGradientTo: '#F1F5F9',
-                                    decimalPlaces: 0,
-                                    color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`,
-                                    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-                                    propsForDots: {
-                                        r: "6",
-                                        strokeWidth: "2",
-                                        stroke: "#059669"
-                                    }
-                                }}
-                                bezier
-                                style={{ marginVertical: 8, borderRadius: 16 }}
+                            <FlLineAreaChart
+                                data={previewData}
+                                width={previewWidth}
+                                color={previewData[0]?.color ?? '#10B981'}
+                                gradientColor={previewData[previewData.length - 1]?.color ?? '#C09D59'}
+                                showAverageLine
+                                textColor="#243842"
+                                subtleTextColor="#6B7C85"
+                                gridColor={withAlpha('#94A3B8', 0.16)}
                             />
                         </MotiView>
                     </>
