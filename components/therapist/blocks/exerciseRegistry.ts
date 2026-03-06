@@ -18,6 +18,7 @@ export interface ExerciseBlock {
     mediaType?: 'image' | 'video';
     mediaSize?: 'small' | 'medium' | 'large';
     videoUrl?: string;
+    condition?: import('../../../types').BlockCondition;
 }
 
 export const CATALOGUE: {

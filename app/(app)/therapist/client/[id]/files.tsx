@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, TextInput, Modal, Platform, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, ActivityIndicator, TextInput, Modal, Platform, Linking, KeyboardAvoidingView } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeBack } from '../../../../../hooks/useSafeBack';
 import React, { useState, useEffect } from 'react';
@@ -8,12 +8,17 @@ import * as FileSystem from 'expo-file-system';
 import * as DocumentPicker from 'expo-document-picker';
 import { db, storage } from '../../../../../utils/firebase';
 import i18n from '../../../../../utils/i18n';
+import Animated, { FadeInDown, Layout } from 'react-native-reanimated';
 import { MotiView } from 'moti';
 import { useAuth } from '../../../../../contexts/AuthContext';
-import { FileUp, FileText, ArrowLeft, X, Trash2, FolderOpen, Download, Image, Film, FileCode, File, Search } from 'lucide-react-native';
+import { FileUp, FileText, ArrowLeft, X, Trash2, FolderOpen, Download, Image as ImageIcon, Film, FileCode, File, Search, Eye } from 'lucide-react-native';
 import { SuccessAnimation } from '../../../../../components/ui/SuccessAnimation';
 import { useDebounce } from '../../../../../hooks/useDebounce';
 import { uploadFile } from '../../../../../utils/uploadFile';
+import { WebView } from 'react-native-webview';
+import { Image } from 'expo-image';
+import { Video, ResizeMode } from 'expo-av';
+import { useClientFiles } from '../../../../../hooks/firebase/useClientFiles';
 
 // ─── File type helpers ─────────────────────────────────────────────────────────
 
@@ -21,7 +26,7 @@ function getFileInfo(file: any): { Icon: any; color: string; bg: string; border:
     const name = (file.originalName || file.title || '').toLowerCase();
     if (name.endsWith('.pdf')) return { Icon: FileText, color: '#EF4444', bg: '#FEF2F2', border: '#FECACA', label: 'PDF' };
     if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].some(e => name.endsWith(e)))
-        return { Icon: Image, color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE', label: 'Bild' };
+        return { Icon: ImageIcon, color: '#8B5CF6', bg: '#F5F3FF', border: '#DDD6FE', label: 'Bild' };
     if (['.mp4', '.mov', '.avi', '.mkv'].some(e => name.endsWith(e)))
         return { Icon: Film, color: '#F59E0B', bg: '#FFFBEB', border: '#FDE68A', label: 'Video' };
     if (['.doc', '.docx'].some(e => name.endsWith(e)))
@@ -40,14 +45,14 @@ function formatFileSize(bytes?: number): string {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-const FileCard = React.memo(({ file, index, onDeletePrompt }: any) => {
+const FileCard = React.memo(({ file, index, onDeletePrompt, onPreview }: any) => {
     const info = getFileInfo(file);
     const handleDelete = React.useCallback(() => onDeletePrompt(file), [file, onDeletePrompt]);
+    const handlePreview = React.useCallback(() => onPreview(file), [file, onPreview]);
     return (
-        <MotiView
-            from={{ opacity: 0, translateY: 16 }}
-            animate={{ opacity: 1, translateY: 0 }}
-            transition={{ delay: index * 40 }}
+        <Animated.View
+            entering={FadeInDown.delay(index * 40).springify()}
+            layout={Layout.springify()}
             style={{ backgroundColor: 'white', borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#E8E6E1', shadowColor: '#243842', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 }}
         >
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -83,10 +88,10 @@ const FileCard = React.memo(({ file, index, onDeletePrompt }: any) => {
                 <View style={{ flexDirection: 'row', gap: 8, marginLeft: 12 }}>
                     {file.url && (
                         <TouchableOpacity
-                            onPress={() => Linking.openURL(file.url)}
+                            onPress={handlePreview}
                             style={{ width: 42, height: 42, borderRadius: 14, backgroundColor: '#F0F9FF', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#BAE6FD' }}
                         >
-                            <Download size={18} color="#0EA5E9" />
+                            <Eye size={18} color="#0EA5E9" />
                         </TouchableOpacity>
                     )}
                     <TouchableOpacity
@@ -97,7 +102,7 @@ const FileCard = React.memo(({ file, index, onDeletePrompt }: any) => {
                     </TouchableOpacity>
                 </View>
             </View>
-        </MotiView>
+        </Animated.View>
     );
 });
 
@@ -107,8 +112,7 @@ export default function TherapistClientFilesScreen() {
     const { id } = useLocalSearchParams();
     const { profile } = useAuth();
 
-    const [clientFiles, setClientFiles] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { clientFiles, setClientFiles, loading, refetch: fetchClientFiles } = useClientFiles(id as string);
     const [search, setSearch] = useState('');
     const debouncedSearch = useDebounce(search, 300);
 
@@ -128,24 +132,16 @@ export default function TherapistClientFilesScreen() {
         setDeleteModalVisible(true);
     }, []);
 
+    // Preview
+    const [previewModalVisible, setPreviewModalVisible] = useState(false);
+    const [selectedResourceForPreview, setSelectedResourceForPreview] = useState<any>(null);
+
+    const handlePreview = React.useCallback((file: any) => {
+        setSelectedResourceForPreview(file);
+        setPreviewModalVisible(true);
+    }, []);
+
     const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: 'success' | 'error' | 'warning' }>({ visible: false, message: '', type: 'success' });
-
-    const fetchClientFiles = async () => {
-        if (!id) return;
-        try {
-            const q = query(collection(db, 'client_resources'), where('clientId', '==', id));
-            const snap = await getDocs(q);
-            const files = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-            files.sort((a: any, b: any) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-            setClientFiles(files);
-        } catch (error) {
-            console.error('Error fetching client files', error);
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    useEffect(() => { fetchClientFiles(); }, [id]);
 
     const pickDocument = async () => {
         const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: true });
@@ -215,7 +211,11 @@ export default function TherapistClientFilesScreen() {
         if (!fileToDelete) return;
         try {
             if (fileToDelete.storagePath) {
-                try { await deleteObject(ref(storage, fileToDelete.storagePath)); } catch { /* ignore */ }
+                try {
+                    await deleteObject(ref(storage, fileToDelete.storagePath));
+                } catch (e) {
+                    console.error("Storage delete error:", e);
+                }
             }
             await deleteDoc(doc(db, 'client_resources', fileToDelete.id));
             setClientFiles(prev => prev.filter(f => f.id !== fileToDelete.id));
@@ -296,20 +296,22 @@ export default function TherapistClientFilesScreen() {
                     </MotiView>
                 </View>
             ) : (
-                <FlatList
+                <Animated.FlatList
                     data={filteredFiles}
                     keyExtractor={item => item.id}
                     contentContainerStyle={{ padding: 24, paddingBottom: 120, maxWidth: 860, alignSelf: 'center', width: '100%' }}
+                    itemLayoutAnimation={Layout.springify()}
                     ListEmptyComponent={
                         <View style={{ alignItems: 'center', paddingVertical: 60 }}>
                             <Text style={{ fontSize: 15, color: '#94A3B8', fontWeight: '600' }}>Keine Dateien gefunden für „{search}"</Text>
                         </View>
                     }
-                    renderItem={({ item, index }) => (
+                    renderItem={({ item, index }: any) => (
                         <FileCard
                             file={item}
                             index={index}
                             onDeletePrompt={handleDeletePrompt}
+                            onPreview={handlePreview}
                         />
                     )}
                     ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
@@ -445,6 +447,92 @@ export default function TherapistClientFilesScreen() {
                             </TouchableOpacity>
                         </View>
                     </MotiView>
+                </View>
+            </Modal>
+
+            {/* Preview Modal */}
+            <Modal
+                visible={previewModalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setPreviewModalVisible(false)}
+            >
+                <View className="flex-1 bg-[#F9F8F6]">
+                    <View className="bg-[#137386] flex-row items-center justify-between" style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 24, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, zIndex: 10 }}>
+                        <Text className="text-white text-[20px] font-black max-w-[80%]" numberOfLines={1}>
+                            {selectedResourceForPreview?.title || selectedResourceForPreview?.originalName || 'Vorschau'}
+                        </Text>
+                        <TouchableOpacity onPress={() => setPreviewModalVisible(false)} className="w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md">
+                            <X size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
+
+                    <View className="flex-1">
+                        {selectedResourceForPreview && (
+                            <View className="flex-1">
+                                <View className="bg-white p-6 rounded-b-[32px] border-b border-gray-100 shadow-sm z-0">
+                                    {selectedResourceForPreview.description ? (
+                                        <Text className="text-[#243842]/70 text-[15px] leading-relaxed mb-4">
+                                            {selectedResourceForPreview.description}
+                                        </Text>
+                                    ) : null}
+
+                                    <TouchableOpacity
+                                        onPress={() => Linking.openURL(selectedResourceForPreview.url)}
+                                        className="bg-[#C09D59] flex-row items-center justify-center py-4 rounded-[20px] shadow-sm"
+                                        style={{ shadowColor: '#C09D59', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                                    >
+                                        <Download size={20} color="white" style={{ marginRight: 8 }} />
+                                        <Text className="text-white font-bold text-[16px]">
+                                            Speichern / Herunterladen
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Embedded Preview Section */}
+                                <View className="flex-1 bg-gray-50/50 mt-4 mx-4 mb-8 rounded-[32px] overflow-hidden border border-gray-200">
+                                    {selectedResourceForPreview.mimeType?.startsWith('image/') || /\.(jpg|jpeg|png|gif|webp)$/i.test(selectedResourceForPreview.originalName || '') ? (
+                                        <Image
+                                            source={{ uri: selectedResourceForPreview.url }}
+                                            style={{ width: '100%', height: '100%' }}
+                                            contentFit="contain"
+                                        />
+                                    ) : selectedResourceForPreview.mimeType?.startsWith('video/') || /\.(mp4|mov|mkv|avi)$/i.test(selectedResourceForPreview.originalName || '') ? (
+                                        <Video
+                                            source={{ uri: selectedResourceForPreview.url }}
+                                            style={{ width: '100%', height: '100%' }}
+                                            useNativeControls
+                                            resizeMode={ResizeMode.CONTAIN}
+                                            isLooping={false}
+                                            shouldPlay={false}
+                                        />
+                                    ) : selectedResourceForPreview.mimeType === 'application/pdf' || /\.(pdf)$/i.test(selectedResourceForPreview.originalName || '') ? (
+                                        Platform.OS === 'web' ? (
+                                            <iframe src={selectedResourceForPreview.url} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
+                                        ) : (
+                                            <WebView
+                                                source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(selectedResourceForPreview.url)}` }}
+                                                style={{ flex: 1, backgroundColor: 'transparent' }}
+                                                startInLoadingState={true}
+                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                            />
+                                        )
+                                    ) : (
+                                        Platform.OS === 'web' ? (
+                                            <iframe src={selectedResourceForPreview.url} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
+                                        ) : (
+                                            <WebView
+                                                source={{ uri: selectedResourceForPreview.url }}
+                                                style={{ flex: 1, backgroundColor: 'transparent' }}
+                                                startInLoadingState={true}
+                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                            />
+                                        )
+                                    )}
+                                </View>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </Modal>
 

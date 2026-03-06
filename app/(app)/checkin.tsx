@@ -1,117 +1,37 @@
-import { View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNetwork } from '../../contexts/NetworkContext';
-import { getDoc, doc, collection, query, where, limit, getDocs } from 'firebase/firestore';
-import { db } from '../../utils/firebase';
-import i18n from '../../utils/i18n';
+import { submitCheckin } from '../../services/checkinService';
+import { EMOTION_PRESETS, getEmotionLabel } from '../../constants/emotions';
+import { useCheckin } from '../../hooks/firebase/useCheckin';
+import { useTheme } from '../../contexts/ThemeContext';
 import { MotiView } from 'moti';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Frown, Meh, Smile, Laugh, Star, Sparkles, AlertCircle, CheckCircle2, TrendingUp } from 'lucide-react-native';
-import { useTheme } from '../../contexts/ThemeContext';
-import { submitCheckin } from '../../services/checkinService';
-
-const getMoods = () => {
-    const labels = i18n.t('checkin.moods', { returnObjects: true }) as string[];
-    const icons = [
-        { Icon: Frown, color: '#ef4444' },
-        { Icon: Frown, color: '#f87171' },
-        { Icon: Meh, color: '#fb923c' },
-        { Icon: Meh, color: '#9ca3af' },
-        { Icon: Smile, color: '#a3e635' },
-        { Icon: Smile, color: '#22c55e' },
-        { Icon: Laugh, color: '#10b981' },
-        { Icon: Star, color: '#0ea5e9' },
-        { Icon: Star, color: '#8b5cf6' },
-        { Icon: Sparkles, color: '#ec4899' },
-    ];
-    return icons.map((conf, index) => ({
-        value: index + 1,
-        Icon: conf.Icon,
-        color: conf.color,
-        label: labels[index] || `Level ${index + 1}`
-    }));
-};
+import { CheckCircle2, TrendingUp, AlertCircle } from 'lucide-react-native';
+import i18n from '../../utils/i18n';
 
 const getQuickTags = () => {
     return i18n.t('checkin.tags', { returnObjects: true }) as string[];
 };
 
 export default function CheckinScreen() {
-    const { profile } = useAuth();
-    const { isConnected } = useNetwork();
     const router = useRouter();
-    const [mood, setMood] = useState<number | null>(null);
-    const [note, setNote] = useState('');
-    const [selectedTags, setSelectedTags] = useState<string[]>([]);
-    const [saving, setSaving] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [alreadyCompleted, setAlreadyCompleted] = useState(false);
-    const [loadingCheckin, setLoadingCheckin] = useState(true);
     const { colors, isDark } = useTheme();
-    const [inlineError, setInlineError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const checkToday = async () => {
-            if (!profile?.id) return;
-            const today = new Date().toISOString().split('T')[0];
-            try {
-                const snap = await getDoc(doc(db, 'checkins', `${profile.id}_${today}`));
-                if (snap.exists()) {
-                    const data = snap.data();
-                    setMood(data.mood);
-                    setNote(data.note || '');
-                    setSelectedTags(data.tags || []);
-                    setAlreadyCompleted(true);
-                }
-            } catch (e) {
-                console.error("Failed checking today's checkin", e);
-            } finally {
-                setLoadingCheckin(false);
-            }
-        };
-        checkToday();
-    }, [profile?.id]);
+    const {
+        selectedEmotionId, setSelectedEmotionId,
+        note, setNote,
+        selectedTags, toggleTag,
+        saving, saved, alreadyCompleted,
+        loadingCheckin, inlineError, setInlineError,
+        handleSave
+    } = useCheckin();
 
-    const toggleTag = (tag: string) => {
-        setSelectedTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
-    };
-
-    const handleSave = async () => {
-        if (!mood) { setInlineError(i18n.t('checkin.error_mood')); return; }
-        if (!profile?.id) { setInlineError(i18n.t('checkin.error_auth')); return; }
-        setInlineError(null);
-        setSaving(true);
-
-        if (Platform.OS !== 'web') {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }
-
-        try {
-            const today = new Date().toISOString().split('T')[0];
-            await submitCheckin({
-                uid: profile.id,
-                date: today,
-                mood,
-                tags: selectedTags,
-                note: note.trim(),
-                createdAt: new Date().toISOString(),
-            }, isConnected);
-
-            setSaved(true);
-        } catch (e) {
-            console.error('Check-in save error:', e);
-            setInlineError(i18n.t('checkin.error_save') || 'Speichern fehlgeschlagen.');
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const MOODS = getMoods();
     const QUICK_TAGS = getQuickTags();
-    const selectedMood = MOODS.find(m => m.value === mood);
+    const activeEmotion = EMOTION_PRESETS.find(e => e.id === selectedEmotionId);
 
     // ── Success Screen ────────────────────────────────────────────────────────
     if (saved) {
@@ -172,16 +92,16 @@ export default function CheckinScreen() {
                 transition={{ type: 'timing', duration: 400 }}
             >
                 <LinearGradient
-                    colors={['#1a365d', '#2C3E50']}
+                    colors={activeEmotion && !isDark && !alreadyCompleted ? [`${activeEmotion.color}E6`, `${activeEmotion.color}99`] : [colors.primaryDark, colors.primary]}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}
-                    style={{ paddingTop: 60, paddingBottom: 28, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32 }}
+                    style={{ paddingTop: 60, paddingBottom: 28, paddingHorizontal: 24, borderBottomLeftRadius: 36, borderBottomRightRadius: 36 }}
                 >
-                    <TouchableOpacity onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, marginBottom: 16 }}>
-                        <Text style={{ color: '#fff', fontWeight: '700' }}>← {i18n.t('exercise.back')}</Text>
+                    <TouchableOpacity onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16, marginBottom: 20 }}>
+                        <Text style={{ color: '#fff', fontWeight: '800' }}>← {i18n.t('exercise.back')}</Text>
                     </TouchableOpacity>
                     <Text
-                        style={{ color: '#fff', fontSize: 26, fontWeight: '800' }}
+                        style={{ color: '#fff', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}
                         adjustsFontSizeToFit
                         minimumFontScale={0.7}
                         numberOfLines={1}
@@ -189,7 +109,7 @@ export default function CheckinScreen() {
                         {alreadyCompleted ? '✅ ' : ''}{i18n.t('checkin.title')}
                     </Text>
                     <Text
-                        style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginTop: 4 }}
+                        style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, marginTop: 4, fontWeight: '600' }}
                         adjustsFontSizeToFit
                         minimumFontScale={0.8}
                         numberOfLines={1}
@@ -199,149 +119,180 @@ export default function CheckinScreen() {
                 </LinearGradient>
             </MotiView>
 
-            <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 60 }} showsVerticalScrollIndicator={false}>
+            {loadingCheckin ? (
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                </View>
+            ) : (
+                <ScrollView style={{ flex: 1, width: '100%', maxWidth: 720, alignSelf: 'center' }} contentContainerStyle={{ padding: 20, paddingBottom: 60, width: '100%' }} showsVerticalScrollIndicator={false}>
 
-                {/* Mood Selector */}
-                <MotiView
-                    from={{ opacity: 0, scale: 0.92 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ type: 'spring', damping: 22, stiffness: 120, delay: 100 }}
-                >
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSubtle, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 4 }}>Wie geht es dir heute?</Text>
-                        {selectedMood && (
-                            <MotiView
-                                from={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                transition={{ type: 'timing', duration: 300 }}
-                            >
-                                <View style={{ alignItems: 'center', marginVertical: 12 }}>
-                                    <selectedMood.Icon size={48} color={selectedMood.color} />
-                                    <Text
-                                        style={{ fontSize: 18, color: colors.text, fontWeight: '700', marginTop: 8, textAlign: 'center' }}
-                                        adjustsFontSizeToFit
-                                        minimumFontScale={0.7}
-                                        numberOfLines={2}
-                                    >
-                                        {selectedMood.label}
-                                    </Text>
-                                </View>
-                            </MotiView>
-                        )}
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: selectedMood ? 8 : 12, justifyContent: 'center' }}>
-                            {MOODS.map((m, idx) => (
-                                <MotiView
-                                    key={m.value}
-                                    from={{ opacity: 0, scale: 0.3 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ type: 'timing', duration: 300, delay: 150 + (idx * 30) }}
-                                >
-                                    <TouchableOpacity
-                                        onPress={() => {
-                                            if (!alreadyCompleted) {
-                                                if (Platform.OS !== 'web') {
-                                                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                                }
-                                                setMood(m.value);
-                                            }
-                                        }}
-                                        activeOpacity={alreadyCompleted ? 1 : 0.7}
-                                        style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: mood === m.value ? (isDark ? 'rgba(255,255,255,0.2)' : '#2C3E50') : (isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6'), alignItems: 'center', justifyContent: 'center', borderWidth: mood === m.value ? 2 : 0, borderColor: isDark ? colors.border : '#2C3E50', opacity: alreadyCompleted && mood !== m.value ? 0.3 : 1 }}>
-                                        <m.Icon size={24} color={mood === m.value ? (isDark ? colors.text : '#ffffff') : m.color} />
-                                    </TouchableOpacity>
-                                </MotiView>
-                            ))}
-                        </View>
-                    </View>
-                </MotiView>
-
-                {/* Emotion Tags */}
-                <MotiView
-                    from={{ opacity: 0, translateY: 30 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'timing', duration: 350, delay: 200 }}
-                >
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 20, marginBottom: 16, borderWidth: 1, borderColor: colors.border }}>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSubtle, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>Gefühle & Tags</Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-                            {QUICK_TAGS.map((tag, idx) => {
-                                const active = selectedTags.includes(tag);
-                                return (
-                                    <MotiView
-                                        key={tag}
-                                        from={{ opacity: 0, translateX: -20 }}
-                                        animate={{ opacity: 1, translateX: 0 }}
-                                        transition={{ type: 'timing', duration: 300, delay: 250 + (idx * 20) }}
-                                    >
-                                        <TouchableOpacity onPress={() => !alreadyCompleted && toggleTag(tag)}
-                                            activeOpacity={alreadyCompleted ? 1 : 0.7}
-                                            style={{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: active ? (isDark ? 'rgba(255,255,255,0.2)' : '#2C3E50') : (isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6'), borderWidth: active ? 0 : 1, borderColor: active ? 'transparent' : colors.border, opacity: alreadyCompleted && !active ? 0.4 : 1 }}>
-                                            <Text style={{ fontWeight: '600', fontSize: 13, color: active ? (isDark ? colors.text : '#fff') : colors.textSubtle }}>{tag}</Text>
-                                        </TouchableOpacity>
-                                    </MotiView>
-                                );
-                            })}
-                        </View>
-                    </View>
-                </MotiView>
-
-                {/* Notes */}
-                <MotiView
-                    from={{ opacity: 0, translateY: 30 }}
-                    animate={{ opacity: 1, translateY: 0 }}
-                    transition={{ type: 'timing', duration: 350, delay: 300 }}
-                >
-                    <View style={{ backgroundColor: colors.surface, borderRadius: 24, padding: 20, marginBottom: 24, borderWidth: 1, borderColor: colors.border }}>
-                        <Text style={{ fontSize: 11, fontWeight: '700', color: colors.textSubtle, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 12 }}>Notiz (optional)</Text>
-                        <TextInput
-                            multiline value={note} onChangeText={setNote}
-                            placeholder={alreadyCompleted ? '' : i18n.t('checkin.note_placeholder')}
-                            placeholderTextColor={colors.textSubtle} textAlignVertical="top"
-                            editable={!alreadyCompleted}
-                            style={{ fontSize: 14, color: colors.text, minHeight: 120, lineHeight: 22, backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : '#F9FAFB', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: colors.border, opacity: alreadyCompleted ? 0.7 : 1 }}
-                        />
-                    </View>
-                </MotiView>
-
-                {!alreadyCompleted ? (
+                    {/* Mood Selector Grouping */}
                     <MotiView
-                        from={{ opacity: 0, translateY: 20 }}
-                        animate={{ opacity: 1, translateY: 0 }}
-                        transition={{ type: 'timing', duration: 350, delay: 350 }}
+                        from={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ type: 'spring', damping: 24, stiffness: 150, delay: 100 }}
                     >
-                        <TouchableOpacity onPress={handleSave} disabled={saving || !mood}
-                            style={{ backgroundColor: mood ? '#2C3E50' : (isDark ? 'rgba(255,255,255,0.05)' : '#D1D5DB'), padding: 18, borderRadius: 18, alignItems: 'center', marginBottom: 12 }}>
-                            {saving ? <ActivityIndicator color="#fff" /> :
-                                <Text style={{ color: '#fff', fontWeight: '800', fontSize: 16 }}>Speichern ✓</Text>
-                            }
-                        </TouchableOpacity>
-                        {inlineError && (
-                            <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 }}>
-                                <AlertCircle size={16} color="#DC2626" />
-                                <Text style={{ color: '#DC2626', fontWeight: '600', flex: 1, fontSize: 14 }}>{inlineError}</Text>
-                            </MotiView>
-                        )}
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 32, padding: 24, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 16, elevation: 4 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 16 }}>
+                                Wie fühlst du dich jetzt gerade?
+                            </Text>
+
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
+                                {EMOTION_PRESETS.map((preset, idx) => {
+                                    const isSelected = selectedEmotionId === preset.id;
+                                    return (
+                                        <MotiView
+                                            key={preset.id}
+                                            from={{ opacity: 0, scale: 0.5 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ type: 'spring', delay: 150 + (idx * 20), damping: 14, stiffness: 100 }}
+                                        >
+                                            <TouchableOpacity
+                                                onPress={() => {
+                                                    if (!alreadyCompleted) {
+                                                        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                                                        setSelectedEmotionId(preset.id);
+                                                    }
+                                                }}
+                                                activeOpacity={alreadyCompleted ? 1 : 0.7}
+                                                style={{
+                                                    paddingHorizontal: 14,
+                                                    paddingVertical: 10,
+                                                    borderRadius: 24,
+                                                    backgroundColor: isSelected ? preset.color : (isDark ? 'rgba(255,255,255,0.05)' : '#F3F4F6'),
+                                                    flexDirection: 'row',
+                                                    alignItems: 'center',
+                                                    gap: 6,
+                                                    borderWidth: isSelected ? 0 : 1,
+                                                    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'transparent',
+                                                    opacity: alreadyCompleted && !isSelected ? 0.3 : 1
+                                                }}>
+                                                <Text style={{ fontSize: 18 }}>{preset.emoji}</Text>
+                                                <Text style={{ fontSize: 14, fontWeight: '700', color: isSelected ? '#fff' : colors.text }}>
+                                                    {getEmotionLabel(preset, i18n.locale)}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        </MotiView>
+                                    );
+                                })}
+                            </View>
+                        </View>
                     </MotiView>
-                ) : (
+
+                    {/* Additional Circumstances / Tags */}
                     <MotiView
                         from={{ opacity: 0, translateY: 20 }}
                         animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'spring', damping: 20, delay: 200 }}
                     >
-                        <View style={{ backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#ECFDF5', padding: 18, borderRadius: 18, alignItems: 'center', marginBottom: 16, flexDirection: 'row', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16,185,129,0.2)' : '#A7F3D0' }}>
-                            <CheckCircle2 size={22} color="#10B981" />
-                            <Text style={{ color: '#10B981', fontWeight: '800', fontSize: 16 }}>{i18n.t('checkin.completed')}</Text>
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 32, padding: 24, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 16, elevation: 4 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 16 }}>
+                                Hast du heute schon etwas Bestimmtes gemacht?
+                            </Text>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                                {QUICK_TAGS.map((tag, idx) => {
+                                    const active = selectedTags.includes(tag);
+                                    return (
+                                        <MotiView
+                                            key={tag}
+                                            from={{ opacity: 0, translateY: 10 }}
+                                            animate={{ opacity: 1, translateY: 0 }}
+                                            transition={{ type: 'timing', duration: 300, delay: 250 + (idx * 20) }}
+                                        >
+                                            <TouchableOpacity onPress={() => !alreadyCompleted && toggleTag(tag)}
+                                                activeOpacity={alreadyCompleted ? 1 : 0.7}
+                                                style={{
+                                                    paddingHorizontal: 16,
+                                                    paddingVertical: 10,
+                                                    borderRadius: 20,
+                                                    backgroundColor: active ? (isDark ? 'rgba(255,255,255,0.15)' : '#1E293B') : (isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC'),
+                                                    borderWidth: active ? 0 : 1,
+                                                    borderColor: active ? 'transparent' : colors.border,
+                                                    opacity: alreadyCompleted && !active ? 0.4 : 1
+                                                }}>
+                                                <Text style={{ fontWeight: '700', fontSize: 13, color: active ? (isDark ? '#fff' : '#fff') : colors.textSubtle }}>{tag}</Text>
+                                            </TouchableOpacity>
+                                        </MotiView>
+                                    );
+                                })}
+                            </View>
                         </View>
-                        <TouchableOpacity
-                            onPress={() => router.push('/(app)/checkins_overview' as any)}
-                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 16, borderRadius: 18, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}
+                    </MotiView>
+
+                    {/* Notes Field */}
+                    <MotiView
+                        from={{ opacity: 0, translateY: 20 }}
+                        animate={{ opacity: 1, translateY: 0 }}
+                        transition={{ type: 'spring', damping: 20, delay: 300 }}
+                    >
+                        <View style={{ backgroundColor: colors.surface, borderRadius: 32, padding: 24, marginBottom: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 16, elevation: 4 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 16 }}>
+                                Möchtest du noch etwas ergänzen? (Optional)
+                            </Text>
+                            <TextInput
+                                multiline value={note} onChangeText={setNote}
+                                placeholder={alreadyCompleted ? '' : "Gedanken, Notizen..."}
+                                placeholderTextColor={colors.textSubtle + '80'} textAlignVertical="top"
+                                editable={!alreadyCompleted}
+                                style={{ fontSize: 15, color: colors.text, minHeight: 120, lineHeight: 24, backgroundColor: isDark ? 'rgba(0,0,0,0.15)' : '#F8FAFC', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.05)' : colors.border, opacity: alreadyCompleted ? 0.7 : 1 }}
+                            />
+                        </View>
+                    </MotiView>
+
+                    {/* Action Area */}
+                    {!alreadyCompleted ? (
+                        <MotiView
+                            from={{ opacity: 0, translateY: 20 }}
+                            animate={{ opacity: 1, translateY: 0 }}
+                            transition={{ type: 'spring', damping: 20, delay: 350 }}
                         >
-                            <TrendingUp size={18} color={colors.textSubtle} />
-                            <Text style={{ color: colors.textSubtle, fontWeight: '700', fontSize: 15 }}>Meine Auswertung anzeigen</Text>
-                        </TouchableOpacity>
-                    </MotiView>
-                )}
-
-            </ScrollView>
+                            <TouchableOpacity onPress={handleSave} disabled={saving || !selectedEmotionId}
+                                style={{
+                                    backgroundColor: selectedEmotionId ? (activeEmotion?.color || '#137386') : (isDark ? 'rgba(255,255,255,0.05)' : '#E2E8F0'),
+                                    padding: 20,
+                                    borderRadius: 24,
+                                    alignItems: 'center',
+                                    marginBottom: 12,
+                                    shadowColor: selectedEmotionId ? activeEmotion?.color : 'transparent',
+                                    shadowOffset: { width: 0, height: 8 },
+                                    shadowOpacity: selectedEmotionId ? 0.4 : 0,
+                                    shadowRadius: 16,
+                                    elevation: selectedEmotionId ? 8 : 0
+                                }}>
+                                {saving ? <ActivityIndicator color="#fff" /> :
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                        <Text style={{ color: selectedEmotionId ? '#fff' : colors.textSubtle, fontWeight: '900', fontSize: 18, letterSpacing: -0.5 }}>Check-in speichern</Text>
+                                        <CheckCircle2 size={20} color={selectedEmotionId ? '#fff' : colors.textSubtle} />
+                                    </View>
+                                }
+                            </TouchableOpacity>
+                            {inlineError && (
+                                <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ backgroundColor: '#FEF2F2', borderWidth: 1, borderColor: '#FECACA', borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', marginBottom: 8, gap: 8 }}>
+                                    <AlertCircle size={18} color="#DC2626" />
+                                    <Text style={{ color: '#DC2626', fontWeight: '700', flex: 1, fontSize: 14 }}>{inlineError}</Text>
+                                </MotiView>
+                            )}
+                        </MotiView>
+                    ) : (
+                        <MotiView
+                            from={{ opacity: 0, translateY: 20 }}
+                            animate={{ opacity: 1, translateY: 0 }}
+                        >
+                            <View style={{ backgroundColor: isDark ? 'rgba(16,185,129,0.1)' : '#ECFDF5', padding: 20, borderRadius: 24, alignItems: 'center', marginBottom: 16, flexDirection: 'row', justifyContent: 'center', gap: 10, borderWidth: 1, borderColor: isDark ? 'rgba(16,185,129,0.2)' : '#A7F3D0' }}>
+                                <CheckCircle2 size={24} color="#10B981" />
+                                <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 18, letterSpacing: -0.5 }}>{i18n.t('checkin.completed')}</Text>
+                            </View>
+                            <TouchableOpacity
+                                onPress={() => router.push('/(app)/checkins_overview' as any)}
+                                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 18, borderRadius: 24, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 }}
+                            >
+                                <TrendingUp size={20} color={colors.textSubtle} />
+                                <Text style={{ color: colors.textSubtle, fontWeight: '800', fontSize: 16 }}>Meine Auswertung anzeigen</Text>
+                            </TouchableOpacity>
+                        </MotiView>
+                    )}
+                </ScrollView>
+            )}
         </View>
     );
 }

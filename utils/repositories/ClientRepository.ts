@@ -20,6 +20,7 @@ export interface UserProfile {
     bookingUrl?: string;
     latestMood?: number;
     completionRate?: number;
+    nextAppointment?: string;
 }
 
 export class ClientRepository {

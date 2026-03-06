@@ -1,0 +1,37 @@
+app/(app)/notes.tsx(152,33): error TS2304: Cannot find name 'ErrorHandler'.
+app/(app)/notes.tsx(163,13): error TS2304: Cannot find name 'isShared'.
+app/(app)/notes.tsx(168,17): error TS2304: Cannot find name 'setIsShared'.
+app/(app)/notes.tsx(184,9): error TS2304: Cannot find name 'setIsShared'.
+app/(app)/notes.tsx(196,14): error TS2304: Cannot find name 'noteToDelete'.
+app/(app)/notes.tsx(198,13): error TS2304: Cannot find name 'noteToDelete'.
+app/(app)/notes.tsx(201,17): error TS2304: Cannot find name 'setDeleteModalVisible'.
+app/(app)/notes.tsx(202,17): error TS2304: Cannot find name 'setNoteToDelete'.
+app/(app)/notes.tsx(206,17): error TS2304: Cannot find name 'setDeleteModalVisible'.
+app/(app)/notes.tsx(207,17): error TS2304: Cannot find name 'setNoteToDelete'.
+app/(app)/notes.tsx(220,13): error TS2552: Cannot find name 'filter'. Did you mean 'File'?
+app/(app)/notes.tsx(221,13): error TS2552: Cannot find name 'filter'. Did you mean 'File'?
+app/(app)/notes.tsx(278,62): error TS2304: Cannot find name 'setFilter'.
+app/(app)/notes.tsx(278,106): error TS2304: Cannot find name 'filter'.
+app/(app)/notes.tsx(279,55): error TS2304: Cannot find name 'filter'.
+app/(app)/notes.tsx(281,62): error TS2304: Cannot find name 'setFilter'.
+app/(app)/notes.tsx(281,107): error TS2304: Cannot find name 'filter'.
+app/(app)/notes.tsx(282,55): error TS2304: Cannot find name 'filter'.
+app/(app)/notes.tsx(284,62): error TS2304: Cannot find name 'setFilter'.
+app/(app)/notes.tsx(284,112): error TS2304: Cannot find name 'filter'.
+app/(app)/notes.tsx(285,55): error TS2304: Cannot find name 'filter'.
+app/(app)/notes.tsx(365,57): error TS2304: Cannot find name 'expandedId'.
+app/(app)/notes.tsx(366,67): error TS2304: Cannot find name 'setExpandedId'.
+app/(app)/notes.tsx(366,81): error TS2304: Cannot find name 'expandedId'.
+app/(app)/notes.tsx(367,69): error TS2304: Cannot find name 'setNoteToDelete'.
+app/(app)/notes.tsx(367,92): error TS2304: Cannot find name 'setDeleteModalVisible'.
+app/(app)/notes.tsx(397,79): error TS2304: Cannot find name 'setIsDragging'.
+app/(app)/notes.tsx(398,52): error TS2304: Cannot find name 'setIsDragging'.
+app/(app)/notes.tsx(401,37): error TS2304: Cannot find name 'setIsDragging'.
+app/(app)/notes.tsx(427,161): error TS2304: Cannot find name 'isDragging'.
+app/(app)/notes.tsx(432,42): error TS2304: Cannot find name 'isDragging'.
+app/(app)/notes.tsx(527,52): error TS2304: Cannot find name 'setIsShared'.
+app/(app)/notes.tsx(527,65): error TS2304: Cannot find name 'isShared'.
+app/(app)/notes.tsx(528,124): error TS2304: Cannot find name 'isShared'.
+app/(app)/notes.tsx(531,64): error TS2304: Cannot find name 'isShared'.
+app/(app)/notes.tsx(555,29): error TS2304: Cannot find name 'deleteModalVisible'.
+app/(app)/notes.tsx(566,62): error TS2304: Cannot find name 'setDeleteModalVisible'.

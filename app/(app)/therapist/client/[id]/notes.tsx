@@ -43,87 +43,92 @@ const NoteCard = React.memo(({ note, isExpanded, onToggleExpand, onDeletePrompt,
 
     const accentColor = session ? '#137386' : '#16A34A';
     const bgColor = session ? '#EEF7F8' : '#F0FDF4';
-    const borderColor = isExpanded ? accentColor : (session ? '#D0EDF3' : '#BBF7D0');
 
     return (
         <MotiView
-            from={{ opacity: 0, translateX: -10, scale: 0.98 }}
-            animate={{ opacity: 1, translateX: 0, scale: 1 }}
-            transition={{ type: 'spring', damping: 18, stiffness: 120 }}
-            style={{ marginBottom: 20, position: 'relative' }}
+            from={{ opacity: 0, translateY: 10, scale: 0.98 }}
+            animate={{ opacity: 1, translateY: 0, scale: 1 }}
+            transition={{ type: 'spring', damping: 20, stiffness: 150 }}
+            style={{ marginBottom: 20 }}
         >
-            {/* Timeline dot */}
-            <View style={{ position: 'absolute', left: -24, top: 24, width: 14, height: 14, borderRadius: 7, backgroundColor: accentColor, borderWidth: 3, borderColor: '#F9F8F6' }} />
-
             <TouchableOpacity
                 onPress={onToggleExpand}
-                activeOpacity={0.88}
-                style={{ backgroundColor: 'white', borderRadius: 20, padding: 20, borderWidth: 1.5, borderColor, shadowColor: '#0F172A', shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.04, shadowRadius: 14, elevation: 3 }}
+                activeOpacity={0.9}
+                style={{
+                    backgroundColor: 'white',
+                    borderRadius: 24,
+                    padding: 24,
+                    borderWidth: 1,
+                    borderColor: isExpanded ? accentColor : 'rgba(226, 232, 240, 0.6)',
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 12 },
+                    shadowOpacity: 0.04,
+                    shadowRadius: 28,
+                    elevation: 3
+                }}
             >
-                {/* Badge row */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap', flex: 1 }}>
-                        {/* Type badge */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: bgColor, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: session ? '#B3DDE5' : '#BBF7D0' }}>
-                            {session
-                                ? <Lock size={12} color={accentColor} strokeWidth={2.5} />
-                                : <BookOpen size={12} color={accentColor} strokeWidth={2.5} />
-                            }
-                            <Text style={{ fontSize: 11, fontWeight: '800', color: accentColor, marginLeft: 5, letterSpacing: 0.3 }}>
-                                {session ? 'Session Note' : 'Tagebucheintrag'}
-                            </Text>
-                        </View>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <View style={{ flex: 1, paddingRight: 16 }}>
+                        <Text style={{ fontSize: 22, color: '#0F172A', fontWeight: '900', letterSpacing: -0.5, marginBottom: 8, lineHeight: 28 }}>
+                            {note.title || (session ? 'Session Note' : 'Tagebucheintrag')}
+                        </Text>
 
-                        {/* Timestamp */}
-                        <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F8FAFC', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                            <Edit3 size={11} color="#64748B" />
-                            <Text style={{ fontSize: 11, fontWeight: '700', color: '#64748B', marginLeft: 4 }}>{formatTime(note)}</Text>
-                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#94A3B8' }}>{formatTime(note)}</Text>
 
-                        {/* Shared badge (only for journal entries shared by client) */}
-                        {!session && note.isShared && (
-                            <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 9, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: '#C7D2FE' }}>
-                                <Text style={{ fontSize: 11, fontWeight: '800', color: '#4F46E5' }}>Geteilt</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: bgColor, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                                {session
+                                    ? <Lock size={10} color={accentColor} strokeWidth={3} />
+                                    : <BookOpen size={10} color={accentColor} strokeWidth={3} />
+                                }
+                                <Text style={{ fontSize: 11, fontWeight: '800', color: accentColor, marginLeft: 4, letterSpacing: 0.3 }}>
+                                    {session ? 'Session Note' : 'Tagebucheintrag'}
+                                </Text>
                             </View>
-                        )}
+
+                            {!session && note.isShared && (
+                                <View style={{ backgroundColor: '#EEF2FF', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                                    <Text style={{ fontSize: 11, fontWeight: '800', color: '#4F46E5' }}>Geteilt</Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                        {session && (
-                            <TouchableOpacity
-                                onPress={onDeletePrompt}
-                                style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: '#FEF2F2', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#FECACA' }}
-                            >
-                                <Trash2 size={14} color="#EF4444" />
-                            </TouchableOpacity>
-                        )}
-                        <ChevronRight size={17} color={isExpanded ? accentColor : '#94A3B8'} style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }} />
-                    </View>
+                    <ChevronRight size={20} color={isExpanded ? accentColor : '#CBD5E1'} style={{ transform: [{ rotate: isExpanded ? '90deg' : '0deg' }] }} />
                 </View>
 
-                {/* Title */}
-                {note.title && (
-                    <Text style={{ fontSize: 18, color: '#0F172A', fontWeight: '800', letterSpacing: -0.3, marginBottom: isExpanded ? 10 : 0 }}>
-                        {note.title}
-                    </Text>
-                )}
-
-                {/* Expanded content */}
                 {isExpanded && (
-                    <View style={{ marginTop: note.title ? 4 : 0 }}>
-                        {/* Divider */}
-                        <View style={{ height: 1, backgroundColor: borderColor, marginBottom: 14 }} />
+                    <MotiView
+                        from={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        style={{ marginTop: 24 }}
+                    >
+                        <View style={{ height: 1, backgroundColor: 'rgba(226, 232, 240, 0.8)', marginBottom: 20 }} />
+
                         {note.imageUrl && (
-                            <View style={{ width: '100%', height: 180, borderRadius: 14, overflow: 'hidden', marginBottom: 14 }}>
+                            <View style={{ width: '100%', height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 20, borderWidth: 1, borderColor: '#F1F5F9' }}>
                                 <Image source={{ uri: note.imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
                             </View>
                         )}
                         <RenderHtml
                             contentWidth={width - 80}
                             source={{ html: note.content || '<p></p>' }}
-                            baseStyle={{ fontSize: 15, color: '#334155', lineHeight: 23, fontWeight: '500' }}
+                            baseStyle={{ fontSize: 16, color: '#334155', lineHeight: 26, fontWeight: '500', fontFamily: 'System' }}
                         />
-                    </View>
+
+                        {/* Actions */}
+                        {session && (
+                            <View style={{ flexDirection: 'row', gap: 12, marginTop: 24, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F8FAFC' }}>
+                                <TouchableOpacity
+                                    onPress={onDeletePrompt}
+                                    style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FEF2F2', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 }}
+                                >
+                                    <Trash2 size={14} color="#EF4444" />
+                                    <Text style={{ fontSize: 13, fontWeight: '700', color: '#EF4444', marginLeft: 6 }}>Löschen</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+                    </MotiView>
                 )}
             </TouchableOpacity>
         </MotiView>
@@ -414,138 +419,99 @@ export default function TherapistClientNotesScreen() {
                 />
             )}
 
-            {/* ── Create Note Modal ─────────────────────────────────────────── */}
-            <Modal visible={showNoteModal} animationType="slide" transparent={false}>
+            {/* ── Create Note Modal (Bear / Notion Redesign) ──────────────── */}
+            <Modal visible={showNoteModal} animationType="slide" presentationStyle="formSheet">
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={{ flex: 1, backgroundColor: '#ffffff' }}
                 >
-                    <View style={{ flex: 1, paddingHorizontal: 24, paddingTop: 64, paddingBottom: 24 }}>
-                        {/* Modal Header */}
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                            <View>
-                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                                    <View style={{ backgroundColor: '#EEF7F8', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                                        <Lock size={12} color="#137386" />
-                                        <Text style={{ fontSize: 11, fontWeight: '800', color: '#137386' }}>Nur für Therapeut sichtbar</Text>
-                                    </View>
-                                </View>
-                                <Text style={{ fontSize: 28, fontWeight: '900', color: '#0F172A', letterSpacing: -0.5 }}>Neue Session Note</Text>
+                    <View style={{ flex: 1, paddingTop: Platform.OS === 'android' ? 60 : 20, backgroundColor: '#ffffff' }}>
+
+                        {/* Minimalist Bear-Style Header */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 24, paddingBottom: 16 }}>
+                            <TouchableOpacity onPress={() => setShowNoteModal(false)} hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}>
+                                <ArrowLeft size={24} color="#94A3B8" />
+                            </TouchableOpacity>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: '#EEF7F8', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
+                                <Lock size={12} color="#137386" />
+                                <Text style={{ fontSize: 12, fontWeight: '800', color: '#137386' }}>Therapeut</Text>
                             </View>
-                            <TouchableOpacity
-                                onPress={() => { setShowNoteModal(false); setNewNoteContent(''); setNewNoteTitle(''); setNewNoteImage(null); }}
-                                style={{ backgroundColor: '#F1F5F9', padding: 10, borderRadius: 50 }}
-                                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                            >
-                                <X size={22} color="#64748B" />
+                            <TouchableOpacity onPress={handleSaveNote} disabled={saving || (!newNoteContent.trim() && !newNoteImage)}>
+                                {saving ? <ActivityIndicator size="small" color="#137386" /> : (
+                                    <Text style={{ fontSize: 17, fontWeight: '800', color: (!newNoteContent.trim() && !newNoteImage) ? '#E2E8F0' : '#137386' }}>
+                                        Speichern
+                                    </Text>
+                                )}
                             </TouchableOpacity>
                         </View>
 
-                        <View
-                            style={{ flex: 1, marginBottom: 20 }}
-                            {...(Platform.OS === 'web' ? {
-                                onDragOver: (e: any) => { e.preventDefault(); setIsDragging(true); },
-                                onDragLeave: () => setIsDragging(false),
-                                onDrop: (e: any) => {
-                                    e.preventDefault();
-                                    setIsDragging(false);
-                                    const file = e.dataTransfer?.files?.[0];
-                                    if (file && file.type.startsWith('image/')) {
-                                        setNewNoteImage({ uri: URL.createObjectURL(file), file });
-                                    }
-                                }
-                            } : {})}
-                        >
-                            {/* Image area */}
-                            {newNoteImage ? (
-                                <View style={{ width: '100%', height: 180, borderRadius: 20, overflow: 'hidden', marginBottom: 16, position: 'relative' }}>
-                                    <Image source={{ uri: newNoteImage.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                                    <TouchableOpacity
-                                        onPress={() => setNewNoteImage(null)}
-                                        style={{ position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(0,0,0,0.5)', padding: 8, borderRadius: 50 }}
-                                    >
-                                        <X size={18} color="white" />
-                                    </TouchableOpacity>
-                                </View>
-                            ) : (
-                                <TouchableOpacity
-                                    onPress={pickImage}
-                                    style={{ width: '100%', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 16, borderRadius: 20, borderWidth: 2, borderStyle: 'dashed', marginBottom: 16, backgroundColor: isDragging ? 'rgba(19,115,134,0.05)' : '#F8FAFC', borderColor: isDragging ? '#137386' : '#E2E8F0' }}
-                                >
-                                    <Camera size={20} color="#137386" />
-                                    <Text style={{ fontWeight: '700', color: '#137386', fontSize: 14, marginLeft: 8 }}>
-                                        {isDragging ? 'Bild hier ablegen' : 'Bild hinzufügen'}
-                                    </Text>
+                        {/* Title Input - Huge and Borderless */}
+                        <TextInput
+                            style={{ fontSize: 32, fontWeight: '900', color: '#0F172A', paddingHorizontal: 24, paddingTop: 16, paddingBottom: 8, letterSpacing: -0.5 } as any}
+                            placeholder="Titel..."
+                            placeholderTextColor="#CBD5E1"
+                            value={newNoteTitle}
+                            onChangeText={setNewNoteTitle}
+                        />
+
+                        {/* Image Preview (if added) */}
+                        {newNoteImage && (
+                            <View style={{ marginHorizontal: 24, height: 220, borderRadius: 20, overflow: 'hidden', marginBottom: 16, position: 'relative' }}>
+                                <Image source={{ uri: newNoteImage.uri }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                                <TouchableOpacity onPress={() => setNewNoteImage(null)} style={{ position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(0,0,0,0.5)', padding: 10, borderRadius: 50 }}>
+                                    <X size={18} color="white" />
                                 </TouchableOpacity>
-                            )}
-
-                            {/* Editor card */}
-                            <View style={{ flex: 1, backgroundColor: '#F8FAFC', borderRadius: 20, borderWidth: 1.5, borderColor: '#E2E8F0', overflow: 'hidden' }}>
-                                {/* Title section */}
-                                <TextInput
-                                    style={{ fontSize: 20, fontWeight: '800', color: '#0F172A', padding: 20, paddingBottom: 14, letterSpacing: -0.3 } as any}
-                                    placeholder="Titel (optional)"
-                                    placeholderTextColor="#94A3B8"
-                                    value={newNoteTitle}
-                                    onChangeText={setNewNoteTitle}
-                                />
-                                {/* Divider */}
-                                <View style={{ height: 1.5, backgroundColor: '#E2E8F0', marginHorizontal: 0 }} />
-
-                                {/* Content section */}
-                                {Platform.OS === 'web' ? (
-                                    <TextInput
-                                        multiline
-                                        value={newNoteContent}
-                                        onChangeText={setNewNoteContent}
-                                        placeholder="Schreibe deine Beobachtungen, Erkenntnisse oder Notizen aus der heutigen Session..."
-                                        placeholderTextColor="#94A3B8"
-                                        style={{ flex: 1, padding: 20, paddingTop: 16, fontSize: 15, color: '#334155', textAlignVertical: 'top', lineHeight: 24 } as any}
-                                    />
-                                ) : (
-                                    <>
-                                        {RichToolbar && (
-                                            <RichToolbar
-                                                editor={richText}
-                                                actions={actions ? [
-                                                    actions.setBold,
-                                                    actions.setItalic,
-                                                    actions.insertBulletsList,
-                                                    actions.insertOrderedList,
-                                                    actions.setStrikethrough,
-                                                    actions.heading1,
-                                                ] : []}
-                                                style={{ backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#E2E8F0' }}
-                                            />
-                                        )}
-                                        <ScrollView style={{ flex: 1 }}>
-                                            {RichEditor && (
-                                                <RichEditor
-                                                    ref={richText}
-                                                    initialContentHTML={newNoteContent}
-                                                    onChange={setNewNoteContent}
-                                                    placeholder="Schreibe deine Beobachtungen, Erkenntnisse oder Notizen aus der heutigen Session..."
-                                                    editorStyle={{ backgroundColor: 'transparent', color: '#334155', placeholderColor: '#94A3B8', padding: 20, paddingTop: 16, fontSize: 15 }}
-                                                    style={{ flex: 1, minHeight: 200 }}
-                                                />
-                                            )}
-                                        </ScrollView>
-                                    </>
-                                )}
                             </View>
+                        )}
+
+                        <View style={{ flex: 1 }}>
+                            {Platform.OS === 'web' ? (
+                                <TextInput
+                                    multiline
+                                    value={newNoteContent}
+                                    onChangeText={setNewNoteContent}
+                                    placeholder="Beginne hier zu schreiben..."
+                                    placeholderTextColor="#94A3B8"
+                                    style={{ flex: 1, paddingHorizontal: 24, fontSize: 18, color: '#334155', textAlignVertical: 'top', lineHeight: 28, outlineStyle: 'none' } as any}
+                                />
+                            ) : (
+                                <ScrollView style={{ flex: 1 }} keyboardShouldPersistTaps="handled">
+                                    {RichEditor && (
+                                        <RichEditor
+                                            ref={richText}
+                                            initialContentHTML={newNoteContent}
+                                            onChange={setNewNoteContent}
+                                            placeholder="Beginne hier zu schreiben..."
+                                            editorStyle={{ backgroundColor: 'transparent', color: '#334155', placeholderColor: '#94A3B8', cssText: 'padding: 0 24px; font-size: 18px; line-height: 28px;' }}
+                                            style={{ flex: 1, minHeight: 400 }}
+                                        />
+                                    )}
+                                </ScrollView>
+                            )}
                         </View>
 
-                        {/* Save button */}
-                        <TouchableOpacity
-                            onPress={handleSaveNote}
-                            disabled={saving || (!newNoteContent.trim() && !newNoteImage)}
-                            style={{ paddingVertical: 18, borderRadius: 20, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', backgroundColor: saving || (!newNoteContent.trim() && !newNoteImage) ? '#F1F5F9' : '#137386' }}
-                        >
-                            {saving
-                                ? <ActivityIndicator color="white" style={{ marginRight: 8 }} />
-                                : <Text style={{ fontWeight: '900', fontSize: 17, color: (!newNoteContent.trim() && !newNoteImage) ? '#94A3B8' : 'white' }}>Session Note speichern</Text>
-                            }
-                        </TouchableOpacity>
+                        {/* Bottom Toolbar */}
+                        <View style={{ borderTopWidth: 1, borderTopColor: '#F8FAFC', backgroundColor: 'white', paddingHorizontal: 16, paddingVertical: Platform.OS === 'ios' ? 12 : 8, flexDirection: 'row', alignItems: 'center' }}>
+                            {Platform.OS !== 'web' && RichToolbar && (
+                                <View style={{ flex: 1, overflow: 'hidden' }}>
+                                    <RichToolbar
+                                        editor={richText}
+                                        actions={actions ? [
+                                            actions.setBold,
+                                            actions.setItalic,
+                                            actions.insertBulletsList,
+                                            actions.insertOrderedList,
+                                        ] : []}
+                                        iconTint="#64748B"
+                                        selectedIconTint="#137386"
+                                        style={{ backgroundColor: 'transparent', paddingHorizontal: 0 }}
+                                    />
+                                </View>
+                            )}
+                            <TouchableOpacity onPress={pickImage} style={{ padding: 10, backgroundColor: '#F8FAFC', borderRadius: 12 }}>
+                                <Camera size={20} color="#64748B" />
+                            </TouchableOpacity>
+                        </View>
                     </View>
                 </KeyboardAvoidingView>
             </Modal>

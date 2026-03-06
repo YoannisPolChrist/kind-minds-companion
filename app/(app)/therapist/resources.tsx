@@ -9,13 +9,14 @@ import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../../utils/firebase';
 import i18n from '../../../utils/i18n';
 import { MotiView } from 'moti';
-import { FileText, Link as LinkIcon, Trash2, PlusCircle, UploadCloud, ArrowLeft, Send, X, FileVideo, Search, Star, Tag, Check, Clock, Plus, Library } from 'lucide-react-native';
+import { FileText, Link as LinkIcon, Trash2, PlusCircle, UploadCloud, ArrowLeft, Send, X, FileVideo, Search, Star, Tag, Check, Clock, Plus, Library, Download } from 'lucide-react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
-import { uploadFile } from '../../../utils/uploadFile';
 import { LinearGradient } from 'expo-linear-gradient';
+import { uploadFile } from '../../../utils/uploadFile';
 import * as Haptics from 'expo-haptics';
+import { WebView } from 'react-native-webview';
 
 export default function TherapistResources() {
     const router = useRouter();
@@ -222,7 +223,7 @@ export default function TherapistResources() {
                             title: resource.title,
                             description: resource.description || '',
                             type: resource.type,
-                            url: resource.url,
+                            url: resource.url || '',
                             originalName: resource.originalName || null,
                             storagePath: resource.storagePath || null,
                             originalResourceId: resource.id,
@@ -353,15 +354,8 @@ export default function TherapistResources() {
     };
 
     const handlePressPreview = (item: any) => {
-        if (['image', 'video'].includes(item.type)) {
-            setSelectedResourceForPreview(item);
-            setPreviewModalVisible(true);
-        } else if (item.url) {
-            Linking.openURL(item.url).catch(err => {
-                console.error("Couldn't load page", err);
-                showAlert("Fehler", "Ressource konnte nicht geöffnet werden.", "error");
-            });
-        }
+        setSelectedResourceForPreview(item);
+        setPreviewModalVisible(true);
     };
 
     // Derived filtered resources
@@ -549,11 +543,17 @@ export default function TherapistResources() {
                         onChangeText={setSearchQuery}
                         style={{ flex: 1, color: '#0F172A', fontWeight: '600', fontSize: 16 } as any}
                     />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearchQuery('')} style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                    {searchQuery.length > 0 ? (
+                        <TouchableOpacity
+                            accessibilityRole="button"
+                            accessibilityLabel="Suche leeren"
+                            onPress={() => setSearchQuery('')}
+                            style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center' }}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
                             <X color="#64748B" size={14} />
                         </TouchableOpacity>
-                    )}
+                    ) : null}
                 </View>
 
                 {/* Filter chips */}
@@ -831,38 +831,96 @@ export default function TherapistResources() {
             </Modal>
 
             {/* Preview Modal */}
-            <Modal visible={previewModalVisible} transparent animationType="fade" onRequestClose={() => setPreviewModalVisible(false)}>
-                <View className="flex-1 bg-black/95 justify-center items-center">
-                    <TouchableOpacity
-                        className="absolute top-12 right-6 p-4 bg-white/10 rounded-full z-50"
-                        onPress={() => setPreviewModalVisible(false)}
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                    >
-                        <X color="white" size={24} />
-                    </TouchableOpacity>
+            <Modal
+                visible={previewModalVisible}
+                animationType="slide"
+                presentationStyle="pageSheet"
+                onRequestClose={() => setPreviewModalVisible(false)}
+            >
+                <View className="flex-1 bg-[#F9F8F6]">
+                    <View className="bg-[#137386] flex-row items-center justify-between" style={{ paddingTop: Platform.OS === 'android' ? 56 : 64, paddingBottom: 24, paddingHorizontal: 24, borderBottomLeftRadius: 32, borderBottomRightRadius: 32, zIndex: 10 }}>
+                        <Text className="text-white text-[20px] font-black max-w-[80%]" numberOfLines={1}>
+                            {selectedResourceForPreview?.title || selectedResourceForPreview?.originalName || 'Vorschau'}
+                        </Text>
+                        <TouchableOpacity onPress={() => setPreviewModalVisible(false)} className="w-10 h-10 bg-white/20 rounded-full items-center justify-center backdrop-blur-md">
+                            <X size={20} color="white" />
+                        </TouchableOpacity>
+                    </View>
 
-                    {selectedResourceForPreview?.type === 'image' && (
-                        <Image
-                            source={{ uri: selectedResourceForPreview.url }}
-                            style={{ width: '100%', height: '70%' }}
-                            contentFit="contain"
-                        />
-                    )}
+                    <View className="flex-1">
+                        {selectedResourceForPreview && (
+                            <View className="flex-1">
+                                <View className="bg-white p-6 rounded-b-[32px] border-b border-gray-100 shadow-sm z-0">
+                                    <View className="flex-row items-center mb-3">
+                                        <View className={`px-2.5 py-1 rounded-lg ${selectedResourceForPreview.type === 'document' ? 'bg-indigo-50' : selectedResourceForPreview.type === 'pdf' ? 'bg-red-50' : selectedResourceForPreview.type === 'video' ? 'bg-purple-50' : selectedResourceForPreview.type === 'image' ? 'bg-pink-50' : 'bg-blue-50'}`}>
+                                            <Text className={`text-[11px] font-black uppercase tracking-widest ${selectedResourceForPreview.type === 'document' ? 'text-indigo-600' : selectedResourceForPreview.type === 'pdf' ? 'text-red-600' : selectedResourceForPreview.type === 'video' ? 'text-purple-600' : selectedResourceForPreview.type === 'image' ? 'text-pink-600' : 'text-blue-600'}`}>
+                                                {selectedResourceForPreview.type === 'document' ? 'Dokument' : selectedResourceForPreview.type === 'pdf' ? 'PDF Dokument' : selectedResourceForPreview.type === 'video' ? 'Video' : selectedResourceForPreview.type === 'image' ? 'Bild' : 'Web Link'}
+                                            </Text>
+                                        </View>
+                                    </View>
 
-                    {selectedResourceForPreview?.type === 'video' && (
-                        <Video
-                            source={{ uri: selectedResourceForPreview.url }}
-                            style={{ width: '100%', height: '70%' }}
-                            useNativeControls
-                            resizeMode={ResizeMode.CONTAIN}
-                            isLooping={false}
-                            shouldPlay
-                        />
-                    )}
-                    <Text className="text-white/90 text-2xl font-bold mt-8 px-6 text-center">{selectedResourceForPreview?.title}</Text>
-                    {selectedResourceForPreview?.description ? (
-                        <Text className="text-white/60 text-base mt-3 px-8 text-center">{selectedResourceForPreview.description}</Text>
-                    ) : null}
+                                    {selectedResourceForPreview.description ? (
+                                        <Text className="text-[#243842]/70 text-[15px] leading-relaxed mb-4">
+                                            {selectedResourceForPreview.description}
+                                        </Text>
+                                    ) : null}
+
+                                    <TouchableOpacity
+                                        onPress={() => Linking.openURL(selectedResourceForPreview.url)}
+                                        className="bg-[#C09D59] flex-row items-center justify-center py-4 rounded-[20px] shadow-sm"
+                                        style={{ shadowColor: '#C09D59', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4 }}
+                                    >
+                                        {selectedResourceForPreview.type !== 'link' && <Download size={20} color="white" style={{ marginRight: 8 }} />}
+                                        <Text className="text-white font-bold text-[16px]">
+                                            {selectedResourceForPreview.type === 'link' ? 'Im Browser öffnen' : 'Speichern / Herunterladen'}
+                                        </Text>
+                                    </TouchableOpacity>
+                                </View>
+
+                                {/* Embedded Preview Section */}
+                                <View className="flex-1 bg-gray-50/50 mt-4 mx-4 mb-8 rounded-[32px] overflow-hidden border border-gray-200">
+                                    {selectedResourceForPreview.type === 'image' ? (
+                                        <Image
+                                            source={{ uri: selectedResourceForPreview.url }}
+                                            style={{ width: '100%', height: '100%' }}
+                                            contentFit="contain"
+                                        />
+                                    ) : selectedResourceForPreview.type === 'video' ? (
+                                        <Video
+                                            source={{ uri: selectedResourceForPreview.url }}
+                                            style={{ width: '100%', height: '100%' }}
+                                            useNativeControls
+                                            resizeMode={ResizeMode.CONTAIN}
+                                            isLooping={false}
+                                            shouldPlay={false}
+                                        />
+                                    ) : selectedResourceForPreview.type === 'document' || selectedResourceForPreview.type === 'pdf' ? (
+                                        Platform.OS === 'web' ? (
+                                            <iframe src={selectedResourceForPreview.url} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
+                                        ) : (
+                                            <WebView
+                                                source={{ uri: `https://docs.google.com/gview?embedded=true&url=${encodeURIComponent(selectedResourceForPreview.url)}` }}
+                                                style={{ flex: 1, backgroundColor: 'transparent' }}
+                                                startInLoadingState={true}
+                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                            />
+                                        )
+                                    ) : (
+                                        Platform.OS === 'web' ? (
+                                            <iframe src={selectedResourceForPreview.url} width="100%" height="100%" style={{ border: 'none', backgroundColor: 'transparent' }} />
+                                        ) : (
+                                            <WebView
+                                                source={{ uri: selectedResourceForPreview.url }}
+                                                style={{ flex: 1, backgroundColor: 'transparent' }}
+                                                startInLoadingState={true}
+                                                renderLoading={() => <ActivityIndicator size="large" color="#137386" style={{ flex: 1, justifyContent: 'center' }} />}
+                                            />
+                                        )
+                                    )}
+                                </View>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </Modal>
 

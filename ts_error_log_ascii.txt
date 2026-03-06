@@ -1,0 +1,8 @@
+app/(app)/resources.tsx(16,53): error TS2304: Cannot find name 'useState'.
+app/(app)/therapist/resources.tsx(137,39): error TS2304: Cannot find name 'uploadFile'.
+app/(app)/therapist/resources.tsx(866,89): error TS2552: Cannot find name 'Download'. Did you mean 'onload'?
+components/dashboard/OpenExerciseCard.tsx(198,5): error TS2345: Argument of type '{ card: { borderRadius: number; borderWidth: number; marginBottom: number; shadowOffset: { width: number; height: number; }; shadowOpacity: number; shadowRadius: number; elevation: number; overflow: "hidden"; }; ... 15 more ...; gradientIcon: { ...; }; }' is not assignable to parameter of type '{ card: { borderRadius: number; borderWidth: number; marginBottom: number; shadowOffset: { width: number; height: number; }; shadowOpacity: number; shadowRadius: number; elevation: number; overflow: "hidden"; }; ... 15 more ...; gradientIcon: { ...; }; } & NamedStyles<...>'.
+  Property 'imageOverlayBadge' is incompatible with index signature.
+    Object literal may only specify known properties, and 'backdropFilter' does not exist in type 'ViewStyle | TextStyle | ImageStyle'.
+utils/cache.ts(30,38): error TS2339: Property 'cacheDirectory' does not exist on type 'typeof import("C:/Users/psjoh/Desktop/Personal/Coding/Apps/TherapyClientApp/node_modules/expo-file-system/build/index")'.
+utils/cache.ts(58,38): error TS2339: Property 'cacheDirectory' does not exist on type 'typeof import("C:/Users/psjoh/Desktop/Personal/Coding/Apps/TherapyClientApp/node_modules/expo-file-system/build/index")'.

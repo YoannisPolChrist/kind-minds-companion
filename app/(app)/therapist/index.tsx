@@ -1,5 +1,5 @@
 import { View, Text, TouchableOpacity, ActivityIndicator, FlatList, Linking, Platform, ScrollView, TextInput, Modal, useWindowDimensions } from 'react-native';
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import { Image } from 'expo-image';
 import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../../utils/firebase';
@@ -33,6 +33,28 @@ export default function TherapistDashboard() {
     const [isAddClientModalVisible, setIsAddClientModalVisible] = useState(false);
     const router = useRouter();
     const { isDark, colors, theme, setTheme } = useTheme();
+    const searchInputRef = useRef<TextInput>(null);
+
+    // Keyboard Shortcuts (Desktop Feel)
+    useEffect(() => {
+        if (Platform.OS !== 'web') return;
+
+        const handleKeyDown = (e: any) => {
+            // CMD+K or CTRL+K to Search
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInputRef.current?.focus();
+            }
+            // CMD+N or CTRL+N for New Client
+            if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+                e.preventDefault();
+                setIsAddClientModalVisible(true);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     // Responsive Setup
     const { width: screenWidth } = useWindowDimensions();
@@ -389,9 +411,10 @@ export default function TherapistDashboard() {
                         <View style={{ flex: 1, backgroundColor: colors.surface, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, borderWidth: 1, borderColor: colors.border }}>
                             <Search size={18} color={colors.textSubtle} />
                             <TextInput
+                                ref={searchInputRef}
                                 style={{ flex: 1, marginLeft: 10, fontSize: 15, color: colors.text }}
                                 placeholderTextColor={colors.textSubtle}
-                                placeholder="Klienten suchen..."
+                                placeholder={Platform.OS === 'web' ? "Klienten suchen... (Cmd/Ctrl + K)" : "Klienten suchen..."}
                                 value={searchQuery}
                                 onChangeText={setSearchQuery}
                             />
@@ -402,7 +425,9 @@ export default function TherapistDashboard() {
                             style={{ backgroundColor: colors.primary, height: 48, paddingHorizontal: 18, borderRadius: 16, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8, shadowColor: colors.primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 10, elevation: 6 }}
                         >
                             <Plus size={18} color="#FFF" />
-                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 14 }}>Neuer Klient</Text>
+                            <Text style={{ color: 'white', fontWeight: '900', fontSize: 14 }}>
+                                {Platform.OS === 'web' ? 'Neuer Klient (Cmd+N)' : 'Neuer Klient'}
+                            </Text>
                         </TouchableOpacity>
                     </View>
                 </MotiView>

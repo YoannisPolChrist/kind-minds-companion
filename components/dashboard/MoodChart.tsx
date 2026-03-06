@@ -205,7 +205,7 @@ export function MoodChart({ checkins }: Props) {
                     { label: 'Max', value: Math.max(...moods), color: '#10B981' },
                 ].map(stat => (
                     <View key={stat.label} style={{ flex: 1, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 14, paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' }}>
-                        <Text style={{ fontSize: 18, fontWeight: '900', color: stat.color }}>{stat.value}</Text>
+                        <Text style={{ fontSize: 18, fontWeight: '900', color: stat.color }}>{stat.value}<Text style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.4)' }}>/10</Text></Text>
                         <Text style={{ fontSize: 10, fontWeight: '600', color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>{stat.label}</Text>
                     </View>
                 ))}

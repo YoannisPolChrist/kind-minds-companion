@@ -1,31 +1,38 @@
 import React, { useMemo } from 'react';
-import { View, Text, Dimensions } from 'react-native';
+import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import { MotiView } from 'moti';
-import { PieChart, BarChart } from 'react-native-chart-kit';
-import { MOOD_COLORS, MOOD_EMOJIS, MOOD_LABELS } from './CheckinCard';
-import { Activity, Star, Hash } from 'lucide-react-native';
-
-const screenWidth = Math.min(Dimensions.get('window').width - 48, 800); // 48 padding
+import { getEmotionByScore, getEmotionLabel, EMOTION_PRESETS } from '../../constants/emotions';
+import { Activity, Star } from 'lucide-react-native';
+import i18n from '../../utils/i18n';
+import { useTheme } from '../../contexts/ThemeContext';
 
 interface CheckinAnalyticsProps {
     checkins: any[];
 }
 
 export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
+    const { colors, isDark } = useTheme();
 
     const analytics = useMemo(() => {
         if (!checkins || checkins.length === 0) return null;
 
-        let totalMood = 0;
-        let moodCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+        let totalScore = 0;
+        let validScoresCount = 0;
+
+        // Count frequencies of each specific preset ID we encounter
+        const emotionCountMap: Record<string, { count: number, preset: typeof EMOTION_PRESETS[0] }> = {};
         const tagCounts: { [key: string]: number } = {};
 
         checkins.forEach(c => {
             if (c.mood) {
-                totalMood += c.mood;
-                if (moodCounts[c.mood as keyof typeof moodCounts] !== undefined) {
-                    moodCounts[c.mood as keyof typeof moodCounts]++;
+                totalScore += c.mood;
+                validScoresCount++;
+                const emotion = getEmotionByScore(c.mood);
+
+                if (!emotionCountMap[emotion.id]) {
+                    emotionCountMap[emotion.id] = { count: 0, preset: emotion };
                 }
+                emotionCountMap[emotion.id].count++;
             }
             if (c.tags && c.tags.length > 0) {
                 c.tags.forEach((t: string) => {
@@ -34,65 +41,23 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
             }
         });
 
+        // Top 3 tags
         const sortedTags = Object.entries(tagCounts)
             .sort((a, b) => b[1] - a[1])
-            .slice(0, 3); // Top 3 tags
+            .slice(0, 3);
 
-        const validCheckinCount = checkins.filter(c => c.mood).length;
-        const averageMood = validCheckinCount > 0 ? (totalMood / validCheckinCount).toFixed(1) : '0';
+        // Top 3 emotions
+        const topEmotions = Object.values(emotionCountMap)
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 4); // show up to top 4
 
-        const chartConfig = {
-            backgroundColor: '#ffffff',
-            backgroundGradientFrom: '#ffffff',
-            backgroundGradientTo: '#ffffff',
-            color: (opacity = 1) => `rgba(16, 185, 129, ${opacity})`, // Emerald 500
-            labelColor: (opacity = 1) => `rgba(36, 56, 66, ${opacity})`,
-            strokeWidth: 2, // optional, default 3
-            barPercentage: 0.5,
-            useShadowColorFromDataset: false // optional
-        };
-
-        const barData = {
-            labels: ["1", "2", "3", "4", "5"],
-            datasets: [
-                {
-                    data: [
-                        moodCounts[1],
-                        moodCounts[2],
-                        moodCounts[3],
-                        moodCounts[4],
-                        moodCounts[5]
-                    ],
-                    colors: [
-                        (opacity = 1) => MOOD_COLORS[1],
-                        (opacity = 1) => MOOD_COLORS[2],
-                        (opacity = 1) => MOOD_COLORS[3],
-                        (opacity = 1) => MOOD_COLORS[4],
-                        (opacity = 1) => MOOD_COLORS[5],
-                    ]
-                }
-            ]
-        };
-
-        const pieData = Object.entries(moodCounts)
-            .filter(([_, count]) => count > 0)
-            .map(([moodStr, count]) => {
-                const moodNum = parseInt(moodStr) as keyof typeof MOOD_LABELS;
-                return {
-                    name: MOOD_EMOJIS[moodNum],
-                    count: count,
-                    color: MOOD_COLORS[moodNum],
-                    legendFontColor: '#64748B',
-                    legendFontSize: 13
-                }
-            });
+        const averageMood = validScoresCount > 0 ? (totalScore / validScoresCount).toFixed(1) : '0';
 
         return {
             averageMood,
             sortedTags,
-            barData,
-            pieData,
-            chartConfig
+            topEmotions,
+            validScoresCount
         };
     }, [checkins]);
 
@@ -105,24 +70,24 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
             transition={{ type: 'timing', duration: 400 }}
             style={{ marginBottom: 32 }}
         >
-            <View style={{ backgroundColor: 'white', borderRadius: 32, padding: 24, borderWidth: 1, borderColor: '#F1F5F9', shadowColor: '#0F172A', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 4 }}>
+            <View style={{ backgroundColor: colors.surface, borderRadius: 32, padding: 24, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9', shadowColor: isDark ? '#000' : '#0F172A', shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.04, shadowRadius: 24, elevation: 4 }}>
 
                 {/* Header: Average Mood & Stats */}
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottomWidth: 1, borderBottomColor: '#F1F5F9', paddingBottom: 20 }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, borderBottomWidth: 1, borderBottomColor: isDark ? 'rgba(255,255,255,0.1)' : '#F1F5F9', paddingBottom: 20 }}>
                     <View>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
                             <Star size={16} color="#F59E0B" fill="#F59E0B" />
-                            <Text style={{ fontSize: 14, fontWeight: '700', color: '#64748B', marginLeft: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Durchschnitt</Text>
+                            <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSubtle || '#64748B', marginLeft: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Durchschnitt</Text>
                         </View>
                         <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                            <Text style={{ fontSize: 42, fontWeight: '900', color: '#243842', letterSpacing: -1 }}>{analytics.averageMood}</Text>
-                            <Text style={{ fontSize: 18, fontWeight: '700', color: '#94A3B8', ml: 4 }}> / 5</Text>
+                            <Text style={{ fontSize: 42, fontWeight: '900', color: colors.text, letterSpacing: -1 }}>{analytics.averageMood}</Text>
+                            <Text style={{ fontSize: 18, fontWeight: '700', color: isDark ? '#64748B' : '#94A3B8', marginLeft: 4 }}> / 10</Text>
                         </View>
                     </View>
 
                     <View style={{ alignItems: 'flex-end' }}>
-                        <View style={{ backgroundColor: '#F8FAFC', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginBottom: 8 }}>
-                            <Text style={{ fontSize: 13, fontWeight: '700', color: '#475569' }}>{checkins.length} Einträge</Text>
+                        <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F8FAFC', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginBottom: 8 }}>
+                            <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? '#CBD5E1' : '#475569' }}>{checkins.length} Einträge</Text>
                         </View>
                         {analytics.sortedTags.length > 0 && (
                             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ECFDF5', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
@@ -138,22 +103,37 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
 
                     {/* Charts */}
                     <View style={{ flex: 1, minWidth: 280 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: '#243842', marginBottom: 16 }}>Stimmungsverteilung</Text>
-                        <View style={{ backgroundColor: '#F8FAFC', borderRadius: 20, padding: 16, overflow: 'hidden' }}>
-                            {analytics.pieData.length > 0 ? (
-                                <PieChart
-                                    data={analytics.pieData}
-                                    width={Math.min(screenWidth, 320)}
-                                    height={160}
-                                    chartConfig={analytics.chartConfig}
-                                    accessor={"count"}
-                                    backgroundColor={"transparent"}
-                                    paddingLeft={"15"}
-                                    center={[10, 0]}
-                                    absolute
-                                />
-                            ) : (
-                                <Text style={{ textAlign: 'center', color: '#94A3B8' }}>Keine Daten für Tabelle</Text>
+                        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Häufigste Emotionen</Text>
+                        <View style={{ gap: 12 }}>
+                            {analytics.topEmotions.length > 0 ? analytics.topEmotions.map((item, index) => {
+                                // Calculate percentage
+                                const percentage = Math.round((item.count / analytics.validScoresCount) * 100);
+
+                                return (
+                                    <View key={item.preset.id} style={{ flexDirection: 'column', backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.05)' : '#F1F5F9' }}>
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <View style={{ width: 32, height: 32, borderRadius: 10, backgroundColor: `${item.preset.color}25`, alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                                    <Text style={{ fontSize: 16 }}>{item.preset.emoji}</Text>
+                                                </View>
+                                                <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>{getEmotionLabel(item.preset, i18n.locale)}</Text>
+                                            </View>
+                                            <Text style={{ fontSize: 14, fontWeight: '800', color: item.preset.color }}>{percentage}%</Text>
+                                        </View>
+
+                                        {/* Progress Bar */}
+                                        <View style={{ height: 6, backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : '#E2E8F0', borderRadius: 3, overflow: 'hidden' }}>
+                                            <MotiView
+                                                from={{ width: '0%' }}
+                                                animate={{ width: `${percentage}%` }}
+                                                transition={{ type: 'timing', duration: 1000, delay: index * 100 }}
+                                                style={{ height: '100%', backgroundColor: item.preset.color, borderRadius: 3 }}
+                                            />
+                                        </View>
+                                    </View>
+                                );
+                            }) : (
+                                <Text style={{ textAlign: 'center', color: isDark ? '#64748B' : '#94A3B8', padding: 20 }}>Keine Daten für Diagramm</Text>
                             )}
                         </View>
                     </View>
@@ -161,18 +141,18 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                     {/* Top Tags */}
                     {analytics.sortedTags.length > 0 && (
                         <View style={{ flex: 1, minWidth: 280 }}>
-                            <Text style={{ fontSize: 15, fontWeight: '800', color: '#243842', marginBottom: 16 }}>Häufigste Aktivitäten</Text>
+                            <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 16 }}>Häufigste Aktivitäten</Text>
                             <View style={{ gap: 12 }}>
                                 {analytics.sortedTags.map(([tag, count], index) => (
-                                    <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F8FAFC', padding: 16, borderRadius: 16 }}>
+                                    <View key={tag} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F8FAFC', padding: 16, borderRadius: 16 }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                                            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: index === 0 ? '#FEF3C7' : (index === 1 ? '#F1F5F9' : '#FFF7ED'), alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
+                                            <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: index === 0 ? (isDark ? 'rgba(217, 119, 6, 0.2)' : '#FEF3C7') : (index === 1 ? (isDark ? 'rgba(100, 116, 139, 0.2)' : '#F1F5F9') : (isDark ? 'rgba(194, 65, 12, 0.2)' : '#FFF7ED')), alignItems: 'center', justifyContent: 'center', marginRight: 12 }}>
                                                 <Text style={{ fontSize: 13, fontWeight: '800', color: index === 0 ? '#D97706' : (index === 1 ? '#64748B' : '#C2410C') }}>#{index + 1}</Text>
                                             </View>
-                                            <Text style={{ fontSize: 15, fontWeight: '700', color: '#334155' }}>{tag}</Text>
+                                            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.text }}>{tag}</Text>
                                         </View>
-                                        <View style={{ backgroundColor: 'white', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: '#E2E8F0' }}>
-                                            <Text style={{ fontSize: 13, fontWeight: '800', color: '#64748B' }}>{count}x</Text>
+                                        <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'white', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: isDark ? 'transparent' : '#E2E8F0' }}>
+                                            <Text style={{ fontSize: 13, fontWeight: '800', color: isDark ? '#CBD5E1' : '#64748B' }}>{count}x</Text>
                                         </View>
                                     </View>
                                 ))}

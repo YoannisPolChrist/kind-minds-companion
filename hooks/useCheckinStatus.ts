@@ -9,9 +9,23 @@ export function useCheckinStatus(userId: string | undefined) {
     const fetchCheckinStatus = useCallback(async () => {
         if (!userId) return;
         try {
-            const today = new Date().toISOString().split('T')[0];
-            const snap = await getDoc(doc(db, 'checkins', `${userId}_${today}`));
-            setCheckedInToday(snap.exists());
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            const currentHour = now.getHours();
+            const currentSlot = currentHour < 12 ? 'morning' : 'evening';
+
+            // Check if they checked in for the current slot specifically
+            const slotDocId = `${userId}_${today}_${currentSlot}`;
+            const slotSnap = await getDoc(doc(db, 'checkins', slotDocId));
+
+            if (slotSnap.exists()) {
+                setCheckedInToday(true);
+            } else {
+                // Fallback check: Did they use the old system today before we deployed the slots?
+                const legacyDocId = `${userId}_${today}`;
+                const legacySnap = await getDoc(doc(db, 'checkins', legacyDocId));
+                setCheckedInToday(legacySnap.exists());
+            }
 
             // Fetch recent checkins for the mood chart (Sort locally to avoid composite index overhead in Firebase)
             const checksRef = collection(db, 'checkins');

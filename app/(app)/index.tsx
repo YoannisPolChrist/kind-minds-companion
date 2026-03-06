@@ -177,19 +177,21 @@ export default function ClientDashboard() {
                 {/* ── Header ────────────────────────────────── */}
                 <View
                     style={{
-                        paddingTop: Platform.OS === 'android' ? 80 : 88,
-                        paddingBottom: 80,
-                        paddingHorizontal: 24,
-                        borderBottomLeftRadius: 48,
-                        borderBottomRightRadius: 48,
+                        paddingTop: Platform.OS === 'android'
+                            ? (screenWidth < 380 ? 52 : 64)
+                            : (screenWidth < 380 ? 56 : 72),
+                        paddingBottom: screenWidth < 380 ? 24 : screenWidth < 600 ? 32 : 56,
+                        paddingHorizontal: screenWidth < 380 ? 12 : 20,
+                        borderBottomLeftRadius: screenWidth < 600 ? 32 : 48,
+                        borderBottomRightRadius: screenWidth < 600 ? 32 : 48,
                         overflow: 'hidden',
                         zIndex: 10,
-                        shadowColor: '#0d6474',
-                        shadowOffset: { width: 0, height: 16 },
-                        shadowOpacity: 0.2,
-                        shadowRadius: 32,
-                        elevation: 14,
-                        marginBottom: 24,
+                        shadowColor: colors.primaryDark,
+                        shadowOffset: { width: 0, height: 12 },
+                        shadowOpacity: 0.18,
+                        shadowRadius: 24,
+                        elevation: 10,
+                        marginBottom: screenWidth < 600 ? 16 : 24,
                     }}
                 >
                     <Image
@@ -198,44 +200,78 @@ export default function ClientDashboard() {
                         contentFit="cover"
                     />
 
-                    {/* Foreground Content — max-width 680px for web readability */}
+                    {/* Foreground Card — fully responsive */}
                     <View style={{ zIndex: 10, maxWidth: 680, width: '100%', alignSelf: 'center' }} pointerEvents="box-none">
-                        <BlurView intensity={Platform.OS === 'android' ? 100 : 60} tint={isDark ? 'dark' : 'light'} style={{ borderRadius: 36, overflow: 'hidden', padding: 24, borderWidth: 1, borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', backgroundColor: isDark ? 'rgba(15,23,42,0.6)' : 'rgba(255,255,255,0.75)' }}>
-                            {/* Logo */}
-                            <View style={{ alignItems: 'center', marginBottom: 20 }}>
-                                <Image
-                                    source={require('../../assets/logo-transparent.png')}
-                                    style={{ width: 260, height: 85, tintColor: isDark ? '#FFF' : undefined }}
-                                    contentFit="contain"
-                                />
-                            </View>
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-                                <View style={{ flex: 1, paddingRight: 16 }}>
+                        <BlurView
+                            intensity={Platform.OS === 'android' ? 100 : 60}
+                            tint={isDark ? 'dark' : 'light'}
+                            style={{
+                                borderRadius: screenWidth < 600 ? 24 : 36,
+                                overflow: 'hidden',
+                                padding: screenWidth < 380 ? 14 : screenWidth < 600 ? 16 : 24,
+                                borderWidth: 1,
+                                borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
+                                backgroundColor: isDark ? 'rgba(15,23,42,0.6)' : 'rgba(255,255,255,0.75)',
+                            }}
+                        >
+                            {/* Logo — hidden on very small phones to save space */}
+                            {screenWidth >= 360 && (
+                                <View style={{ alignItems: 'center', marginBottom: screenWidth < 600 ? 10 : 16 }}>
+                                    <Image
+                                        source={require('../../assets/logo-transparent.png')}
+                                        style={{
+                                            width: screenWidth < 380 ? 160 : screenWidth < 600 ? 200 : 260,
+                                            height: screenWidth < 380 ? 44 : screenWidth < 600 ? 56 : 80,
+                                            tintColor: isDark ? '#FFF' : undefined,
+                                        }}
+                                        contentFit="contain"
+                                    />
+                                </View>
+                            )}
+
+                            {/* Greeting row */}
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: screenWidth < 600 ? 12 : 20 }}>
+                                <View style={{ flex: 1, paddingRight: 12 }}>
                                     <Text
-                                        style={{ fontSize: 34, fontWeight: '900', color: colors.text, letterSpacing: -1, lineHeight: 40 }}
+                                        style={{
+                                            fontSize: screenWidth < 380 ? 20 : screenWidth < 600 ? 24 : 34,
+                                            fontWeight: '900',
+                                            color: colors.text,
+                                            letterSpacing: -0.5,
+                                            lineHeight: screenWidth < 380 ? 26 : screenWidth < 600 ? 30 : 40,
+                                        }}
                                         adjustsFontSizeToFit
-                                        minimumFontScale={0.8}
-                                        numberOfLines={2}
+                                        minimumFontScale={0.75}
+                                        numberOfLines={1}
                                     >
                                         Hi {profile?.firstName || ''} 👋
                                     </Text>
                                 </View>
-                                {/* Settings button — 48px hit target (6 × 8pt) */}
+                                {/* Settings button */}
                                 <TouchableOpacity
+                                    accessibilityRole="button"
+                                    accessibilityLabel="Einstellungen"
                                     onPress={() => {
                                         if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                         router.push('/(app)/settings' as any);
                                     }}
-                                    style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)', paddingHorizontal: 18, paddingVertical: 16, borderRadius: 22, borderWidth: 1, borderColor: isDark ? 'transparent' : 'rgba(0,0,0,0.05)' }}
+                                    style={{
+                                        backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.04)',
+                                        paddingHorizontal: screenWidth < 600 ? 12 : 18,
+                                        paddingVertical: screenWidth < 600 ? 10 : 16,
+                                        borderRadius: 18,
+                                        borderWidth: 1,
+                                        borderColor: isDark ? 'transparent' : 'rgba(0,0,0,0.05)',
+                                    }}
                                 >
-                                    <Settings size={22} color={colors.text} />
+                                    <Settings size={screenWidth < 600 ? 18 : 22} color={colors.text} />
                                 </TouchableOpacity>
                             </View>
-                            <View style={{ marginTop: 4 }}>
-                                {exercises.length > 0 && (
-                                    <ProgressBar completed={completedExercises.length} total={exercises.length} />
-                                )}
-                            </View>
+
+                            {/* Progress bar */}
+                            {exercises.length > 0 ? (
+                                <ProgressBar completed={completedExercises.length} total={exercises.length} />
+                            ) : null}
                         </BlurView>
                     </View>
                 </View>
@@ -243,7 +279,47 @@ export default function ClientDashboard() {
                 {/* Responsive content column: no max-width on mobile, capped on tablet/desktop */}
                 <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: horizPadding }]}>
 
-                    {notifications.length > 0 && (
+                    {profile?.nextAppointment && (
+                        <MotiView
+                            from={{ opacity: 0, translateY: 10 }}
+                            animate={{ opacity: 1, translateY: 0 }}
+                            transition={{ type: 'timing', duration: 400, delay: 100 }}
+                            style={{ marginBottom: 20 }}
+                        >
+                            <View className={`border rounded-3xl p-5 ${isDark ? 'bg-pink-600/15 border-pink-600/30' : 'bg-pink-50 border-pink-100'
+                                }`}>
+                                <View className="flex-row items-center mb-3">
+                                    <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: isDark ? 'rgba(219, 39, 119, 0.2)' : '#FCE7F3', alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                                        <Calendar size={24} color="#DB2777" />
+                                    </View>
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 13, fontWeight: '700', color: '#DB2777', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>
+                                            Nächster Termin
+                                        </Text>
+                                        <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text }}>
+                                            {profile.nextAppointment}
+                                        </Text>
+                                    </View>
+                                </View>
+                                {bookingUrl && (
+                                    <TouchableOpacity
+                                        onPress={() => Linking.openURL(bookingUrl)}
+                                        style={{
+                                            backgroundColor: '#DB2777',
+                                            paddingVertical: 12,
+                                            borderRadius: 16,
+                                            alignItems: 'center',
+                                            marginTop: 4
+                                        }}
+                                    >
+                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>Termin verwalten</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </MotiView>
+                    )}
+
+                    {notifications.length > 0 ? (
                         <MotiView
                             from={{ opacity: 0, translateY: -20 }}
                             animate={{ opacity: 1, translateY: 0 }}
@@ -252,22 +328,16 @@ export default function ClientDashboard() {
                         >
                             <TouchableOpacity
                                 onPress={handleNotificationClick}
+                                className={`border rounded-2xl p-4 flex-row items-center shadow-sm elevation-sm ${isDark ? 'bg-sky-500/15 border-sky-500/30' : 'bg-sky-100 border-sky-200'
+                                    }`}
                                 style={{
-                                    backgroundColor: isDark ? 'rgba(14, 165, 233, 0.15)' : '#E0F2FE',
-                                    borderWidth: 1,
-                                    borderColor: isDark ? 'rgba(14, 165, 233, 0.3)' : '#BAE6FD',
-                                    borderRadius: 16,
-                                    padding: 16,
-                                    flexDirection: 'row',
-                                    alignItems: 'center',
                                     shadowColor: isDark ? '#000' : '#0284C7',
                                     shadowOffset: { width: 0, height: 4 },
                                     shadowOpacity: 0.1,
                                     shadowRadius: 8,
-                                    elevation: 2
                                 }}
                             >
-                                <View style={{ backgroundColor: isDark ? '#0EA5E9' : '#0284C7', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+                                <View className={`w-10 h-10 rounded-full items-center justify-center mr-4 ${isDark ? 'bg-sky-500' : 'bg-sky-600'}`}>
                                     <BookOpen size={20} color="white" />
                                 </View>
                                 <View style={{ flex: 1 }}>
@@ -281,7 +351,7 @@ export default function ClientDashboard() {
                                 </View>
                             </TouchableOpacity>
                         </MotiView>
-                    )}
+                    ) : null}
 
                     <MotiView
                         from={{ opacity: 0, scale: 0.9 }}
@@ -297,7 +367,7 @@ export default function ClientDashboard() {
                         />
                     </MotiView>
 
-                    {recentCheckins && recentCheckins.length > 0 && (
+                    {(recentCheckins && recentCheckins.length > 0) ? (
                         <MotiView
                             from={{ opacity: 0, translateY: 20 }}
                             animate={{ opacity: 1, translateY: 0 }}
@@ -307,7 +377,7 @@ export default function ClientDashboard() {
                                 <MoodChart checkins={recentCheckins} />
                             </Suspense>
                         </MotiView>
-                    )}
+                    ) : null}
 
                     {bookingUrl && (
                         <MotiView
@@ -322,19 +392,20 @@ export default function ClientDashboard() {
                                         Linking.openURL(bookingUrl);
                                     }
                                 }}
-                                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                                className="p-6 rounded-[28px] flex-row items-center justify-between"
+                                style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                             >
-                                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
-                                    <View style={{ backgroundColor: `${colors.primary}1A`, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                                <View className="flex-row items-center flex-1 pr-4">
+                                    <View style={{ backgroundColor: `${colors.primary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
                                         <Calendar size={24} color={colors.primary} />
                                     </View>
-                                    <View style={{ flex: 1 }}>
-                                        <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>{i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}</Text>
-                                        <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '500', lineHeight: 18 }}>{i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}</Text>
+                                    <View className="flex-1">
+                                        <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.book_session', { defaultValue: 'Termin buchen' })}</Text>
+                                        <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5">{i18n.t('dashboard.book_desc', { defaultValue: 'Vereinbare dein nächstes Coaching' })}</Text>
                                     </View>
                                 </View>
-                                <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', padding: 10, borderRadius: 100 }}>
-                                    <Text style={{ color: colors.textSubtle, fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
+                                <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
+                                    <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                                 </View>
                             </PressableScale>
                         </MotiView>
@@ -350,19 +421,20 @@ export default function ClientDashboard() {
                             onPress={() => {
                                 router.push('/(app)/resources');
                             }}
-                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                            className="p-6 rounded-[28px] flex-row items-center justify-between"
+                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                         >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
-                                <View style={{ backgroundColor: `${colors.secondary}1A`, width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
+                            <View className="flex-row items-center flex-1 pr-4">
+                                <View style={{ backgroundColor: `${colors.secondary}1A` }} className="w-14 h-14 rounded-full items-center justify-center mr-5">
                                     <BookOpen size={24} color={colors.secondary} />
                                 </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
-                                    <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
+                                <View className="flex-1">
+                                    <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">{i18n.t('dashboard.resources', { defaultValue: 'Ressourcen' })}</Text>
+                                    <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>{i18n.t('dashboard.resources_desc', { defaultValue: 'Dokumente & Links von deinem Coach' })}</Text>
                                 </View>
                             </View>
-                            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', padding: 10, borderRadius: 100 }}>
-                                <Text style={{ color: colors.textSubtle, fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
+                            <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
+                                <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                             </View>
                         </PressableScale>
                     </MotiView>
@@ -377,19 +449,22 @@ export default function ClientDashboard() {
                             onPress={() => {
                                 router.push('/(app)/notes' as any);
                             }}
-                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, padding: 24, borderRadius: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                            className="p-6 rounded-[28px] flex-row items-center justify-between"
+                            style={{ backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }}
                         >
-                            <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 16 }}>
-                                <View style={{ backgroundColor: 'rgba(59,130,246,0.1)', width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', marginRight: 20 }}>
-                                    <Edit3 size={24} color={isDark ? '#60A5FA' : '#3B82F6'} />
+                            <View className="flex-row items-center flex-1 pr-4">
+                                <View className="w-14 h-14 rounded-full items-center justify-center mr-5" style={{ backgroundColor: 'rgba(59,130,246,0.1)' }}>
+                                    <View style={{ transform: [{ rotate: '-10deg' }] }}>
+                                        <Edit3 size={24} color={isDark ? '#60A5FA' : '#3B82F6'} />
+                                    </View>
                                 </View>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16, marginBottom: 4 }}>Session Notes</Text>
-                                    <Text style={{ color: colors.textSubtle, fontSize: 13, fontWeight: '500', lineHeight: 18 }} numberOfLines={2}>Deine persönlichen Notizen</Text>
+                                <View className="flex-1">
+                                    <Text style={{ color: colors.text }} className="font-extrabold text-base mb-1">Session Notes</Text>
+                                    <Text style={{ color: colors.textSubtle }} className="text-[13px] font-medium leading-5" numberOfLines={2}>Füge Notizen und Erkenntnisse nach deiner Session hinzu.</Text>
                                 </View>
                             </View>
-                            <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6', padding: 10, borderRadius: 100 }}>
-                                <Text style={{ color: colors.textSubtle, fontWeight: '700', fontSize: 16, lineHeight: 16 }}>{'>'}</Text>
+                            <View className="p-2.5 rounded-full" style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F9F8F6' }}>
+                                <Text style={{ color: colors.textSubtle }} className="font-bold text-base leading-4">{'>'}</Text>
                             </View>
                         </PressableScale>
                     </MotiView>
@@ -414,7 +489,7 @@ export default function ClientDashboard() {
                         </MotiView>
                     ) : (
                         <>
-                            {openExercises.length > 0 && (
+                            {openExercises.length > 0 ? (
                                 <View style={{ marginBottom: 24 }}>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 200 }}>
                                         <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text, marginBottom: 16, letterSpacing: -0.5 }}>{i18n.t('dashboard.exercises.title')}</Text>
@@ -436,8 +511,8 @@ export default function ClientDashboard() {
                                         })}
                                     </View>
                                 </View>
-                            )}
-                            {completedExercises.length > 0 && (
+                            ) : null}
+                            {completedExercises.length > 0 ? (
                                 <View>
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 300 }}>
                                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 16, marginBottom: 16 }}>
@@ -463,7 +538,7 @@ export default function ClientDashboard() {
                                         })}
                                     </View>
                                 </View>
-                            )}
+                            ) : null}
                         </>
                     )}
                 </View>

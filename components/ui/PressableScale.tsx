@@ -6,15 +6,17 @@ import * as Haptics from 'expo-haptics';
 interface PressableScaleProps {
     children: React.ReactNode;
     onPress: () => void;
-    style?: ViewStyle | ViewStyle[];
+    style?: ViewStyle | ViewStyle[] | any;
+    className?: string;
     disabled?: boolean;
 }
 
-export function PressableScale({ children, onPress, style, disabled }: PressableScaleProps) {
+export function PressableScale({ children, onPress, style, className, disabled }: PressableScaleProps) {
     const [pressed, setPressed] = useState(false);
 
     return (
         <Pressable
+            className={className}
             onPressIn={() => {
                 if (!disabled) {
                     setPressed(true);

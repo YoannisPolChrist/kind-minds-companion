@@ -22,6 +22,8 @@ import * as Haptics from 'expo-haptics';
 import { FlashList } from '@shopify/flash-list';
 import { useAuthStore } from '../../stores/authStore';
 import { SuccessAnimation } from '../../components/ui/SuccessAnimation';
+import { useTheme, ThemeType } from '../../contexts/ThemeContext';
+import { Card } from '../../components/ui/Card';
 
 export default function SettingsScreen() {
     const router = useRouter();
@@ -30,6 +32,7 @@ export default function SettingsScreen() {
     const { reminderHour, setReminderHour, calendarSyncEnabled, setCalendarSyncEnabled, notificationsEnabled, setNotificationsEnabled } = useAppStore();
     const [bookingUrl, setBookingUrl] = useState<string>('');
     const { locale, setLanguage } = useLanguage();
+    const { theme, setTheme, colors, isDark } = useTheme();
 
     // Profile editing state
     const [firstName, setFirstName] = useState(profile?.firstName || '');
@@ -233,12 +236,14 @@ export default function SettingsScreen() {
             >
                 <View className="pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between overflow-hidden">
                     <LinearGradient
-                        colors={['#1a365d', '#2C3E50']}
+                        colors={[colors.primaryDark, colors.primary]}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
                         style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                     />
                     <TouchableOpacity
+                        accessibilityRole="button"
+                        accessibilityLabel="Zurück"
                         onPress={() => {
                             if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                             if (router.canGoBack()) {
@@ -272,8 +277,8 @@ export default function SettingsScreen() {
                         animate={{ opacity: 1, translateY: 0 }}
                         transition={{ type: 'timing', duration: 350, delay: 100 }}
                     >
-                        <Text className="text-xl font-bold text-[#2C3E50] mb-4">Mein Profil</Text>
-                        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 mb-6">
+                        <Text style={{ color: colors.text }} className="text-xl font-bold mb-4">Mein Profil</Text>
+                        <Card className="mb-6">
                             {/* Avatar */}
                             <View className="items-center mb-6">
                                 <TouchableOpacity onPress={pickProfilePhoto} disabled={uploadingPhoto} activeOpacity={0.8}>
@@ -338,11 +343,11 @@ export default function SettingsScreen() {
                                     {savingProfile ? 'Wird gespeichert...' : 'Profil speichern'}
                                 </Text>
                             </TouchableOpacity>
-                        </View>
+                        </Card>
                     </MotiView>
 
                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 150 }}>
-                        <Text className="text-xl font-bold text-[#2C3E50] mb-4">{i18n.t('settings.advanced')}</Text>
+                        <Text style={{ color: colors.text }} className="text-xl font-bold mb-4">{i18n.t('settings.advanced')}</Text>
                     </MotiView>
 
                     <MotiView
@@ -350,7 +355,7 @@ export default function SettingsScreen() {
                         animate={{ opacity: 1, translateY: 0 }}
                         transition={{ type: 'timing', duration: 350, delay: 200 }}
                     >
-                        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
+                        <Card className="mb-6">
                             <View className="flex-row justify-between items-center mb-6">
                                 <View className="flex-1 pr-4">
                                     <Text className="text-lg font-bold text-[#2C3E50] mb-1 flex-wrap" numberOfLines={2}>{i18n.t('settings.cal_title')}</Text>
@@ -359,7 +364,7 @@ export default function SettingsScreen() {
                                 <Switch
                                     value={calendarSyncEnabled}
                                     onValueChange={(val) => { toggleCalendar(); }}
-                                    trackColor={{ false: '#E5E7EB', true: '#2C3E50' }}
+                                    trackColor={{ false: '#E5E7EB', true: '#137386' }}
                                 />
                             </View>
 
@@ -373,10 +378,10 @@ export default function SettingsScreen() {
                                 <Switch
                                     value={notificationsEnabled}
                                     onValueChange={(val) => { toggleNotifications(); }}
-                                    trackColor={{ false: '#E5E7EB', true: '#2C3E50' }}
+                                    trackColor={{ false: '#E5E7EB', true: '#137386' }}
                                 />
                             </View>
-                        </View>
+                        </Card>
                     </MotiView>
 
                     {notificationsEnabled && (
@@ -385,8 +390,8 @@ export default function SettingsScreen() {
                             animate={{ opacity: 1, translateY: 0 }}
                             transition={{ type: 'timing', duration: 350, delay: 250 }}
                         >
-                            <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
-                                <Text className="text-lg font-bold text-[#2C3E50] mb-3">{i18n.t('settings.reminder_time')}</Text>
+                            <Card padding="sm" className="mb-6">
+                                <Text style={{ color: colors.text }} className="text-lg font-bold mb-3">{i18n.t('settings.reminder_time')}</Text>
                                 <Text className="text-gray-500 text-sm mb-4">{i18n.t('settings.reminder_desc')}</Text>
                                 <View className="flex-row flex-wrap gap-2">
                                     {['08:00', '10:00', '14:00', '18:00', '20:00'].map((time) => {
@@ -399,14 +404,14 @@ export default function SettingsScreen() {
                                                     if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                                                     saveReminderHour(hour);
                                                 }}
-                                                className={`border px-4 py-3 rounded-xl flex-1 items-center min-w-[30%] ${isSelected ? 'bg-[#2C3E50] border-[#2C3E50]' : 'bg-gray-50 border-gray-200'}`}
+                                                className={`border px-4 py-3 rounded-xl flex-1 items-center min-w-[30%] ${isSelected ? 'bg-[#137386] border-[#137386]' : 'bg-gray-50 border-gray-200'}`}
                                             >
                                                 <Text className={`font-bold ${isSelected ? 'text-white' : 'text-[#2C3E50]'}`}>{time}</Text>
                                             </TouchableOpacity>
                                         );
                                     })}
                                 </View>
-                            </View>
+                            </Card>
                         </MotiView>
                     )}
 
@@ -420,8 +425,8 @@ export default function SettingsScreen() {
                         transition={{ type: 'timing', duration: 350, delay: 350 }}
                     >
                         {profile?.role === 'therapist' && (
-                            <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-5 mb-6">
-                                <Text className="text-lg font-bold text-[#2C3E50] mb-1">{i18n.t('settings.booking_title', { defaultValue: 'Buchungs-Link (Cal.com / Calendly)' })}</Text>
+                            <Card padding="sm" className="mb-6">
+                                <Text style={{ color: colors.text }} className="text-lg font-bold mb-1">{i18n.t('settings.booking_title', { defaultValue: 'Buchungs-Link (Cal.com / Calendly)' })}</Text>
                                 <Text className="text-gray-500 text-sm mb-4">
                                     {i18n.t('settings.booking_desc', { defaultValue: 'Hinterlege deinen Link, damit Klienten direkt Termine bei dir buchen können.' })}
                                 </Text>
@@ -433,6 +438,7 @@ export default function SettingsScreen() {
                                         className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#2C3E50] font-medium"
                                         autoCapitalize="none"
                                         keyboardType="url"
+                                        style={{ color: '#2C3E50' }}
                                     />
                                     <TouchableOpacity
                                         onPress={() => {
@@ -443,14 +449,39 @@ export default function SettingsScreen() {
                                         <Text className="text-white font-bold">{i18n.t('settings.save', { defaultValue: 'Speichern' })}</Text>
                                     </TouchableOpacity>
                                 </View>
-                            </View>
+                            </Card>
                         )}
 
-                        <View className="bg-white rounded-3xl border border-gray-100 shadow-sm p-4 mb-6">
+                        <Card padding="sm" className="mb-6">
+                            {/* Theme Setting */}
+                            <View className="flex-row items-center justify-between mb-2">
+                                <Text style={{ color: colors.text }} className="text-base font-bold">Erscheinungsbild</Text>
+                            </View>
+                            <View className="flex-row bg-gray-50 rounded-xl p-1 mb-4 border border-gray-200">
+                                {['system', 'light', 'dark'].map((t) => {
+                                    const isActive = theme === t;
+                                    const labels: Record<string, string> = { system: 'System', light: 'Hell', dark: 'Dunkel' };
+                                    return (
+                                        <TouchableOpacity
+                                            key={t}
+                                            onPress={() => setTheme(t as ThemeType)}
+                                            className={`flex-1 py-2.5 items-center justify-center rounded-lg ${isActive ? 'bg-white shadow-sm' : ''}`}
+                                            style={isActive ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 } : {}}
+                                        >
+                                            <Text className={`font-bold ${isActive ? 'text-[#137386]' : 'text-gray-500'}`}>
+                                                {labels[t]}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </View>
+
+                            <View className="h-[1px] bg-gray-100 w-full mb-4" />
+
                             {/* Language Setting */}
                             <View className="flex-row justify-between items-center py-3">
                                 <View className="flex-1 pr-4">
-                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.lang_title')}</Text>
+                                    <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.lang_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.lang_desc')}</Text>
                                 </View>
                                 <DefaultScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row pl-2">
@@ -458,7 +489,7 @@ export default function SettingsScreen() {
                                         <TouchableOpacity
                                             key={lang}
                                             onPress={() => setLanguage(lang)}
-                                            className={`px-3 py-1 rounded-lg ${locale === lang ? 'bg-[#2C3E50]' : 'bg-gray-100'} mx-1`}
+                                            className={`px-3 py-1 rounded-lg ${locale === lang ? 'bg-[#137386]' : 'bg-gray-100'} mx-1`}
                                         >
                                             <Text className={`font-bold ${locale === lang ? 'text-white' : 'text-gray-500'}`}>
                                                 {lang.toUpperCase()}
@@ -486,7 +517,7 @@ export default function SettingsScreen() {
                                 className="flex-row justify-between items-center py-4"
                             >
                                 <View className="flex-1 pr-4">
-                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.telegram_title')}</Text>
+                                    <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.telegram_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.telegram_desc')}</Text>
                                 </View>
                                 <View className="flex-row items-center">
@@ -505,7 +536,7 @@ export default function SettingsScreen() {
                                 }}
                                 className="flex-row justify-between items-center py-4">
                                 <View className="flex-1 pr-4">
-                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.pw_title')}</Text>
+                                    <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.pw_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.pw_desc')}</Text>
                                 </View>
                                 <ChevronRight size={20} color="#9ca3af" />
@@ -521,12 +552,12 @@ export default function SettingsScreen() {
                                 }}
                                 className="flex-row justify-between items-center py-4">
                                 <View className="flex-1 pr-4">
-                                    <Text className="text-lg font-bold text-[#2C3E50] flex-wrap" numberOfLines={2}>{i18n.t('settings.hist_title')}</Text>
+                                    <Text style={{ color: colors.text }} className="text-lg font-bold flex-wrap" numberOfLines={2}>{i18n.t('settings.hist_title')}</Text>
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.hist_desc')}</Text>
                                 </View>
                                 <ChevronRight size={20} color="#9ca3af" />
                             </TouchableOpacity>
-                        </View>
+                        </Card>
                     </MotiView>
 
                     <MotiView

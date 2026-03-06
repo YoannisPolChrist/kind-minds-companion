@@ -27,7 +27,7 @@ export const getCachedImage = async (url: string | null | undefined): Promise<st
 
     try {
         const filename = await getFilename(url);
-        const folder = `${FileSystem.cacheDirectory}images/`;
+        const folder = `${(FileSystem as any).cacheDirectory}images/`;
         const fileUri = `${folder}${filename}`;
 
         const folderInfo = await FileSystem.getInfoAsync(folder);
@@ -55,7 +55,7 @@ export const getCachedImage = async (url: string | null | undefined): Promise<st
 export const clearImageCache = async () => {
     if (Platform.OS === 'web') return;
     try {
-        const folder = `${FileSystem.cacheDirectory}images/`;
+        const folder = `${(FileSystem as any).cacheDirectory}images/`;
         await FileSystem.deleteAsync(folder, { idempotent: true });
     } catch (error) {
         console.warn('Error clearing image cache:', error);

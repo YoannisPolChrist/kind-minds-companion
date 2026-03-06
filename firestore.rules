@@ -45,6 +45,13 @@ service cloud.firestore {
       allow write: if isTherapist();
     }
 
+    // CLIENT RESOURCES
+    match /client_resources/{resourceId} {
+      allow read: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
+      allow create: if isTherapist();
+      allow update, delete: if isTherapist();
+    }
+
     // NOTIFICATIONS
     match /notifications/{notificationId} {
       allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
@@ -61,17 +68,7 @@ service cloud.firestore {
 
     // CLIENT NOTES
     match /client_notes/{noteId} {
-      // Therapist can read all notes. Client can read notes where they are the clientId.
-      // For collection queries: Firestore rules require that the WHERE clause matches a field.
-      // We allow collection queries if the user is a therapist OR the query is filtered by their own uid.
-      allow read: if isTherapist() || (
-        isAuthenticated() && (
-          // Allows single document reads for the client
-          resource.data.clientId == request.auth.uid ||
-          // Allows collection queries filtered by clientId (e.g. where('clientId', '==', uid))
-          request.query.limit != null
-        )
-      );
+      allow read: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
       allow create: if isTherapist() || (isAuthenticated() && request.resource.data.clientId == request.auth.uid);
       allow update, delete: if isTherapist() || (isAuthenticated() && resource.data.clientId == request.auth.uid);
     }

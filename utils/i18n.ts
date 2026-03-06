@@ -71,14 +71,7 @@ const translations = {
             moods: ["Awful", "Bad", "Not Good", "Neutral", "Okay", "Good", "Very Good", "Great", "Awesome", "Fantastic"],
             tags: ["Exhausted", "Anxious", "Calm", "Motivated", "Sad", "Grateful", "Overwhelmed", "Focused", "Lonely", "Connected"],
             note_placeholder: "Notes on today (optional)...",
-            completed: "Check-in Completed",
-            duration: {
-                title: "Access Duration",
-                subtitle: "How long do you need access to restricted apps?",
-                desc: "Choose a time. After that, the mindful delay will be active again.",
-                btn_finish: "Finish Check-in",
-                unit: "min"
-            }
+            completed: "Check-in Completed"
         },
         settings: {
             title: "Settings",
@@ -290,14 +283,7 @@ const translations = {
             moods: ["Sehr schlecht", "Schlecht", "Nicht gut", "Neutral", "Okay", "Gut", "Sehr gut", "Toll", "Großartig", "Fantastisch"],
             tags: ["Erschöpft", "Ängstlich", "Ruhig", "Motiviert", "Traurig", "Dankbar", "Überfordert", "Fokussiert", "Einsam", "Verbunden"],
             note_placeholder: "Notizen zum heutigen Tag (optional)...",
-            completed: "Check-in Erledigt",
-            duration: {
-                title: "Nutzungsdauer",
-                subtitle: "Wie lange benötigst du Zugriff auf gesperrte Apps?",
-                desc: "Wähle eine Zeit. Danach wird die achtsame Verzögerung wieder aktiv.",
-                btn_finish: "Check-in beenden",
-                unit: "Min"
-            }
+            completed: "Check-in Erledigt"
         },
         settings: {
             title: "Einstellungen",
@@ -506,14 +492,7 @@ const translations = {
             moods: ["Très mauvais", "Mauvais", "Pas bien", "Neutre", "Correct", "Bien", "Très bien", "Super", "Génial", "Fantastique"],
             tags: ["Épuisé", "Anxieux", "Calme", "Motivé", "Triste", "Reconnaissant", "Débordé", "Concentré", "Seul", "Connecté"],
             note_placeholder: "Notes sur la journée (facultatif)...",
-            completed: "Bilan Terminé",
-            duration: {
-                title: "Durée d'Accès",
-                subtitle: "Combien de temps avez-vous besoin d'accéder aux applications restreintes ?",
-                desc: "Choisissez une durée. Après cela, le délai de pleine conscience sera à nouveau actif.",
-                btn_finish: "Terminer le check-in",
-                unit: "min"
-            }
+            completed: "Bilan Terminé"
         },
         settings: {
             title: "Paramètres",
@@ -722,14 +701,7 @@ const translations = {
             moods: ["Muy mal", "Mal", "No tan bien", "Neutral", "Bien", "Muy bien", "Estupendo", "Magnífico", "Genial", "Fantástico"],
             tags: ["Agotado", "Ansioso", "Tranquilo", "Motivado", "Triste", "Agradecido", "Abrumado", "Concentrado", "Solo", "Conectado"],
             note_placeholder: "Notas de hoy (opcional)...",
-            completed: "Registro Completado",
-            duration: {
-                title: "Duración de Acceso",
-                subtitle: "¿Cuánto tiempo necesitas acceder a las aplicaciones restringidas?",
-                desc: "Elige un tiempo. Después, el retraso consciente volverá a activarse.",
-                btn_finish: "Finalizar Check-in",
-                unit: "min"
-            }
+            completed: "Registro Completado"
         },
         settings: {
             title: "Ajustes",

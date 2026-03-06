@@ -67,6 +67,29 @@ export class NoteRepository {
         }
     }
 
+    /** Update an existing note */
+    static async update(id: string, data: Partial<ClientNote>): Promise<void> {
+        try {
+            const { id: _, clientId, ...updateData } = data as any; // Don't update id or clientId
+            const updatePayload: any = { ...updateData };
+
+            // Clean up undefined values
+            Object.keys(updatePayload).forEach(key => {
+                if (updatePayload[key] === undefined) {
+                    delete updatePayload[key];
+                }
+            });
+
+            await import('firebase/firestore').then(({ updateDoc }) =>
+                updateDoc(doc(db, 'client_notes', id), updatePayload)
+            );
+            logger.info('Updated client note', { noteId: id });
+        } catch (error) {
+            logger.error(`Failed to update note ${id}`, error);
+            throw error;
+        }
+    }
+
     /** Delete a note */
     static async delete(id: string): Promise<void> {
         try {

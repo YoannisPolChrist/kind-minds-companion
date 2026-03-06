@@ -1,5 +1,5 @@
 import React, { useState, useCallback, memo, useRef } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardTypeOptions, ActivityIndicator, Animated, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Alert, Platform, KeyboardTypeOptions, ActivityIndicator, Animated, StyleSheet, Modal } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
@@ -13,6 +13,7 @@ import ExerciseFlowTimeline from './ExerciseFlowTimeline';
 import ExerciseDifficultyGauge from './ExerciseDifficultyGauge';
 import Block3DTiltWrapper from './Block3DTiltWrapper';
 import Block3DEntrance from './Block3DEntrance';
+import { BlockConditionEditor } from './BlockConditionEditor';
 import { uploadFile, generateStoragePath, getExtension } from '../../utils/uploadFile';
 import { useTheme } from '../../contexts/ThemeContext';
 
@@ -77,13 +78,14 @@ const StyledInput = memo(function StyledInput({ value, onChangeText, placeholder
 
 // ─── Block Form ───────────────────────────────────────────────────────────────
 
-const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock, onMoveBlock, isFirst, isLast, onDuplicateBlock }: {
+const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock, onMoveBlock, isFirst, isLast, onDuplicateBlock, allBlocks }: {
     block: ExerciseBlock;
     onUpdateBlock: (id: string, updates: Partial<ExerciseBlock>) => void;
     onRemoveBlock: (id: string) => void;
     onMoveBlock: (id: string, dir: 'up' | 'down') => void;
     isFirst: boolean; isLast: boolean;
     onDuplicateBlock: (id: string) => void;
+    allBlocks: ExerciseBlock[];
 }) {
     const cat = getCat(block.type);
     const id = block.id;
@@ -825,6 +827,9 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                         </MotiView>
                     </>
                 )}
+
+                {/* Conditional Visibility Configurator */}
+                <BlockConditionEditor block={block} allBlocks={allBlocks} onUpdate={(condition) => onChange({ condition })} />
             </View>
         </View>
     );
@@ -1110,7 +1115,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
 
-            {/* ── Premium Animated Header ──────────────────────────────────────── */}
+            {/* ── Premium Header ──────────────────────────────────────── */}
             <Animated.View
                 style={[
                     {
@@ -1119,13 +1124,15 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                         left: 0,
                         right: 0,
                         zIndex: 100,
-                        height: HEADER_HEIGHT,
+                        // Increased height for the new design
+                        height: HEADER_HEIGHT + 20,
                         overflow: 'hidden',
-                        // Drop shadow
-                        shadowColor: '#000',
-                        shadowOffset: { width: 0, height: 6 },
-                        shadowOpacity: 0.22,
-                        shadowRadius: 16,
+                        borderBottomLeftRadius: 32,
+                        borderBottomRightRadius: 32,
+                        shadowColor: '#137386',
+                        shadowOffset: { width: 0, height: 8 },
+                        shadowOpacity: 0.25,
+                        shadowRadius: 24,
                         elevation: 12,
                     },
                     {
@@ -1141,12 +1148,12 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                         tint="dark"
                         style={[
                             StyleSheet.absoluteFillObject,
-                            { backgroundColor: 'rgba(26, 38, 52, 0.82)' }
+                            { backgroundColor: 'rgba(19, 115, 134, 0.85)' }
                         ]}
                     />
                 ) : (
                     <View
-                        style={[StyleSheet.absoluteFillObject, { backgroundColor: '#1A2634' }]}
+                        style={[StyleSheet.absoluteFillObject, { backgroundColor: '#137386' }]}
                     />
                 )}
 
@@ -1165,12 +1172,12 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 {/* Content row */}
                 <View
                     style={{
-                        paddingTop: insets.top,
+                        paddingTop: insets.top + 10,
                         flex: 1,
                         flexDirection: 'row',
                         alignItems: 'center',
-                        paddingHorizontal: 16,
-                        gap: 10,
+                        justifyContent: 'space-between',
+                        paddingHorizontal: 24,
                     }}
                 >
                     {/* ← Back button */}
@@ -1180,34 +1187,31 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                         style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            gap: 4,
-                            paddingHorizontal: 10,
-                            paddingVertical: 8,
-                            borderRadius: 14,
-                            backgroundColor: 'rgba(255,255,255,0.08)',
-                            borderWidth: 1,
-                            borderColor: 'rgba(255,255,255,0.12)',
+                            paddingHorizontal: 16,
+                            paddingVertical: 12,
+                            borderRadius: 16,
+                            backgroundColor: 'rgba(255,255,255,0.2)',
                         }}
                     >
-                        <ChevronLeft size={18} color="rgba(255,255,255,0.90)" strokeWidth={2.5} />
+                        <ChevronLeft size={20} color="white" />
                         <Text style={{
-                            color: 'rgba(255,255,255,0.90)',
-                            fontWeight: '600',
-                            fontSize: 14,
-                            letterSpacing: -0.1,
+                            color: 'white',
+                            fontWeight: '700',
+                            fontSize: 16,
+                            marginLeft: 4,
                         }}>Zurück</Text>
                     </TouchableOpacity>
 
-                    {/* Title – shrinks gracefully */}
+                    {/* Title */}
                     <Text
                         numberOfLines={1}
                         style={{
                             flex: 1,
-                            fontSize: 16,
-                            fontWeight: '700',
+                            fontSize: 22,
+                            fontWeight: '900',
                             color: '#FFFFFF',
                             textAlign: 'center',
-                            letterSpacing: -0.3,
+                            marginHorizontal: 16,
                         }}
                     >
                         {title.trim() || 'Neue Übung'}
@@ -1219,24 +1223,23 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                         style={{
                             flexDirection: 'row',
                             alignItems: 'center',
-                            gap: 6,
-                            paddingHorizontal: 14,
-                            paddingVertical: 8,
-                            borderRadius: 14,
+                            gap: 8,
+                            paddingHorizontal: 20,
+                            paddingVertical: 12,
+                            borderRadius: 16,
                             backgroundColor: '#C09D59',
                             shadowColor: '#C09D59',
                             shadowOffset: { width: 0, height: 4 },
                             shadowOpacity: 0.4,
-                            shadowRadius: 8,
-                            elevation: 4,
+                            shadowRadius: 12,
+                            elevation: 6,
                         }}
                     >
-                        <Save size={15} color="#fff" strokeWidth={2.5} />
+                        <Save size={18} color="#fff" strokeWidth={2.5} />
                         <Text style={{
                             color: '#fff',
                             fontWeight: '800',
-                            fontSize: 14,
-                            letterSpacing: 0.1,
+                            fontSize: 16,
                         }}>Speichern</Text>
                     </TouchableOpacity>
                 </View>
@@ -1246,8 +1249,8 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
             <Animated.ScrollView
                 style={{ flex: 1 }}
                 contentContainerStyle={{
-                    paddingTop: HEADER_HEIGHT + 16,
-                    padding: 20,
+                    paddingHorizontal: 20,
+                    paddingTop: HEADER_HEIGHT + 36,
                     paddingBottom: 80,
                     maxWidth: 896,
                     width: '100%',
@@ -1258,34 +1261,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 onScroll={handleScroll}
                 scrollEventThrottle={16}
             >
-                {/* Inline discard confirmation banner */}
-                {showDiscardBanner && (
-                    <MotiView
-                        from={{ opacity: 0, scale: 0.97, translateY: -8 }}
-                        animate={{ opacity: 1, scale: 1, translateY: 0 }}
-                        transition={{ type: 'spring', damping: 22, stiffness: 200 }}
-                        style={{ backgroundColor: '#FEF3C7', borderRadius: 24, padding: 24, marginBottom: 24, borderWidth: 1.5, borderColor: '#F59E0B' }}
-                    >
-                        <Text style={{ fontSize: 17, fontWeight: '900', color: '#92400E', marginBottom: 6 }}>⚠️ Nicht gespeicherte Änderungen</Text>
-                        <Text style={{ fontSize: 14, color: '#78350F', fontWeight: '500', lineHeight: 20, marginBottom: 16 }}>
-                            Du hast Änderungen, die noch nicht gespeichert wurden. Wenn du jetzt zurückgehst, gehen sie verloren.
-                        </Text>
-                        <View style={{ flexDirection: 'row', gap: 12 }}>
-                            <TouchableOpacity
-                                onPress={() => setShowDiscardBanner(false)}
-                                style={{ flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#F59E0B', alignItems: 'center' }}
-                            >
-                                <Text style={{ fontWeight: '800', color: '#92400E', fontSize: 14 }}>Weiter bearbeiten</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity
-                                onPress={onCancel}
-                                style={{ flex: 1, paddingVertical: 12, borderRadius: 16, backgroundColor: '#EF4444', alignItems: 'center' }}
-                            >
-                                <Text style={{ fontWeight: '800', color: '#fff', fontSize: 14 }}>Verwerfen</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </MotiView>
-                )}
+
 
                 <View style={{
                     backgroundColor: colors.surface, borderRadius: 36, borderWidth: 1, borderColor: colors.border, padding: 36, marginBottom: 36, shadowColor: isDark ? '#000' : '#243842', shadowOffset: { width: 0, height: 16 }, shadowOpacity: isDark ? 0.3 : 0.05, shadowRadius: 40, elevation: 6
@@ -1362,6 +1338,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                                 onMoveBlock={moveBlock}
                                 onDuplicateBlock={duplicateBlock}
                                 isFirst={index === 0} isLast={index === blocks.length - 1}
+                                allBlocks={blocks}
                             />
                         </Block3DTiltWrapper>
                     </Block3DEntrance>
@@ -1370,8 +1347,8 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 {/* Add Block / Picker */}
                 {!showPicker ? (
                     <TouchableOpacity onPress={() => setShowPicker(true)}
-                        style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: '#D7D3CC', borderRadius: 32, paddingVertical: 32, alignItems: 'center', marginBottom: 16, backgroundColor: '#FAF9F6' }}>
-                        <Text style={{ color: '#8F9CA3', fontWeight: '800', fontSize: 18 }}>＋ Neuen Block hinzufügen</Text>
+                        style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: 'rgba(19, 115, 134, 0.3)', borderRadius: 32, paddingVertical: 32, alignItems: 'center', marginBottom: 16, backgroundColor: 'rgba(19, 115, 134, 0.05)' }}>
+                        <Text style={{ color: '#137386', fontWeight: '800', fontSize: 18 }}>＋ Neuen Block hinzufügen</Text>
                     </TouchableOpacity>
                 ) : (
                     <BlockPicker onAdd={addBlock} onClose={() => setShowPicker(false)} />
@@ -1389,7 +1366,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             <Text style={{ fontWeight: '800', color: isDark ? colors.text : colors.textSubtle, fontSize: 16 }}>Abbrechen</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={handleSave}
-                            style={{ flex: 1, paddingVertical: 18, borderRadius: 24, backgroundColor: colors.primary, alignItems: 'center', shadowColor: colors.primary, shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 }}>
+                            style={{ flex: 1, paddingVertical: 18, borderRadius: 24, backgroundColor: '#C09D59', alignItems: 'center', shadowColor: '#C09D59', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 }}>
                             <Text style={{ fontWeight: '900', color: '#fff', fontSize: 16, letterSpacing: 0.5 }}>
                                 💾 Speichern · {blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}
                             </Text>
@@ -1405,6 +1382,36 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 subMessage={toast.type === 'error' ? 'Bitte versuche es erneut.' : ''}
                 onAnimationDone={() => setToast(prev => ({ ...prev, visible: false }))}
             />
+
+            {/* Discard Confirmation Modal */}
+            <Modal visible={showDiscardBanner} transparent animationType="fade">
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', padding: 24 }}>
+                    <MotiView
+                        from={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        style={{ width: '100%', maxWidth: 400, backgroundColor: '#FEF3C7', borderRadius: 32, padding: 32, borderWidth: 1.5, borderColor: '#F59E0B', shadowColor: '#000', shadowOffset: { width: 0, height: 20 }, shadowOpacity: 0.15, shadowRadius: 40, elevation: 10 }}
+                    >
+                        <Text style={{ fontSize: 20, fontWeight: '900', color: '#92400E', marginBottom: 12, textAlign: 'center' }}>⚠️ Nicht gespeichert</Text>
+                        <Text style={{ fontSize: 15, color: '#78350F', fontWeight: '500', lineHeight: 22, marginBottom: 24, textAlign: 'center' }}>
+                            Du hast Änderungen, die noch nicht gespeichert wurden. Wenn du jetzt zurückgehst, gehen sie verloren.
+                        </Text>
+                        <View style={{ flexDirection: 'row', gap: 12 }}>
+                            <TouchableOpacity
+                                onPress={() => setShowDiscardBanner(false)}
+                                style={{ flex: 1, paddingVertical: 14, borderRadius: 16, backgroundColor: '#FFFFFF', borderWidth: 1.5, borderColor: '#F59E0B', alignItems: 'center' }}
+                            >
+                                <Text style={{ fontWeight: '900', color: '#92400E', fontSize: 15 }}>Weiter bearbeiten</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                onPress={onCancel}
+                                style={{ flex: 1, paddingVertical: 14, borderRadius: 16, backgroundColor: '#EF4444', alignItems: 'center', shadowColor: '#EF4444', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 4 }}
+                            >
+                                <Text style={{ fontWeight: '900', color: '#fff', fontSize: 15 }}>Verwerfen</Text>
+                            </TouchableOpacity>
+                        </View>
+                    </MotiView>
+                </View>
+            </Modal>
         </View>
     );
 }

@@ -11,6 +11,7 @@ import { useDebounce } from '../../../hooks/useDebounce';
 import { TemplateRepository, ExerciseTemplate } from '../../../utils/repositories/TemplateRepository';
 import { ClientRepository } from '../../../utils/repositories/ClientRepository';
 import { ErrorHandler } from '../../../utils/errors';
+import { useAuth } from '../../../contexts/AuthContext';
 
 const THEME_COLORS = ['#137386', '#3B82F6', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#10B981', '#64748B'];
 
@@ -20,6 +21,7 @@ export default function TherapistTemplates() {
     const [searchQuery, setSearchQuery] = useState('');
     const debouncedQuery = useDebounce(searchQuery, 300);
     const [loading, setLoading] = useState(true);
+    const { profile } = useAuth();
 
     // Assignment Mock State
     const [assignModalVisible, setAssignModalVisible] = useState(false);
@@ -58,7 +60,8 @@ export default function TherapistTemplates() {
 
     const fetchTemplates = async () => {
         try {
-            const activeTemplates = await TemplateRepository.findActiveTemplates(50);
+            if (!profile?.id) return;
+            const activeTemplates = await TemplateRepository.findActiveTemplates(50, profile.id);
             setTemplates(activeTemplates);
             setFilteredTemplates(activeTemplates);
         } catch (error) {

@@ -3,7 +3,31 @@
 @tailwind utilities;
 
 /* Fix for React Native Web layout collapse */
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   width: 100%;
+}
+
+/* Enhances all Web TouchableOpacity/Pressable with standard hover state */
+@media (hover: hover) {
+  [role="button"] {
+    cursor: pointer;
+    transition: opacity 0.15s ease-in-out;
+  }
+
+  [role="button"]:hover {
+    opacity: 0.8;
+  }
+}
+
+/* Focus ring for keyboard accessibility on web */
+[role="button"]:focus-visible,
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #137386;
+  outline-offset: 2px;
 }

@@ -18,6 +18,7 @@ export interface UserProfile {
     birthDate?: string;
     pushToken?: string;
     lastActivePlatform?: string;
+    nextAppointment?: string;
 }
 
 interface AuthState {
