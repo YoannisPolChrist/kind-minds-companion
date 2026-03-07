@@ -287,8 +287,8 @@ export default function ClientDashboard() {
                     </View>
 
                     <DashboardSectionHeader
-                        title="Heute"
-                        subtitle="Alles Wichtige für deinen nächsten Schritt."
+                        title={i18n.t('dashboard.today_section.title', { defaultValue: 'Heute' })}
+                        subtitle={i18n.t('dashboard.today_section.subtitle', { defaultValue: 'Alles Wichtige für deinen nächsten Schritt.' })}
                     />
 
                     {profile?.nextAppointment && (
@@ -306,7 +306,7 @@ export default function ClientDashboard() {
                                     </View>
                                     <View style={{ flex: 1 }}>
                                         <Text style={{ fontSize: 13, fontWeight: '700', color: '#DB2777', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>
-                                            Nächster Termin
+                                            {i18n.t('dashboard.next_session.label', { defaultValue: 'Nächster Termin' })}
                                         </Text>
                                         <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text }}>
                                             {profile.nextAppointment}
@@ -325,7 +325,9 @@ export default function ClientDashboard() {
                                             marginTop: 4
                                         }}
                                     >
-                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>Termin verwalten</Text>
+                                        <Text style={{ color: 'white', fontWeight: '800', fontSize: 15 }}>
+                                            {i18n.t('dashboard.next_session.cta', { defaultValue: 'Termin verwalten' })}
+                                        </Text>
                                     </PressableScale>
                                 )}
                             </View>

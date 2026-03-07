@@ -4,6 +4,7 @@ import { View, Text, TextInput, ActivityIndicator, Platform, KeyboardAvoidingVie
 import i18n from '../../utils/i18n';
 import { MotiView } from 'moti';
 import { useAuthActions } from '../../hooks/useAuthActions';
+import { formatBirthDateInput, isValidBirthDate } from '../../utils/dateInput';
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
 
@@ -125,7 +126,8 @@ export default function Login() {
     }, []);
 
     const handleChange = (field: keyof typeof formData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        const nextValue = field === 'birthDate' ? formatBirthDateInput(value) : value;
+        setFormData(prev => ({ ...prev, [field]: nextValue }));
         if (errors[field]) setErrors(prev => ({ ...prev, [field]: undefined }));
     };
 
@@ -143,6 +145,7 @@ export default function Login() {
             if (!formData.firstName.trim()) newErrors.firstName = i18n.t('login.validation.first_required', { defaultValue: 'Vorname ist erforderlich.' });
             if (!formData.lastName.trim()) newErrors.lastName = i18n.t('login.validation.last_required', { defaultValue: 'Nachname ist erforderlich.' });
             if (!formData.birthDate.trim()) newErrors.birthDate = i18n.t('login.validation.birth_required', { defaultValue: 'Geburtsdatum ist erforderlich.' });
+            else if (!isValidBirthDate(formData.birthDate.trim())) newErrors.birthDate = i18n.t('login.validation.birth_invalid', { defaultValue: 'Bitte gib das Geburtsdatum im Format TT.MM.JJJJ ein.' });
 
             if (!formData.password) {
                 newErrors.password = i18n.t('login.validation.password_required', { defaultValue: 'Passwort ist erforderlich.' });
@@ -168,7 +171,7 @@ export default function Login() {
                     inviteCode: formData.inviteCode.trim() || undefined,
                     firstName: formData.firstName,
                     lastName: formData.lastName,
-                    birthDate: formData.birthDate,
+                    birthDate: formData.birthDate.trim(),
                 });
             }
         }

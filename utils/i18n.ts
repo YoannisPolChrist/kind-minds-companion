@@ -4,6 +4,10 @@ import { I18n } from 'i18n-js';
 // Define the translations
 const translations = {
     en: {
+        common: {
+            back: "Back",
+            not_set: "Not set",
+        },
         dashboard: {
             greeting: "Hello %{name} 👋",
             daily_quotes: [
@@ -45,6 +49,14 @@ const translations = {
                 empty_title: "No completed exercises",
                 empty_desc: "Exercises you have finished will appear here.",
                 done_on: "Completed on %{date}"
+            },
+            today_section: {
+                title: "Today",
+                subtitle: "Everything important for your next step."
+            },
+            next_session: {
+                label: "Next Session",
+                cta: "Manage session"
             }
         },
         login: {
@@ -180,6 +192,83 @@ const translations = {
             whatsapp_msg: "Hello %{name},\n\nI have assigned new therapy tasks for you in the app. Please take a look.\n\nBest regards!",
             whatsapp_err: "Could not open WhatsApp.",
 
+            patient: {
+                title: "Patient Record",
+                subtitle: "Status overview & actions",
+                stats_title: "Status & History",
+                stats: {
+                    adherence_label: "Exercise Completion",
+                    adherence_hint: "Completed vs assigned",
+                    empty_hint: "No exercises assigned yet",
+                    mood_label: "Ø Mood",
+                    mood_hint: "Average of the latest check-ins",
+                    mood_empty: "No check-ins yet",
+                    checkins_label: "Check-ins",
+                    checkins_hint: "All recorded entries",
+                    next_label: "Next Session",
+                    next_hint: "Visible inside the client dashboard",
+                },
+                quick_actions: {
+                    title: "Work Areas",
+                    subtitle: "Jump straight into the relevant section.",
+                    exercises: {
+                        title: "Exercises",
+                        desc: "Assign tasks and review progress",
+                    },
+                    notes: {
+                        title: "Session Notes",
+                        desc: "Document insights & homework",
+                    },
+                    files: {
+                        title: "Documents",
+                        desc: "Manage and share files",
+                    },
+                    checkins: {
+                        title: "Check-ins",
+                        desc: "Review the mood journal",
+                    },
+                },
+                contact: {
+                    title: "Profile & Contact",
+                    phone: "Phone",
+                    email: "E-mail",
+                    booking: "Booking link",
+                    since: "Active since",
+                },
+                appointment: {
+                    title: "Next Appointment",
+                    description: "Appears directly on the client dashboard.",
+                    placeholder: "YYYY-MM-DD HH:MM",
+                    button: "Save appointment",
+                    saving: "Saving...",
+                    success_title: "Saved",
+                    success_body: "The appointment was updated.",
+                    error_title: "Error",
+                    error_body: "Could not save the appointment.",
+                },
+                status: {
+                    attention: {
+                        label: "Needs focus",
+                        body: "Low mood or low completion percentage",
+                    },
+                    steady: {
+                        label: "Steady",
+                        body: "Consistent activity, keep observing",
+                    },
+                    thriving: {
+                        label: "Active",
+                        body: "Positive mood and strong adherence",
+                    },
+                },
+                hero: {
+                    last_seen: "Last active %{value}",
+                    member_since: "In care since %{value}",
+                },
+                chart_empty: "No check-ins yet.",
+                chart_empty_hint: "Once the client logs moods, insights will appear here.",
+                not_found: "Could not load this patient record.",
+            },
+
             // Client detail view
             client_details: "Client Details",
             assign_exercise: "Assign New Exercise",
@@ -306,7 +395,7 @@ const translations = {
                 with_image: "With image"
             },
             stats: {
-                total_label: "Notes total",
+                total_label: "Journal entries",
                 total_hint: "All visible entries in your journal.",
                 private_label: "Private entries",
                 private_hint: "Notes only you can see.",
@@ -379,6 +468,10 @@ const translations = {
         }
     },
     de: {
+        common: {
+            back: "Zurück",
+            not_set: "Nicht gesetzt",
+        },
         dashboard: {
             greeting: "Hallo %{name} 👋",
             daily_quotes: [
@@ -420,6 +513,14 @@ const translations = {
                 empty_title: "Noch keine Aufgaben erledigt",
                 empty_desc: "Hier erscheinen Übungen, die du bereits abgeschlossen hast.",
                 done_on: "Erledigt am %{date}"
+            },
+            today_section: {
+                title: "Heute",
+                subtitle: "Alles Wichtige für deinen nächsten Schritt."
+            },
+            next_session: {
+                label: "Nächster Termin",
+                cta: "Termin verwalten"
             }
         },
         login: {
@@ -555,6 +656,83 @@ const translations = {
             whatsapp_msg: "Hallo %{name},\n\nich habe dir neue Therapie-Aufgaben in der App zugewiesen. Bitte schau doch mal rein.\n\nViele Grüße!",
             whatsapp_err: "Konnte WhatsApp nicht öffnen.",
 
+            patient: {
+                title: "Patientenakte",
+                subtitle: "Statusüberblick & Aktionen",
+                stats_title: "Status & Verlauf",
+                stats: {
+                    adherence_label: "Übungs-Quote",
+                    adherence_hint: "Abgeschlossen vs. zugewiesen",
+                    empty_hint: "Noch keine Übungen zugewiesen",
+                    mood_label: "Ø Stimmung",
+                    mood_hint: "Durchschnitt der letzten Check-ins",
+                    mood_empty: "Noch keine Check-ins",
+                    checkins_label: "Check-ins",
+                    checkins_hint: "Alle erfassten Einträge",
+                    next_label: "Nächster Termin",
+                    next_hint: "Sichtbar im Client-Dashboard",
+                },
+                quick_actions: {
+                    title: "Arbeitsbereiche",
+                    subtitle: "Öffne direkt den passenden Bereich.",
+                    exercises: {
+                        title: "Übungen",
+                        desc: "Aufgaben zuweisen & Fortschritt prüfen",
+                    },
+                    notes: {
+                        title: "Sitzungsnotizen",
+                        desc: "Sitzungen dokumentieren",
+                    },
+                    files: {
+                        title: "Dokumente",
+                        desc: "Unterlagen verwalten & teilen",
+                    },
+                    checkins: {
+                        title: "Check-ins",
+                        desc: "Stimmungstagebuch prüfen",
+                    },
+                },
+                contact: {
+                    title: "Profil & Kontakt",
+                    phone: "Telefon",
+                    email: "E-Mail",
+                    booking: "Buchungslink",
+                    since: "Aktiv seit",
+                },
+                appointment: {
+                    title: "Nächster Termin",
+                    description: "Wird direkt auf dem Client Dashboard angezeigt.",
+                    placeholder: "JJJJ-MM-TT HH:MM",
+                    button: "Termin speichern",
+                    saving: "Speichern...",
+                    success_title: "Gespeichert",
+                    success_body: "Der Termin wurde aktualisiert.",
+                    error_title: "Fehler",
+                    error_body: "Termin konnte nicht gespeichert werden.",
+                },
+                status: {
+                    attention: {
+                        label: "Braucht Fokus",
+                        body: "Niedrige Stimmung oder geringe Abschlussquote",
+                    },
+                    steady: {
+                        label: "Stabil",
+                        body: "Konstante Aktivität, weiter beobachten",
+                    },
+                    thriving: {
+                        label: "Aktiv",
+                        body: "Gute Stimmung & solide Quote",
+                    },
+                },
+                hero: {
+                    last_seen: "Zuletzt aktiv %{value}",
+                    member_since: "In Betreuung seit %{value}",
+                },
+                chart_empty: "Noch keine Check-ins vorhanden.",
+                chart_empty_hint: "Sobald der Klient sein Tagebuch nutzt, erscheinen hier Insights.",
+                not_found: "Patientenakte konnte nicht geladen werden.",
+            },
+
             client_details: "Klienten Details",
             assign_exercise: "Neue Übung zuweisen",
             assign_save: "Zuweisen & Speichern",
@@ -678,7 +856,7 @@ const translations = {
                 with_image: "Mit Bild"
             },
             stats: {
-                total_label: "Notizen gesamt",
+                total_label: "Tagebucheinträge",
                 total_hint: "Alle sichtbaren Einträge in deinem Journal.",
                 private_label: "Private Einträge",
                 private_hint: "Notizen nur für dich und deine Reflexion.",
@@ -751,6 +929,10 @@ const translations = {
         }
     },
     fr: {
+        common: {
+            back: "Retour",
+            not_set: "Non défini",
+        },
         dashboard: {
             greeting: "Bonjour %{name} 👋",
             daily_quotes: [
@@ -792,6 +974,14 @@ const translations = {
                 empty_title: "Aucun exercice terminé",
                 empty_desc: "Les exercices que vous avez terminés apparaîtront ici.",
                 done_on: "Terminé le %{date}"
+            },
+            today_section: {
+                title: "Aujourd'hui",
+                subtitle: "Tout ce qui compte pour ta prochaine étape."
+            },
+            next_session: {
+                label: "Prochain rendez-vous",
+                cta: "Gérer le rendez-vous"
             }
         },
         login: {
@@ -927,6 +1117,83 @@ const translations = {
             whatsapp_msg: "Bonjour %{name},\n\nJe vous ai assigné de nouvelles tâches de thérapie dans l'application. Veuillez y jeter un coup d'œil.\n\nCordialement !",
             whatsapp_err: "Impossible d'ouvrir WhatsApp.",
 
+            patient: {
+                title: "Dossier patient",
+                subtitle: "Vue d'ensemble et actions",
+                stats_title: "Statut & historique",
+                stats: {
+                    adherence_label: "Taux d'exécution",
+                    adherence_hint: "Terminés vs assignés",
+                    empty_hint: "Aucun exercice assigné",
+                    mood_label: "Humeur moyenne",
+                    mood_hint: "Moyenne des derniers check-ins",
+                    mood_empty: "Aucun check-in pour le moment",
+                    checkins_label: "Check-ins",
+                    checkins_hint: "Toutes les entrées enregistrées",
+                    next_label: "Prochain rendez-vous",
+                    next_hint: "Visible sur le tableau du client",
+                },
+                quick_actions: {
+                    title: "Zones de travail",
+                    subtitle: "Accédez directement à la section voulue.",
+                    exercises: {
+                        title: "Exercices",
+                        desc: "Assigner des tâches et suivre la progression",
+                    },
+                    notes: {
+                        title: "Notes de séance",
+                        desc: "Documenter les séances et devoirs",
+                    },
+                    files: {
+                        title: "Documents",
+                        desc: "Gérer et partager les documents",
+                    },
+                    checkins: {
+                        title: "Check-ins",
+                        desc: "Analyser le journal d'humeur",
+                    },
+                },
+                contact: {
+                    title: "Profil & contact",
+                    phone: "Téléphone",
+                    email: "E-mail",
+                    booking: "Lien de réservation",
+                    since: "Actif depuis",
+                },
+                appointment: {
+                    title: "Prochain rendez-vous",
+                    description: "S'affiche directement sur le tableau du client.",
+                    placeholder: "AAAA-MM-JJ HH:MM",
+                    button: "Enregistrer le rendez-vous",
+                    saving: "Enregistrement...",
+                    success_title: "Enregistré",
+                    success_body: "Le rendez-vous a été mis à jour.",
+                    error_title: "Erreur",
+                    error_body: "Impossible d'enregistrer le rendez-vous.",
+                },
+                status: {
+                    attention: {
+                        label: "Nécessite de l'attention",
+                        body: "Humeur basse ou faible taux d'exécution",
+                    },
+                    steady: {
+                        label: "Stable",
+                        body: "Activité régulière, à surveiller",
+                    },
+                    thriving: {
+                        label: "Actif",
+                        body: "Bonne humeur et forte implication",
+                    },
+                },
+                hero: {
+                    last_seen: "Dernière activité %{value}",
+                    member_since: "Suivi depuis %{value}",
+                },
+                chart_empty: "Pas encore de check-ins.",
+                chart_empty_hint: "Dès que le client saisira son humeur, les insights apparaîtront ici.",
+                not_found: "Impossible de charger ce dossier patient.",
+            },
+
             client_details: "Détails du client",
             assign_exercise: "Assigner un exercice",
             assign_save: "Assigner et sauvegarder",
@@ -1050,7 +1317,7 @@ const translations = {
                 with_image: "Avec image"
             },
             stats: {
-                total_label: "Notes totales",
+                total_label: "Entrées du journal",
                 total_hint: "Toutes les entrées visibles de votre journal.",
                 private_label: "Entrées privées",
                 private_hint: "Notes visibles uniquement par vous.",
@@ -1123,6 +1390,10 @@ const translations = {
         }
     },
     es: {
+        common: {
+            back: "Volver",
+            not_set: "No establecido",
+        },
         dashboard: {
             greeting: "Hola %{name} 👋",
             daily_quotes: [
@@ -1164,6 +1435,14 @@ const translations = {
                 empty_title: "No hay ejercicios completados",
                 empty_desc: "Los ejercicios que haya terminado aparecerán aquí.",
                 done_on: "Completado el %{date}"
+            },
+            today_section: {
+                title: "Hoy",
+                subtitle: "Todo lo importante para tu próximo paso."
+            },
+            next_session: {
+                label: "Próxima cita",
+                cta: "Gestionar cita"
             }
         },
         login: {
@@ -1299,6 +1578,83 @@ const translations = {
             whatsapp_msg: "Hola %{name},\n\nTe he asignado nuevas tareas de terapia en la aplicación. Por favor, dales un vistazo.\n\n¡Saludos!",
             whatsapp_err: "No se pudo abrir WhatsApp.",
 
+            patient: {
+                title: "Expediente del paciente",
+                subtitle: "Resumen de estado y acciones",
+                stats_title: "Estado e historial",
+                stats: {
+                    adherence_label: "Tasa de ejercicios",
+                    adherence_hint: "Completados vs asignados",
+                    empty_hint: "Aún no hay ejercicios asignados",
+                    mood_label: "Ánimo promedio",
+                    mood_hint: "Promedio de los últimos check-ins",
+                    mood_empty: "Sin check-ins por ahora",
+                    checkins_label: "Check-ins",
+                    checkins_hint: "Todas las entradas registradas",
+                    next_label: "Próxima cita",
+                    next_hint: "Visible en el panel del cliente",
+                },
+                quick_actions: {
+                    title: "Áreas de trabajo",
+                    subtitle: "Ingresa directo a la sección que necesitas.",
+                    exercises: {
+                        title: "Ejercicios",
+                        desc: "Asignar tareas y revisar progreso",
+                    },
+                    notes: {
+                        title: "Notas de sesión",
+                        desc: "Documentar sesiones y tareas",
+                    },
+                    files: {
+                        title: "Documentos",
+                        desc: "Gestionar y compartir documentos",
+                    },
+                    checkins: {
+                        title: "Check-ins",
+                        desc: "Revisar el diario de ánimo",
+                    },
+                },
+                contact: {
+                    title: "Perfil y contacto",
+                    phone: "Teléfono",
+                    email: "Correo",
+                    booking: "Enlace de reserva",
+                    since: "Activo desde",
+                },
+                appointment: {
+                    title: "Próxima cita",
+                    description: "Se muestra directamente en el panel del cliente.",
+                    placeholder: "AAAA-MM-DD HH:MM",
+                    button: "Guardar cita",
+                    saving: "Guardando...",
+                    success_title: "Guardado",
+                    success_body: "La cita fue actualizada.",
+                    error_title: "Error",
+                    error_body: "No se pudo guardar la cita.",
+                },
+                status: {
+                    attention: {
+                        label: "Requiere atención",
+                        body: "Ánimo bajo o poca finalización",
+                    },
+                    steady: {
+                        label: "Estable",
+                        body: "Actividad constante, seguir observando",
+                    },
+                    thriving: {
+                        label: "Activo",
+                        body: "Buen ánimo y alta implicación",
+                    },
+                },
+                hero: {
+                    last_seen: "Última actividad %{value}",
+                    member_since: "En seguimiento desde %{value}",
+                },
+                chart_empty: "Aún no hay check-ins.",
+                chart_empty_hint: "Cuando el cliente registre su estado de ánimo, aparecerán los insights aquí.",
+                not_found: "No se pudo cargar este expediente.",
+            },
+
             client_details: "Detalles del cliente",
             assign_exercise: "Asignar nuevo ejercicio",
             assign_save: "Asignar y Guardar",
@@ -1422,7 +1778,7 @@ const translations = {
                 with_image: "Con imagen"
             },
             stats: {
-                total_label: "Notas totales",
+                total_label: "Entradas del diario",
                 total_hint: "Todas las entradas visibles de tu diario.",
                 private_label: "Entradas privadas",
                 private_hint: "Notas solo para ti.",
@@ -1495,6 +1851,10 @@ const translations = {
         }
     },
     it: {
+        common: {
+            back: "Indietro",
+            not_set: "Non impostato",
+        },
         dashboard: {
             greeting: "Ciao %{name} 👋",
             daily_quotes: [
@@ -1536,6 +1896,14 @@ const translations = {
                 empty_title: "Nessun esercizio completato",
                 empty_desc: "Gli esercizi che hai finito appariranno qui.",
                 done_on: "Completato il %{date}"
+            },
+            today_section: {
+                title: "Oggi",
+                subtitle: "Tutto ciò che conta per il tuo prossimo passo."
+            },
+            next_session: {
+                label: "Prossimo appuntamento",
+                cta: "Gestisci appuntamento"
             }
         },
         login: {
@@ -1677,6 +2045,82 @@ const translations = {
             exercises_btn: "Esercizi ›",
             whatsapp_msg: "Ciao %{name},\n\nTi ho assegnato nuovi compiti di terapia nell'app. Per favore, dai un'occhiata.\n\nCordiali saluti!",
             whatsapp_err: "Impossibile aprire WhatsApp.",
+            patient: {
+                title: "Cartella del paziente",
+                subtitle: "Panoramica di stato e azioni",
+                stats_title: "Stato & storico",
+                stats: {
+                    adherence_label: "Tasso esercizi",
+                    adherence_hint: "Completati vs assegnati",
+                    empty_hint: "Nessun esercizio assegnato",
+                    mood_label: "Umore medio",
+                    mood_hint: "Media degli ultimi check-in",
+                    mood_empty: "Ancora nessun check-in",
+                    checkins_label: "Check-ins",
+                    checkins_hint: "Tutte le registrazioni",
+                    next_label: "Prossimo appuntamento",
+                    next_hint: "Visibile nel pannello del cliente",
+                },
+                quick_actions: {
+                    title: "Aree di lavoro",
+                    subtitle: "Vai subito alla sezione necessaria.",
+                    exercises: {
+                        title: "Esercizi",
+                        desc: "Assegna attività e controlla i progressi",
+                    },
+                    notes: {
+                        title: "Note di sessione",
+                        desc: "Documenta sessioni e compiti",
+                    },
+                    files: {
+                        title: "Documenti",
+                        desc: "Gestisci e condividi documenti",
+                    },
+                    checkins: {
+                        title: "Check-ins",
+                        desc: "Rivedi il diario dell'umore",
+                    },
+                },
+                contact: {
+                    title: "Profilo e contatti",
+                    phone: "Telefono",
+                    email: "E-mail",
+                    booking: "Link prenotazione",
+                    since: "Attivo da",
+                },
+                appointment: {
+                    title: "Prossimo appuntamento",
+                    description: "Compare direttamente nel pannello del cliente.",
+                    placeholder: "AAAA-MM-GG HH:MM",
+                    button: "Salva appuntamento",
+                    saving: "Salvataggio...",
+                    success_title: "Salvato",
+                    success_body: "L'appuntamento è stato aggiornato.",
+                    error_title: "Errore",
+                    error_body: "Impossibile salvare l'appuntamento.",
+                },
+                status: {
+                    attention: {
+                        label: "Richiede attenzione",
+                        body: "Umore basso o poca esecuzione",
+                    },
+                    steady: {
+                        label: "Stabile",
+                        body: "Attività costante, monitora",
+                    },
+                    thriving: {
+                        label: "Attivo",
+                        body: "Buon umore e ottima adesione",
+                    },
+                },
+                hero: {
+                    last_seen: "Ultima attività %{value}",
+                    member_since: "In cura da %{value}",
+                },
+                chart_empty: "Ancora nessun check-in.",
+                chart_empty_hint: "Quando il cliente registra l'umore, gli insight appariranno qui.",
+                not_found: "Impossibile caricare questa cartella paziente.",
+            },
             client_details: "Dettagli Cliente",
             assign_exercise: "Assegna Nuovo Esercizio",
             assign_save: "Assegna & Salva",
@@ -1798,7 +2242,7 @@ const translations = {
                 with_image: "Con immagine"
             },
             stats: {
-                total_label: "Note totali",
+                total_label: "Voci di diario",
                 total_hint: "Tutte le voci visibili del tuo diario.",
                 private_label: "Voci private",
                 private_hint: "Note visibili solo a te.",

@@ -8,6 +8,7 @@ import { MotiView } from 'moti';
 import i18n from '../../utils/i18n';
 import { Check, AlertCircle } from 'lucide-react-native';
 import { PressableScale } from '../../components/ui/PressableScale';
+import { formatBirthDateInput, isValidBirthDate } from '../../utils/dateInput';
 
 export default function OnboardingScreen() {
     const { user, profile } = useAuth();
@@ -25,7 +26,8 @@ export default function OnboardingScreen() {
     const [errors, setErrors] = useState<{ firstName?: string, lastName?: string, birthDate?: string }>({});
 
     const handleChange = (field: keyof typeof formData, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        const nextValue = field === 'birthDate' ? formatBirthDateInput(value) : value;
+        setFormData(prev => ({ ...prev, [field]: nextValue }));
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: undefined }));
         }
@@ -35,6 +37,7 @@ export default function OnboardingScreen() {
         const newErrors: any = {};
         if (!formData.firstName.trim()) newErrors.firstName = 'Vorname ist erforderlich';
         if (!formData.lastName.trim()) newErrors.lastName = 'Nachname ist erforderlich';
+        if (formData.birthDate.trim() && !isValidBirthDate(formData.birthDate.trim())) newErrors.birthDate = 'Bitte gib das Geburtsdatum im Format TT.MM.JJJJ ein';
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -113,7 +116,10 @@ export default function OnboardingScreen() {
                                 placeholder="TT.MM.JJJJ"
                                 value={formData.birthDate}
                                 onChangeText={(t) => handleChange('birthDate', t)}
+                                keyboardType="numbers-and-punctuation"
+                                maxLength={10}
                             />
+                            {errors.birthDate && <Text style={{ color: '#EF4444', fontSize: 12, marginTop: 4, marginLeft: 4 }}>{errors.birthDate}</Text>}
                         </View>
                     </View>
 

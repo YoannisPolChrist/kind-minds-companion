@@ -232,7 +232,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     <>
                         <SectionLabel text="Aufgabe / Frage an den Klienten" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder="Was mÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶chtest du reflektieren? Beschreibe die Aufgabe..." multiline />
+                            placeholder="Was möchtest du reflektieren? Beschreibe die Aufgabe..." multiline />
                     </>
                 )}
 
@@ -296,7 +296,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                         </View>
                                         {(block.options?.length ?? 0) > 2 && (
                                             <PressableScale onPress={() => removeOption(i)} intensity="subtle">
-                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>ÃƒÆ’Ã¢â‚¬â€</Text>
+                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>x</Text>
                                             </PressableScale>
                                         )}
                                     </MotiView>
@@ -304,7 +304,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <PressableScale onPress={addOption} intensity="subtle"
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Option hinzufÃƒÆ’Ã‚Â¼gen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Option hinzufügen</Text>
                             </PressableScale>
                         </View>
                     </>
@@ -314,7 +314,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                 {block.type === 'checklist' && (
                     <>
                         <SectionLabel text="Anweisung / Titel der Gewohnheitsliste" />
-                        <StyledInput value={block.content} onChangeText={t => onChange({ content: t })} placeholder="z.B. Was hast du heute fÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼r dich getan?" />
+                        <StyledInput value={block.content} onChangeText={t => onChange({ content: t })} placeholder="z.B. Was hast du heute für dich getan?" />
                         <View style={{ marginTop: 12 }}>
                             <SectionLabel text="Checklisten-Elemente" />
                             <AnimatePresence>
@@ -333,7 +333,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                         </View>
                                         {(block.options?.length ?? 0) > 2 && (
                                             <PressableScale onPress={() => removeOption(i)} intensity="subtle">
-                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>ÃƒÆ’Ã¢â‚¬â€</Text>
+                                                <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>x</Text>
                                             </PressableScale>
                                         )}
                                     </MotiView>
@@ -341,7 +341,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <PressableScale onPress={addOption} intensity="subtle"
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Element hinzufÃƒÆ’Ã‚Â¼gen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Element hinzufügen</Text>
                             </PressableScale>
                         </View>
                     </>
@@ -352,13 +352,13 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                     <>
                         <SectionLabel text="Aufgabe / Anweisung" />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder="z.B. Notiere tÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤glich eine Situation die dich belastet hat und analysiere sie nach dem ABC-Schema..." multiline />
+                            placeholder="z.B. Notiere täglich eine Situation, die dich belastet hat, und analysiere sie nach dem ABC-Schema..." multiline />
                         <View style={{ marginTop: 16, backgroundColor: cat.bg, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: cat.border }}>
                             <Text style={{ fontSize: 13, fontWeight: '800', color: cat.text, marginBottom: 12 }}>ABC-Protokoll-Vorlage</Text>
                             {[
-                                { label: 'A ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ AuslÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶ser', hint: 'Was ist passiert? (Situation, Ort, Zeit)' },
-                                { label: 'B ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ Bewertung', hint: 'Was habe ich gedacht oder bewertet?' },
-                                { label: 'C ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ Konsequenz', hint: 'Was habe ich gefÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼hlt oder getan? (0ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“10)' },
+                                { label: 'A - Auslöser', hint: 'Was ist passiert? (Situation, Ort, Zeit)' },
+                                { label: 'B - Bewertung', hint: 'Was habe ich gedacht oder bewertet?' },
+                                { label: 'C - Konsequenz', hint: 'Was habe ich gefühlt oder getan? (0-10)' },
                             ].map(row => (
                                 <View key={row.label} style={{ flexDirection: 'row', marginBottom: 10, alignItems: 'flex-start', gap: 8 }}>
                                     <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: cat.accent, marginTop: 5 }} />
@@ -499,9 +499,9 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                 {/* TIMER / BREATHING */}
                 {(block.type === 'timer' || block.type === 'breathing') && (
                     <>
-                        <SectionLabel text={block.type === 'breathing' ? 'Anweisung zur AtemÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼bung' : 'Anweisung / Beschreibung'} />
+                        <SectionLabel text={block.type === 'breathing' ? 'Anweisung zur Atemübung' : 'Anweisung / Beschreibung'} />
                         <StyledInput value={block.content} onChangeText={t => onChange({ content: t })}
-                            placeholder={block.type === 'breathing' ? 'z.B. Atme ruhig und gleichmÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸ig. Konzentriere dich auf deinen Atem.' : 'z.B. Halte inne, schlieÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Â¦Ãƒâ€šÃ‚Â¸e die Augen und entspanne dich.'} />
+                            placeholder={block.type === 'breathing' ? 'z.B. Atme ruhig und gleichmäßig. Konzentriere dich auf deinen Atem.' : 'z.B. Halte inne, schließe die Augen und entspanne dich.'} />
                         <View style={{ marginTop: 16, flexDirection: isCompactForm ? 'column' : 'row', alignItems: isCompactForm ? 'flex-start' : 'center', justifyContent: 'space-between', backgroundColor: '#F5F1EA', borderRadius: 20, borderWidth: 1, borderColor: '#E2E8F0', padding: 16, gap: 12 }}>
                             <Text style={{ fontSize: 14, color: '#3A4340', fontWeight: '800' }}>Dauer</Text>
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -570,7 +570,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 3 && (
                                                 <PressableScale onPress={() => removeOption(i)} intensity="subtle">
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>ÃƒÆ’Ã¢â‚¬â€</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>x</Text>
                                                 </PressableScale>
                                             )}
                                         </MotiView>
@@ -579,7 +579,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <PressableScale onPress={() => updateOption((block.options?.length ?? 0), '::')} intensity="subtle"
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Kategorie hinzufÃƒÆ’Ã‚Â¼gen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Kategorie hinzufügen</Text>
                             </PressableScale>
                         </View>
 
@@ -642,7 +642,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 2 && (
                                                 <PressableScale onPress={() => removeOption(i)} intensity="subtle">
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>ÃƒÆ’Ã¢â‚¬â€</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>x</Text>
                                                 </PressableScale>
                                             )}
                                         </MotiView>
@@ -651,7 +651,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <PressableScale onPress={() => updateOption((block.options?.length ?? 0), '::')} intensity="subtle"
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Parameter hinzufÃƒÆ’Ã‚Â¼gen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Parameter hinzufügen</Text>
                             </PressableScale>
                         </View>
 
@@ -716,7 +716,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 2 && (
                                                 <PressableScale onPress={() => removeOption(i)} intensity="subtle">
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>ÃƒÆ’Ã¢â‚¬â€</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>x</Text>
                                                 </PressableScale>
                                             )}
                                         </MotiView>
@@ -725,7 +725,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <PressableScale onPress={() => updateOption((block.options?.length ?? 0), '::')} intensity="subtle"
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Segment hinzufÃƒÆ’Ã‚Â¼gen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Segment hinzufügen</Text>
                             </PressableScale>
                         </View>
 
@@ -787,7 +787,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                                             </View>
                                             {(block.options?.length ?? 0) > 2 && (
                                                 <PressableScale onPress={() => removeOption(i)} intensity="subtle">
-                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>ÃƒÆ’Ã¢â‚¬â€</Text>
+                                                    <Text style={{ color: '#EF4444', fontWeight: '700', fontSize: 18 }}>x</Text>
                                                 </PressableScale>
                                             )}
                                         </MotiView>
@@ -796,7 +796,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <PressableScale onPress={() => updateOption((block.options?.length ?? 0), '::')} intensity="subtle"
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Fokusbereich hinzufÃƒÆ’Ã‚Â¼gen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Fokusbereich hinzufügen</Text>
                             </PressableScale>
                         </View>
 
@@ -1147,7 +1147,7 @@ const BlockForm = memo(function BlockForm({ block, onUpdateBlock, onRemoveBlock,
                             </AnimatePresence>
                             <PressableScale onPress={() => updateOption((block.options?.length ?? 0), '::')} intensity="subtle"
                                 style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: cat.border, borderRadius: 16, paddingVertical: 14, alignItems: 'center', marginTop: 8, backgroundColor: cat.bg }}>
-                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Bubble hinzufuegen</Text>
+                                <Text style={{ color: cat.accent, fontWeight: '800', fontSize: 14 }}>+ Bubble hinzufügen</Text>
                             </PressableScale>
                         </View>
 
@@ -1611,7 +1611,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                                 fontWeight: '700',
                                 fontSize: 16,
                                 marginLeft: 4,
-                            }}>ZurÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ck</Text>
+                            }}>Zurück</Text>
                         </PressableScale>
 
                         <PressableScale
@@ -1713,11 +1713,11 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             {title.trim() || 'Neue Vorlage'}
                         </Text>
                         <Text style={{ color: 'rgba(255,255,255,0.82)', fontSize: 14, fontWeight: '600', lineHeight: 21, marginBottom: 18, maxWidth: 620 }}>
-                            Arbeite hier dieselbe visuelle Sprache wie im Hauptdashboard aus: klarer Einstieg, ruhige Hierarchie und sofort erkennbare nÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤chste Schritte.
+                            Arbeite hier dieselbe visuelle Sprache wie im Hauptdashboard aus: klarer Einstieg, ruhige Hierarchie und sofort erkennbare nächste Schritte.
                         </Text>
                         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                             <View style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
-                                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>{blocks.length} BlÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶cke</Text>
+                                <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>{blocks.length} Blöcke</Text>
                             </View>
                             <View style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.14)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)' }}>
                                 <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800', textTransform: 'uppercase' }}>{coverImage ? 'Mit Cover' : 'Ohne Cover'}</Text>
@@ -1743,9 +1743,9 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                     elevation: 6
                 }}>
                     <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Vorlagen-Setup</Text>
-                    <Text style={{ fontSize: isCompact ? 24 : 30, fontWeight: '900', color: colors.text, letterSpacing: -0.8, marginBottom: 16 }}>Inhalt, Cover und TonalitÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤t festlegen</Text>
+                    <Text style={{ fontSize: isCompact ? 24 : 30, fontWeight: '900', color: colors.text, letterSpacing: -0.8, marginBottom: 16 }}>Inhalt, Cover und Tonalität festlegen</Text>
                     <Text style={{ fontSize: 14, fontWeight: '600', color: colors.textSubtle, lineHeight: 21, marginBottom: 20 }}>
-                        Die ersten Entscheidungen definieren, wie hochwertig und klar die Vorlage spÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤ter beim Klienten ankommt.
+                        Die ersten Entscheidungen definieren, wie hochwertig und klar die Vorlage später beim Klienten ankommt.
                     </Text>
                     <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 16 }}>Titel</Text>
                     <TextInput
@@ -1761,10 +1761,10 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             <Image source={{ uri: coverImage }} style={{ width: '100%', height: 160 }} contentFit="cover" />
                             <View style={{ position: 'absolute', top: 12, right: 12, flexDirection: isCompact ? 'column' : 'row', alignItems: 'stretch', gap: 8 }}>
                                 <PressableScale onPress={pickCoverImage} intensity="subtle" style={{ backgroundColor: 'rgba(255,255,255,0.9)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#3A4340' }}>ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾ndern</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#3A4340' }}>Ändern</Text>
                                 </PressableScale>
                                 <PressableScale onPress={() => setCoverImage(undefined)} intensity="subtle" style={{ backgroundColor: 'rgba(239,68,68,0.9)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
-                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>LÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶schen</Text>
+                                    <Text style={{ fontSize: 12, fontWeight: '800', color: '#fff' }}>Löschen</Text>
                                 </PressableScale>
                             </View>
                         </View>
@@ -1778,7 +1778,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                             ) : (
                                 <>
                                     <ImageIcon size={28} color={colors.textSubtle} style={{ marginBottom: 8 }} />
-                                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSubtle }}>Bild auswÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¤hlen</Text>
+                                    <Text style={{ fontSize: 14, fontWeight: '700', color: colors.textSubtle }}>Bild auswählen</Text>
                                 </>
                             )}
                         </PressableScale>
@@ -1804,7 +1804,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 {blocks.length > 0 && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 6 }}>
                         <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4' }} />
-                        <Text style={{ fontSize: 11, color: '#8F9CA3', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{blocks.length} {blocks.length === 1 ? 'Block' : 'BlÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶cke'}</Text>
+                        <Text style={{ fontSize: 11, color: '#8F9CA3', fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1 }}>{blocks.length} {blocks.length === 1 ? 'Block' : 'Blöcke'}</Text>
                         <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4' }} />
                     </View>
                 )}
@@ -1830,7 +1830,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                 {!showPicker ? (
                     <PressableScale onPress={() => setShowPicker(true)} intensity="medium"
                         style={{ borderWidth: 2, borderStyle: 'dashed', borderColor: 'rgba(19, 115, 134, 0.3)', borderRadius: 32, paddingVertical: 32, alignItems: 'center', marginBottom: 16, backgroundColor: 'rgba(19, 115, 134, 0.05)' }}>
-                        <Text style={{ color: '#2D666B', fontWeight: '800', fontSize: 18 }}>+ Neuen Block hinzufÃƒÆ’Ã‚Â¼gen</Text>
+                        <Text style={{ color: '#2D666B', fontWeight: '800', fontSize: 18 }}>+ Neuen Block hinzufügen</Text>
                     </PressableScale>
                 ) : (
                     <BlockPicker onAdd={addBlock} onClose={() => setShowPicker(false)} />
@@ -1844,13 +1844,13 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                     </Text>
                     <View style={{ flexDirection: isStackedFooter ? 'column' : 'row', gap: 16 }}>
                         <PressableScale onPress={handleCancel} intensity="subtle"
-                            style={{ paddingVertical: 18, paddingHorizontal: 32, borderRadius: 24, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF', borderWidth: 1.5, borderColor: isDark ? 'transparent' : colors.border, alignItems: 'center' }}>
+                            style={{ flex: isStackedFooter ? undefined : 0.85, paddingVertical: 18, paddingHorizontal: 32, borderRadius: 24, backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF', borderWidth: 1.5, borderColor: isDark ? 'transparent' : colors.border, alignItems: 'center' }}>
                             <Text style={{ fontWeight: '800', color: isDark ? colors.text : colors.textSubtle, fontSize: 16 }}>Abbrechen</Text>
                         </PressableScale>
                         <PressableScale onPress={handleSave} intensity="medium"
-                            style={{ flex: 1, paddingVertical: 18, borderRadius: 24, backgroundColor: '#B08C57', alignItems: 'center', shadowColor: '#B08C57', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 }}>
-                            <Text style={{ fontWeight: '900', color: '#fff', fontSize: 16, letterSpacing: 0.5 }}>
-                                Speichern ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã…Â¡Ãƒâ€šÃ‚Â¬ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ {blocks.length} {blocks.length === 1 ? 'Block' : 'BlÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¶cke'}
+                            style={{ flex: isStackedFooter ? undefined : 1.15, minHeight: 60, minWidth: isStackedFooter ? undefined : 280, paddingHorizontal: 28, paddingVertical: 18, borderRadius: 24, backgroundColor: '#B08C57', alignItems: 'center', justifyContent: 'center', shadowColor: '#B08C57', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16, elevation: 6 }}>
+                            <Text numberOfLines={1} style={{ fontWeight: '900', color: '#fff', fontSize: 16, letterSpacing: 0.5, textAlign: 'center' }}>
+                                {`Speichern - ${blocks.length} ${blocks.length === 1 ? 'Block' : 'Blöcke'}`}
                             </Text>
                         </PressableScale>
                     </View>
@@ -1875,7 +1875,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
                     >
                         <Text style={{ fontSize: 20, fontWeight: '900', color: '#92400E', marginBottom: 12, textAlign: 'center' }}>Nicht gespeichert</Text>
                         <Text style={{ fontSize: 15, color: '#78350F', fontWeight: '500', lineHeight: 22, marginBottom: 24, textAlign: 'center' }}>
-                            Du hast ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã‚Â¾nderungen, die noch nicht gespeichert wurden. Wenn du jetzt zurÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¼ckgehst, gehen sie verloren.
+                            Du hast Änderungen, die noch nicht gespeichert wurden. Wenn du jetzt zurückgehst, gehen sie verloren.
                         </Text>
                         <View style={{ flexDirection: isStackedFooter ? 'column' : 'row', gap: 12 }}>
                             <PressableScale

@@ -10,7 +10,7 @@ import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../../../utils/firebase';
 import i18n from '../../../utils/i18n';
 import { MotiView } from 'moti';
-import { FileText, Link as LinkIcon, Trash2, PlusCircle, UploadCloud, ArrowLeft, Send, X, FileVideo, Search, Star, Tag, Check, Clock, Plus, Library, Download } from 'lucide-react-native';
+import { FileText, Link as LinkIcon, Trash2, PlusCircle, UploadCloud, ArrowLeft, Send, X, FileVideo, Search, Star, Tag, Check, Clock, Plus, Library, Download, Image as ImageIcon } from 'lucide-react-native';
 import { useAuth } from '../../../contexts/AuthContext';
 import { SuccessAnimation } from '../../../components/ui/SuccessAnimation';
 import { ConfirmModal } from '../../../components/ui/ConfirmModal';
@@ -431,11 +431,20 @@ export default function TherapistResources() {
         image: 'IMG',
         link: 'WEB',
     };
+    const TYPE_ICON_COMPONENTS: Record<string, any> = {
+        document: FileText,
+        file: FileText,
+        pdf: FileText,
+        video: FileVideo,
+        image: ImageIcon,
+        link: LinkIcon,
+    };
 
     const renderResourceItem = ({ item, index }: { item: any, index: number }) => {
         const isSelected = selectedResourceIds.includes(item.id);
         const baseCfg = TYPE_CONFIG[item.type] ?? TYPE_CONFIG.file;
         const cfg = { ...baseCfg, icon: TYPE_ICON_OVERRIDES[item.type] ?? TYPE_ICON_OVERRIDES.file };
+        const ResourceIcon = TYPE_ICON_COMPONENTS[item.type] ?? TYPE_ICON_COMPONENTS.file;
 
         return (
             <MotiView
@@ -486,7 +495,7 @@ export default function TherapistResources() {
 
                             {/* Icon Box */}
                             <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: cfg.bg, borderWidth: 1, borderColor: cfg.border, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Text style={{ fontSize: 24 }}>{cfg.icon}</Text>
+                                <ResourceIcon size={24} color={cfg.text} strokeWidth={2.2} />
                             </View>
 
                             {/* Content */}

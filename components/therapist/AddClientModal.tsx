@@ -6,6 +6,7 @@ import { createInvitation } from '../../services/invitationService';
 import { ClientService } from '../../services/clientService';
 import { ErrorHandler } from '../../utils/errors';
 import { PressableScale } from '../ui/PressableScale';
+import { formatBirthDateInput } from '../../utils/dateInput';
 
 interface AddClientModalProps {
     visible: boolean;
@@ -289,7 +290,9 @@ export default function AddClientModal({ visible, onClose, therapistId, onClient
                                                 placeholder="TT.MM.JJJJ"
                                                 placeholderTextColor="#8B938E"
                                                 value={birthDate}
-                                                onChangeText={setBirthDate}
+                                                onChangeText={(value) => setBirthDate(formatBirthDateInput(value))}
+                                                keyboardType="numbers-and-punctuation"
+                                                maxLength={10}
                                             />
                                         </View>
                                     </View>

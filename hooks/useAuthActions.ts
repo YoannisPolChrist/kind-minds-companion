@@ -68,6 +68,7 @@ export function useAuthActions(): AuthResponse {
         clearMessages();
         setLoading(true);
         const { inviteCode, firstName, lastName, birthDate } = options || {};
+        const normalizedEmail = email.trim().toLowerCase();
         try {
             let therapistId = null;
             let targetOfflineProfileId = null;
@@ -86,13 +87,14 @@ export function useAuthActions(): AuthResponse {
                 invitationId = invite.id;
             }
 
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+            const userCredential = await createUserWithEmailAndPassword(auth, normalizedEmail, password);
             const user = userCredential.user;
 
             // Send email verification – via backend to get the custom Resend template
             try {
                 await addDoc(collection(db, 'mail_requests'), {
                     email: user.email,
+                    firstName: firstName?.trim() || '',
                     type: 'VERIFY_EMAIL',
                     status: 'pending',
                     requestedAt: serverTimestamp()
@@ -155,7 +157,7 @@ export function useAuthActions(): AuthResponse {
             }
 
             // Set success message BEFORE signing out, so it renders before auth state changes
-            setSuccess('Registrierung erfolgreich! Bitte prüfe dein Postfach und klicke auf den Bestätigungs-Link, bevor du dich anmeldest.');
+            setSuccess('Registrierung erfolgreich. Bitte pruefe dein Postfach und bestaetige zuerst deine E-Mail-Adresse.');
 
             // Small delay so the success banner renders before Firebase auth state listener fires
             await new Promise(resolve => setTimeout(resolve, 300));

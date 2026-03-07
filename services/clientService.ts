@@ -80,6 +80,7 @@ export class ClientService {
             try {
                 await addDoc(collection(db, 'mail_requests'), {
                     email: normalizedEmail,
+                    firstName: firstName.trim(),
                     type: 'WELCOME_CLIENT',
                     status: 'pending',
                     requestedAt: serverTimestamp()

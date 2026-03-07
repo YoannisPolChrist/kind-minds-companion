@@ -7,6 +7,7 @@ admin.initializeApp();
 const db = admin.firestore();
 const expo = new Expo();
 const resend = new Resend("re_CUA2weaM_FhRyT7CzpA9RK6jE3vnC2aNL");
+const APP_WEB_URL = process.env.APP_WEB_URL || "https://therapieprozessunterstuetzung.web.app";
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 // Email HTML Template Builder
@@ -57,6 +58,143 @@ function baseTemplate(content: string): string {
 </div>
 </body>
 </html>`;
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function htmlToPlainText(html: string) {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function greetingFor(firstName?: string) {
+  const safeName = firstName?.trim();
+  return safeName ? `Hallo ${escapeHtml(safeName)},` : "Hallo,";
+}
+
+function authTemplate(config: {
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  greeting: string;
+  message: string;
+  ctaHref: string;
+  ctaLabel: string;
+  note?: string;
+  helperLabel?: string;
+  helperValue?: string;
+  previewText: string;
+}) {
+  const helperBlock = config.helperLabel && config.helperValue
+    ? `
+      <div class="info-box" style="background:#F6F1E7; border-color:#E7DDCB;">
+        <div class="info-box-label">${config.helperLabel}</div>
+        <div class="info-box-value">${config.helperValue}</div>
+      </div>
+    `
+    : "";
+
+  const noteBlock = config.note
+    ? `
+      <div class="divider"></div>
+      <p class="message" style="font-size:13px; color:#6F7472; margin-bottom:0;">
+        ${config.note}
+      </p>
+    `
+    : "";
+
+  return `
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #F1ECE3; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #1F2528; }
+  .preheader { display:none!important; visibility:hidden; opacity:0; color:transparent; height:0; width:0; overflow:hidden; mso-hide:all; }
+  .shell { max-width: 640px; margin: 0 auto; padding: 28px 16px 40px; }
+  .card { background: #FFFFFF; border-radius: 30px; overflow: hidden; box-shadow: 0 18px 48px rgba(31,37,40,0.08); border: 1px solid rgba(255,255,255,0.7); }
+  .hero { padding: 40px 34px 34px; background:
+      radial-gradient(circle at top right, rgba(176,140,87,0.38), transparent 34%),
+      linear-gradient(145deg, #173035 0%, #24454B 56%, #183035 100%);
+  }
+  .eyebrow { color: rgba(255,255,255,0.66); font-size: 12px; font-weight: 800; letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 12px; }
+  .hero-title { color: #FFFFFF; font-size: 32px; line-height: 1.12; font-weight: 900; letter-spacing: -0.9px; max-width: 420px; }
+  .hero-subtitle { color: rgba(255,255,255,0.78); font-size: 15px; line-height: 1.7; margin-top: 12px; max-width: 460px; }
+  .body { padding: 34px; }
+  .greeting { font-size: 18px; font-weight: 700; color: #1F2528; margin-bottom: 14px; }
+  .message { font-size: 15px; line-height: 1.8; color: #57606A; margin-bottom: 26px; }
+  .cta-wrap { margin-bottom: 24px; }
+  .cta-btn { display: inline-block; background: linear-gradient(135deg, #2D666B, #214E53); color: #FFFFFF !important; text-decoration: none; font-size: 15px; font-weight: 900; padding: 16px 28px; border-radius: 16px; letter-spacing: 0.2px; }
+  .info-box { background: #F7F4EE; border: 1px solid #E7E0D4; border-radius: 18px; padding: 18px 20px; margin-bottom: 24px; }
+  .info-box-label { font-size: 11px; font-weight: 800; color: #8B938E; letter-spacing: 1.4px; text-transform: uppercase; margin-bottom: 6px; }
+  .info-box-value { font-size: 16px; font-weight: 800; color: #1F2528; line-height: 1.5; word-break: break-word; }
+  .divider { height: 1px; background: #EEE7DC; margin: 24px 0; }
+  .footer { padding: 22px 34px 30px; background: #FBFAF8; border-top: 1px solid #F0E8DE; }
+  .footer p { color: #8B938E; font-size: 12px; line-height: 1.7; text-align: center; }
+  @media (max-width: 640px) {
+    .shell { padding: 16px 12px 28px; }
+    .hero { padding: 30px 24px 26px; }
+    .body { padding: 24px; }
+    .footer { padding: 18px 24px 24px; }
+    .hero-title { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+  <div class="preheader">${config.previewText}</div>
+  <div class="shell">
+    <div class="card">
+      <div class="hero">
+        <div class="eyebrow">${config.eyebrow}</div>
+        <div class="hero-title">${config.title}</div>
+        <div class="hero-subtitle">${config.subtitle}</div>
+      </div>
+      <div class="body">
+        <p class="greeting">${config.greeting}</p>
+        <p class="message">${config.message}</p>
+        ${helperBlock}
+        <div class="cta-wrap">
+          <a href="${config.ctaHref}" class="cta-btn">${config.ctaLabel}</a>
+        </div>
+        ${noteBlock}
+      </div>
+      <div class="footer">
+        <p>Diese E-Mail wurde von <strong>Therapie-App</strong> gesendet.<br>Bitte markiere sie nicht als Spam, damit wichtige Hinweise dich sicher erreichen.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>`;
+}
+
+function buildVerifyEmailAppLink(generatedLink: string, email: string) {
+  try {
+    const generatedUrl = new URL(generatedLink);
+    const oobCode = generatedUrl.searchParams.get("oobCode");
+    if (!oobCode) {
+      return generatedLink;
+    }
+
+    const appUrl = new URL("/verify-email", APP_WEB_URL);
+    appUrl.searchParams.set("oobCode", oobCode);
+    appUrl.searchParams.set("email", email);
+    return appUrl.toString();
+  } catch (error) {
+    console.warn("Could not build custom verification URL", error);
+    return generatedLink;
+  }
 }
 
 function exerciseAssignedTemplate(exerciseName: string): string {
@@ -144,64 +282,48 @@ function generalTemplate(title: string, body: string): string {
   `);
 }
 
-function passwordResetTemplate(resetLink: string): string {
-  return baseTemplate(`
-    <div class="header">
-      <div class="header-logo">Therapie-App</div>
-      <div class="header-title">Passwort zurÃ¼cksetzen ðŸ”‘</div>
-      <div class="header-subtitle">Erstelle ein neues Passwort fÃ¼r deinen Account.</div>
-    </div>
-    <div class="body">
-      <p class="greeting">Hallo,</p>
-      <p class="message">
-        Wir haben eine Anfrage erhalten, dein Passwort fÃ¼r die Therapie-App zurÃ¼ckzusetzen. Klicke auf den Button unten, um ein neues Passwort festzulegen.
-      </p>
-      <a href="${resetLink}" class="cta-btn">Passwort zurÃ¼cksetzen â†’</a>
-      <div class="divider"></div>
-      <p class="message" style="font-size:13px; color:#9CA3AF;">
-        Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail einfach ignorieren. Dein Passwort bleibt dann unverÃ¤ndert.
-      </p>
-    </div>
-  `);
+function passwordResetTemplate(resetLink: string, firstName?: string): string {
+  return authTemplate({
+    eyebrow: "Sicherer Zugang",
+    title: "Passwort neu setzen",
+    subtitle: "Lege in wenigen Schritten ein neues Passwort fuer deinen Account fest.",
+    greeting: greetingFor(firstName),
+    message: "Wir haben eine Anfrage erhalten, dein Passwort fuer die Therapie-App zurueckzusetzen. Nutze den Button unten, um ein neues, sicheres Passwort festzulegen.",
+    ctaHref: resetLink,
+    ctaLabel: "Passwort festlegen",
+    note: "Falls du diese Anfrage nicht gestellt hast, kannst du diese E-Mail ignorieren. Dein aktuelles Passwort bleibt dann unveraendert.",
+    previewText: "Passwort fuer deine Therapie-App neu festlegen.",
+  });
 }
 
-function welcomeTemplate(resetLink: string): string {
-  return baseTemplate(`
-    <div class="header">
-      <div class="header-logo">Therapie-App</div>
-      <div class="header-title">Willkommen! ðŸ‘‹</div>
-      <div class="header-subtitle">Dein Therapeut hat einen Account fÃ¼r dich erstellt.</div>
-    </div>
-    <div class="body">
-      <p class="greeting">Hallo,</p>
-      <p class="message">
-        Dein Therapeut hat dich zur Therapie-App eingeladen. Um loszulegen, richte dir bitte ein eigenes, sicheres Passwort ein.
-      </p>
-      <a href="${resetLink}" class="cta-btn">Passwort festlegen â†’</a>
-      <div class="divider"></div>
-      <p class="message" style="font-size:13px; color:#9CA3AF;">
-        Nachdem du dein Passwort vergeben hast, kannst du dich jederzeit mit deiner E-Mail-Adresse und dem neuen Passwort in der App anmelden.
-      </p>
-    </div>
-  `);
+function welcomeTemplate(resetLink: string, firstName?: string): string {
+  return authTemplate({
+    eyebrow: "Willkommen",
+    title: "Dein Zugang ist vorbereitet",
+    subtitle: "Dein Therapeut hat bereits einen sicheren Account fuer dich eingerichtet.",
+    greeting: greetingFor(firstName),
+    message: "Du kannst direkt starten. Vergib jetzt dein persoenliches Passwort und melde dich anschliessend mit deiner E-Mail-Adresse in der App an.",
+    ctaHref: resetLink,
+    ctaLabel: "Passwort festlegen",
+    note: "Nach dem Speichern deines Passworts kannst du dich jederzeit mit derselben E-Mail-Adresse anmelden.",
+    previewText: "Willkommen in der Therapie-App. Richte jetzt dein Passwort ein.",
+  });
 }
 
-
-function verifyEmailTemplate(verifyLink: string): string {
-  return baseTemplate(`
-    <div class="header">
-      <div class="header-logo">Therapie-App</div>
-      <div class="header-title">E-Mail bestÃ¤tigen ðŸ“§</div>
-      <div class="header-subtitle">Willkommen bei der Therapie-App!</div>
-    </div>
-    <div class="body">
-      <p class="greeting">Hallo,</p>
-      <p class="message">
-        Vielen Dank fÃ¼r deine Registrierung. Bitte bestÃ¤tige deine E-Mail-Adresse Ã¼ber den untenstehenden Button, um deinen Account zu aktivieren und loszulegen.
-      </p>
-      <a href="${verifyLink}" class="cta-btn">E-Mail bestÃ¤tigen â†’</a>
-    </div>
-  `);
+function verifyEmailTemplate(verifyLink: string, email: string, firstName?: string): string {
+  return authTemplate({
+    eyebrow: "Registrierung abschliessen",
+    title: "Bestaetige deine E-Mail-Adresse",
+    subtitle: "Ein letzter Klick, dann ist dein Account vollstaendig aktiviert.",
+    greeting: greetingFor(firstName),
+    message: "Vielen Dank fuer deine Registrierung. Bitte bestaetige jetzt deine E-Mail-Adresse. Danach kannst du dich sofort in der Therapie-App anmelden.",
+    ctaHref: verifyLink,
+    ctaLabel: "E-Mail bestaetigen",
+    helperLabel: "Adresse",
+    helperValue: escapeHtml(email),
+    note: "Sollte der Button nicht funktionieren, fordere einfach eine neue Bestaetigungs-Mail ueber den Login-Bereich an.",
+    previewText: "Bitte bestaetige deine E-Mail-Adresse fuer die Therapie-App.",
+  });
 }
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -411,10 +533,11 @@ export const onAuthEmailRequest = onDocumentCreated(
     if (!snapshot) return;
 
     const data = snapshot.data();
-    const { email, type } = data;
+    const { email, type, firstName } = data;
     if (!email || !type) return;
+    const normalizedEmail = String(email).trim().toLowerCase();
 
-    console.log(`Processing auth email request of type ${type} for email ${email}`);
+    console.log(`Processing auth email request of type ${type} for email ${normalizedEmail}`);
 
     try {
       if (type === "PASSWORD_RESET" || type === "WELCOME_CLIENT" || type === "VERIFY_EMAIL") {
@@ -423,28 +546,31 @@ export const onAuthEmailRequest = onDocumentCreated(
         let subject: string;
 
         if (type === "WELCOME_CLIENT") {
-          authLink = await admin.auth().generatePasswordResetLink(email);
-          html = welcomeTemplate(authLink);
-          subject = "ðŸ‘‹ Willkommen bei der Therapie-App â€“ Bitte lege dein Passwort fest";
+          authLink = await admin.auth().generatePasswordResetLink(normalizedEmail);
+          html = welcomeTemplate(authLink, firstName);
+          subject = "Willkommen in der Therapie-App - bitte lege dein Passwort fest";
         } else if (type === "VERIFY_EMAIL") {
-          authLink = await admin.auth().generateEmailVerificationLink(email);
-          html = verifyEmailTemplate(authLink);
-          subject = "ðŸ“§ Bitte bestÃ¤tige deine E-Mail-Adresse fÃ¼r die Therapie-App";
+          authLink = await admin.auth().generateEmailVerificationLink(normalizedEmail);
+          html = verifyEmailTemplate(buildVerifyEmailAppLink(authLink, normalizedEmail), normalizedEmail, firstName);
+          subject = "Bitte bestaetige deine E-Mail-Adresse fuer die Therapie-App";
         } else {
-          authLink = await admin.auth().generatePasswordResetLink(email);
-          html = passwordResetTemplate(authLink);
-          subject = "ðŸ”‘ Setze dein Therapie-App Passwort zurÃ¼ck";
+          authLink = await admin.auth().generatePasswordResetLink(normalizedEmail);
+          html = passwordResetTemplate(authLink, firstName);
+          subject = "Passwort fuer die Therapie-App zuruecksetzen";
         }
+
+        const text = htmlToPlainText(html);
 
         // Send via Resend
         await resend.emails.send({
           from: "Therapie-App <noreply@johanneschrist.com>",
-          to: [email],
+          to: [normalizedEmail],
           subject,
           html,
+          text,
         });
 
-        console.log(`Successfully sent custom auth email to ${email}`);
+        console.log(`Successfully sent custom auth email to ${normalizedEmail}`);
 
         // Update document status
         await snapshot.ref.update({

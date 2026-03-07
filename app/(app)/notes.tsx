@@ -840,7 +840,7 @@ export default function ClientNotesScreen() {
                     <View style={{ flexDirection: width > 768 ? 'row' : 'column', gap: 12, marginBottom: 20 }}>
                         <ClientMetricCard
                             icon={Edit3}
-                            label={i18n.t('notes.stats.total_label', { defaultValue: 'Notizen gesamt' })}
+                            label={i18n.t('notes.stats.total_label', { defaultValue: 'Journal entries' })}
                             value={String(noteStats.total)}
                 hint={i18n.t('notes.stats.total_hint', { defaultValue: 'Alle sichtbaren Einträge in deinem Journal.' })}
                             tone="primary"
