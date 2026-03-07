@@ -1858,14 +1858,21 @@ export default function ExerciseScreen() {
         style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
-          paddingTop: HEADER_HEIGHT + 24,
+          paddingTop: HEADER_HEIGHT + (isWide ? 24 : 48),
           paddingBottom: 40,
           paddingHorizontal: 24,
         }}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
       >
-        <View style={{ flexDirection: isWide ? "row" : "column", gap: 12, marginBottom: 20 }}>
+        <View
+          style={{
+            flexDirection: isWide ? "row" : "column",
+            gap: 12,
+            marginBottom: 20,
+            marginTop: isWide ? 8 : 16,
+          }}
+        >
           <ClientMetricCard
             icon={BookOpen}
             label="Module"
