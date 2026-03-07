@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 import { MotiView } from 'moti';
-import { Activity, Gauge, Tag } from 'lucide-react-native';
+import { Activity, Gauge } from 'lucide-react-native';
 import { getEmotionByScore, getEmotionLabel } from '../../constants/emotions';
 import { formatMoodScore, normalizeMoodToTen } from '../../utils/checkinMood';
 import i18n from '../../utils/i18n';
@@ -55,7 +55,7 @@ export const CheckinCard = React.memo(({ checkin, formatTime }: { checkin: any, 
                     </Text>
                 )}
 
-                {(checkin.energy !== undefined || checkin.tags?.length > 0 || checkin.duration) && (
+                {(checkin.energy !== undefined || checkin.duration) && (
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 4, paddingTop: 16, borderTopWidth: 1, borderTopColor: '#F5F1EA' }}>
                         {checkin.energy !== undefined && checkin.energy !== null && (
                             <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#EEF3EE', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}>
@@ -74,17 +74,10 @@ export const CheckinCard = React.memo(({ checkin, formatTime }: { checkin: any, 
                                 </Text>
                             </View>
                         )}
-
-                        {checkin.tags?.map((tag: string, idx: number) => (
-                            <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3EEE6', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 }}>
-                                <Tag size={12} color="#6F7472" />
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#5E655F', marginLeft: 4 }}>{tag}</Text>
-                            </View>
-                        ))}
                     </View>
                 )}
 
-                {(!checkin.note || checkin.note.trim().length === 0) && (!checkin.tags || checkin.tags.length === 0) && (checkin.duration === undefined || checkin.duration === null) && checkin.energy === undefined && (
+                {(!checkin.note || checkin.note.trim().length === 0) && (checkin.duration === undefined || checkin.duration === null) && checkin.energy === undefined && (
                     <Text style={{ fontSize: 14, color: '#8B938E', fontStyle: 'italic', marginTop: 8 }}>
                         Nur Stimmung protokolliert.
                     </Text>

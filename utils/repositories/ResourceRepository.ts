@@ -5,7 +5,7 @@
  */
 
 import {
-    collection, getDocs, addDoc, deleteDoc, doc, serverTimestamp,
+    collection, getDocs, addDoc, deleteDoc, doc, query, serverTimestamp, where,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -18,12 +18,14 @@ export interface Resource {
     url: string;
     storagePath?: string;
     createdAt?: any;
+    therapistId?: string;
 }
 
 export interface CreateLinkDto {
     title: string;
     description?: string;
     url: string;
+    therapistId: string;
 }
 
 export interface CreatePdfDto {
@@ -31,12 +33,13 @@ export interface CreatePdfDto {
     description?: string;
     fileUri: string;
     filename: string;
+    therapistId: string;
 }
 
 export class ResourceRepository {
     /** All resources, newest first */
-    static async findAll(): Promise<Resource[]> {
-        const snap = await getDocs(collection(db, 'resources'));
+    static async findAll(therapistId: string): Promise<Resource[]> {
+        const snap = await getDocs(query(collection(db, 'resources'), where('therapistId', '==', therapistId)));
         const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Resource));
         return data.sort((a, b) => {
             const aT = (a.createdAt as any)?.seconds ?? 0;
@@ -70,6 +73,7 @@ export class ResourceRepository {
             type: 'pdf',
             url,
             storagePath,
+            therapistId: data.therapistId,
             createdAt: serverTimestamp(),
         });
         return docRef.id;

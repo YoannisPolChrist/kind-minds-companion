@@ -29,6 +29,7 @@ import { PressableScale } from '../../components/ui/PressableScale';
 import { markNotificationsAsRead } from '../../services/notificationService';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
+import { formatAppointmentDisplayValue } from '../../utils/dateInput';
 
 const HOME_BACKGROUNDS = [
     require('../../assets/HomeUi1.webp'),
@@ -49,6 +50,7 @@ export default function ClientDashboard() {
 
     const [notifications, setNotifications] = useState<any[]>([]);
     const { colors, isDark } = useTheme();
+    const locale = i18n.locale || 'de-DE';
 
     // Replace context-bound state with Zustand global store state
     const bookingUrl = useAppStore(state => profile?.id ? state.therapistBookingUrls[profile.id] : null);
@@ -135,6 +137,17 @@ export default function ClientDashboard() {
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
     const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
     const recentCheckinCount = recentCheckins?.length ?? 0;
+    const notificationsTitle =
+        notifications.length === 1
+            ? i18n.t('dashboard.notifications.title_single', { defaultValue: '1 new message' })
+            : i18n.t('dashboard.notifications.title_multi', {
+                count: notifications.length,
+                defaultValue: `${notifications.length} new messages`,
+            });
+    const notificationsBody =
+        notifications[0]?.body ||
+        notifications[0]?.message ||
+        i18n.t('dashboard.notifications.default_body', { defaultValue: 'Your therapist shared new resources with you.' });
 
 
 
@@ -235,7 +248,10 @@ export default function ClientDashboard() {
                                         minimumFontScale={0.75}
                                         numberOfLines={1}
                                     >
-                                        Hi {profile?.firstName || ''}
+                                        {i18n.t('dashboard.greeting_short', {
+                                            defaultValue: 'Hi %{name}',
+                                            name: profile?.firstName || '',
+                                        })}
                                     </Text>
                                 </View>
                                 {/* Settings button */}
@@ -272,16 +288,36 @@ export default function ClientDashboard() {
                     <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 20 }}>
                         <ClientMetricCard
                             icon={Calendar}
-                            label="Offene Übungen"
+                            label={i18n.t('dashboard.metrics_cards.open_label', { defaultValue: 'Open exercises' })}
                             value={String(openExercises.length)}
-                            hint={openExercises.length === 0 ? 'Heute ist nichts mehr offen.' : 'Deine aktuellen Aufgaben für die nächsten Schritte.'}
+                            hint={i18n.t(
+                                openExercises.length === 0
+                                    ? 'dashboard.metrics_cards.open_hint_empty'
+                                    : 'dashboard.metrics_cards.open_hint_default',
+                                {
+                                    defaultValue:
+                                        openExercises.length === 0
+                                            ? 'Nothing left for today.'
+                                            : 'Your current tasks for the next steps.',
+                                }
+                            )}
                             tone="primary"
                         />
                         <ClientMetricCard
                             icon={Edit3}
-                            label="Check-ins"
+                            label={i18n.t('dashboard.metrics_cards.checkins_label', { defaultValue: 'Check-ins' })}
                             value={String(recentCheckinCount)}
-                            hint={recentCheckinCount === 0 ? 'Noch keine Einträge in den letzten Tagen.' : 'Deine letzten Einträge für Verlauf und Reflexion.'}
+                            hint={i18n.t(
+                                recentCheckinCount === 0
+                                    ? 'dashboard.metrics_cards.checkins_hint_empty'
+                                    : 'dashboard.metrics_cards.checkins_hint_default',
+                                {
+                                    defaultValue:
+                                        recentCheckinCount === 0
+                                            ? 'No entries over the last days.'
+                                            : 'Your latest entries for trend and reflection.',
+                                }
+                            )}
                             tone="success"
                         />
                     </View>
@@ -309,7 +345,7 @@ export default function ClientDashboard() {
                                             {i18n.t('dashboard.next_session.label', { defaultValue: 'Nächster Termin' })}
                                         </Text>
                                         <Text style={{ fontSize: 20, fontWeight: '900', color: colors.text }}>
-                                            {profile.nextAppointment}
+                                            {formatAppointmentDisplayValue(profile.nextAppointment, locale) ?? profile.nextAppointment}
                                         </Text>
                                     </View>
                                 </View>
@@ -357,9 +393,11 @@ export default function ClientDashboard() {
                                     <BookOpen size={20} color="white" />
                                 </View>
                                 <View style={{ flex: 1 }}>
-                                    <Text style={{ color: isDark ? '#38BDF8' : '#0369A1', fontWeight: 'bold', fontSize: 16, marginBottom: 2 }}>{notifications.length} neue Nachricht{notifications.length > 1 ? 'en' : ''}</Text>
+                                    <Text style={{ color: isDark ? '#38BDF8' : '#0369A1', fontWeight: 'bold', fontSize: 16, marginBottom: 2 }}>
+                                        {notificationsTitle}
+                                    </Text>
                                     <Text style={{ color: isDark ? '#7DD3FC' : '#0284C7', fontSize: 13 }} numberOfLines={2}>
-                                        {notifications[0]?.body || notifications[0]?.message || 'Dein Therapeut hat neue Ressourcen für dich freigeschaltet.'}
+                                        {notificationsBody}
                                     </Text>
                                 </View>
                                 <View style={{ backgroundColor: isDark ? 'rgba(56,189,248,0.2)' : 'rgba(2,132,199,0.1)', padding: 8, borderRadius: 100 }}>
@@ -396,8 +434,10 @@ export default function ClientDashboard() {
                     ) : null}
 
                     <DashboardSectionHeader
-                        title="Dein Raum"
-                        subtitle="Direkte Zugänge für Ressourcen, Termine und Reflexion."
+                        title={i18n.t('dashboard.quick_access.title', { defaultValue: 'Your Space' })}
+                        subtitle={i18n.t('dashboard.quick_access.subtitle', {
+                            defaultValue: 'Direct shortcuts to resources, sessions, and reflection.',
+                        })}
                     />
 
                     <View style={{ flexDirection: isTablet ? 'row' : 'column', flexWrap: 'wrap', gap: 12, marginBottom: 24 }}>
@@ -449,8 +489,10 @@ export default function ClientDashboard() {
                             >
                                 <QuickActionCard
                                     icon={Edit3}
-                                    title="Session Notes"
-                                    description="Füge Notizen und Erkenntnisse nach deiner Session hinzu."
+                                    title={i18n.t('dashboard.notes_action.title', { defaultValue: 'Session Notes' })}
+                                    description={i18n.t('dashboard.notes_action.description', {
+                                        defaultValue: 'Add notes and insights after your session.',
+                                    })}
                                     tone="accent"
                                     onPress={() => {
                                         router.push('/(app)/notes' as any);
@@ -475,8 +517,11 @@ export default function ClientDashboard() {
                                     <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 200 }}>
                                         <DashboardSectionHeader
                                             title={i18n.t('dashboard.exercises.title')}
-                                            subtitle={`${openExercises.length} offene Aufgabe${openExercises.length > 1 ? 'n' : ''} warten auf dich.`}
-                                            actionLabel="Alle ansehen"
+                                            subtitle={i18n.t('dashboard.exercises.subtitle_open', {
+                                                count: openExercises.length,
+                                                defaultValue: `${openExercises.length} open tasks are waiting for you.`,
+                                            })}
+                                            actionLabel={i18n.t('dashboard.exercises.action_all', { defaultValue: 'View all' })}
                                             onActionPress={() => router.push('/(app)/exercises_overview' as any)}
                                         />
                                     </MotiView>

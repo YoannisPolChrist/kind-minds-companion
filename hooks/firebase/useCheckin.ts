@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { EMOTION_PRESETS, getEmotionByScore, getEmotionLabel } from '../../constants/emotions';
+import { EMOTION_PRESETS, getEmotionByScore } from '../../constants/emotions';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNetwork } from '../../contexts/NetworkContext';
 import { submitCheckin } from '../../services/checkinService';
@@ -91,15 +91,11 @@ export function useCheckin() {
             const currentHour = now.getHours();
             const currentSlot = currentHour < 12 ? 'morning' : 'evening';
 
-            const labelStr = getEmotionLabel(selectedPreset, i18n.locale);
-            const finalTags = [labelStr];
-
             await submitCheckin({
                 uid: profile.id,
                 date: today,
                 slot: currentSlot,
                 mood: normalizeMoodToHundred(selectedPreset.score),
-                tags: finalTags,
                 energy,
                 note: note.trim(),
                 createdAt: now.toISOString(),

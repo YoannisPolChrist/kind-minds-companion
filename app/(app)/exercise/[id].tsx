@@ -2,7 +2,6 @@ import {
   View,
   Text,
   ScrollView,
-  Alert,
   Platform,
   KeyboardAvoidingView,
   TextInput,
@@ -12,8 +11,8 @@ import {
 import { Image } from "expo-image";
 import { PressableScale } from '../../../components/ui/PressableScale';
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect } from "react";
-import { addDoc, collection, doc, getDoc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { useState, useEffect, useMemo } from "react";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../../../utils/firebase";
 import { useTimerBlock } from "../../../hooks/useTimerBlock";
 import { Exercise, ExerciseBlock } from "../../../types";
@@ -33,7 +32,12 @@ import {
   ExerciseTextArea,
 } from "../../../components/exercise/BlockPrimitives";
 import { MotiView, AnimatePresence } from "moti";
-import Animated, { useSharedValue, useAnimatedScrollHandler, SharedValue } from "react-native-reanimated";
+import Animated, {
+  useSharedValue,
+  useAnimatedScrollHandler,
+  SharedValue,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 import { CinematicInfoBlock } from "../../../components/client/CinematicInfoBlock";
 import { LinearGradient } from "expo-linear-gradient";
 import { useTheme } from "../../../contexts/ThemeContext";
@@ -43,7 +47,6 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";
 import { getCat } from "../../../components/therapist/blocks/exerciseRegistry";
 import InteractiveChart from "../../../components/charts/InteractiveChart";
-import { uploadFile } from "../../../utils/uploadFile";
 
 import { Video, ResizeMode } from "expo-av";
 
@@ -71,6 +74,8 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type Answers = Record<string, string>;
+
+const HEADER_HEIGHT = Platform.OS === "web" ? 148 : 164;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -681,10 +686,16 @@ function toPdfFilename(value: string): string {
 }
 
 function buildExercisePdfHtml(exercise: Exercise, answers: Answers): string {
-  const rows = (exercise.blocks ?? []).map((block, index) => {
+  const sanitizedBlocks = (exercise.blocks ?? []).filter(
+    (block): block is ExerciseBlock => Boolean(block && block.id),
+  );
+
+  const rows = sanitizedBlocks.map((block, index) => {
     const blockLabel = escapePdfHtml(blockTypeLabel(block.type));
     const contentHtml = formatPdfMultiline(block.content);
-    const options = Array.isArray(block.options) ? block.options : [];
+    const options = Array.isArray(block.options)
+      ? block.options.map((option) => (typeof option === "string" ? option : String(option ?? "")))
+      : [];
     let answerHtml = "";
 
     if (block.type === "text" || block.type === "reflection") {
@@ -1575,6 +1586,27 @@ export default function ExerciseScreen() {
   const goBack = useSafeBack('/(app)/dashboard');
   const { profile } = useAuth();
   const { colors } = useTheme();
+  const headerContainerStyle = useMemo(
+    () => ({
+      position: "absolute" as const,
+      left: 0,
+      right: 0,
+      top: 0,
+      paddingTop: 64,
+      paddingBottom: 24,
+      paddingHorizontal: 24,
+      borderBottomLeftRadius: 32,
+      borderBottomRightRadius: 32,
+      shadowColor: "rgba(15, 23, 42, 0.45)",
+      shadowOpacity: 0.28,
+      shadowRadius: 30,
+      elevation: 12,
+      zIndex: 30,
+      overflow: "hidden" as const,
+      backgroundColor: colors.primary,
+    }),
+    [colors.primary],
+  );
   const isWide = Dimensions.get("window").width > 768;
   const [exercise, setExercise] = useState<Exercise | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1583,6 +1615,14 @@ export default function ExerciseScreen() {
   const scrollY = useSharedValue(0);
   const scrollHandler = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
+  });
+  const headerAnimatedStyle = useAnimatedStyle(() => {
+    const clamped = Math.min(scrollY.value, HEADER_HEIGHT);
+    const opacity = 1 - Math.min(scrollY.value / HEADER_HEIGHT, 1);
+    return {
+      transform: [{ translateY: -clamped }],
+      opacity,
+    };
   });
   const [sharedAnswers, setSharedAnswers] = useState(true);
   const [toast, setToast] = useState<{
@@ -1698,82 +1738,45 @@ export default function ExerciseScreen() {
     }
   };
 
-  const savePdfToDevice = async (uri: string) => {
-    try {
-      await Sharing.shareAsync(uri, {
-        mimeType: "application/pdf",
-        dialogTitle: `${exercise?.title || "Übung"} als PDF speichern`,
-      });
-    } catch {
-      showAlert("Fehler", "PDF konnte nicht auf dem Geraet gespeichert werden.", "error");
-    }
-  };
+  const exportPdfToDevice = async (uri: string) => {
+    const safeName = toPdfFilename(exercise?.title || "uebung");
 
-  const savePdfToApp = async (uri: string) => {
-    if (!exercise || !profile?.id) {
-      showAlert("Fehler", "PDF konnte nicht in der App gespeichert werden.", "error");
-      return;
-    }
-
-    try {
-      const safeName = toPdfFilename(exercise.title);
-      const originalName = `${safeName}.pdf`;
-      const storagePath = `client_resources/${profile.id}/exports/${Date.now()}_${originalName}`;
-      const downloadUrl = await uploadFile(uri, storagePath, "application/pdf");
-      const fileInfo = await FileSystem.getInfoAsync(uri);
-      const fileSize = fileInfo.exists && "size" in fileInfo ? Number(fileInfo.size || 0) : undefined;
-
-      await addDoc(collection(db, "client_resources"), {
-        clientId: profile.id,
-        therapistId: exercise.therapistId || profile.therapistId || null,
-        title: `${exercise.title} PDF`,
-        description: "Exportierte Übung als PDF",
-        type: "pdf",
-        url: downloadUrl,
-        originalName,
-        storagePath,
-        fileSize,
-        mimeType: "application/pdf",
-        createdAt: serverTimestamp(),
-        exerciseId: exercise.id,
-        source: "exercise_pdf_export",
-      });
-
-      showAlert("Gespeichert", "Das PDF wurde in der App unter deinen Dateien gespeichert.", "success");
-    } catch (error) {
-      console.error("Failed to save PDF in app", error);
-      showAlert("Fehler", "PDF konnte nicht in der App gespeichert werden.", "error");
-    }
-  };
-
-  const handlePdfCreated = async (uri: string) => {
     if (Platform.OS === "web") {
-      await savePdfToDevice(uri);
+      if (typeof document !== "undefined") {
+        const link = document.createElement("a");
+        link.href = uri;
+        link.download = `${safeName}.pdf`;
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      showAlert("PDF erstellt", "Der Download wurde gestartet.", "success");
       return;
     }
 
-    Alert.alert(
-      "PDF erstellt",
-      "Du kannst das PDF jetzt auf deinem Geraet speichern oder direkt in der App ablegen.",
-      [
-        {
-          text: "Auf Handy speichern",
-          onPress: () => {
-            savePdfToDevice(uri);
-          },
-        },
-        {
-          text: "In App speichern",
-          onPress: () => {
-            savePdfToApp(uri);
-          },
-        },
-        {
-          text: "Abbrechen",
-          style: "cancel",
-        },
-      ],
-    );
+    try {
+      const sharingAvailable = await Sharing.isAvailableAsync();
+      if (sharingAvailable) {
+        await Sharing.shareAsync(uri, {
+          mimeType: "application/pdf",
+          dialogTitle: `${exercise?.title || "Übung"} als PDF speichern`,
+        });
+        showAlert("PDF erstellt", "Du kannst das PDF jetzt teilen oder speichern.", "success");
+        return;
+      }
+
+      const baseDir =
+        ("documentDirectory" in FileSystem && FileSystem.documentDirectory) ||
+        ("cacheDirectory" in FileSystem && FileSystem.cacheDirectory) ||
+        "";
+      const destination = `${baseDir}${safeName}-${Date.now()}.pdf`;
+      await FileSystem.copyAsync({ from: uri, to: destination });
+      showAlert("Gespeichert", `PDF abgelegt unter ${destination}`, "success");
+    } catch (error) {
+      console.error("Failed to export PDF", error);
+      showAlert("Fehler", "PDF konnte nicht gespeichert werden.", "error");
+    }
   };
 
   const handleExportPdf = async () => {
@@ -1782,8 +1785,9 @@ export default function ExerciseScreen() {
       const { uri } = await Print.printToFileAsync({
         html: buildExercisePdfHtml(exercise, answers),
       });
-      await handlePdfCreated(uri);
-    } catch {
+      await exportPdfToDevice(uri);
+    } catch (error) {
+      console.error("Failed to generate PDF", error);
       showAlert("Fehler", "PDF konnte nicht generiert werden.", "error");
     }
   };
@@ -1817,23 +1821,24 @@ export default function ExerciseScreen() {
   }
 
   return (
-    <View className="flex-1 bg-[#F7F4EE]">
-      {/* Animated Header matches settings.tsx and standard layout */}
-      <View className="pt-16 pb-6 px-6 rounded-b-3xl shadow-md z-10 flex-row items-center justify-between overflow-hidden">
+    <View style={{ flex: 1, backgroundColor: "#F7F4EE" }}>
+      <Animated.View style={[headerContainerStyle, headerAnimatedStyle]}>
         <LinearGradient
           colors={[colors.primaryDark, colors.primary]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0 }}
         />
         <PressableScale
           accessibilityRole="button"
-        accessibilityLabel="Zur\u00fcck"
+          accessibilityLabel="Zurück"
           onPress={() => {
-            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            if (Platform.OS !== "web") {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
             goBack();
           }}
-          className="bg-white/20 px-4 py-3 rounded-xl backdrop-blur-md flex-row items-center z-50"
+          className="bg-white/20 px-4 py-3 rounded-xl backdrop-blur-md flex-row items-center"
           style={{ zIndex: 50, elevation: 50 }}
         >
           <ChevronLeft size={20} color="white" />
@@ -1842,17 +1847,21 @@ export default function ExerciseScreen() {
           </Text>
         </PressableScale>
         <Text
-          className="text-xl font-extrabold text-white flex-1 text-right ml-4 z-10"
+          className="text-xl font-extrabold text-white flex-1 text-right ml-4"
           numberOfLines={1}
         >
             {exercise?.title ?? "\u00dcbung"}
         </Text>
-      </View>
+      </Animated.View>
 
       <Animated.ScrollView
-        className="flex-1 px-6 pt-6"
+        style={{ flex: 1 }}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 40 }}
+        contentContainerStyle={{
+          paddingTop: HEADER_HEIGHT + 24,
+          paddingBottom: 40,
+          paddingHorizontal: 24,
+        }}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
       >

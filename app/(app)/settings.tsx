@@ -34,6 +34,7 @@ export default function SettingsScreen() {
     const [bookingUrl, setBookingUrl] = useState<string>('');
     const { locale, setLanguage } = useLanguage();
     const { theme, setTheme, colors, isDark } = useTheme();
+    const themeLabels = i18n.t('settings.theme_options', { returnObjects: true }) as Record<string, string>;
 
     // Profile editing state
     const [firstName, setFirstName] = useState(profile?.firstName || '');
@@ -71,7 +72,7 @@ export default function SettingsScreen() {
         try {
             const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (!perm.granted) {
-                showToast('Berechtigung', 'Galerie-Zugriff wird benötigt.', 'warning');
+                showToast(i18n.t('settings.permission_title'), i18n.t('settings.gallery_permission'), 'warning');
                 return;
             }
             const result = await ImagePicker.launchImageLibraryAsync({
@@ -95,7 +96,7 @@ export default function SettingsScreen() {
             await refreshProfile();
         } catch (e) {
             console.error('Photo upload error:', e);
-            showToast('Fehler', 'Foto konnte nicht hochgeladen werden.', 'error');
+            showToast(i18n.t('settings.error'), i18n.t('settings.photo_upload_error'), 'error');
         } finally {
             setUploadingPhoto(false);
         }
@@ -115,13 +116,13 @@ export default function SettingsScreen() {
                     await updateEmail(auth.currentUser, email.trim());
                     await updateDoc(doc(db, 'users', profile.id), { email: email.trim() });
                 } catch (emailErr: any) {
-                    showToast('Hinweis', 'Name gespeichert, aber E-Mail konnte nicht geändert werden.', 'warning');
+                    showToast(i18n.t('settings.notice'), i18n.t('settings.email_update_failed'), 'warning');
                 }
             }
             await refreshProfile();
-            showToast('Gespeichert', 'Dein Profil wurde erfolgreich aktualisiert.');
+            showToast(i18n.t('settings.saved'), i18n.t('settings.profile_saved'));
         } catch (e) {
-            showToast('Fehler', 'Profil konnte nicht gespeichert werden.', 'error');
+            showToast(i18n.t('settings.error'), i18n.t('settings.profile_save_error'), 'error');
         } finally {
             setSavingProfile(false);
         }
@@ -149,9 +150,9 @@ export default function SettingsScreen() {
         if (!profile?.id) return;
         try {
             await updateDoc(doc(db, 'users', profile.id), { bookingUrl });
-            showToast(i18n.t('settings.saved', { defaultValue: 'Gespeichert' }), i18n.t('settings.booking_url_saved', { defaultValue: 'Dein Buchungs-Link wurde aktualisiert.' }));
+            showToast(i18n.t('settings.saved'), i18n.t('settings.booking_url_saved'));
         } catch (e) {
-            showToast(i18n.t('settings.error', { defaultValue: 'Fehler' }), 'Link konnte nicht gespeichert werden.', 'error');
+            showToast(i18n.t('settings.error'), i18n.t('settings.booking_save_error'), 'error');
         }
     };
 
@@ -280,7 +281,7 @@ export default function SettingsScreen() {
                         animate={{ opacity: 1, translateY: 0 }}
                         transition={{ type: 'timing', duration: 350, delay: 100 }}
                     >
-                        <Text style={{ color: colors.text }} className="text-xl font-bold mb-4">Mein Profil</Text>
+                        <Text style={{ color: colors.text }} className="text-xl font-bold mb-4">{i18n.t('settings.profile_section_title')}</Text>
                         <Card className="mb-6">
                             {/* Avatar */}
                             <View className="items-center mb-6">
@@ -297,27 +298,27 @@ export default function SettingsScreen() {
                                     </View>
                                 </PressableScale>
                                 <Text className="text-sm text-gray-500 mt-2">
-                                    {uploadingPhoto ? 'Wird hochgeladen...' : 'Foto ändern'}
+                                    {uploadingPhoto ? i18n.t('settings.profile_photo_uploading') : i18n.t('settings.profile_photo_change')}
                                 </Text>
                             </View>
 
                             {/* Name fields */}
                             <View className="flex-row gap-3 mb-3">
                                 <View className="flex-1">
-                                    <Text className="text-sm font-bold text-[#1F2528] mb-1.5">Vorname</Text>
+                                    <Text className="text-sm font-bold text-[#1F2528] mb-1.5">{i18n.t('settings.profile_first_name_label')}</Text>
                                     <TextInput
                                         value={firstName}
                                         onChangeText={setFirstName}
-                                        placeholder="Vorname"
+                                        placeholder={i18n.t('settings.profile_first_name_label')}
                                         className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#1F2528] font-medium"
                                     />
                                 </View>
                                 <View className="flex-1">
-                                    <Text className="text-sm font-bold text-[#1F2528] mb-1.5">Nachname</Text>
+                                    <Text className="text-sm font-bold text-[#1F2528] mb-1.5">{i18n.t('settings.profile_last_name_label')}</Text>
                                     <TextInput
                                         value={lastName}
                                         onChangeText={setLastName}
-                                        placeholder="Nachname"
+                                        placeholder={i18n.t('settings.profile_last_name_label')}
                                         className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#1F2528] font-medium"
                                     />
                                 </View>
@@ -325,11 +326,11 @@ export default function SettingsScreen() {
 
                             {/* Email */}
                             <View className="mb-5">
-                                <Text className="text-sm font-bold text-[#1F2528] mb-1.5">E-Mail-Adresse</Text>
+                                <Text className="text-sm font-bold text-[#1F2528] mb-1.5">{i18n.t('settings.profile_email_label')}</Text>
                                 <TextInput
                                     value={email}
                                     onChangeText={setEmail}
-                                    placeholder="E-Mail"
+                                    placeholder={i18n.t('settings.profile_email_label')}
                                     keyboardType="email-address"
                                     autoCapitalize="none"
                                     className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-[#1F2528] font-medium"
@@ -344,7 +345,7 @@ export default function SettingsScreen() {
                                 style={{ opacity: savingProfile ? 0.7 : 1 }}
                             >
                                 <Text className="text-white font-bold text-base">
-                                    {savingProfile ? 'Wird gespeichert...' : 'Profil speichern'}
+                                    {savingProfile ? i18n.t('settings.profile_saving') : i18n.t('settings.profile_save')}
                                 </Text>
                             </PressableScale>
                         </Card>
@@ -432,9 +433,9 @@ export default function SettingsScreen() {
                     >
                         {profile?.role === 'therapist' && (
                             <Card padding="sm" className="mb-6">
-                                <Text style={{ color: colors.text }} className="text-lg font-bold mb-1">{i18n.t('settings.booking_title', { defaultValue: 'Buchungs-Link (Cal.com / Calendly)' })}</Text>
+                                <Text style={{ color: colors.text }} className="text-lg font-bold mb-1">{i18n.t('settings.booking_title')}</Text>
                                 <Text className="text-gray-500 text-sm mb-4">
-                                    {i18n.t('settings.booking_desc', { defaultValue: 'Hinterlege deinen Link, damit Klienten direkt Termine bei dir buchen können.' })}
+                                    {i18n.t('settings.booking_desc')}
                                 </Text>
                                 <View className="flex-row items-center">
                                     <TextInput
@@ -463,12 +464,11 @@ export default function SettingsScreen() {
                         <Card padding="sm" className="mb-6">
                             {/* Theme Setting */}
                             <View className="flex-row items-center justify-between mb-2">
-                                <Text style={{ color: colors.text }} className="text-base font-bold">Erscheinungsbild</Text>
+                                <Text style={{ color: colors.text }} className="text-base font-bold">{i18n.t('settings.theme_title')}</Text>
                             </View>
                             <View className="flex-row bg-gray-50 rounded-xl p-1 mb-4 border border-gray-200">
                                 {['system', 'light', 'dark'].map((t) => {
                                     const isActive = theme === t;
-                                    const labels: Record<string, string> = { system: 'System', light: 'Hell', dark: 'Dunkel' };
                                     return (
                                         <PressableScale
                                             key={t}
@@ -478,7 +478,7 @@ export default function SettingsScreen() {
                                             style={isActive ? { shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 } : {}}
                                         >
                                             <Text className={`font-bold ${isActive ? 'text-[#2D666B]' : 'text-gray-500'}`}>
-                                                {labels[t]}
+                                                {themeLabels?.[t] || t}
                                             </Text>
                                         </PressableScale>
                                     );
@@ -533,7 +533,7 @@ export default function SettingsScreen() {
                                     <Text className="text-gray-500 text-sm flex-wrap" numberOfLines={3}>{i18n.t('settings.telegram_desc')}</Text>
                                 </View>
                                 <View className="flex-row items-center">
-                                    <Text className="text-[#0088cc] font-bold mr-1">Verbinden</Text>
+                                    <Text className="text-[#0088cc] font-bold mr-1">{i18n.t('settings.telegram_connect_button')}</Text>
                                     <ChevronRight size={18} color="#0088cc" />
                                 </View>
                             </PressableScale>

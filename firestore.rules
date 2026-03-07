@@ -35,6 +35,16 @@ service cloud.firestore {
              requesterProfile().therapistId == userId;
     }
 
+    function isOwnedByTherapist(therapistId) {
+      return isTherapist() && therapistId == request.auth.uid;
+    }
+
+    function isClientOfTherapist(therapistId) {
+      return requesterProfileExists() &&
+             requesterProfile().role == 'client' &&
+             requesterProfile().therapistId == therapistId;
+    }
+
     // USERS
     match /users/{userId} {
       allow read: if isOwner(userId)
@@ -83,14 +93,21 @@ service cloud.firestore {
 
     // TEMPLATES
     match /exercise_templates/{templateId} {
-      allow read, write: if isTherapist();
+      allow read: if isOwnedByTherapist(resource.data.therapistId);
+      allow create: if isOwnedByTherapist(request.resource.data.therapistId);
+      allow update: if isOwnedByTherapist(resource.data.therapistId) &&
+                    request.resource.data.therapistId == resource.data.therapistId;
+      allow delete: if isOwnedByTherapist(resource.data.therapistId);
     }
 
     // RESOURCES
     match /resources/{resourceId} {
-      // Global resources, readable by authenticated users, writable by therapists.
-      allow read: if isAuthenticated();
-      allow write: if isTherapist();
+      allow read: if isOwnedByTherapist(resource.data.therapistId) ||
+                  isClientOfTherapist(resource.data.therapistId);
+      allow create: if isOwnedByTherapist(request.resource.data.therapistId);
+      allow update: if isOwnedByTherapist(resource.data.therapistId) &&
+                    request.resource.data.therapistId == resource.data.therapistId;
+      allow delete: if isOwnedByTherapist(resource.data.therapistId);
     }
 
     // CLIENT RESOURCES

@@ -10,6 +10,7 @@ const translations = {
         },
         dashboard: {
             greeting: "Hello %{name} 👋",
+            greeting_short: "Hi %{name}",
             daily_quotes: [
                 "Every small step counts. 🌱",
                 "You are stronger than you think. 💪",
@@ -24,11 +25,21 @@ const translations = {
                 subtitle: "Fill out daily check-in",
                 button: "Start →",
                 completed: "Check-in done!",
-                tomorrow: "Available again tomorrow."
+                tomorrow: "Available again tomorrow.",
+                badge: "Daily check-in",
+                view_summary: "View summary →"
             },
             progress: {
                 title: "Progress Today",
                 count: "%{completed} of %{total} done"
+            },
+            metrics_cards: {
+                open_label: "Open exercises",
+                open_hint_default: "Your current tasks for the next steps.",
+                open_hint_empty: "Nothing left for today.",
+                checkins_label: "Check-ins",
+                checkins_hint_default: "Your latest entries for trend and reflection.",
+                checkins_hint_empty: "No entries over the last days."
             },
             stats: {
                 total: "Total",
@@ -42,7 +53,9 @@ const translations = {
                 weekly: "Weekly",
                 start: "▶ Start",
                 empty_title: "No exercises available",
-                empty_desc: "Once your therapist assigns an exercise, it will appear here."
+                empty_desc: "Once your therapist assigns an exercise, it will appear here.",
+                subtitle_open: "%{count} open task(s) are waiting for you.",
+                action_all: "View all"
             },
             completed: {
                 title: "Completed Exercises",
@@ -57,6 +70,19 @@ const translations = {
             next_session: {
                 label: "Next Session",
                 cta: "Manage session"
+            },
+            quick_access: {
+                title: "Your Space",
+                subtitle: "Direct shortcuts to resources, sessions, and reflection."
+            },
+            notes_action: {
+                title: "Session Notes",
+                description: "Add notes and insights after your session."
+            },
+            notifications: {
+                title_single: "1 new message",
+                title_multi: "%{count} new messages",
+                default_body: "Your therapist shared new resources with you."
             }
         },
         login: {
@@ -109,6 +135,22 @@ const translations = {
             error_save: "Could not save check-in. You might lack permissions or have a weak internet connection.",
             moods: ["Awful", "Bad", "Not Good", "Neutral", "Okay", "Good", "Very Good", "Great", "Awesome", "Fantastic"],
             tags: ["Exhausted", "Anxious", "Calm", "Motivated", "Sad", "Grateful", "Overwhelmed", "Focused", "Lonely", "Connected"],
+            energy_levels: [
+                { title: "Empty", hint: "Your system needs deep rest today." },
+                { title: "Very low", hint: "Only a little energy is available." },
+                { title: "Drained", hint: "Running in energy-saving mode." },
+                { title: "Slowed down", hint: "You get through the day, but with resistance." },
+                { title: "Balanced", hint: "Neither empty nor overcharged." },
+                { title: "Steady", hint: "A solid base for the day is there." },
+                { title: "In flow", hint: "You feel momentum for the next steps." },
+                { title: "Alert", hint: "Active, present, and responsive." },
+                { title: "Powerful", hint: "Lots of drive is available right now." },
+                { title: "Sparkling", hint: "Very high energy at the moment." }
+            ],
+            energy_scale: {
+                low: "Low energy",
+                high: "High energy"
+            },
             note_placeholder: "Notes on today (optional)...",
             completed: "Check-in Completed"
         },
@@ -140,7 +182,34 @@ const translations = {
             telegram_title: "Connect Telegram",
             telegram_desc: "For automatic exercise reminders.",
             telegram_error: "Telegram does not seem to be installed.",
-            logout: "Sign Out / Logout"
+            logout: "Sign Out / Logout",
+            booking_title: "Booking link (Cal.com / Calendly)",
+            booking_desc: "Add your link so clients can book you directly.",
+            booking_url_saved: "Your booking link was updated.",
+            booking_save_error: "Link could not be saved.",
+            save: "Save",
+            profile_section_title: "My Profile",
+            profile_photo_uploading: "Uploading...",
+            profile_photo_change: "Change photo",
+            profile_first_name_label: "First name",
+            profile_last_name_label: "Last name",
+            profile_email_label: "Email address",
+            profile_save: "Save profile",
+            profile_saving: "Saving...",
+            profile_saved: "Your profile was updated successfully.",
+            profile_save_error: "Profile could not be saved.",
+            notice: "Notice",
+            email_update_failed: "Name saved, but email could not be updated.",
+            permission_title: "Permission",
+            gallery_permission: "Gallery access is required.",
+            photo_upload_error: "Photo could not be uploaded.",
+            theme_title: "Appearance",
+            theme_options: {
+                system: "System",
+                light: "Light",
+                dark: "Dark"
+            },
+            telegram_connect_button: "Connect"
         },
         blocks: {
             scale: "Scale",
@@ -474,6 +543,7 @@ const translations = {
         },
         dashboard: {
             greeting: "Hallo %{name} 👋",
+            greeting_short: "Hi %{name}",
             daily_quotes: [
                 "Jeder kleine Schritt zählt. 🌱",
                 "Du bist stärker als du denkst. 💪",
@@ -488,11 +558,21 @@ const translations = {
                 subtitle: "Tägliches Check-in ausfüllen",
                 button: "Starten →",
                 completed: "Check-in erledigt!",
-                tomorrow: "Morgen wieder verfügbar."
+                tomorrow: "Morgen wieder verfügbar.",
+                badge: "Tages-Check-in",
+                view_summary: "Auswertung anzeigen →"
             },
             progress: {
                 title: "Fortschritt heute",
                 count: "%{completed} von %{total} erledigt"
+            },
+            metrics_cards: {
+                open_label: "Offene Aufgaben",
+                open_hint_default: "Deine aktuellen Aufgaben für die nächsten Schritte.",
+                open_hint_empty: "Heute ist nichts mehr offen.",
+                checkins_label: "Check-ins",
+                checkins_hint_default: "Deine letzten Einträge für Verlauf und Reflexion.",
+                checkins_hint_empty: "Keine Einträge in den letzten Tagen."
             },
             stats: {
                 total: "Gesamt",
@@ -506,7 +586,9 @@ const translations = {
                 weekly: "Wöchentlich",
                 start: "▶ Start",
                 empty_title: "Keine Aufgaben vorhanden",
-                empty_desc: "Sobald dein Therapeut dir eine Übung zuweist, erscheint sie hier."
+                empty_desc: "Sobald dein Therapeut dir eine Übung zuweist, erscheint sie hier.",
+                subtitle_open: "%{count} offene Aufgabe(n) warten auf dich.",
+                action_all: "Alle ansehen"
             },
             completed: {
                 title: "Erledigte Aufgaben",
@@ -521,6 +603,19 @@ const translations = {
             next_session: {
                 label: "Nächster Termin",
                 cta: "Termin verwalten"
+            },
+            quick_access: {
+                title: "Dein Raum",
+                subtitle: "Direkte Zugänge zu Ressourcen, Terminen und Reflexion."
+            },
+            notes_action: {
+                title: "Sitzungsnotizen",
+                description: "Füge nach deiner Session Notizen und Erkenntnisse hinzu."
+            },
+            notifications: {
+                title_single: "1 neue Nachricht",
+                title_multi: "%{count} neue Nachrichten",
+                default_body: "Dein Therapeut hat neue Ressourcen für dich freigeschaltet."
             }
         },
         login: {
@@ -604,7 +699,34 @@ const translations = {
             telegram_title: "Telegram verbinden",
             telegram_desc: "Für automatische Erinnerungen an deine Übungen.",
             telegram_error: "Telegram scheint nicht installiert zu sein.",
-            logout: "Abmelden / Logout"
+            logout: "Abmelden / Logout",
+            booking_title: "Buchungs-Link (Cal.com / Calendly)",
+            booking_desc: "Hinterlege deinen Link, damit Klient:innen direkt Termine buchen können.",
+            booking_url_saved: "Dein Buchungs-Link wurde aktualisiert.",
+            booking_save_error: "Link konnte nicht gespeichert werden.",
+            save: "Speichern",
+            profile_section_title: "Mein Profil",
+            profile_photo_uploading: "Wird hochgeladen...",
+            profile_photo_change: "Foto ändern",
+            profile_first_name_label: "Vorname",
+            profile_last_name_label: "Nachname",
+            profile_email_label: "E-Mail-Adresse",
+            profile_save: "Profil speichern",
+            profile_saving: "Wird gespeichert...",
+            profile_saved: "Dein Profil wurde erfolgreich aktualisiert.",
+            profile_save_error: "Profil konnte nicht gespeichert werden.",
+            notice: "Hinweis",
+            email_update_failed: "Name gespeichert, aber E-Mail konnte nicht geändert werden.",
+            permission_title: "Berechtigung",
+            gallery_permission: "Galerie-Zugriff wird benötigt.",
+            photo_upload_error: "Foto konnte nicht hochgeladen werden.",
+            theme_title: "Erscheinungsbild",
+            theme_options: {
+                system: "System",
+                light: "Hell",
+                dark: "Dunkel"
+            },
+            telegram_connect_button: "Verbinden"
         },
         blocks: {
             scale: "Skala (1-10)",
@@ -935,6 +1057,7 @@ const translations = {
         },
         dashboard: {
             greeting: "Bonjour %{name} 👋",
+            greeting_short: "Salut %{name}",
             daily_quotes: [
                 "Chaque petit pas compte. 🌱",
                 "Tu es plus fort(e) que tu ne le penses. 💪",
@@ -949,11 +1072,21 @@ const translations = {
                 subtitle: "Remplir le bilan quotidien",
                 button: "Démarrer →",
                 completed: "Bilan terminé !",
-                tomorrow: "De retour demain."
+                tomorrow: "De retour demain.",
+                badge: "Bilan quotidien",
+                view_summary: "Voir le résumé →"
             },
             progress: {
                 title: "Progrès du jour",
                 count: "%{completed} sur %{total} terminés"
+            },
+            metrics_cards: {
+                open_label: "Exercices en cours",
+                open_hint_default: "Tes tâches actuelles pour les prochaines étapes.",
+                open_hint_empty: "Rien de prévu aujourd'hui.",
+                checkins_label: "Check-ins",
+                checkins_hint_default: "Tes dernières entrées pour suivre la tendance.",
+                checkins_hint_empty: "Aucune entrée ces derniers jours."
             },
             stats: {
                 total: "Total",
@@ -967,7 +1100,9 @@ const translations = {
                 weekly: "Hebdomadaire",
                 start: "▶ Démarrer",
                 empty_title: "Aucun exercice disponible",
-                empty_desc: "Dès que votre thérapeute vous attribuera un exercice, il apparaîtra ici."
+                empty_desc: "Dès que votre thérapeute vous attribuera un exercice, il apparaîtra ici.",
+                subtitle_open: "%{count} exercice(s) t'attendent.",
+                action_all: "Tout voir"
             },
             completed: {
                 title: "Exercices terminés",
@@ -982,6 +1117,19 @@ const translations = {
             next_session: {
                 label: "Prochain rendez-vous",
                 cta: "Gérer le rendez-vous"
+            },
+            quick_access: {
+                title: "Ton espace",
+                subtitle: "Accès direct aux ressources, aux rendez-vous et à la réflexion."
+            },
+            notes_action: {
+                title: "Notes de séance",
+                description: "Ajoute des notes et insights après ta séance."
+            },
+            notifications: {
+                title_single: "1 nouveau message",
+                title_multi: "%{count} nouveaux messages",
+                default_body: "Ton thérapeute a partagé de nouvelles ressources pour toi."
             }
         },
         login: {
@@ -1065,7 +1213,34 @@ const translations = {
             telegram_title: "Connecter Telegram",
             telegram_desc: "Pour des rappels automatiques d'exercices.",
             telegram_error: "Telegram ne semble pas être installé.",
-            logout: "Se Déconnecter"
+            logout: "Se Déconnecter",
+            booking_title: "Lien de réservation (Cal.com / Calendly)",
+            booking_desc: "Ajoutez votre lien pour que les clients puissent réserver directement.",
+            booking_url_saved: "Ton lien de réservation a été mis à jour.",
+            booking_save_error: "Impossible d'enregistrer le lien.",
+            save: "Enregistrer",
+            profile_section_title: "Mon profil",
+            profile_photo_uploading: "Téléchargement...",
+            profile_photo_change: "Changer la photo",
+            profile_first_name_label: "Prénom",
+            profile_last_name_label: "Nom",
+            profile_email_label: "Adresse e-mail",
+            profile_save: "Enregistrer le profil",
+            profile_saving: "Enregistrement...",
+            profile_saved: "Ton profil a été mis à jour avec succès.",
+            profile_save_error: "Le profil n'a pas pu être enregistré.",
+            notice: "Remarque",
+            email_update_failed: "Nom enregistré, mais l'e-mail n'a pas pu être mis à jour.",
+            permission_title: "Autorisation",
+            gallery_permission: "L'accès à la galerie est requis.",
+            photo_upload_error: "La photo n'a pas pu être importée.",
+            theme_title: "Apparence",
+            theme_options: {
+                system: "Système",
+                light: "Clair",
+                dark: "Sombre"
+            },
+            telegram_connect_button: "Connecter"
         },
         blocks: {
             scale: "Échelle (1-10)",
@@ -1396,6 +1571,7 @@ const translations = {
         },
         dashboard: {
             greeting: "Hola %{name} 👋",
+            greeting_short: "Hola %{name}",
             daily_quotes: [
                 "Cada pequeño paso cuenta. 🌱",
                 "Eres más fuerte de lo que crees. 💪",
@@ -1410,11 +1586,21 @@ const translations = {
                 subtitle: "Completar el registro diario",
                 button: "Empezar →",
                 completed: "¡Registro completado!",
-                tomorrow: "Disponible mañana otra vez."
+                tomorrow: "Disponible mañana otra vez.",
+                badge: "Registro diario",
+                view_summary: "Ver resumen →"
             },
             progress: {
                 title: "Progreso de hoy",
                 count: "%{completed} de %{total} completados"
+            },
+            metrics_cards: {
+                open_label: "Ejercicios abiertos",
+                open_hint_default: "Tus tareas actuales para los próximos pasos.",
+                open_hint_empty: "Hoy no queda nada pendiente.",
+                checkins_label: "Check-ins",
+                checkins_hint_default: "Tus últimas entradas para ver tendencias.",
+                checkins_hint_empty: "Sin entradas en los últimos días."
             },
             stats: {
                 total: "Total",
@@ -1428,7 +1614,9 @@ const translations = {
                 weekly: "Semanal",
                 start: "▶ Empezar",
                 empty_title: "No hay ejercicios disponibles",
-                empty_desc: "Una vez que su terapeuta le asigne un ejercicio, aparecerá aquí."
+                empty_desc: "Una vez que su terapeuta le asigne un ejercicio, aparecerá aquí.",
+                subtitle_open: "%{count} tarea(s) abiertas te esperan.",
+                action_all: "Ver todo"
             },
             completed: {
                 title: "Ejercicios completados",
@@ -1443,6 +1631,19 @@ const translations = {
             next_session: {
                 label: "Próxima cita",
                 cta: "Gestionar cita"
+            },
+            quick_access: {
+                title: "Tu espacio",
+                subtitle: "Acceso directo a recursos, citas y reflexión."
+            },
+            notes_action: {
+                title: "Notas de sesión",
+                description: "Agrega notas e insights después de cada sesión."
+            },
+            notifications: {
+                title_single: "1 mensaje nuevo",
+                title_multi: "%{count} mensajes nuevos",
+                default_body: "Tu terapeuta compartió nuevos recursos para ti."
             }
         },
         login: {
@@ -1526,7 +1727,34 @@ const translations = {
             telegram_title: "Conectar Telegram",
             telegram_desc: "Para recordatorios automáticos de ejercicios.",
             telegram_error: "Telegram no parece estar instalado.",
-            logout: "Cerrar Sesión"
+            logout: "Cerrar Sesión",
+            booking_title: "Enlace de reserva (Cal.com / Calendly)",
+            booking_desc: "Agrega tu enlace para que los clientes reserven directamente.",
+            booking_url_saved: "Tu enlace de reserva se actualizó.",
+            booking_save_error: "No se pudo guardar el enlace.",
+            save: "Guardar",
+            profile_section_title: "Mi perfil",
+            profile_photo_uploading: "Subiendo...",
+            profile_photo_change: "Cambiar foto",
+            profile_first_name_label: "Nombre",
+            profile_last_name_label: "Apellido",
+            profile_email_label: "Correo electrónico",
+            profile_save: "Guardar perfil",
+            profile_saving: "Guardando...",
+            profile_saved: "Tu perfil se actualizó correctamente.",
+            profile_save_error: "No se pudo guardar el perfil.",
+            notice: "Aviso",
+            email_update_failed: "Nombre guardado, pero no fue posible actualizar el correo.",
+            permission_title: "Permiso",
+            gallery_permission: "Se requiere acceso a la galería.",
+            photo_upload_error: "No se pudo subir la foto.",
+            theme_title: "Apariencia",
+            theme_options: {
+                system: "Sistema",
+                light: "Claro",
+                dark: "Oscuro"
+            },
+            telegram_connect_button: "Conectar"
         },
         blocks: {
             scale: "Escala (1-10)",
@@ -1857,6 +2085,7 @@ const translations = {
         },
         dashboard: {
             greeting: "Ciao %{name} 👋",
+            greeting_short: "Ciao %{name}",
             daily_quotes: [
                 "Ogni piccolo passo conta. 🌱",
                 "Sei più forte di quanto pensi. 💪",
@@ -1871,11 +2100,21 @@ const translations = {
                 subtitle: "Compila il check-in giornaliero",
                 button: "Inizia →",
                 completed: "Check-in completato!",
-                tomorrow: "Disponibile di nuovo domani."
+                tomorrow: "Disponibile di nuovo domani.",
+                badge: "Check-in quotidiano",
+                view_summary: "Vedi riepilogo →"
             },
             progress: {
                 title: "Progresso oggi",
                 count: "%{completed} su %{total} completati"
+            },
+            metrics_cards: {
+                open_label: "Esercizi aperti",
+                open_hint_default: "Le tue attività attuali per i prossimi passi.",
+                open_hint_empty: "Oggi non resta nulla da fare.",
+                checkins_label: "Check-in",
+                checkins_hint_default: "Le tue ultime registrazioni per seguire l'andamento.",
+                checkins_hint_empty: "Nessuna registrazione negli ultimi giorni."
             },
             stats: {
                 total: "Totale",
@@ -1889,7 +2128,9 @@ const translations = {
                 weekly: "Settimanale",
                 start: "▶ Inizia",
                 empty_title: "Nessun esercizio disponibile",
-                empty_desc: "Non appena il tuo terapista ti assegnerà un esercizio, apparirà qui."
+                empty_desc: "Non appena il tuo terapista ti assegnerà un esercizio, apparirà qui.",
+                subtitle_open: "%{count} attività aperte ti aspettano.",
+                action_all: "Vedi tutto"
             },
             completed: {
                 title: "Esercizi completati",
@@ -1904,6 +2145,19 @@ const translations = {
             next_session: {
                 label: "Prossimo appuntamento",
                 cta: "Gestisci appuntamento"
+            },
+            quick_access: {
+                title: "Il tuo spazio",
+                subtitle: "Accesso diretto a risorse, appuntamenti e riflessioni."
+            },
+            notes_action: {
+                title: "Note di sessione",
+                description: "Aggiungi note e spunti dopo ogni sessione."
+            },
+            notifications: {
+                title_single: "1 nuovo messaggio",
+                title_multi: "%{count} nuovi messaggi",
+                default_body: "Il tuo terapista ha condiviso nuove risorse per te."
             }
         },
         login: {
@@ -1994,7 +2248,34 @@ const translations = {
             telegram_title: "Connetti Telegram",
             telegram_desc: "Per promemoria automatici sugli esercizi.",
             telegram_error: "Telegram non sembra essere installato.",
-            logout: "Esci"
+            logout: "Esci",
+            booking_title: "Link di prenotazione (Cal.com / Calendly)",
+            booking_desc: "Inserisci il tuo link per permettere ai clienti di prenotare direttamente.",
+            booking_url_saved: "Il tuo link di prenotazione è stato aggiornato.",
+            booking_save_error: "Impossibile salvare il link.",
+            save: "Salva",
+            profile_section_title: "Il mio profilo",
+            profile_photo_uploading: "Caricamento...",
+            profile_photo_change: "Cambia foto",
+            profile_first_name_label: "Nome",
+            profile_last_name_label: "Cognome",
+            profile_email_label: "Indirizzo e-mail",
+            profile_save: "Salva profilo",
+            profile_saving: "Salvataggio...",
+            profile_saved: "Il tuo profilo è stato aggiornato con successo.",
+            profile_save_error: "Impossibile salvare il profilo.",
+            notice: "Nota",
+            email_update_failed: "Nome salvato, ma l'e-mail non è stata aggiornata.",
+            permission_title: "Autorizzazione",
+            gallery_permission: "È necessario l'accesso alla galleria.",
+            photo_upload_error: "Impossibile caricare la foto.",
+            theme_title: "Aspetto",
+            theme_options: {
+                system: "Sistema",
+                light: "Chiaro",
+                dark: "Scuro"
+            },
+            telegram_connect_button: "Connetti"
         },
         blocks: {
             scale: "Scala (1-10)",

@@ -10,6 +10,9 @@ type CategoryDefinition = {
     bg: string;
 };
 
+type CategoryCounts = Record<string, number>;
+type CategorySlice = CategoryDefinition & { value: number };
+
 const CATEGORY_MAP: Record<ExerciseBlockType, { category: string; color: string }> = {
     reflection: { category: 'Kognition', color: '#60A5FA' },
     info: { category: 'Kognition', color: '#60A5FA' },
@@ -34,7 +37,7 @@ const CATEGORY_MAP: Record<ExerciseBlockType, { category: string; color: string 
     bubble_chart: { category: 'Analyse', color: '#A37E68' },
 };
 
-const ALL_CATEGORIES: CategoryDefinition[] = [
+const CATEGORY_DEFINITIONS: CategoryDefinition[] = [
     { name: 'Kognition', color: '#60A5FA', bg: 'rgba(96,165,250,0.12)' },
     { name: 'Bewertung', color: '#FBBF24', bg: 'rgba(251,191,36,0.12)' },
     { name: 'Verhalten', color: '#34D399', bg: 'rgba(52,211,153,0.12)' },
@@ -44,18 +47,53 @@ const ALL_CATEGORIES: CategoryDefinition[] = [
     { name: 'Analyse', color: '#F97316', bg: 'rgba(249,115,22,0.12)' },
 ];
 
+const CATEGORY_THEME_MAP = CATEGORY_DEFINITIONS.reduce<Record<string, CategoryDefinition>>((acc, definition) => {
+    acc[definition.name] = definition;
+    return acc;
+}, {});
+
 const FALLBACK_CATEGORY: CategoryDefinition = {
     name: 'Sonstiges',
     color: '#94A3B8',
     bg: 'rgba(148,163,184,0.12)',
 };
 
-function getCategoryCounts(blocks: ExerciseBlock[]) {
-    const counts: Record<string, number> = {};
+function resolveCategoryDefinition(name: string): CategoryDefinition {
+    return CATEGORY_THEME_MAP[name] ?? {
+        name,
+        color: FALLBACK_CATEGORY.color,
+        bg: FALLBACK_CATEGORY.bg,
+    };
+}
 
-    for (const category of [...ALL_CATEGORIES, FALLBACK_CATEGORY]) {
+function buildCategoryData(counts: CategoryCounts): CategorySlice[] {
+    const orderedEntries = CATEGORY_DEFINITIONS.map(category => ({
+        ...category,
+        value: counts[category.name] ?? 0,
+    }));
+
+    const fallbackValue = counts[FALLBACK_CATEGORY.name] ?? 0;
+    const fallbackEntries = fallbackValue > 0
+        ? [{ ...FALLBACK_CATEGORY, value: fallbackValue }]
+        : [];
+
+    const dynamicEntries = Object.entries(counts)
+        .filter(([name, value]) => value > 0 && !(name in CATEGORY_THEME_MAP) && name !== FALLBACK_CATEGORY.name)
+        .map(([name, value]) => ({
+            ...resolveCategoryDefinition(name),
+            value,
+        }));
+
+    return [...orderedEntries, ...fallbackEntries, ...dynamicEntries];
+}
+
+function getCategoryCounts(blocks: ExerciseBlock[]) {
+    const counts: CategoryCounts = {};
+
+    for (const category of CATEGORY_DEFINITIONS) {
         counts[category.name] = 0;
     }
+    counts[FALLBACK_CATEGORY.name] = 0;
 
     for (const block of blocks) {
         const categoryName = CATEGORY_MAP[block.type]?.category ?? FALLBACK_CATEGORY.name;
@@ -73,13 +111,13 @@ function getTip(blocks: ExerciseBlock[]): string {
     const counts = getCategoryCounts(blocks);
     const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
     const dominant = sorted[0]?.[0];
-    const missing = ALL_CATEGORIES.filter(category => counts[category.name] === 0).map(category => category.name);
+    const missing = CATEGORY_DEFINITIONS.filter(category => counts[category.name] === 0).map(category => category.name);
 
     if (missing.length === 0) {
         return 'Ausgewogene Übung. Alle Bereiche sind abgedeckt.';
     }
 
-    if (dominant === 'Kognition' && counts.Achtsamkeit === 0) {
+    if (dominant === 'Kognition' && (counts['Achtsamkeit'] ?? 0) === 0) {
         return 'Tipp: Füge eine Atemübung hinzu für mehr Körperbezug.';
     }
 
@@ -102,12 +140,7 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
 
     const { arcs, visibleCategories } = useMemo(() => {
         const counts = getCategoryCounts(blocks);
-        const data = ALL_CATEGORIES.map(category => ({
-            name: category.name,
-            color: category.color,
-            bg: category.bg,
-            value: counts[category.name] ?? 0,
-        }));
+        const data = buildCategoryData(counts);
         const hasAny = data.some(item => item.value > 0);
         const effectiveData = hasAny ? data : data.map(item => ({ ...item, value: 1 }));
         const isEmpty = !hasAny;
@@ -116,12 +149,12 @@ export default function ExerciseCompositionChart({ blocks }: Props) {
         const radius = size / 2;
         const innerRadius = radius * 0.6;
 
-        const pie = d3.pie<typeof effectiveData[0]>()
+        const pie = d3.pie<CategorySlice>()
             .value(item => item.value)
             .padAngle(0.06)
             .sortValues(null);
 
-        const arc = d3.arc<d3.PieArcDatum<typeof effectiveData[0]>>()
+        const arc = d3.arc<d3.PieArcDatum<CategorySlice>>()
             .outerRadius(radius - 2)
             .innerRadius(innerRadius)
             .cornerRadius(6);

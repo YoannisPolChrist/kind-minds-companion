@@ -78,7 +78,7 @@ export default function TherapistResources() {
 
     useEffect(() => {
         fetchResources();
-    }, []);
+    }, [profile?.id]);
 
     useEffect(() => {
         if (profile?.id) {
@@ -106,8 +106,14 @@ export default function TherapistResources() {
     };
 
     const fetchResources = async () => {
+        if (!profile?.id) {
+            setResources([]);
+            setLoading(false);
+            return;
+        }
+
         try {
-            const q = query(collection(db, "resources"));
+            const q = query(collection(db, "resources"), where("therapistId", "==", profile.id));
             const querySnapshot = await getDocs(q);
             const data: any[] = [];
             querySnapshot.forEach((doc) => {
@@ -167,6 +173,7 @@ export default function TherapistResources() {
                 url: downloadUrl,
                 storagePath: filename,
                 originalName: asset.name,
+                therapistId: profile?.id,
                 isPinned: false,
                 tags: tagsArray,
                 createdAt: serverTimestamp()
@@ -200,6 +207,7 @@ export default function TherapistResources() {
                 description,
                 type: 'link',
                 url: normalizedUrl,
+                therapistId: profile?.id,
                 isPinned: false,
                 tags: tagsArray,
                 createdAt: serverTimestamp()
@@ -290,7 +298,11 @@ export default function TherapistResources() {
         setLoadingHistory(true);
 
         try {
-            const q = query(collection(db, "client_resources"), where("originalResourceId", "==", resource.id));
+            const q = query(
+                collection(db, "client_resources"),
+                where("originalResourceId", "==", resource.id),
+                where("therapistId", "==", profile?.id || "__missing__")
+            );
             const querySnapshot = await getDocs(q);
 
             const history: any[] = [];

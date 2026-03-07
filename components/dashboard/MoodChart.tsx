@@ -2,12 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import { FlLineAreaChart } from '../charts/flChartPrimitives';
 import { withAlpha } from '../charts/chartData';
-import { normalizeMoodToHundred } from '../../utils/checkinMood';
+import { getEmotionByScore, getEmotionLabel } from '../../constants/emotions';
+import { normalizeMoodToHundred, normalizeMoodToTen } from '../../utils/checkinMood';
 import i18n from '../../utils/i18n';
 
 interface Checkin {
     date: string;
     mood: number;
+    createdAt?: string;
 }
 
 interface Props {
@@ -19,25 +21,54 @@ const PETROL_LIGHT = '#4E7E82';
 const GOLD = '#B08C57';
 const CARD_BG = '#182428';
 
+function getCheckinDate(checkin: Checkin) {
+    return new Date(checkin.createdAt ?? checkin.date);
+}
+
 export function MoodChart({ checkins }: Props) {
     const { width: screenWidth } = useWindowDimensions();
     const chartWidth = Math.min(screenWidth - 48, 800);
 
-    const data = useMemo(() => {
-        if (!checkins || checkins.length === 0) return [];
+    const chartState = useMemo(() => {
+        if (!checkins || checkins.length === 0) {
+            return { data: [], topEmotions: [] as Array<{ label: string; count: number; color: string }> };
+        }
 
         const sorted = [...checkins]
-            .sort((left, right) => new Date(left.date).getTime() - new Date(right.date).getTime())
+            .sort((left, right) => getCheckinDate(left).getTime() - getCheckinDate(right).getTime())
             .slice(-10);
 
-        return sorted.map((checkin) => ({
-            label: new Date(checkin.date).toLocaleDateString(i18n.locale, { weekday: 'short' }).toUpperCase(),
-            value: normalizeMoodToHundred(checkin.mood),
-            color: PETROL_LIGHT,
-            rawDate: checkin.date,
-        }));
+        const emotionCounts = new Map<string, { label: string; count: number; color: string }>();
+
+        const data = sorted.map((checkin) => {
+            const emotion = getEmotionByScore(normalizeMoodToTen(checkin.mood));
+            const emotionLabel = getEmotionLabel(emotion, i18n.locale);
+            const existing = emotionCounts.get(emotion.id);
+
+            emotionCounts.set(emotion.id, {
+                label: emotionLabel,
+                count: (existing?.count ?? 0) + 1,
+                color: emotion.color,
+            });
+
+            return {
+                label: getCheckinDate(checkin).toLocaleDateString(i18n.locale, { weekday: 'short' }).toUpperCase(),
+                value: normalizeMoodToHundred(checkin.mood),
+                color: PETROL_LIGHT,
+                rawDate: checkin.createdAt ?? checkin.date,
+                emotionLabel,
+                emotionColor: emotion.color,
+            };
+        });
+
+        const topEmotions = [...emotionCounts.values()]
+            .sort((left, right) => right.count - left.count)
+            .slice(0, 3);
+
+        return { data, topEmotions };
     }, [checkins]);
 
+    const data = chartState.data;
     const [selectedIndex, setSelectedIndex] = useState(Math.max(0, data.length - 1));
 
     useEffect(() => {
@@ -82,8 +113,24 @@ export function MoodChart({ checkins }: Props) {
                             <Text style={{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.5)' }}> /100</Text>
                         </Text>
                         <Text style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', fontWeight: '600', marginTop: 4 }}>
-                            Ausgewählt: {activeDate}
+                            Ausgewaehlt: {activeDate}
                         </Text>
+                        <View
+                            style={{
+                                marginTop: 10,
+                                alignSelf: 'flex-start',
+                                backgroundColor: withAlpha(activePoint.emotionColor, 0.22),
+                                borderRadius: 999,
+                                paddingHorizontal: 10,
+                                paddingVertical: 6,
+                                borderWidth: 1,
+                                borderColor: withAlpha(activePoint.emotionColor, 0.4),
+                            }}
+                        >
+                            <Text style={{ fontSize: 11, fontWeight: '800', color: activePoint.emotionColor, letterSpacing: 0.5, textTransform: 'uppercase' }}>
+                                {activePoint.emotionLabel}
+                            </Text>
+                        </View>
                     </View>
                     <View style={{ alignItems: 'flex-end', gap: 6 }}>
                         <View style={{ backgroundColor: 'rgba(255,255,255,0.07)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' }}>
@@ -113,7 +160,36 @@ export function MoodChart({ checkins }: Props) {
                 />
             </View>
 
-            <View style={{ flexDirection: 'row', paddingHorizontal: 24, paddingBottom: 20, paddingTop: 4, gap: 12 }}>
+            {chartState.topEmotions.length > 0 ? (
+                <View style={{ paddingHorizontal: 24, paddingTop: 10 }}>
+                    <Text style={{ fontSize: 11, fontWeight: '800', color: 'rgba(255,255,255,0.38)', textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: 10 }}>
+                        Emotionen der letzten Check-ins
+                    </Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                        {chartState.topEmotions.map((emotion) => (
+                            <View
+                                key={emotion.label}
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: 'rgba(255,255,255,0.05)',
+                                    borderRadius: 999,
+                                    borderWidth: 1,
+                                    borderColor: 'rgba(255,255,255,0.06)',
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 8,
+                                }}
+                            >
+                                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: emotion.color, marginRight: 8 }} />
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#E2E8F0' }}>{emotion.label}</Text>
+                                <Text style={{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.45)', marginLeft: 8 }}>{emotion.count}x</Text>
+                            </View>
+                        ))}
+                    </View>
+                </View>
+            ) : null}
+
+            <View style={{ flexDirection: 'row', paddingHorizontal: 24, paddingBottom: 20, paddingTop: 16, gap: 12 }}>
                 {[
                     { label: 'Min', value: Math.min(...moods), color: '#8A6A53' },
                     { label: 'Mittel', value: Number(avgMood.toFixed(0)), color: PETROL },
@@ -144,5 +220,3 @@ export function MoodChart({ checkins }: Props) {
         </View>
     );
 }
-
-

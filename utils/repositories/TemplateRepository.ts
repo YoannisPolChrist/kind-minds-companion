@@ -17,12 +17,11 @@ export class TemplateRepository {
     /** Fetch all active (unarchived) templates */
     static async findActiveTemplates(limitCount: number = 50, therapistId?: string): Promise<ExerciseTemplate[]> {
         try {
-            let q;
-            if (therapistId) {
-                q = query(collection(db, "exercise_templates"), where('therapistId', '==', therapistId), limit(limitCount));
-            } else {
-                q = query(collection(db, "exercise_templates"), limit(limitCount));
+            if (!therapistId) {
+                throw new Error('therapistId is required to fetch templates.');
             }
+
+            const q = query(collection(db, "exercise_templates"), where('therapistId', '==', therapistId), limit(limitCount));
             const querySnapshot = await getDocs(q);
 
             const templateData: ExerciseTemplate[] = [];

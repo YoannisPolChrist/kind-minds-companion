@@ -38,6 +38,10 @@ import { PressableScale } from "../../../../components/ui/PressableScale";
 import { Badge } from "../../../../components/ui/Badge";
 import { CheckinAnalytics } from "../../../../components/checkins/CheckinAnalytics";
 import { normalizeMoodToHundred } from "../../../../utils/checkinMood";
+import {
+  formatAppointmentInputValue,
+  normalizeAppointmentInput,
+} from "../../../../utils/dateInput";
 
 type ExerciseStats = {
   total: number;
@@ -143,7 +147,7 @@ export default function ClientView() {
 
       if (clientPayload) {
         setClient(clientPayload);
-        setNextAppointment(clientPayload.nextAppointment ?? "");
+        setNextAppointment(formatAppointmentInputValue(clientPayload.nextAppointment ?? ""));
       } else {
         setClient(null);
         setNextAppointment("");
@@ -176,13 +180,24 @@ export default function ClientView() {
 
   const handleSaveAppointment = async () => {
     if (!clientId || !client) return;
+    const normalizedValue = normalizeAppointmentInput(nextAppointment);
+    if (!normalizedValue) {
+      Alert.alert(
+        i18n.t("therapist.patient.appointment.error_title", { defaultValue: "Fehler" }),
+        i18n.t("therapist.patient.appointment.invalid_body", {
+          defaultValue: "Bitte gib ein gültiges Datum mit Uhrzeit ein.",
+        })
+      );
+      return;
+    }
+
     setSavingAppointment(true);
     try {
-      const sanitizedValue = nextAppointment.trim();
       await updateDoc(doc(db, "users", clientId), {
-        nextAppointment: sanitizedValue,
+        nextAppointment: normalizedValue,
       });
-      setClient((prev) => (prev ? { ...prev, nextAppointment: sanitizedValue } : prev));
+      setNextAppointment(normalizedValue);
+      setClient((prev) => (prev ? { ...prev, nextAppointment: normalizedValue } : prev));
       Alert.alert(
         i18n.t("therapist.patient.appointment.success_title", { defaultValue: "Gespeichert" }),
         i18n.t("therapist.patient.appointment.success_body", {

@@ -18,12 +18,14 @@ export function useClientResources() {
         try {
             const data: FileResource[] = [];
 
-            // Fetch global & client resources in parallel (no dependency between them)
-            const qGlobal = query(collection(db, "resources"));
+            const therapistId = profile.therapistId;
             const qClient = query(collection(db, "client_resources"), where("clientId", "==", profile.id));
-            const [snapGlobal, snapClient] = await Promise.all([getDocs(qGlobal), getDocs(qClient)]);
+            const [snapGlobal, snapClient] = await Promise.all([
+                therapistId ? getDocs(query(collection(db, "resources"), where("therapistId", "==", therapistId))) : Promise.resolve(null),
+                getDocs(qClient),
+            ]);
 
-            snapGlobal.forEach((doc) => {
+            snapGlobal?.forEach((doc) => {
                 data.push({ id: doc.id, ...doc.data() } as FileResource);
             });
             snapClient.forEach((doc) => {
@@ -46,7 +48,7 @@ export function useClientResources() {
             setLoading(false);
             setRefreshing(false);
         }
-    }, [profile?.id]);
+    }, [profile?.id, profile?.therapistId]);
 
     useEffect(() => {
         fetchResources();

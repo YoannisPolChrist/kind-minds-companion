@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 import { MotiView } from 'moti';
-import { Activity, Star } from 'lucide-react-native';
+import { Star } from 'lucide-react-native';
 import { getEmotionByScore, getEmotionLabel } from '../../constants/emotions';
 import { useTheme } from '../../contexts/ThemeContext';
 import { FlBarChart, FlDonutChart, FlLineAreaChart } from '../charts/flChartPrimitives';
@@ -39,7 +39,6 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
         let totalScore = 0;
         let validScoresCount = 0;
         const emotionCounts = new Map<string, { count: number; color: string; label: string }>();
-        const tagCounts: Record<string, number> = {};
         const weekdayCounts = Array.from({ length: 7 }, (_, index) => ({
             label: weekdayLabel(index),
             value: 0,
@@ -66,12 +65,6 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                     label: getEmotionLabel(emotion, i18n.locale),
                 });
             }
-
-            if (Array.isArray(checkin.tags)) {
-                checkin.tags.forEach((tag: string) => {
-                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-                });
-            }
         });
 
         const averageMood = validScoresCount > 0 ? totalScore / validScoresCount : 0;
@@ -94,7 +87,6 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
         return {
             averageMood,
             topEmotions,
-            topTags: Object.entries(tagCounts).sort((left, right) => right[1] - left[1]).slice(0, 4),
             weekdayData: weekdayCounts,
             trendData,
         };
@@ -167,19 +159,11 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                     </View>
 
                     <View style={{ alignItems: 'flex-end' }}>
-                        <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F1EA', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, marginBottom: 8 }}>
+                        <View style={{ backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F1EA', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 }}>
                             <Text style={{ fontSize: 13, fontWeight: '700', color: isDark ? colors.headerText : '#5E655F' }}>
-                                {checkins.length} Einträge
+                                {checkins.length} Eintraege
                             </Text>
                         </View>
-                        {analytics.topTags.length > 0 ? (
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? 'rgba(111,155,157,0.14)' : 'rgba(45,102,107,0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10 }}>
-                                <Activity size={12} color="#788E76" />
-                                <Text style={{ fontSize: 12, fontWeight: '700', color: '#788E76', marginLeft: 4 }}>
-                                    Aktiv getrackt
-                                </Text>
-                            </View>
-                        ) : null}
                     </View>
                 </View>
 
@@ -208,7 +192,7 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                     <View style={{ flex: 1, minWidth: isCompact ? '100%' : 280, backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F5F1EA', borderRadius: 24, padding: isCompact ? 14 : 18 }}>
                         <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 6 }}>Emotionen</Text>
                         <Text style={{ fontSize: 12, color: colors.textSubtle, marginBottom: 12 }}>
-                            {selectedEmotion ? selectedEmotion.label : 'Verteilung der häufigsten Stimmungen'}
+                            {selectedEmotion ? selectedEmotion.label : 'Verteilung der haeufigsten Stimmungen'}
                         </Text>
                         <FlDonutChart
                             data={analytics.topEmotions}
@@ -240,40 +224,7 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                         />
                     </View>
                 </View>
-
-                {analytics.topTags.length > 0 ? (
-                    <View style={{ marginTop: 20 }}>
-                        <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginBottom: 12 }}>Häufigste Aktivitäten</Text>
-                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                            {analytics.topTags.map(([tag, count], index) => (
-                                <View
-                                    key={tag}
-                                    style={{
-                                        backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF',
-                                        borderRadius: 16,
-                                        paddingHorizontal: 14,
-                                        paddingVertical: 12,
-                                        borderWidth: 1,
-                                        borderColor: isDark ? 'rgba(255,255,255,0.05)' : '#E7E0D4',
-                                        minWidth: isCompact ? '47%' : 140,
-                                    }}
-                                >
-                                    <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSubtle, textTransform: 'uppercase', letterSpacing: 1 }}>
-                                        #{index + 1}
-                                    </Text>
-                                    <Text style={{ fontSize: 15, fontWeight: '800', color: colors.text, marginTop: 4 }}>
-                                        {tag}
-                                    </Text>
-                                    <Text style={{ fontSize: 12, fontWeight: '700', color: '#788E76', marginTop: 4 }}>
-                                        {count}x genutzt
-                                    </Text>
-                                </View>
-                            ))}
-                        </View>
-                    </View>
-                ) : null}
             </View>
         </MotiView>
     );
 };
-

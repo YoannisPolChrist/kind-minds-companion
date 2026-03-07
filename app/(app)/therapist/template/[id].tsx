@@ -58,18 +58,29 @@ export default function TemplateDetail() {
     });
 
     useEffect(() => {
-        if (!isNew) {
+        if (!isNew && profile?.id) {
             fetchTemplate();
         }
-    }, [id]);
+    }, [id, isNew, profile?.id]);
 
     const fetchTemplate = async () => {
         try {
+            if (!profile?.id) {
+                setToast({ visible: true, message: i18n.t('templates.error'), subMessage: i18n.t('templates.not_found'), type: 'error' });
+                router.back();
+                return;
+            }
+
             const docRef = doc(db, 'exercise_templates', id as string);
             const docSnap = await getDoc(docRef);
 
             if (docSnap.exists()) {
                 const data = docSnap.data();
+                if (data.therapistId !== profile.id) {
+                    setToast({ visible: true, message: i18n.t('templates.error'), subMessage: i18n.t('templates.not_found'), type: 'error' });
+                    router.back();
+                    return;
+                }
                 setTemplate({
                     title: data.title || '',
                     blocks: data.blocks || [],
@@ -144,6 +155,7 @@ export default function TemplateDetail() {
                     coverImage: processedCoverImage || null,
                     themeColor: themeColor || null,
                     blocks: processedBlocks,
+                    therapistId: profile?.id,
                 });
             }
 

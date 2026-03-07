@@ -36,7 +36,7 @@ export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () =>
                                 {i18n.t('dashboard.checkin.completed', { defaultValue: 'Check-in erledigt!' })}
                             </Text>
                             <Text style={{ color: isDark ? '#C7D5BC' : '#788E76', fontSize: 13, fontWeight: '700' }}>
-                                {'Auswertung anzeigen ->'}
+                                {i18n.t('dashboard.checkin.view_summary', { defaultValue: 'View summary →' })}
                             </Text>
                         </View>
                         <MotiView
@@ -94,7 +94,7 @@ export function CheckinBanner({ done, onPress }: { done: boolean; onPress: () =>
                                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
                                     <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: '#34D399', marginRight: 6 }} />
                                     <Text style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12, fontWeight: '800', letterSpacing: 1.5, textTransform: 'uppercase' }}>
-                                        Tages-Check-in
+                                        {i18n.t('dashboard.checkin.badge', { defaultValue: 'Daily Check-in' })}
                                     </Text>
                                 </View>
                                 <Text style={{ color: '#ffffff', fontWeight: '900', fontSize: isXs ? 20 : 24, letterSpacing: -0.5, lineHeight: isXs ? 24 : 28 }}>

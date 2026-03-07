@@ -1,8 +1,9 @@
-import { View, Text, TextInput, ScrollView, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, TextInput, ActivityIndicator, Platform } from 'react-native';
 import { PressableScale } from '../../components/ui/PressableScale';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
+import Animated, { Extrapolation, interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { EMOTION_PRESETS, getEmotionLabel } from '../../constants/emotions';
 import { useCheckin } from '../../hooks/firebase/useCheckin';
 import { useTheme } from '../../contexts/ThemeContext';
@@ -12,8 +13,6 @@ import { CheckCircle2, TrendingUp, AlertCircle, Mic, MicOff, Sparkles } from 'lu
 import { speechRecognizer } from '../../utils/voice';
 import i18n from '../../utils/i18n';
 import { useResponsiveLayout } from '../../hooks/useResponsiveLayout';
-
-const getQuickTags = () => i18n.t('checkin.tags', { returnObjects: true }) as string[];
 
 const ENERGY_LEVELS = [
     { value: 1, title: 'Leer', hint: 'Heute braucht dein System viel Ruhe.', color: '#DC2626' },
@@ -32,6 +31,7 @@ export default function CheckinScreen() {
     const router = useRouter();
     const { colors, isDark } = useTheme();
     const { isXs, isSm, contentMaxWidth, gutter, compactCardPadding, headerTop } = useResponsiveLayout();
+    const scrollY = useSharedValue(0);
 
     const {
         selectedEmotionId, setSelectedEmotionId,
@@ -45,9 +45,30 @@ export default function CheckinScreen() {
     const [isListening, setIsListening] = useState(false);
     const [interimText, setInterimText] = useState('');
 
-    const quickTags = getQuickTags();
     const activeEmotion = EMOTION_PRESETS.find((emotion) => emotion.id === selectedEmotionId);
     const activeEnergy = ENERGY_LEVELS.find((level) => level.value === energy) || ENERGY_LEVELS[4];
+    const accentColor = activeEmotion?.color || '#2D666B';
+    const energyAccent = activeEmotion?.color || activeEnergy.color;
+    const headerHeight = useMemo(() => headerTop + (isXs ? 168 : isSm ? 184 : 204), [headerTop, isSm, isXs]);
+    const headerScrollDistance = isXs ? 108 : 128;
+
+    const onScroll = useAnimatedScrollHandler({
+        onScroll: (event) => {
+            scrollY.value = event.contentOffset.y;
+        },
+    });
+
+    const headerAnimatedStyle = useAnimatedStyle(() => ({
+        opacity: interpolate(scrollY.value, [0, headerScrollDistance * 0.5, headerScrollDistance], [1, 0.55, 0], Extrapolation.CLAMP),
+        transform: [
+            {
+                translateY: interpolate(scrollY.value, [0, headerScrollDistance], [0, -headerHeight * 0.9], Extrapolation.CLAMP),
+            },
+            {
+                scale: interpolate(scrollY.value, [0, headerScrollDistance], [1, 0.94], Extrapolation.CLAMP),
+            },
+        ],
+    }));
 
     const toggleListening = () => {
         if (isListening) {
@@ -139,40 +160,125 @@ export default function CheckinScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <MotiView from={{ opacity: 0, translateY: -50 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400 }}>
-                <LinearGradient
-                    colors={activeEmotion && !isDark && !alreadyCompleted ? [`${activeEmotion.color}E6`, `${activeEmotion.color}99`] : [colors.primaryDark, colors.primary]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={{ paddingTop: headerTop, paddingBottom: isXs ? 20 : 28, paddingHorizontal: gutter, borderBottomLeftRadius: isSm ? 28 : 36, borderBottomRightRadius: isSm ? 28 : 36 }}
-                >
-                    <PressableScale onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: isXs ? 12 : 16, paddingVertical: 8, borderRadius: 16, marginBottom: isXs ? 16 : 20 }}>
-                        <Text style={{ color: '#fff', fontWeight: '800' }}>{'< '} {i18n.t('exercise.back')}</Text>
-                    </PressableScale>
-                    <Text style={{ color: '#fff', fontSize: isXs ? 24 : 28, fontWeight: '900', letterSpacing: -0.5 }} adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={isXs ? 2 : 1}>
-                        {i18n.t('checkin.title')}
-                    </Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.74)', fontSize: 14, marginTop: 4, fontWeight: '600' }} adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1}>
-                        {new Date().toLocaleDateString(i18n.locale, { weekday: 'long', day: 'numeric', month: 'long' })}
-                    </Text>
-                </LinearGradient>
-            </MotiView>
+            <Animated.View
+                pointerEvents="box-none"
+                style={[
+                    {
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        zIndex: 20,
+                    },
+                    headerAnimatedStyle,
+                ]}
+            >
+                <MotiView from={{ opacity: 0, translateY: -50 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400 }}>
+                    <LinearGradient
+                        colors={activeEmotion && !isDark && !alreadyCompleted ? [`${activeEmotion.color}E6`, `${activeEmotion.color}99`] : [colors.primaryDark, colors.primary]}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={{ paddingTop: headerTop, paddingBottom: isXs ? 20 : 28, paddingHorizontal: gutter, borderBottomLeftRadius: isSm ? 28 : 36, borderBottomRightRadius: isSm ? 28 : 36, shadowColor: accentColor, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.18, shadowRadius: 20, elevation: 8 }}
+                    >
+                        <PressableScale onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: isXs ? 12 : 16, paddingVertical: 8, borderRadius: 16, marginBottom: isXs ? 16 : 20 }}>
+                            <Text style={{ color: '#fff', fontWeight: '800' }}>{'< '} {i18n.t('exercise.back')}</Text>
+                        </PressableScale>
+                        <Text style={{ color: '#fff', fontSize: isXs ? 24 : 28, fontWeight: '900', letterSpacing: -0.5 }} adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={isXs ? 2 : 1}>
+                            {i18n.t('checkin.title')}
+                        </Text>
+                        <Text style={{ color: 'rgba(255,255,255,0.74)', fontSize: 14, marginTop: 4, fontWeight: '600' }} adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1}>
+                            {new Date().toLocaleDateString(i18n.locale, { weekday: 'long', day: 'numeric', month: 'long' })}
+                        </Text>
+                    </LinearGradient>
+                </MotiView>
+            </Animated.View>
 
             {loadingCheckin ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color={colors.primary} />
                 </View>
             ) : (
-                <ScrollView
-                    style={{ flex: 1, width: '100%', maxWidth: contentMaxWidth ?? 760, alignSelf: 'center' }}
-                    contentContainerStyle={{ padding: gutter, paddingBottom: isSm ? 40 : 60, width: '100%' }}
+                <Animated.ScrollView
+                    onScroll={onScroll}
+                    scrollEventThrottle={16}
+                    style={{ flex: 1 }}
+                    contentContainerStyle={{ paddingTop: headerHeight, paddingHorizontal: gutter, paddingBottom: isSm ? 40 : 60 }}
                     showsVerticalScrollIndicator={false}
                 >
+                    <View style={{ width: '100%', maxWidth: contentMaxWidth ?? 760, alignSelf: 'center' }}>
                     <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', damping: 24, stiffness: 150, delay: 100 }}>
-                        <View style={{ backgroundColor: colors.surface, borderRadius: isSm ? 24 : 32, padding: compactCardPadding, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 16, elevation: 4 }}>
+                        <View style={{ backgroundColor: colors.surface, borderRadius: isSm ? 24 : 32, padding: compactCardPadding, marginBottom: 16, shadowColor: accentColor, shadowOffset: { width: 0, height: 10 }, shadowOpacity: isDark ? 0.24 : 0.1, shadowRadius: 18, elevation: 5 }}>
                             <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 16 }}>
                                 Wie fühlst du dich gerade?
                             </Text>
+
+                            <MotiView
+                                key={`hero-${selectedEmotionId ?? 'empty'}`}
+                                from={{ opacity: 0, translateY: 14, scale: 0.96 }}
+                                animate={{ opacity: 1, translateY: 0, scale: 1 }}
+                                transition={{ type: 'spring', damping: 18, stiffness: 180 }}
+                                style={{ marginBottom: 16 }}
+                            >
+                                <LinearGradient
+                                    colors={activeEmotion ? [`${activeEmotion.color}26`, `${activeEmotion.color}10`] : (isDark ? ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.02)'] : ['#F8F3EA', '#EEF4F3'])}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={{ borderRadius: isSm ? 24 : 28, padding: isXs ? 16 : 20, overflow: 'hidden', borderWidth: 1, borderColor: activeEmotion ? `${activeEmotion.color}45` : (isDark ? 'rgba(255,255,255,0.06)' : '#E7E0D4') }}
+                                >
+                                    {activeEmotion ? (
+                                        <>
+                                            <MotiView
+                                                from={{ opacity: 0.1, scale: 0.84 }}
+                                                animate={{ opacity: 0.2, scale: 1.08 }}
+                                                transition={{ type: 'timing', duration: 1200, loop: true, repeatReverse: true }}
+                                                style={{ position: 'absolute', top: -36, right: -18, width: 176, height: 176, borderRadius: 999, backgroundColor: activeEmotion.color }}
+                                            />
+                                            <MotiView
+                                                from={{ opacity: 0.06, scale: 0.9 }}
+                                                animate={{ opacity: 0.14, scale: 1.03 }}
+                                                transition={{ type: 'timing', duration: 1400, loop: true, repeatReverse: true }}
+                                                style={{ position: 'absolute', bottom: -68, left: -24, width: 142, height: 142, borderRadius: 999, backgroundColor: activeEmotion.color }}
+                                            />
+                                        </>
+                                    ) : null}
+                                    <View style={{ flexDirection: isXs ? 'column' : 'row', alignItems: isXs ? 'stretch' : 'center', justifyContent: 'space-between', gap: 14 }}>
+                                        <View style={{ flex: 1 }}>
+                                            <Text style={{ color: colors.textSubtle, fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 1.1, marginBottom: 8 }}>
+                                                Spotlight
+                                            </Text>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                                                <MotiView
+                                                    animate={{ scale: activeEmotion ? 1.08 : 1, rotateZ: activeEmotion ? '-6deg' : '0deg' }}
+                                                    transition={{ type: 'spring', damping: 12, stiffness: 210 }}
+                                                    style={{ width: 60, height: 60, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: activeEmotion ? activeEmotion.color : '#243842', shadowColor: activeEmotion?.color || 'transparent', shadowOffset: { width: 0, height: 10 }, shadowOpacity: activeEmotion ? 0.3 : 0, shadowRadius: 18, elevation: activeEmotion ? 8 : 0 }}
+                                                >
+                                                    <Text style={{ fontSize: 15, fontWeight: '900', color: '#FFFFFF' }}>{activeEmotion ? `${activeEmotion.score}/10` : '--'}</Text>
+                                                </MotiView>
+                                                <View style={{ flex: 1 }}>
+                                                    <Text style={{ color: colors.text, fontSize: isXs ? 24 : 28, fontWeight: '900', lineHeight: isXs ? 30 : 34 }}>
+                                                        {activeEmotion ? getEmotionLabel(activeEmotion, i18n.locale) : 'Waehle dein Hauptgefuehl'}
+                                                    </Text>
+                                                </View>
+                                            </View>
+                                            <Text style={{ color: colors.textSubtle, fontSize: 14, lineHeight: 22, fontWeight: '600' }}>
+                                                {activeEmotion
+                                                    ? 'Dieses Gefuehl fuehrt jetzt die Auswahl. Die anderen Karten treten zurueck und der Energieblock folgt der gleichen Akzentfarbe.'
+                                                    : 'Waehle zuerst das dominierende Gefuehl. Danach geht diese Karte in den Vordergrund und fuehrt dich visuell durch den Rest.'}
+                                            </Text>
+                                        </View>
+                                        <View style={{ alignItems: isXs ? 'flex-start' : 'flex-end', gap: 10 }}>
+                                            <View style={{ backgroundColor: activeEmotion ? activeEmotion.color : '#243842', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 999 }}>
+                                                <Text style={{ color: '#fff', fontWeight: '900', fontSize: 13 }}>Score {activeEmotion ? activeEmotion.score : '--'}</Text>
+                                            </View>
+                                            <View style={{ backgroundColor: activeEmotion ? `${activeEmotion.color}22` : (isDark ? 'rgba(255,255,255,0.05)' : '#FFFFFF'), borderWidth: 1, borderColor: activeEmotion ? `${activeEmotion.color}48` : '#E7E0D4', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16 }}>
+                                                <Text style={{ color: activeEmotion ? activeEmotion.color : colors.textSubtle, fontWeight: '800', fontSize: 12 }}>
+                                                    {activeEmotion ? 'AKTIVE STIMMUNG' : 'BEREIT'}
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+                                </LinearGradient>
+                            </MotiView>
 
                             <View style={{ borderRadius: isSm ? 22 : 26, padding: isXs ? 14 : 18, marginBottom: 18, backgroundColor: activeEmotion ? `${activeEmotion.color}18` : (isDark ? 'rgba(255,255,255,0.04)' : '#F5F1EA'), borderWidth: 1, borderColor: activeEmotion ? `${activeEmotion.color}33` : (isDark ? 'rgba(255,255,255,0.06)' : '#E7E0D4') }}>
                                 <View style={{ flexDirection: isXs ? 'column' : 'row', alignItems: isXs ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 12 }}>
@@ -200,78 +306,102 @@ export default function CheckinScreen() {
                             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
                                 {EMOTION_PRESETS.map((preset, idx) => {
                                     const isSelected = selectedEmotionId === preset.id;
+                                    const isMutedBySpotlight = !!activeEmotion && !isSelected;
 
                                     return (
                                         <MotiView
                                             key={preset.id}
-                                            from={{ opacity: 0, scale: 0.5 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ type: 'spring', delay: 150 + (idx * 12), damping: 14, stiffness: 100 }}
+                                            from={{ opacity: 0, scale: 0.72, translateY: 20 }}
+                                            animate={{
+                                                opacity: alreadyCompleted && !isSelected ? 0.3 : isMutedBySpotlight ? 0.42 : 1,
+                                                scale: isSelected ? 1.08 : isMutedBySpotlight ? 0.94 : 1,
+                                                translateY: isSelected ? -10 : isMutedBySpotlight ? 6 : 0,
+                                                rotateZ: isSelected ? '-2deg' : '0deg',
+                                            }}
+                                            transition={{ type: 'spring', delay: 150 + (idx * 16), damping: 13, stiffness: 170 }}
                                         >
-                                            <PressableScale
-                                                onPress={() => {
-                                                    if (!alreadyCompleted) {
-                                                        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                                                        setSelectedEmotionId(preset.id);
-                                                    }
-                                                }}
-                                                style={{
-                                                    width: isXs ? 84 : 96,
-                                                    minHeight: isXs ? 104 : 110,
-                                                    paddingHorizontal: 10,
-                                                    paddingVertical: 12,
-                                                    borderRadius: 20,
-                                                    backgroundColor: isSelected ? `${preset.color}20` : (isDark ? 'rgba(255,255,255,0.04)' : '#F5F1EA'),
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    gap: 6,
-                                                    borderWidth: 1.5,
-                                                    borderColor: isSelected ? preset.color : (isDark ? 'rgba(255,255,255,0.07)' : '#E7E0D4'),
-                                                    opacity: alreadyCompleted && !isSelected ? 0.3 : 1,
-                                                    shadowColor: isSelected ? preset.color : 'transparent',
-                                                    shadowOffset: { width: 0, height: 6 },
-                                                    shadowOpacity: isSelected ? 0.18 : 0,
-                                                    shadowRadius: 14,
-                                                    elevation: isSelected ? 4 : 0,
-                                                }}
-                                            >
-                                                <View style={{ width: 42, height: 42, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: isSelected ? preset.color : (isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF') }}>
+                                            <View style={{ position: 'relative' }}>
+                                                {isSelected ? (
+                                                    <MotiView
+                                                        from={{ opacity: 0.14, scale: 0.82 }}
+                                                        animate={{ opacity: 0.28, scale: 1.08 }}
+                                                        transition={{ type: 'timing', duration: 1000, loop: true, repeatReverse: true }}
+                                                        style={{ position: 'absolute', top: -8, bottom: -8, left: -8, right: -8, borderRadius: 26, backgroundColor: `${preset.color}38` }}
+                                                    />
+                                                ) : null}
+                                                <PressableScale
+                                                    onPress={() => {
+                                                        if (!alreadyCompleted) {
+                                                            if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                                                            setSelectedEmotionId(preset.id);
+                                                        }
+                                                    }}
+                                                    intensity={isSelected ? 'bold' : 'medium'}
+                                                    style={{
+                                                        width: isXs ? 90 : 102,
+                                                        minHeight: isXs ? 118 : 126,
+                                                        paddingHorizontal: 10,
+                                                        paddingVertical: 12,
+                                                        borderRadius: 22,
+                                                        backgroundColor: isSelected ? `${preset.color}20` : (isDark ? 'rgba(255,255,255,0.04)' : '#F5F1EA'),
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        gap: 8,
+                                                        borderWidth: 1.5,
+                                                        borderColor: isSelected ? preset.color : (isDark ? 'rgba(255,255,255,0.07)' : '#E7E0D4'),
+                                                        opacity: alreadyCompleted && !isSelected ? 0.3 : isMutedBySpotlight ? 0.92 : 1,
+                                                        shadowColor: isSelected ? preset.color : 'transparent',
+                                                        shadowOffset: { width: 0, height: 10 },
+                                                        shadowOpacity: isSelected ? 0.28 : 0,
+                                                        shadowRadius: 18,
+                                                        elevation: isSelected ? 7 : 0,
+                                                        overflow: 'hidden',
+                                                    }}
+                                                >
+                                                <MotiView
+                                                    animate={{ scale: isSelected ? 1.12 : 1, rotateZ: isSelected ? '8deg' : '0deg' }}
+                                                    transition={{ type: 'spring', damping: 11, stiffness: 220 }}
+                                                    style={{ width: 46, height: 46, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: isSelected ? preset.color : (isDark ? 'rgba(255,255,255,0.06)' : '#FFFFFF') }}
+                                                >
+                                                    {isSelected ? (
+                                                        <MotiView
+                                                            from={{ opacity: 0, scale: 0.85 }}
+                                                            animate={{ opacity: 0.18, scale: 1.14 }}
+                                                            transition={{ type: 'timing', duration: 520 }}
+                                                            style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, borderRadius: 17, backgroundColor: preset.color }}
+                                                        />
+                                                    ) : null}
                                                     <Text style={{ fontSize: 12, fontWeight: '900', color: isSelected ? '#FFFFFF' : preset.color }}>{preset.score}/10</Text>
-                                                </View>
+                                                </MotiView>
                                                 <Text style={{ fontSize: 13, fontWeight: '800', color: colors.text, textAlign: 'center' }} numberOfLines={2}>
                                                     {getEmotionLabel(preset, i18n.locale)}
                                                 </Text>
-                                                <Text style={{ fontSize: 11, fontWeight: '800', color: isSelected ? preset.color : colors.textSubtle }}>
-                                                    {preset.score}/10
-                                                </Text>
-                                            </PressableScale>
+                                                {isSelected ? (
+                                                    <MotiView
+                                                        from={{ opacity: 0, translateY: 8, scale: 0.92 }}
+                                                        animate={{ opacity: 1, translateY: 0, scale: 1 }}
+                                                        transition={{ type: 'spring', damping: 14, stiffness: 180 }}
+                                                        style={{ backgroundColor: preset.color, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 }}
+                                                    >
+                                                        <Text style={{ fontSize: 10, fontWeight: '900', color: '#FFFFFF', letterSpacing: 0.6 }}>AUSGEWAEHLT</Text>
+                                                    </MotiView>
+                                                ) : (
+                                                    <Text style={{ fontSize: 11, fontWeight: '800', color: colors.textSubtle }}>
+                                                        {preset.score}/10
+                                                    </Text>
+                                                )}
+                                                </PressableScale>
+                                            </View>
                                         </MotiView>
                                     );
                                 })}
                             </View>
 
-                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 18 }}>
-                                {quickTags.slice(0, 12).map((tag) => (
-                                    <View
-                                        key={tag}
-                                        style={{
-                                            paddingHorizontal: 10,
-                                            paddingVertical: 6,
-                                            borderRadius: 999,
-                                            backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#F5F1EA',
-                                            borderWidth: 1,
-                                            borderColor: isDark ? 'rgba(255,255,255,0.06)' : '#E7E0D4',
-                                        }}
-                                    >
-                                        <Text style={{ color: colors.textSubtle, fontSize: 12, fontWeight: '700' }}>{tag}</Text>
-                                    </View>
-                                ))}
-                            </View>
                         </View>
                     </MotiView>
 
                     <MotiView from={{ opacity: 0, translateY: 20 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'spring', damping: 20, delay: 200 }}>
-                        <View style={{ backgroundColor: colors.surface, borderRadius: isSm ? 24 : 32, padding: compactCardPadding, marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 16, elevation: 4 }}>
+                        <View style={{ backgroundColor: colors.surface, borderRadius: isSm ? 24 : 32, padding: compactCardPadding, marginBottom: 16, shadowColor: energyAccent, shadowOffset: { width: 0, height: 10 }, shadowOpacity: isDark ? 0.2 : 0.08, shadowRadius: 18, elevation: 5, borderWidth: 1, borderColor: activeEmotion ? `${activeEmotion.color}22` : 'transparent' }}>
                             <View style={{ flexDirection: isXs ? 'column' : 'row', justifyContent: 'space-between', alignItems: isXs ? 'stretch' : 'flex-start', gap: 12, marginBottom: 16 }}>
                                 <View style={{ flex: 1 }}>
                                     <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 8 }}>
@@ -283,9 +413,14 @@ export default function CheckinScreen() {
                                     <Text style={{ fontSize: 14, lineHeight: 20, color: colors.textSubtle, fontWeight: '600' }}>
                                         {activeEnergy.hint}
                                     </Text>
+                                    {activeEmotion ? (
+                                        <View style={{ alignSelf: 'flex-start', marginTop: 10, backgroundColor: `${activeEmotion.color}18`, borderWidth: 1, borderColor: `${activeEmotion.color}33`, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 999 }}>
+                                            <Text style={{ color: activeEmotion.color, fontSize: 11, fontWeight: '900', letterSpacing: 0.6 }}>AN {getEmotionLabel(activeEmotion, i18n.locale).toUpperCase()} GEKOPPELT</Text>
+                                        </View>
+                                    ) : null}
                                 </View>
 
-                                <LinearGradient colors={[activeEnergy.color, activeEmotion?.color || '#2D666B']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ minWidth: isXs ? 0 : 82, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 12, alignItems: 'center', alignSelf: isXs ? 'flex-start' : 'auto' }}>
+                                <LinearGradient colors={[activeEnergy.color, energyAccent]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ minWidth: isXs ? 0 : 82, borderRadius: 24, paddingHorizontal: 14, paddingVertical: 12, alignItems: 'center', alignSelf: isXs ? 'flex-start' : 'auto' }}>
                                     <Sparkles size={16} color="#fff" />
                                     <Text style={{ color: '#fff', fontSize: 28, fontWeight: '900', lineHeight: 32 }}>{energy}</Text>
                                 </LinearGradient>
@@ -421,7 +556,8 @@ export default function CheckinScreen() {
                             </PressableScale>
                         </MotiView>
                     )}
-                </ScrollView>
+                    </View>
+                </Animated.ScrollView>
             )}
         </View>
     );
