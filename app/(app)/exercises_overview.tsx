@@ -28,10 +28,13 @@ export default function ExercisesOverview() {
     const { colors, isDark } = useTheme();
 
     const { isXs, isSm, isTablet, isDesktop, contentMaxWidth, gutter, sectionGap, headerTop } = useResponsiveLayout();
+    const contentWrapperStyle = contentMaxWidth
+        ? { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center' as const }
+        : { width: '100%' as const };
 
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
     const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
-    const [activeFilter, setActiveFilter] = useState<ExerciseFilter>('all');
+    const [activeFilter, setActiveFilter] = useState<ExerciseFilter>('open');
 
     const visibleOpenExercises = activeFilter === 'completed' ? [] : openExercises;
     const visibleCompletedExercises = activeFilter === 'open' ? [] : completedExercises;
@@ -63,6 +66,7 @@ export default function ExercisesOverview() {
         const height = interpolate(scrollY.value, [0, 100], [Platform.OS === 'android' ? 120 : 130, Platform.OS === 'android' ? 80 : 90], Extrapolate.CLAMP);
         const padding = interpolate(scrollY.value, [0, 100], [headerTop - 8, Platform.OS === 'android' ? 24 : 34], Extrapolate.CLAMP);
         return {
+            width: '100%',
             height,
             paddingTop: padding,
             paddingBottom: 24,
@@ -82,6 +86,18 @@ export default function ExercisesOverview() {
             gap: isXs ? 12 : 0,
         };
     });
+
+    const handleBackPress = useCallback(() => {
+        if (Platform.OS !== 'web') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+        }
+        const canGoBack = typeof router.canGoBack === 'function' ? router.canGoBack() : false;
+        if (canGoBack) {
+            router.back();
+        } else {
+            router.replace('/(app)' as any);
+        }
+    }, [router]);
 
     if (loading && exercises.length === 0) {
         return (
@@ -108,44 +124,53 @@ export default function ExercisesOverview() {
                     end={{ x: 1, y: 1 }}
                     style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
                 />
-                <PressableScale
-                    accessibilityRole="button"
-                    accessibilityLabel={i18n.t('exercise.back', { defaultValue: 'Zurück' })}
-                    onPress={() => {
-                        if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                        router.back();
-                    }}
-                    withHaptics={false}
-                    intensity="subtle"
-                    style={{
-                        backgroundColor: 'rgba(255,255,255,0.2)',
-                        paddingHorizontal: isXs ? 12 : 16,
-                        paddingVertical: 12,
-                        borderRadius: 16,
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        zIndex: 50,
-                    }}
+                <View
+                    style={[
+                        contentWrapperStyle,
+                        {
+                            flexDirection: isXs ? 'column' : 'row',
+                            alignItems: isXs ? 'flex-start' : 'center',
+                            justifyContent: 'space-between',
+                            gap: isXs ? 12 : 0,
+                            zIndex: 50,
+                        },
+                    ]}
                 >
-                    <ChevronLeft size={20} color="white" />
-                    <Text style={{ color: 'white', fontWeight: 'bold', marginLeft: 4 }}>
-                        {i18n.t('exercise.back', { defaultValue: 'Zurück' })}
+                    <PressableScale
+                        accessibilityRole="button"
+                        accessibilityLabel={i18n.t('exercise.back', { defaultValue: 'Zurück' })}
+                        onPress={handleBackPress}
+                        withHaptics={false}
+                        intensity="subtle"
+                        style={{
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            paddingHorizontal: isXs ? 12 : 16,
+                            paddingVertical: 12,
+                            borderRadius: 16,
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <ChevronLeft size={20} color="white" />
+                        <Text style={{ color: 'white', fontWeight: 'bold', marginLeft: 4 }}>
+                            {i18n.t('exercise.back', { defaultValue: 'Zurück' })}
+                        </Text>
+                    </PressableScale>
+                    <Text
+                        style={{
+                            fontSize: isXs ? 20 : 22,
+                            fontWeight: '900',
+                            color: 'white',
+                            flex: 1,
+                            textAlign: isXs ? 'left' : 'right',
+                            marginLeft: isXs ? 0 : 16,
+                            letterSpacing: -0.5
+                        }}
+                        numberOfLines={1}
+                    >
+                        {i18n.t('dashboard.exercises.title', { defaultValue: 'Übungen' })}
                     </Text>
-                </PressableScale>
-                <Text
-                    style={{
-                        fontSize: isXs ? 20 : 22,
-                        fontWeight: '900',
-                        color: 'white',
-                        flex: 1,
-                        textAlign: isXs ? 'left' : 'right',
-                        marginLeft: isXs ? 0 : 16,
-                        letterSpacing: -0.5
-                    }}
-                    numberOfLines={1}
-                >
-                    {i18n.t('dashboard.exercises.title', { defaultValue: 'Übungen' })}
-                </Text>
+                </View>
             </Animated.View>
 
             <Animated.ScrollView
@@ -155,7 +180,7 @@ export default function ExercisesOverview() {
                 contentContainerStyle={{ paddingTop: 24, paddingBottom: 56 }}
                 style={{ flex: 1 }}
             >
-                <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: gutter }]}>
+                <View style={[contentWrapperStyle, { paddingHorizontal: gutter }]}>
                     <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 24 }}>
                         <PressableScale
                             accessibilityRole="button"

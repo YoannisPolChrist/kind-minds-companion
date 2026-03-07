@@ -285,6 +285,7 @@ export default function TherapistClientNotesScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
             {/* Header */}
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
                 <View style={{ backgroundColor: '#2D666B', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
@@ -385,8 +386,9 @@ export default function TherapistClientNotesScreen() {
             ) : (
                 <SectionList
                     sections={sections}
+                    scrollEnabled={false}
                     keyExtractor={item => item.id}
-                    contentContainerStyle={{ padding: 24, paddingBottom: 100, maxWidth: 860, alignSelf: 'center', width: '100%' }}
+                    contentContainerStyle={{ padding: 24, paddingBottom: 0, maxWidth: 860, alignSelf: 'center', width: '100%' }}
                     showsVerticalScrollIndicator={false}
                     renderSectionHeader={({ section: { title, data } }) => (
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16, marginTop: 8 }}>
@@ -420,6 +422,7 @@ export default function TherapistClientNotesScreen() {
             )}
 
             {/* ── Create Note Modal (Bear / Notion Redesign) ──────────────── */}
+            </ScrollView>
             <Modal visible={showNoteModal} animationType="slide" presentationStyle="formSheet">
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

@@ -1,4 +1,4 @@
-import { View, Text, FlatList, ActivityIndicator, TextInput, Modal, Platform, Linking, KeyboardAvoidingView } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TextInput, Modal, Platform, Linking, KeyboardAvoidingView, ScrollView } from 'react-native';
 import { PressableScale } from '../../../../../components/ui/PressableScale';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useSafeBack } from '../../../../../hooks/useSafeBack';
@@ -237,6 +237,7 @@ export default function TherapistClientFilesScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
             {/* Header */}
             <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
                 <View style={{ backgroundColor: '#B08C57', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
@@ -301,8 +302,9 @@ export default function TherapistClientFilesScreen() {
             ) : (
                 <Animated.FlatList
                     data={filteredFiles}
+                    scrollEnabled={false}
                     keyExtractor={item => item.id}
-                    contentContainerStyle={{ padding: 24, paddingBottom: 120, maxWidth: 860, alignSelf: 'center', width: '100%' }}
+                    contentContainerStyle={{ padding: 24, paddingBottom: 0, maxWidth: 860, alignSelf: 'center', width: '100%' }}
                     itemLayoutAnimation={Layout.springify()}
                     ListEmptyComponent={
                         <View style={{ alignItems: 'center', paddingVertical: 60 }}>
@@ -323,6 +325,7 @@ export default function TherapistClientFilesScreen() {
             )}
 
             {/* Upload Modal — Bottom sheet style */}
+            </ScrollView>
             <Modal visible={showUploadModal} animationType="slide" transparent>
                 <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.4)' }}>
                     <MotiView

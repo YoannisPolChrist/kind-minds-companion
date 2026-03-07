@@ -745,6 +745,11 @@ export default function ClientNotesScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
+            <ScrollView
+                style={{ flex: 1 }}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 120 }}
+            >
             {/* Header */}
             <MotiView
                 from={{ opacity: 0, translateY: -40 }}
@@ -895,7 +900,7 @@ export default function ClientNotesScreen() {
                 <View style={{ flex: 1 }}>
 
 
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: 24, paddingBottom: 120, maxWidth: 860, alignSelf: 'center', width: '100%' }}>
+                    <View style={{ padding: 24, maxWidth: 860, alignSelf: 'center', width: '100%' }}>
                         <DashboardSectionHeader
                             title={i18n.t('notes.section.title', { defaultValue: 'Journal' })}
               subtitle={i18n.t('notes.section.subtitle', { defaultValue: 'Suche, filtere und öffne deine Einträge nach Datum.' })}
@@ -939,9 +944,11 @@ export default function ClientNotesScreen() {
                                 </View>
                             </View>
                         ))}
-                    </ScrollView>
+                    </View>
                 </View>
             )}
+
+            </ScrollView>
 
             {/* Note Creation Modal */}
             <Modal visible={showNoteModal} animationType="slide" presentationStyle="formSheet">

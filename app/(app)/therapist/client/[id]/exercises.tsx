@@ -264,6 +264,7 @@ export default function ClientExercisesView() {
 
   return (
     <View className="flex-1 bg-[#F7F4EE]">
+      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 120 }}>
       {/* Header Section */}
       <MotiView
         from={{ opacity: 0, translateY: -40 }}
@@ -305,12 +306,11 @@ export default function ClientExercisesView() {
         </View>
       </MotiView>
 
-      <ScrollView
-        className="flex-1 w-full"
-        contentContainerStyle={{
+      <View
+        className="w-full"
+        style={{
           paddingHorizontal: 32,
           paddingTop: 32,
-          paddingBottom: 120,
           maxWidth: 1024,
           marginHorizontal: "auto",
         }}
@@ -561,7 +561,7 @@ export default function ClientExercisesView() {
             </Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </View>
 
       {/* Exercise Assignment Modal */}
       <Modal
@@ -1015,6 +1015,7 @@ export default function ClientExercisesView() {
           setToast((prev) => ({ ...prev, visible: false }))
         }
       />
+      </ScrollView>
     </View >
   );
 }

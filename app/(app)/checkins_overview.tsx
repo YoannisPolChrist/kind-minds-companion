@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, SectionList, ActivityIndicator } from 'react-native';
+import { View, Text, SectionList, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../utils/firebase';
@@ -78,21 +78,6 @@ export default function CheckinsOverviewScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F7F4EE' }}>
-            <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
-                <View style={{ backgroundColor: '#2D666B', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                        <PressableScale onPress={() => router.dismissAll()} intensity="subtle" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
-                            <ArrowLeft size={18} color="white" />
-                            <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurück</Text>
-                        </PressableScale>
-                    </View>
-                    <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Check-ins</Text>
-                    <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600', marginTop: 4 }}>
-                        {checkins.length} {checkins.length === 1 ? 'Eintrag' : 'Einträge'} insgesamt
-                    </Text>
-                </View>
-            </MotiView>
-
             {loading ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color="#2D666B" />
@@ -103,35 +88,53 @@ export default function CheckinsOverviewScreen() {
                         <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: 'white', alignItems: 'center', justifyContent: 'center', marginBottom: 28, borderWidth: 2, borderColor: '#F3EEE6' }}>
                             <Activity size={48} color="#8B938E" />
                         </View>
-                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#182428', letterSpacing: -0.5, marginBottom: 12, textAlign: 'center' }}>Noch keine Einträge</Text>
+                        <Text style={{ fontSize: 24, fontWeight: '900', color: '#182428', letterSpacing: -0.5, marginBottom: 12, textAlign: 'center' }}>Noch keine Eintraege</Text>
                         <Text style={{ fontSize: 16, color: '#6F7472', textAlign: 'center', lineHeight: 24, maxWidth: 300, fontWeight: '500' }}>
-                            Dein erstes Check-in erscheint hier nach dem Ausfüllen.
+                            Dein erstes Check-in erscheint hier nach dem Ausfuellen.
                         </Text>
                     </MotiView>
                 </View>
             ) : (
-                <SectionList
-                    sections={sections}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={{ padding: 24, paddingBottom: 120, maxWidth: 860, alignSelf: 'center', width: '100%' }}
-                    showsVerticalScrollIndicator={false}
-                    ListHeaderComponent={<CheckinAnalytics checkins={checkins} />}
-                    renderSectionHeader={({ section: { title } }) => (
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E7E0D4', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 }}>
-                                <Calendar size={14} color="#788E76" />
-                                <Text style={{ fontSize: 13, fontWeight: '800', color: '#1F2528', marginLeft: 6 }}>{title}</Text>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+                    <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 380 }}>
+                        <View style={{ backgroundColor: '#2D666B', paddingTop: 64, paddingBottom: 28, paddingHorizontal: 28 }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                                <PressableScale onPress={() => router.dismissAll()} intensity="subtle" style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.18)', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20 }}>
+                                    <ArrowLeft size={18} color="white" />
+                                    <Text style={{ color: 'white', fontWeight: '700', marginLeft: 8, fontSize: 15 }}>Zurueck</Text>
+                                </PressableScale>
                             </View>
-                            <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4', marginLeft: 12 }} />
+                            <Text style={{ color: 'white', fontSize: 28, fontWeight: '900', letterSpacing: -0.5 }}>Check-ins</Text>
+                            <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 14, fontWeight: '600', marginTop: 4 }}>
+                                {checkins.length} {checkins.length === 1 ? 'Eintrag' : 'Eintraege'} insgesamt
+                            </Text>
                         </View>
-                    )}
-                    renderItem={({ item }) => (
-                        <View style={{ paddingLeft: 16, borderLeftWidth: 2, borderLeftColor: '#E7E0D4' }}>
-                            <CheckinCard checkin={item} formatTime={formatTime} />
-                        </View>
-                    )}
-                    renderSectionFooter={() => <View style={{ marginBottom: 32 }} />}
-                />
+                    </MotiView>
+
+                    <SectionList
+                        sections={sections}
+                        scrollEnabled={false}
+                        keyExtractor={(item) => item.id}
+                        contentContainerStyle={{ padding: 24, paddingBottom: 0, maxWidth: 860, alignSelf: 'center', width: '100%' }}
+                        showsVerticalScrollIndicator={false}
+                        ListHeaderComponent={<CheckinAnalytics checkins={checkins} />}
+                        renderSectionHeader={({ section: { title } }) => (
+                            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                                <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderWidth: 1, borderColor: '#E7E0D4', paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20 }}>
+                                    <Calendar size={14} color="#788E76" />
+                                    <Text style={{ fontSize: 13, fontWeight: '800', color: '#1F2528', marginLeft: 6 }}>{title}</Text>
+                                </View>
+                                <View style={{ flex: 1, height: 1, backgroundColor: '#E7E0D4', marginLeft: 12 }} />
+                            </View>
+                        )}
+                        renderItem={({ item }) => (
+                            <View style={{ paddingLeft: 16, borderLeftWidth: 2, borderLeftColor: '#E7E0D4' }}>
+                                <CheckinCard checkin={item} formatTime={formatTime} />
+                            </View>
+                        )}
+                        renderSectionFooter={() => <View style={{ marginBottom: 32 }} />}
+                    />
+                </ScrollView>
             )}
         </View>
     );

@@ -14,7 +14,6 @@ import { db } from '../../utils/firebase';
 import { registerForPushNotificationsAsync } from '../../utils/notifications';
 import { useClientExercises } from '../../hooks/useClientExercises';
 import i18n from '../../utils/i18n';
-import { ProgressBar } from '../../components/dashboard/ProgressBar';
 import { CheckinBanner } from '../../components/dashboard/CheckinBanner';
 import { OpenExerciseCard } from '../../components/dashboard/OpenExerciseCard';
 import { EmptyState } from '../../components/dashboard/EmptyState';
@@ -135,8 +134,31 @@ export default function ClientDashboard() {
     };
 
     const openExercises = useMemo(() => exercises.filter(ex => !ex.completed), [exercises]);
-    const completedExercises = useMemo(() => exercises.filter(ex => ex.completed), [exercises]);
+    const showExercisesCarousel = !isTablet;
+    const cardRailItemWidth = Math.min(Math.max(screenWidth - (gutter * 2) - 16, 260), 360);
+    const cardRailGap = isDesktop ? 28 : 18;
+    const gridColumnWidth = isDesktop ? '33.33%' : '50%';
     const recentCheckinCount = recentCheckins?.length ?? 0;
+    const openMetricLabel = i18n.t('dashboard.metrics_cards.open_label', { defaultValue: 'Open exercises' });
+    const openMetricHint = i18n.t(
+        openExercises.length === 0 ? 'dashboard.metrics_cards.open_hint_empty' : 'dashboard.metrics_cards.open_hint_default',
+        {
+            defaultValue:
+                openExercises.length === 0
+                    ? 'Nothing left for today.'
+                    : 'Your current tasks for the next steps.',
+        }
+    );
+    const checkinsMetricLabel = i18n.t('dashboard.metrics_cards.checkins_label', { defaultValue: 'Check-ins' });
+    const checkinsMetricHint = i18n.t(
+        recentCheckinCount === 0 ? 'dashboard.metrics_cards.checkins_hint_empty' : 'dashboard.metrics_cards.checkins_hint_default',
+        {
+            defaultValue:
+                recentCheckinCount === 0
+                    ? 'No entries over the last days.'
+                    : 'Your latest entries for trend and reflection.',
+        }
+    );
     const notificationsTitle =
         notifications.length === 1
             ? i18n.t('dashboard.notifications.title_single', { defaultValue: '1 new message' })
@@ -275,10 +297,6 @@ export default function ClientDashboard() {
                                 </PressableScale>
                             </View>
 
-                            {/* Progress bar */}
-                            {exercises.length > 0 ? (
-                                <ProgressBar completed={completedExercises.length} total={exercises.length} />
-                            ) : null}
                         </BlurView>
                     </View>
                 </View>
@@ -286,40 +304,36 @@ export default function ClientDashboard() {
                 {/* Responsive content column: no max-width on mobile, capped on tablet/desktop */}
                 <View style={[contentMaxWidth ? { maxWidth: contentMaxWidth, width: '100%', alignSelf: 'center' } : undefined, { paddingHorizontal: gutter }]}>
                     <View style={{ flexDirection: isTablet ? 'row' : 'column', gap: sectionGap, marginBottom: 20 }}>
-                        <ClientMetricCard
-                            icon={Calendar}
-                            label={i18n.t('dashboard.metrics_cards.open_label', { defaultValue: 'Open exercises' })}
-                            value={String(openExercises.length)}
-                            hint={i18n.t(
-                                openExercises.length === 0
-                                    ? 'dashboard.metrics_cards.open_hint_empty'
-                                    : 'dashboard.metrics_cards.open_hint_default',
-                                {
-                                    defaultValue:
-                                        openExercises.length === 0
-                                            ? 'Nothing left for today.'
-                                            : 'Your current tasks for the next steps.',
-                                }
-                            )}
-                            tone="primary"
-                        />
-                        <ClientMetricCard
-                            icon={Edit3}
-                            label={i18n.t('dashboard.metrics_cards.checkins_label', { defaultValue: 'Check-ins' })}
-                            value={String(recentCheckinCount)}
-                            hint={i18n.t(
-                                recentCheckinCount === 0
-                                    ? 'dashboard.metrics_cards.checkins_hint_empty'
-                                    : 'dashboard.metrics_cards.checkins_hint_default',
-                                {
-                                    defaultValue:
-                                        recentCheckinCount === 0
-                                            ? 'No entries over the last days.'
-                                            : 'Your latest entries for trend and reflection.',
-                                }
-                            )}
-                            tone="success"
-                        />
+                        <PressableScale
+                            accessibilityRole="button"
+                            accessibilityLabel={`${openMetricLabel}. ${openMetricHint}`}
+                            onPress={() => router.push('/(app)/exercises_overview' as any)}
+                            style={{ flex: 1, width: '100%' }}
+                            withHaptics={false}
+                        >
+                            <ClientMetricCard
+                                icon={Calendar}
+                                label={openMetricLabel}
+                                value={String(openExercises.length)}
+                                hint={openMetricHint}
+                                tone="primary"
+                            />
+                        </PressableScale>
+                        <PressableScale
+                            accessibilityRole="button"
+                            accessibilityLabel={`${checkinsMetricLabel}. ${checkinsMetricHint}`}
+                            onPress={() => router.push('/(app)/checkins_overview' as any)}
+                            style={{ flex: 1, width: '100%' }}
+                            withHaptics={false}
+                        >
+                            <ClientMetricCard
+                                icon={Edit3}
+                                label={checkinsMetricLabel}
+                                value={String(recentCheckinCount)}
+                                hint={checkinsMetricHint}
+                                tone="success"
+                            />
+                        </PressableScale>
                     </View>
 
                     <DashboardSectionHeader
@@ -513,8 +527,23 @@ export default function ClientDashboard() {
                     ) : (
                         <>
                             {openExercises.length > 0 ? (
-                                <View style={{ marginBottom: 24 }}>
-                                    <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ type: 'timing', duration: 300, delay: 200 }}>
+                                <View
+                                    style={{
+                                        marginBottom: 24,
+                                        backgroundColor: isDark ? 'rgba(12,20,28,0.9)' : 'rgba(255,255,255,0.96)',
+                                        borderRadius: 32,
+                                        paddingHorizontal: isTablet ? 28 : 18,
+                                        paddingVertical: 22,
+                                        borderWidth: 1,
+                                        borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(15,35,54,0.08)',
+                                        shadowColor: isDark ? '#000' : '#0F1F2B',
+                                        shadowOffset: { width: 0, height: 16 },
+                                        shadowOpacity: 0.14,
+                                        shadowRadius: 32,
+                                        elevation: 8,
+                                    }}
+                                >
+                                    <MotiView from={{ opacity: 0, translateY: 12 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 320, delay: 160 }}>
                                         <DashboardSectionHeader
                                             title={i18n.t('dashboard.exercises.title')}
                                             subtitle={i18n.t('dashboard.exercises.subtitle_open', {
@@ -525,22 +554,42 @@ export default function ClientDashboard() {
                                             onActionPress={() => router.push('/(app)/exercises_overview' as any)}
                                         />
                                     </MotiView>
-                                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -8 }}>
-                                        {openExercises.map((ex, idx) => {
-                                            const itemWidth = isDesktop ? '33.33%' : isTablet ? '50%' : '100%';
-                                            return (
+                                    {showExercisesCarousel ? (
+                                        <Animated.ScrollView
+                                            horizontal
+                                            showsHorizontalScrollIndicator={false}
+                                            snapToInterval={cardRailItemWidth + cardRailGap}
+                                            decelerationRate="fast"
+                                            contentContainerStyle={{ paddingTop: 12, paddingBottom: 6, paddingRight: 4 }}
+                                            style={{ marginHorizontal: -4 }}
+                                        >
+                                            {openExercises.map((ex, idx) => (
                                                 <MotiView
                                                     key={ex.id}
-                                                    from={{ opacity: 0, translateY: 30 }}
-                                                    animate={{ opacity: 1, translateY: 0 }}
-                                                    transition={{ type: 'timing', duration: 350, delay: 250 + ((idx % 10) * 50) }}
-                                                    style={{ width: itemWidth as any, paddingHorizontal: 8, paddingBottom: 16 }}
+                                                    from={{ opacity: 0, translateY: 26, scale: 0.94 }}
+                                                    animate={{ opacity: 1, translateY: 0, scale: 1 }}
+                                                    transition={{ type: 'timing', duration: 420, delay: 220 + (idx * 80) }}
+                                                    style={{ width: cardRailItemWidth, marginRight: idx === openExercises.length - 1 ? 0 : cardRailGap }}
                                                 >
                                                     <OpenExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
                                                 </MotiView>
-                                            );
-                                        })}
-                                    </View>
+                                            ))}
+                                        </Animated.ScrollView>
+                                    ) : (
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginHorizontal: -(cardRailGap / 2), marginTop: 12 }}>
+                                            {openExercises.map((ex, idx) => (
+                                                <MotiView
+                                                    key={ex.id}
+                                                    from={{ opacity: 0, translateY: 24, scale: 0.96 }}
+                                                    animate={{ opacity: 1, translateY: 0, scale: 1 }}
+                                                    transition={{ type: 'timing', duration: 420, delay: 220 + ((idx % 6) * 70) }}
+                                                    style={{ width: gridColumnWidth as any, paddingHorizontal: cardRailGap / 2, paddingBottom: cardRailGap }}
+                                                >
+                                                    <OpenExerciseCard exercise={ex} onPress={() => router.push(`/(app)/exercise/${ex.id}` as any)} />
+                                                </MotiView>
+                                            ))}
+                                        </View>
+                                    )}
                                 </View>
                             ) : null}
                         </>

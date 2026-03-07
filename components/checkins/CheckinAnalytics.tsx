@@ -16,6 +16,34 @@ interface CheckinAnalyticsProps {
     checkins: any[];
 }
 
+type DateLike = Date | string | number | { toDate?: () => Date; seconds?: number; nanoseconds?: number };
+
+function extractDate(value?: DateLike): Date | null {
+    if (!value) return null;
+    if (value instanceof Date) {
+        return Number.isNaN(value.getTime()) ? null : value;
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime()) ? null : parsed;
+    }
+    if (typeof value === 'object') {
+        if (typeof value.toDate === 'function') {
+            const parsed = value.toDate();
+            return parsed && !Number.isNaN(parsed.getTime()) ? parsed : null;
+        }
+        if (typeof value.seconds === 'number') {
+            const parsed = new Date(value.seconds * 1000);
+            return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+    }
+    return null;
+}
+
+function resolveCheckinDate(checkin: any): Date | null {
+    return extractDate(checkin?.createdAt) ?? extractDate(checkin?.date) ?? null;
+}
+
 function weekdayLabel(index: number) {
     const base = new Date(Date.UTC(2026, 2, 2 + index));
     return base.toLocaleDateString(i18n.locale || 'de', { weekday: 'short' }).toUpperCase();
@@ -30,9 +58,17 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
     const analytics = useMemo(() => {
         if (!checkins || checkins.length === 0) return null;
 
-        const sorted = [...checkins].sort((left, right) => {
-            const leftDate = left.createdAt ? new Date(left.createdAt).getTime() : new Date(left.date).getTime();
-            const rightDate = right.createdAt ? new Date(right.createdAt).getTime() : new Date(right.date).getTime();
+        const normalized = checkins
+            .map((checkin) => ({ ...checkin, __resolvedDate: resolveCheckinDate(checkin) }))
+            .filter((checkin) => checkin.__resolvedDate !== null);
+
+        if (normalized.length === 0) {
+            return null;
+        }
+
+        const sorted = [...normalized].sort((left, right) => {
+            const leftDate = left.__resolvedDate?.getTime() ?? 0;
+            const rightDate = right.__resolvedDate?.getTime() ?? 0;
             return leftDate - rightDate;
         });
 
@@ -48,13 +84,22 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
         sorted.forEach((checkin) => {
             const normalizedHundred = normalizeMoodToHundred(checkin.mood);
             const normalizedTen = normalizeMoodToTen(checkin.mood);
-            const dateValue = checkin.createdAt ? new Date(checkin.createdAt) : new Date(checkin.date);
-            const weekdayIndex = (dateValue.getDay() + 6) % 7;
+            const dateValue = checkin.__resolvedDate;
+
+            if (!dateValue) {
+                return;
+            }
+
+            const weekdayIndexRaw = (dateValue.getDay() + 6) % 7;
+            const weekdayIndex = Number.isFinite(weekdayIndexRaw) ? weekdayIndexRaw : 0;
 
             if (normalizedHundred > 0) {
                 totalScore += normalizedHundred;
                 validScoresCount += 1;
-                weekdayCounts[weekdayIndex].value += 1;
+                const weekdayBucket = weekdayCounts[weekdayIndex];
+                if (weekdayBucket) {
+                    weekdayBucket.value += 1;
+                }
 
                 const emotion = getEmotionByScore(normalizedTen);
                 const existing = emotionCounts.get(emotion.id);
@@ -77,12 +122,15 @@ export const CheckinAnalytics = ({ checkins }: CheckinAnalyticsProps) => {
                 color: emotion.color,
             }));
 
-        const trendData = sorted.slice(-8).map((checkin) => ({
-            label: new Date(checkin.createdAt ?? checkin.date).toLocaleDateString(i18n.locale || 'de', { weekday: 'short' }).toUpperCase(),
-            value: normalizeMoodToHundred(checkin.mood),
-            color: PETROL,
-            date: new Date(checkin.createdAt ?? checkin.date).toLocaleDateString(i18n.locale || 'de', { day: '2-digit', month: 'short' }),
-        }));
+        const trendData = sorted.slice(-8).map((checkin) => {
+            const dateValue = checkin.__resolvedDate ?? new Date();
+            return {
+                label: dateValue.toLocaleDateString(i18n.locale || 'de', { weekday: 'short' }).toUpperCase(),
+                value: normalizeMoodToHundred(checkin.mood),
+                color: PETROL,
+                date: dateValue.toLocaleDateString(i18n.locale || 'de', { day: '2-digit', month: 'short' }),
+            };
+        });
 
         return {
             averageMood,

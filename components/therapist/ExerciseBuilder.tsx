@@ -1,4 +1,4 @@
-import React, { useState, useCallback, memo, useRef, useMemo } from 'react';
+import React, { useState, useCallback, memo, useRef, useMemo, useEffect } from 'react';
 import { View, Text as RNText, TextInput, Alert, Platform, KeyboardTypeOptions, ActivityIndicator, Animated, StyleSheet, Modal, useWindowDimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -1378,11 +1378,37 @@ const HOME_BACKGROUNDS = [
 import { SuccessAnimation } from '../ui/SuccessAnimation';
 
 export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, initialThemeColor, initialBlocks = [], onSave, onCancel }: ExerciseBuilderProps) {
+    const resolvedInitialThemeColor = initialThemeColor || THEME_COLORS[0];
     const [title, setTitle] = useState(initialTitle);
     const [coverImage, setCoverImage] = useState<string | undefined>(initialCoverImage);
     const [coverImageUploading, setCoverImageUploading] = useState(false);
-    const [themeColor, setThemeColor] = useState<string>(initialThemeColor || THEME_COLORS[0]);
+    const [themeColor, setThemeColor] = useState<string>(resolvedInitialThemeColor);
     const [blocks, setBlocks] = useState<ExerciseBlock[]>(initialBlocks);
+    const initialSnapshotRef = useRef({
+        title: initialTitle || '',
+        coverImage: initialCoverImage ?? null,
+        themeColor: resolvedInitialThemeColor,
+        blocks: JSON.stringify(initialBlocks ?? []),
+    });
+    const serializedBlocks = useMemo(() => JSON.stringify(blocks ?? []), [blocks]);
+    const hasUnsavedChanges = useMemo(() => {
+        const snapshot = initialSnapshotRef.current;
+        return (
+            snapshot.title !== (title || '') ||
+            snapshot.coverImage !== (coverImage ?? null) ||
+            snapshot.themeColor !== themeColor ||
+            snapshot.blocks !== serializedBlocks
+        );
+    }, [title, coverImage, themeColor, serializedBlocks]);
+
+    useEffect(() => {
+        initialSnapshotRef.current = {
+            title: initialTitle || '',
+            coverImage: initialCoverImage ?? null,
+            themeColor: resolvedInitialThemeColor,
+            blocks: JSON.stringify(initialBlocks ?? []),
+        };
+    }, [initialTitle, initialCoverImage, resolvedInitialThemeColor, initialBlocks]);
     const [showPicker, setShowPicker] = useState(false);
     const [toast, setToast] = useState<{ visible: boolean, message: string, type: 'error' | 'success' | 'warning' }>({ visible: false, message: '', type: 'error' });
     const [showDiscardBanner, setShowDiscardBanner] = useState(false);
@@ -1530,7 +1556,7 @@ export default function ExerciseBuilder({ initialTitle = '', initialCoverImage, 
     };
 
     const handleCancel = () => {
-        if (blocks.length > 0 || title.trim()) {
+        if (hasUnsavedChanges) {
             // Show an inline confirmation banner instead of a dialog
             setShowDiscardBanner(true);
         } else {

@@ -105,6 +105,16 @@ export default function TemplateDetail() {
             return;
         }
 
+        if (!profile?.id) {
+            setToast({
+                visible: true,
+                message: i18n.t('templates.error', { defaultValue: 'Fehler' }),
+                subMessage: i18n.t('templates.permission_required', { defaultValue: 'Bitte melde dich erneut an, um Vorlagen zu speichern.' }),
+                type: 'error',
+            });
+            return;
+        }
+
         setSaving(true);
 
         try {

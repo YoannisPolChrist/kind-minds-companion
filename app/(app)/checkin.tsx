@@ -49,7 +49,6 @@ export default function CheckinScreen() {
     const activeEnergy = ENERGY_LEVELS.find((level) => level.value === energy) || ENERGY_LEVELS[4];
     const accentColor = activeEmotion?.color || '#2D666B';
     const energyAccent = activeEmotion?.color || activeEnergy.color;
-    const headerHeight = useMemo(() => headerTop + (isXs ? 168 : isSm ? 184 : 204), [headerTop, isSm, isXs]);
     const headerScrollDistance = isXs ? 108 : 128;
 
     const onScroll = useAnimatedScrollHandler({
@@ -59,13 +58,10 @@ export default function CheckinScreen() {
     });
 
     const headerAnimatedStyle = useAnimatedStyle(() => ({
-        opacity: interpolate(scrollY.value, [0, headerScrollDistance * 0.5, headerScrollDistance], [1, 0.55, 0], Extrapolation.CLAMP),
+        opacity: interpolate(scrollY.value, [0, headerScrollDistance * 0.5, headerScrollDistance], [1, 0.7, 0.45], Extrapolation.CLAMP),
         transform: [
             {
-                translateY: interpolate(scrollY.value, [0, headerScrollDistance], [0, -headerHeight * 0.9], Extrapolation.CLAMP),
-            },
-            {
-                scale: interpolate(scrollY.value, [0, headerScrollDistance], [1, 0.94], Extrapolation.CLAMP),
+                scale: interpolate(scrollY.value, [0, headerScrollDistance], [1, 0.96], Extrapolation.CLAMP),
             },
         ],
     }));
@@ -160,39 +156,6 @@ export default function CheckinScreen() {
 
     return (
         <View style={{ flex: 1, backgroundColor: colors.background }}>
-            <Animated.View
-                pointerEvents="box-none"
-                style={[
-                    {
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        zIndex: 20,
-                    },
-                    headerAnimatedStyle,
-                ]}
-            >
-                <MotiView from={{ opacity: 0, translateY: -50 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400 }}>
-                    <LinearGradient
-                        colors={activeEmotion && !isDark && !alreadyCompleted ? [`${activeEmotion.color}E6`, `${activeEmotion.color}99`] : [colors.primaryDark, colors.primary]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{ paddingTop: headerTop, paddingBottom: isXs ? 20 : 28, paddingHorizontal: gutter, borderBottomLeftRadius: isSm ? 28 : 36, borderBottomRightRadius: isSm ? 28 : 36, shadowColor: accentColor, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.18, shadowRadius: 20, elevation: 8 }}
-                    >
-                        <PressableScale onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: isXs ? 12 : 16, paddingVertical: 8, borderRadius: 16, marginBottom: isXs ? 16 : 20 }}>
-                            <Text style={{ color: '#fff', fontWeight: '800' }}>{'< '} {i18n.t('exercise.back')}</Text>
-                        </PressableScale>
-                        <Text style={{ color: '#fff', fontSize: isXs ? 24 : 28, fontWeight: '900', letterSpacing: -0.5 }} adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={isXs ? 2 : 1}>
-                            {i18n.t('checkin.title')}
-                        </Text>
-                        <Text style={{ color: 'rgba(255,255,255,0.74)', fontSize: 14, marginTop: 4, fontWeight: '600' }} adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1}>
-                            {new Date().toLocaleDateString(i18n.locale, { weekday: 'long', day: 'numeric', month: 'long' })}
-                        </Text>
-                    </LinearGradient>
-                </MotiView>
-            </Animated.View>
-
             {loadingCheckin ? (
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
                     <ActivityIndicator size="large" color={colors.primary} />
@@ -202,10 +165,32 @@ export default function CheckinScreen() {
                     onScroll={onScroll}
                     scrollEventThrottle={16}
                     style={{ flex: 1 }}
-                    contentContainerStyle={{ paddingTop: headerHeight, paddingHorizontal: gutter, paddingBottom: isSm ? 40 : 60 }}
+                    contentContainerStyle={{ paddingBottom: isSm ? 40 : 60 }}
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={{ width: '100%', maxWidth: contentMaxWidth ?? 760, alignSelf: 'center' }}>
+                    <Animated.View style={[{ width: '100%', marginBottom: 24 }, headerAnimatedStyle]}>
+                        <MotiView from={{ opacity: 0, translateY: -30 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 400 }}>
+                            <LinearGradient
+                                colors={activeEmotion && !isDark && !alreadyCompleted ? [`${activeEmotion.color}E6`, `${activeEmotion.color}99`] : [colors.primaryDark, colors.primary]}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 1 }}
+                                style={{ paddingTop: headerTop, paddingBottom: isXs ? 20 : 28, paddingHorizontal: gutter, borderBottomLeftRadius: isSm ? 28 : 36, borderBottomRightRadius: isSm ? 28 : 36, shadowColor: accentColor, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.18, shadowRadius: 20, elevation: 8 }}
+                            >
+                                <PressableScale onPress={() => router.back()} style={{ alignSelf: 'flex-start', backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: isXs ? 12 : 16, paddingVertical: 8, borderRadius: 16, marginBottom: isXs ? 16 : 20 }}>
+                                    <Text style={{ color: '#fff', fontWeight: '800' }}>{'< '} {i18n.t('exercise.back')}</Text>
+                                </PressableScale>
+                                <Text style={{ color: '#fff', fontSize: isXs ? 24 : 28, fontWeight: '900', letterSpacing: -0.5 }} adjustsFontSizeToFit minimumFontScale={0.72} numberOfLines={isXs ? 2 : 1}>
+                                    {i18n.t('checkin.title')}
+                                </Text>
+                                <Text style={{ color: 'rgba(255,255,255,0.74)', fontSize: 14, marginTop: 4, fontWeight: '600' }} adjustsFontSizeToFit minimumFontScale={0.8} numberOfLines={1}>
+                                    {new Date().toLocaleDateString(i18n.locale, { weekday: 'long', day: 'numeric', month: 'long' })}
+                                </Text>
+                            </LinearGradient>
+                        </MotiView>
+                    </Animated.View>
+
+                    <View style={{ width: '100%', paddingHorizontal: gutter }}>
+                        <View style={{ width: '100%', maxWidth: contentMaxWidth ?? 760, alignSelf: 'center' }}>
                     <MotiView from={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: 'spring', damping: 24, stiffness: 150, delay: 100 }}>
                         <View style={{ backgroundColor: colors.surface, borderRadius: isSm ? 24 : 32, padding: compactCardPadding, marginBottom: 16, shadowColor: accentColor, shadowOffset: { width: 0, height: 10 }, shadowOpacity: isDark ? 0.24 : 0.1, shadowRadius: 18, elevation: 5 }}>
                             <Text style={{ fontSize: 13, fontWeight: '800', color: colors.textSubtle, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 16 }}>
@@ -556,6 +541,7 @@ export default function CheckinScreen() {
                             </PressableScale>
                         </MotiView>
                     )}
+                        </View>
                     </View>
                 </Animated.ScrollView>
             )}

@@ -664,6 +664,7 @@ export default function TherapistResources() {
 
     return (
         <View style={{ flex: 1, backgroundColor: '#F5F1EA' }}>
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
             {/* Premium Header */}
             <MotiView from={{ opacity: 0, translateY: -20 }} animate={{ opacity: 1, translateY: 0 }} transition={{ type: 'timing', duration: 350 }}>
                 <LinearGradient
@@ -704,14 +705,16 @@ export default function TherapistResources() {
 
             <FlatList
                 data={filteredResources}
+                scrollEnabled={false}
                 keyExtractor={item => item.id}
                 renderItem={renderResourceItem}
                 ListHeaderComponent={listHeaderElement}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 40, maxWidth: 860, alignSelf: 'center', width: '100%' }}
+                contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 20, paddingBottom: 0, maxWidth: 860, alignSelf: 'center', width: '100%' }}
             />
 
             {/* Add Resource Modal */}
+            </ScrollView>
             <Modal visible={addModalVisible} transparent animationType="slide">
                 <KeyboardAvoidingView
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

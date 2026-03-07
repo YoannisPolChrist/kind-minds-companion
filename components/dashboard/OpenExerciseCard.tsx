@@ -9,16 +9,15 @@ import * as Haptics from "expo-haptics";
 import { CalendarDays, Play, Clock, ChevronRight, Layers } from "lucide-react-native";
 import { useTheme } from "../../contexts/ThemeContext";
 
-// Web-only: motion hover wrapper for premium card UX
-const WebHoverCard: React.FC<{ children: React.ReactNode; themeColor: string }> = Platform.OS === 'web'
+const WebHoverCard: React.FC<{ children: React.ReactNode; themeColor: string }> = Platform.OS === "web"
   ? ({ children, themeColor }) => {
-    const { motion } = require('motion/react');
+    const { motion } = require("motion/react");
     return (
       <motion.div
-        whileHover={{ scale: 1.025, y: -4, boxShadow: `0 16px 40px ${themeColor}30` }}
+        whileHover={{ scale: 1.03, y: -4, boxShadow: `0 20px 50px ${themeColor}36` }}
         whileTap={{ scale: 0.98 }}
-        transition={{ type: 'spring', stiffness: 340, damping: 26 }}
-        style={{ cursor: 'pointer' }}
+        transition={{ type: "spring", stiffness: 340, damping: 24 }}
+        style={{ cursor: "pointer" }}
       >
         {children}
       </motion.div>
@@ -51,42 +50,67 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
 
   const themeColor = exercise.themeColor || colors.primary;
   const blockCount = exercise.blocks?.length ?? 0;
-  const estimatedMinutes = blockCount * 3;
+  const estimatedMinutes = Math.max(blockCount * 3, 5);
+  const recurrenceLabel =
+    exercise.recurrence === "daily"
+      ? i18n.t("dashboard.exercises.daily", { defaultValue: "Daily" })
+      : exercise.recurrence === "weekly"
+        ? i18n.t("dashboard.exercises.weekly", { defaultValue: "Weekly" })
+        : undefined;
+
+  const metaStats = [
+    {
+      key: "duration",
+      icon: Clock,
+      value: `${estimatedMinutes} Min`,
+      label: i18n.t("dashboard.exercises.meta_duration", { defaultValue: "Focus time" }),
+    },
+    {
+      key: "modules",
+      icon: Layers,
+      value: blockCount.toString(),
+      label: i18n.t("dashboard.exercises.modules", { count: blockCount }),
+    },
+  ];
+
+  const ctaLabel = i18n.t("dashboard.exercises.start", { defaultValue: "Start" });
 
   return (
     <WebHoverCard themeColor={themeColor}>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Bearbeiten: ${exercise.title}`}
+        accessibilityLabel={`${ctaLabel}: ${exercise.title}`}
         onPressIn={handlePressIn}
         onPressOut={() => setPressed(false)}
         onPress={onPress}
       >
         <MotiView
           animate={{ scale: pressed ? 0.97 : 1, translateY: pressed ? 2 : 0 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+          transition={{ type: "spring", stiffness: 300, damping: 22 }}
           style={[
             styles.card,
             {
-              backgroundColor: isDark ? "rgba(22,32,50,0.85)" : "#ffffff",
-              borderColor: isDark
-                ? "rgba(255,255,255,0.06)"
-                : hexToRgba(themeColor, 0.15),
+              backgroundColor: isDark ? "rgba(9,14,22,0.95)" : "#ffffff",
+              borderColor: isDark ? "rgba(255,255,255,0.04)" : hexToRgba(themeColor, 0.15),
               shadowColor: themeColor,
             },
           ]}
         >
-          {/* Colored accent bar at very top */}
+          <LinearGradient
+            colors={
+              isDark
+                ? [hexToRgba(themeColor, 0.25), "rgba(5,7,13,0.95)"]
+                : [hexToRgba(themeColor, 0.12), "#ffffff"]
+            }
+            style={styles.gradientBackground}
+          />
           <View
-            style={{
-              height: 4,
-              backgroundColor: themeColor,
-              borderTopLeftRadius: 24,
-              borderTopRightRadius: 24,
-            }}
+            style={[
+              styles.decorCircle,
+              { backgroundColor: hexToRgba(themeColor, isDark ? 0.25 : 0.18) },
+            ]}
           />
 
-          {/* Cover Image */}
           {exercise.coverImage ? (
             <View style={styles.imageContainer}>
               <Image
@@ -98,150 +122,105 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
               <LinearGradient
                 colors={[
                   "transparent",
-                  isDark ? "rgba(22,32,50,0.9)" : "rgba(255,255,255,0.95)",
+                  isDark ? "rgba(9,14,20,0.95)" : "rgba(255,255,255,0.95)",
                 ]}
                 style={styles.imageGradient}
               />
-              {/* Module badge overlay */}
               <View
                 style={[
                   styles.imageOverlayBadge,
                   {
-                    backgroundColor: isDark
-                      ? "rgba(0,0,0,0.55)"
-                      : "rgba(255,255,255,0.85)",
-                    borderWidth: 1,
-                    borderColor: isDark
-                      ? "rgba(255,255,255,0.1)"
-                      : "rgba(0,0,0,0.06)",
+                    backgroundColor: isDark ? "rgba(0,0,0,0.55)" : "rgba(255,255,255,0.85)",
+                    borderColor: isDark ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.05)",
                   },
                   Platform.OS === "web" ? ({ backdropFilter: "blur(8px)" } as any) : {},
                 ]}
               >
-                <Layers size={11} color={isDark ? "rgba(255,255,255,0.9)" : "#3A4340"} strokeWidth={2.5} style={{ marginRight: 5 }} />
+                <Layers size={12} color={isDark ? "#F1F5F9" : "#3B4347"} strokeWidth={2.4} style={{ marginRight: 6 }} />
                 <Text
                   style={[
                     styles.imageOverlayText,
-                    { color: isDark ? "rgba(255,255,255,0.9)" : "#3A4340" },
+                    { color: isDark ? "#F8FAFC" : "#1E2529" },
                   ]}
                 >
-                  {blockCount} {blockCount === 1 ? "Modul" : "Module"}
+                  {i18n.t("dashboard.exercises.modules", { count: blockCount })}
                 </Text>
               </View>
             </View>
           ) : null}
 
-          {/* Content */}
           <View style={styles.contentContainer}>
-            {/* Title */}
+            <View style={styles.headerRow}>
+              {recurrenceLabel ? (
+                <View
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor: hexToRgba(themeColor, isDark ? 0.32 : 0.14),
+                      borderColor: hexToRgba(themeColor, 0.25),
+                    },
+                  ]}
+                >
+                  <CalendarDays size={12} color={themeColor} strokeWidth={2.5} style={{ marginRight: 6 }} />
+                  <Text style={[styles.pillText, { color: themeColor }]}>
+                    {recurrenceLabel}
+                  </Text>
+                </View>
+              ) : <View style={{ height: 4 }} />}
+
+              <Text style={[styles.subtleLabel, { color: isDark ? "rgba(248,250,252,0.6)" : "#7A858F" }]}>
+                {i18n.t("dashboard.today_section.subtitle", { defaultValue: "Next step" })}
+              </Text>
+            </View>
+
             <Text
-              style={[styles.title, { color: isDark ? "#ffffff" : "#182428" }]}
+              style={[styles.title, { color: isDark ? "#F9FAFB" : "#111827" }]}
               numberOfLines={2}
             >
               {exercise.title}
             </Text>
 
-            {/* Metadata chips */}
-            <View style={styles.chipsRow}>
-              {exercise.recurrence && exercise.recurrence !== "none" && (
-                <View
-                  style={[
-                    styles.chip,
-                    { backgroundColor: hexToRgba(themeColor, isDark ? 0.2 : 0.1) },
-                  ]}
-                >
-                  <CalendarDays size={12} color={themeColor} strokeWidth={2.5} style={{ marginRight: 5 }} />
-                  <Text style={[styles.chipText, { color: themeColor }]}>
-                    {exercise.recurrence === "daily"
-                      ? i18n.t("dashboard.exercises.daily")
-                      : i18n.t("dashboard.exercises.weekly")}
-                  </Text>
-                </View>
-              )}
-
-              <View
-                style={[
-                  styles.chip,
-                  {
-                    backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F3EEE6",
-                    borderWidth: 1,
-                    borderColor: isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0",
-                  },
-                ]}
-              >
-                <Clock
-                  size={12}
-                  color={isDark ? "rgba(255,255,255,0.55)" : "#6F7472"}
-                  strokeWidth={2.5}
-                  style={{ marginRight: 5 }}
-                />
-                <Text
-                  style={[
-                    styles.chipText,
-                    {
-                      color: isDark ? "rgba(255,255,255,0.55)" : "#6F7472",
-                    },
-                  ]}
-                >
-                  {estimatedMinutes} Min
-                </Text>
-              </View>
-
-              {!exercise.coverImage && (
-                <View
-                  style={[
-                    styles.chip,
-                    {
-                      backgroundColor: isDark ? "rgba(255,255,255,0.06)" : "#F3EEE6",
-                      borderWidth: 1,
-                      borderColor: isDark ? "rgba(255,255,255,0.06)" : "#E2E8F0",
-                    },
-                  ]}
-                >
-                  <Layers
-                    size={12}
-                    color={isDark ? "rgba(255,255,255,0.55)" : "#6F7472"}
-                    strokeWidth={2.5}
-                    style={{ marginRight: 5 }}
-                  />
-                  <Text
+            <View style={styles.metaGrid}>
+              {metaStats.map((stat) => {
+                const Icon = stat.icon;
+                return (
+                  <View
+                    key={stat.key}
                     style={[
-                      styles.chipText,
-                      { color: isDark ? "rgba(255,255,255,0.55)" : "#6F7472" },
+                      styles.metaBox,
+                      {
+                        backgroundColor: isDark ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.75)",
+                        borderColor: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.04)",
+                      },
                     ]}
                   >
-                    {blockCount} {blockCount === 1 ? "Modul" : "Module"}
-                  </Text>
-                </View>
-              )}
+                    <Icon size={18} color={themeColor} strokeWidth={2.4} style={{ marginRight: 10 }} />
+                    <View>
+                      <Text style={[styles.metaValue, { color: isDark ? "#ffffff" : "#111827" }]}>{stat.value}</Text>
+                      <Text style={[styles.metaLabel, { color: isDark ? "rgba(255,255,255,0.65)" : "#6B7280" }]} numberOfLines={1}>
+                        {stat.label}
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
 
-            {/* CTA row */}
-            <View
-              style={[
-                styles.ctaRow,
-                {
-                  borderTopColor: isDark
-                    ? "rgba(255,255,255,0.05)"
-                    : hexToRgba(themeColor, 0.1),
-                },
-              ]}
-            >
-              <Text style={[styles.ctaText, { color: themeColor }]}>
-                Jetzt starten
+            <View style={styles.ctaRow}>
+              <Text style={[styles.ctaText, { color: isDark ? "#E5E7EB" : "#192126" }]}>
+                {ctaLabel}
               </Text>
               <View
                 style={[
                   styles.ctaButton,
-                  { backgroundColor: themeColor },
+                  {
+                    backgroundColor: themeColor,
+                    shadowColor: themeColor,
+                  },
                 ]}
               >
-                <Play
-                  size={14}
-                  color="#ffffff"
-                  fill="#ffffff"
-                  style={{ marginLeft: 2 }}
-                />
+                <Play size={16} color="#ffffff" fill="#ffffff" style={{ marginRight: 6 }} />
+                <ChevronRight size={16} color="#ffffff" />
               </View>
             </View>
           </View>
@@ -253,18 +232,30 @@ export const OpenExerciseCard = memo(function OpenExerciseCard({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 24,
+    borderRadius: 26,
     borderWidth: 1.5,
-    marginBottom: 16,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 20,
-    elevation: 5,
+    marginBottom: 18,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
+    elevation: 6,
     overflow: "hidden",
+  },
+  gradientBackground: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  decorCircle: {
+    position: "absolute",
+    width: 180,
+    height: 180,
+    borderRadius: 90,
+    top: -70,
+    right: -40,
+    opacity: 0.7,
   },
   imageContainer: {
     width: "100%",
-    height: 130,
+    height: 150,
     position: "relative",
   },
   image: {
@@ -276,74 +267,108 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 70,
+    height: 80,
   },
   imageOverlayBadge: {
     position: "absolute",
-    top: 12,
-    right: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 10,
+    top: 14,
+    right: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
     flexDirection: "row",
     alignItems: "center",
+    borderWidth: 1,
   },
   imageOverlayText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: "800",
     letterSpacing: 0.3,
   },
   contentContainer: {
-    padding: 20,
-    paddingTop: 16,
+    paddingHorizontal: 22,
+    paddingVertical: 20,
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  pill: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 999,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderWidth: 1,
+  },
+  pillText: {
+    fontSize: 13,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+  },
+  subtleLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 1.1,
+    textTransform: "uppercase",
   },
   title: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: "900",
-    letterSpacing: -0.4,
-    marginBottom: 12,
-    lineHeight: 26,
+    letterSpacing: -0.5,
+    marginBottom: 18,
+    lineHeight: 28,
   },
-  chipsRow: {
+  metaGrid: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-    marginBottom: 16,
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 18,
   },
-  chip: {
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 10,
+  metaBox: {
+    flex: 1,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
     flexDirection: "row",
     alignItems: "center",
   },
-  chipText: {
-    fontSize: 12,
-    fontWeight: "700",
+  metaValue: {
+    fontSize: 18,
+    fontWeight: "800",
     letterSpacing: 0.2,
+  },
+  metaLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+    marginTop: 2,
   },
   ctaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTopWidth: 1,
-    paddingTop: 14,
   },
   ctaText: {
-    fontSize: 15,
-    fontWeight: "800",
-    letterSpacing: 0.2,
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
   ctaButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: 999,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 5,
   },
 });
 

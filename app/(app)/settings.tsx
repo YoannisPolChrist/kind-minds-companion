@@ -229,6 +229,7 @@ export default function SettingsScreen() {
 
     return (
         <View className="flex-1 bg-[#F7F4EE]">
+            <DefaultScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
             {/* Animated Header */}
             <MotiView
                 from={{ opacity: 0, translateY: -40 }}
@@ -272,7 +273,7 @@ export default function SettingsScreen() {
                 </View>
             </MotiView>
 
-            <DefaultScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
+            <View>
                 <View className="px-6 pt-6 pb-10">
 
                     {/* ─── Profile Section ────────────────────────────────── */}
@@ -594,6 +595,7 @@ export default function SettingsScreen() {
                     </MotiView>
 
                 </View>
+            </View>
             </DefaultScrollView>
 
             <SuccessAnimation
