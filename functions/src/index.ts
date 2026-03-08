@@ -103,89 +103,113 @@ function baseTemplate(content: string, lang: Lang = "de"): string {
 </html>`;
 }
 
-function exerciseAssignedTemplate(exerciseName: string): string {
+function exerciseAssignedTemplate(exerciseName: string, lang: Lang = "de"): string {
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
-      <div class="header-title">Neue Übung zugewiesen ✨</div>
-      <div class="header-subtitle">Dein Therapeut hat etwas Neues für dich vorbereitet.</div>
+      <div class="header-title">${tr("exerciseTitle", lang)}</div>
+      <div class="header-subtitle">${tr("exerciseSubtitle", lang)}</div>
     </div>
     <div class="body">
-      <p class="greeting">Hallo,</p>
-      <p class="message">
-        Dein Therapeut hat dir eine neue Übung zugewiesen. Öffne die App, um sie zu starten und deinen Fortschritt zu dokumentieren.
-      </p>
+      <p class="greeting">${tr("greeting", lang)},</p>
+      <p class="message">${tr("exerciseBody", lang)}</p>
       <div class="info-box">
-        <div class="info-box-label">Übung</div>
+        <div class="info-box-label">${tr("exerciseLabel", lang)}</div>
         <div class="info-box-value">📋 ${exerciseName}</div>
       </div>
-      <p class="message">
-        Regelmäßiges Üben ist ein wichtiger Teil deines Therapieprozesses. Wir sind hier, um dich dabei zu unterstützen. 💙
-      </p>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">Übung öffnen →</a>
+      <p class="message">${tr("exerciseEncouragement", lang)}</p>
+      <a href="https://cozy-counsel-app.lovable.app" class="cta-btn">${tr("openExercise", lang)}</a>
       <div class="divider"></div>
-      <p class="message" style="font-size:13px; color:#9CA3AF;">
-        Falls du Fragen zu dieser Übung hast, wende dich direkt an deinen Therapeuten.
-      </p>
+      <p class="message" style="font-size:13px; color:#9CA3AF;">${tr("contactTherapist", lang)}</p>
     </div>
-  `);
+  `, lang);
 }
 
-function resourceSharedTemplate(resourceTitle: string, resourceType: string): string {
+function resourceSharedTemplate(resourceTitle: string, resourceType: string, lang: Lang = "de"): string {
   const emoji = resourceType === 'pdf' ? '📄' : '🔗';
-  const typeLabel = resourceType === 'pdf' ? 'PDF-Dokument' : 'Link';
+  const typeLabel = resourceType === 'pdf' ? 'PDF' : 'Link';
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
-      <div class="header-title">Neue Ressource geteilt ${emoji}</div>
-      <div class="header-subtitle">Dein Therapeut hat dir etwas Nützliches bereitgestellt.</div>
+      <div class="header-title">${tr("resourceTitle", lang)} ${emoji}</div>
+      <div class="header-subtitle">${tr("resourceSubtitle", lang)}</div>
     </div>
     <div class="body">
-      <p class="greeting">Hallo,</p>
-      <p class="message">
-        Dein Therapeut hat eine neue Ressource für dich in der App hinterlegt. Du findest sie im Bereich <em>Ressourcen</em>.
-      </p>
+      <p class="greeting">${tr("greeting", lang)},</p>
       <div class="info-box">
         <div class="info-box-label">${typeLabel}</div>
         <div class="info-box-value">${emoji} ${resourceTitle}</div>
       </div>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">Ressourcen ansehen →</a>
+      <a href="https://cozy-counsel-app.lovable.app" class="cta-btn">${tr("viewResources", lang)}</a>
     </div>
-  `);
+  `, lang);
 }
 
-function checkinReminderTemplate(): string {
+function checkinReminderTemplate(lang: Lang = "de"): string {
   return baseTemplate(`
     <div class="header" style="background: linear-gradient(135deg, #D4AF37 0%, #AA7C11 100%);">
       <div class="header-logo" style="color:rgba(255,255,255,0.6);">Therapie-App</div>
-      <div class="header-title">Dein täglicher Check-in wartet 🌅</div>
-      <div class="header-subtitle">Wie geht es dir heute?</div>
+      <div class="header-title">${tr("checkinTitle", lang)}</div>
+      <div class="header-subtitle">${tr("checkinSubtitle", lang)}</div>
     </div>
     <div class="body">
-      <p class="greeting">Hallo,</p>
-      <p class="message">
-        Du hast deinen heutigen Check-in noch nicht abgeschlossen. Nimm dir kurz einen Moment, um deine Stimmung zu reflektieren. Es dauert nur 30 Sekunden!
-      </p>
-      <p class="message">
-        Deine täglichen Check-ins helfen dir und deinem Therapeuten, deinen Fortschritt besser nachzuvollziehen. 🌱
-      </p>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn" style="background: linear-gradient(135deg, #D4AF37, #AA7C11);">Check-in starten →</a>
+      <p class="greeting">${tr("greeting", lang)},</p>
+      <p class="message">${tr("checkinBody", lang)}</p>
+      <a href="https://cozy-counsel-app.lovable.app" class="cta-btn" style="background: linear-gradient(135deg, #D4AF37, #AA7C11);">${tr("startCheckin", lang)}</a>
     </div>
-  `);
+  `, lang);
 }
 
-function generalTemplate(title: string, body: string): string {
+function generalTemplate(title: string, body: string, lang: Lang = "de"): string {
   return baseTemplate(`
     <div class="header">
       <div class="header-logo">Therapie-App</div>
       <div class="header-title">${title}</div>
     </div>
     <div class="body">
-      <p class="greeting">Hallo,</p>
+      <p class="greeting">${tr("greeting", lang)},</p>
       <p class="message">${body}</p>
-      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">App öffnen →</a>
+      <a href="https://cozy-counsel-app.lovable.app" class="cta-btn">${tr("openApp", lang)}</a>
     </div>
-  `);
+  `, lang);
+}
+
+function appointmentSavedTemplate(appointmentInfo: string, lang: Lang = "de"): string {
+  return baseTemplate(`
+    <div class="header" style="background: linear-gradient(135deg, #E91E8C 0%, #C2185B 100%);">
+      <div class="header-logo" style="color:rgba(255,255,255,0.6);">Therapie-App</div>
+      <div class="header-title">${tr("appointmentTitle", lang)}</div>
+      <div class="header-subtitle">${tr("appointmentSubtitle", lang)}</div>
+    </div>
+    <div class="body">
+      <p class="greeting">${tr("greeting", lang)},</p>
+      <p class="message">${tr("appointmentBody", lang)}</p>
+      <div class="info-box">
+        <div class="info-box-label">${tr("appointmentLabel", lang)}</div>
+        <div class="info-box-value">📅 ${appointmentInfo}</div>
+      </div>
+      <a href="https://cozy-counsel-app.lovable.app" class="cta-btn" style="background: linear-gradient(135deg, #E91E8C, #C2185B);">${tr("toDashboard", lang)}</a>
+    </div>
+  `, lang);
+}
+
+function fileUploadedTemplate(fileName: string, lang: Lang = "de"): string {
+  return baseTemplate(`
+    <div class="header">
+      <div class="header-logo">Therapie-App</div>
+      <div class="header-title">${tr("fileTitle", lang)}</div>
+      <div class="header-subtitle">${tr("fileSubtitle", lang)}</div>
+    </div>
+    <div class="body">
+      <p class="greeting">${tr("greeting", lang)},</p>
+      <p class="message">${tr("fileBody", lang)}</p>
+      <div class="info-box">
+        <div class="info-box-label">${tr("fileLabel", lang)}</div>
+        <div class="info-box-value">📎 ${fileName}</div>
+      </div>
+      <a href="https://cozy-counsel-app.lovable.app" class="cta-btn">${tr("viewFiles", lang)}</a>
+    </div>
+  `, lang);
 }
 
 function appointmentSavedTemplate(appointmentInfo: string): string {
