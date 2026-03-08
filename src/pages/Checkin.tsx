@@ -354,48 +354,6 @@ export default function Checkin() {
           </div>
         </StaggerItem>
 
-        {/* Tags — emoji-only */}
-        <StaggerItem>
-          <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              🏷️ Was beschreibt dich gerade?
-            </h3>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {QUICK_TAGS.map((tag) => {
-                const isActive = tags.includes(tag.label);
-                return (
-                  <motion.button
-                    key={tag.label}
-                    onClick={() => toggleTag(tag.label)}
-                    whileHover={{ scale: 1.15, y: -3 }}
-                    whileTap={{ scale: 0.85 }}
-                    className="relative group"
-                    style={{ opacity: alreadyCompleted && !isActive ? 0.3 : 1 }}
-                  >
-                    <motion.div
-                      animate={{
-                        backgroundColor: isActive ? "hsl(var(--primary))" : "hsl(var(--secondary))",
-                        boxShadow: isActive ? "0 4px 16px hsl(var(--primary) / 0.3)" : "0 0 0 transparent",
-                      }}
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${
-                        isActive ? "ring-2 ring-primary/30" : "border border-border"
-                      }`}
-                    >
-                      {tag.emoji}
-                    </motion.div>
-                    {/* Tooltip on hover */}
-                    <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap bg-card px-2 py-0.5 rounded-lg border border-border shadow-sm">
-                        {tag.label}
-                      </span>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        </StaggerItem>
-
         {/* Note */}
         <StaggerItem>
           <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
