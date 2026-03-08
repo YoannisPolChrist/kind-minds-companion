@@ -6,6 +6,9 @@ import { auth } from "../lib/firebase";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale } from "../components/motion";
+import { getRandomHeaderImage } from "../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
@@ -33,7 +36,7 @@ export default function Settings() {
   const navItems = [
     { path: "/checkins", icon: BarChart3, label: "Mein Tagebuch", desc: "Check-in Verlauf & Statistiken" },
     { path: "/exercises", icon: BookOpen, label: "Alle Übungen", desc: "Übersicht aller zugewiesenen Übungen" },
-    { path: "/notes", icon: Edit3, label: "Meine Notizen", desc: "Tagebucheinträge & Gedanken" },
+    { path: "/notes", icon: Edit3, label: "Therapie-Tagebuch", desc: "Eigene Notizen & Emotionen" },
     { path: "/resources", icon: FileText, label: "Bibliothek", desc: "Dokumente & Links vom Therapeuten" },
     { path: "/history", icon: History, label: "Verlauf", desc: "Alle erledigten Aktivitäten" },
   ];
@@ -41,6 +44,8 @@ export default function Settings() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/65 to-primary/50" />
         <HeaderOrbs />
         <div className="max-w-xl mx-auto relative z-10">
           <motion.button

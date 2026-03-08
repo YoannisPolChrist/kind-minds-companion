@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../../components/motion";
+import { getRandomHeaderImage } from "../../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 const MOOD_EMOJIS: Record<number, string> = {
   10: "🤩", 9: "🔥", 8: "😊", 7: "🙂", 6: "😌",
@@ -66,6 +69,8 @@ export default function ClientCheckins() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] relative overflow-hidden">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/60 to-primary/50" />
         <HeaderOrbs />
         <div className="max-w-4xl mx-auto px-6 pt-12 pb-8 relative z-10">
           <motion.button onClick={() => navigate(-1)} className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-4 py-2.5 rounded-2xl transition-colors text-sm font-bold mb-5" whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }}>

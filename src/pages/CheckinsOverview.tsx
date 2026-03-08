@@ -14,6 +14,10 @@ import {
   Star,
   Zap,
 } from "lucide-react";
+import { HeaderOrbs } from "../components/motion";
+import { getRandomHeaderImage } from "../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 const EMOTION_PRESETS = [
   { id: "awesome", score: 10, emoji: "🤩", color: "#8B5CF6", label: "Großartig" },
@@ -52,12 +56,21 @@ const EMOTION_PRESETS = [
   { id: "hopeless", score: 1, emoji: "🖤", color: "#991B1B", label: "Hoffnungslos" },
 ];
 
+function normalizeMoodTo100(score?: number) {
+  const safe = Number(score ?? 0);
+  if (!Number.isFinite(safe) || safe <= 0) return 0;
+  if (safe <= 10) return Math.round(safe * 10);
+  return Math.max(1, Math.min(100, Math.round(safe)));
+}
+
 function getEmotion(score: number, emotionId?: string) {
   if (emotionId) {
     const byId = EMOTION_PRESETS.find((e) => e.id === emotionId);
     if (byId) return byId;
   }
-  return EMOTION_PRESETS.find((e) => e.score === score) || EMOTION_PRESETS[16];
+
+  const raw = score > 10 ? Math.round(score / 10) : score;
+  return EMOTION_PRESETS.find((e) => e.score === raw) || EMOTION_PRESETS[16];
 }
 
 interface Checkin {
@@ -103,18 +116,18 @@ export default function CheckinsOverview() {
   const analytics = useMemo(() => {
     if (checkins.length === 0) return null;
 
-    const moods = checkins.map((c) => c.mood);
-    const avg = moods.reduce((a, b) => a + b, 0) / moods.length;
-    const min = Math.min(...moods);
-    const max = Math.max(...moods);
+    const moodValues = checkins.map((c) => normalizeMoodTo100(c.mood));
+    const avg = moodValues.reduce((a, b) => a + b, 0) / moodValues.length;
+    const min = Math.min(...moodValues);
+    const max = Math.max(...moodValues);
 
     // Trend: compare last 3 to previous 3
     let trend: "up" | "down" | "stable" = "stable";
     if (checkins.length >= 4) {
-      const recent = moods.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
-      const older = moods.slice(3, 6).reduce((a, b) => a + b, 0) / Math.min(moods.slice(3, 6).length, 3);
-      if (recent - older > 0.5) trend = "up";
-      else if (older - recent > 0.5) trend = "down";
+      const recent = moodValues.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+      const older = moodValues.slice(3, 6).reduce((a, b) => a + b, 0) / Math.min(moodValues.slice(3, 6).length, 3);
+      if (recent - older > 5) trend = "up";
+      else if (older - recent > 5) trend = "down";
     }
 
     // Top emotions
@@ -170,8 +183,11 @@ export default function CheckinsOverview() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground">
-        <div className="max-w-3xl mx-auto px-5 pt-12 pb-8">
+      <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground relative overflow-hidden rounded-b-[2rem]">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/60 to-primary/50" />
+        <HeaderOrbs />
+        <div className="max-w-3xl mx-auto px-5 pt-12 pb-8 relative z-10">
           <div className="flex items-center justify-between mb-6">
             <Link
               to="/"
@@ -214,20 +230,20 @@ export default function CheckinsOverview() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-slide-up">
                   <StatCard
                     label="Durchschnitt"
-                    value={analytics.avg.toFixed(1)}
-                    suffix="/10"
+                    value={analytics.avg.toFixed(0)}
+                    suffix="/100"
                     icon={<Star size={16} className="text-amber-500" />}
                   />
                   <StatCard
                     label="Minimum"
                     value={String(analytics.min)}
-                    suffix="/10"
+                    suffix="/100"
                     icon={<TrendingDown size={16} className="text-destructive" />}
                   />
                   <StatCard
                     label="Maximum"
                     value={String(analytics.max)}
-                    suffix="/10"
+                    suffix="/100"
                     icon={<TrendingUp size={16} className="text-success" />}
                   />
                   <StatCard
@@ -268,9 +284,9 @@ export default function CheckinsOverview() {
                       </h3>
                       <div className="flex items-baseline gap-2 mb-6">
                         <span className="text-4xl font-black text-white tracking-tight">
-                          {chartData[chartData.length - 1]?.mood}
+                          {normalizeMoodTo100(chartData[chartData.length - 1]?.mood)}
                         </span>
-                        <span className="text-sm font-bold text-white/25">/10</span>
+                        <span className="text-sm font-bold text-white/25">/100</span>
                         <span className="text-lg ml-1">
                           {getEmotion(chartData[chartData.length - 1]?.mood, (chartData[chartData.length - 1] as any)?.emotionId).emoji}
                         </span>
@@ -315,7 +331,7 @@ export default function CheckinsOverview() {
                             d={(() => {
                               const pts = chartData.map((ci, i) => ({
                                 x: i * 60,
-                                y: 120 - (ci.mood / 10) * 110,
+                                y: 120 - (normalizeMoodTo100(ci.mood) / 100) * 110,
                               }));
                               // Smooth cubic bezier
                               let d = `M ${pts[0].x} ${pts[0].y}`;
@@ -335,7 +351,7 @@ export default function CheckinsOverview() {
                             d={(() => {
                               const pts = chartData.map((ci, i) => ({
                                 x: i * 60,
-                                y: 120 - (ci.mood / 10) * 110,
+                                y: 120 - (normalizeMoodTo100(ci.mood) / 100) * 110,
                               }));
                               let d = `M ${pts[0].x} ${pts[0].y}`;
                               for (let i = 1; i < pts.length; i++) {
@@ -381,7 +397,7 @@ export default function CheckinsOverview() {
                       <div className="grid grid-cols-3 gap-2 mt-5">
                         {[
                           { label: "Tiefpunkt", value: analytics.min, color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/10" },
-                          { label: "Durchschnitt", value: analytics.avg.toFixed(1), color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/10" },
+                          { label: "Durchschnitt", value: analytics.avg.toFixed(0), color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/10" },
                           { label: "Höchstwert", value: analytics.max, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/10" },
                         ].map((s) => (
                           <div
@@ -390,7 +406,7 @@ export default function CheckinsOverview() {
                           >
                             <p className={`text-xl font-black ${s.color}`}>
                               {s.value}
-                              <span className="text-[10px] font-bold text-white/20">/10</span>
+                              <span className="text-[10px] font-bold text-white/20">/100</span>
                             </p>
                             <p className="text-[10px] font-bold text-white/30 mt-0.5">{s.label}</p>
                           </div>
@@ -481,8 +497,8 @@ export default function CheckinsOverview() {
                       <div>
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Ø Energie</p>
                         <p className="text-2xl font-black text-foreground">
-                          {analytics.avgEnergy.toFixed(1)}
-                          <span className="text-sm font-semibold text-muted-foreground">/10</span>
+                          {analytics.avgEnergy.toFixed(0)}
+                          <span className="text-sm font-semibold text-muted-foreground">/100</span>
                         </p>
                       </div>
                     </div>
