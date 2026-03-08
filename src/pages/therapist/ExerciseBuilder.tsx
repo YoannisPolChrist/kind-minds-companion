@@ -902,24 +902,50 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
               className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40" style={{ color: cat.accent }}>
               + Slider hinzufügen
             </button>
-            {/* Preview */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              {(block.sliders || []).map((slider, i) => (
-                <div key={i} className="mb-3">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs font-bold text-foreground">{slider.label || `Bereich ${i + 1}`}</span>
-                    <span className="text-xs font-extrabold" style={{ color: CHART_PALETTE[i % CHART_PALETTE.length] }}>{slider.min}</span>
-                  </div>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden relative">
-                    <div className="h-full rounded-full" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length], width: "40%", opacity: 0.8 }} />
-                  </div>
-                  <div className="flex justify-between mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">{slider.min}</span>
-                    <span className="text-[10px] text-muted-foreground">{slider.max}</span>
-                  </div>
-                </div>
-              ))}
+            {/* Premium Slider Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              {(block.sliders || []).map((slider, i) => {
+                const color = CHART_PALETTE[i % CHART_PALETTE.length];
+                const randomVal = [65, 40, 80, 55, 72][i % 5];
+                const pct = ((randomVal - slider.min) / Math.max(slider.max - slider.min, 1)) * 100;
+                return (
+                  <motion.div key={i} className="mb-5 last:mb-0"
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.12, type: "spring", damping: 18 }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: color }} />
+                        <span className="text-sm font-black text-foreground">{slider.label || `Bereich ${i + 1}`}</span>
+                      </div>
+                      <motion.span className="text-sm font-extrabold" style={{ color }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + i * 0.1 }}>
+                        {randomVal}
+                      </motion.span>
+                    </div>
+                    <div className="h-4 bg-muted rounded-full overflow-hidden relative">
+                      <motion.div className="h-full rounded-full relative"
+                        style={{ background: `linear-gradient(90deg, ${color}, ${color}AA)` }}
+                        initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }}>
+                        <motion.div className="absolute inset-0 rounded-full"
+                          style={{ background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)` }}
+                          animate={{ x: ["-100%", "200%"] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1.5, ease: "easeInOut" }} />
+                      </motion.div>
+                      {/* Thumb indicator */}
+                      <motion.div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-md"
+                        style={{ backgroundColor: color }}
+                        initial={{ left: "0%" }} animate={{ left: `calc(${pct}% - 10px)` }}
+                        transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }} />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[10px] font-bold text-muted-foreground">{slider.min}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">{slider.max}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </>
         )}
