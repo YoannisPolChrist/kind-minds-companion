@@ -345,9 +345,15 @@ function VideoBlock({ block }: { block: ExerciseBlock }) {
 function InteractiveChartBlock({ block, value, onChange, disabled }: {
   block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean;
 }) {
+  const [hasAnimated, setHasAnimated] = useState(false);
   const currentValues: Record<string, number> = useMemo(() => {
     try { return value ? JSON.parse(value) : {}; } catch { return {}; }
   }, [value]);
+
+  useEffect(() => {
+    const t = setTimeout(() => setHasAnimated(true), 100);
+    return () => clearTimeout(t);
+  }, []);
 
   const updateValue = (label: string, valStr: string) => {
     if (disabled) return;
@@ -367,54 +373,143 @@ function InteractiveChartBlock({ block, value, onChange, disabled }: {
   }), [block.options, currentValues]);
 
   const nivoTheme = {
-    text: { fontSize: 12 },
-    axis: { ticks: { text: { fill: "#64748B", fontSize: 11 } } },
-    grid: { line: { stroke: "#E2E8F0", strokeWidth: 1 } },
-    tooltip: { container: { background: "#fff", borderRadius: 12, boxShadow: "0 8px 24px rgba(0,0,0,0.12)", border: "1px solid #E2E8F0", fontSize: 13, fontWeight: 600 } },
+    text: { fontSize: 12, fontWeight: 600 },
+    axis: { ticks: { text: { fill: "hsl(var(--muted-foreground))", fontSize: 11, fontWeight: 600 } } },
+    grid: { line: { stroke: "hsl(var(--border))", strokeWidth: 1 } },
+    tooltip: { container: { background: "hsl(var(--card))", borderRadius: 16, boxShadow: "0 12px 32px rgba(0,0,0,0.15)", border: "1px solid hsl(var(--border))", fontSize: 13, fontWeight: 700, padding: "10px 14px" } },
   };
 
   const renderChart = () => {
-    if (data.length === 0) return <div className="h-[220px] flex items-center justify-center text-muted-foreground text-sm">Keine Daten</div>;
+    if (data.length === 0) return (
+      <motion.div className="h-[220px] flex flex-col items-center justify-center text-muted-foreground text-sm gap-2"
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <span className="text-3xl">📊</span>
+        <span>Keine Daten</span>
+      </motion.div>
+    );
 
     if (block.type === "bar_chart") {
       const barData = data.map(d => ({ label: d.label, wert: d.currentVal, color: d.color }));
-      return <div style={{ height: 260 }}><ResponsiveBar data={barData} keys={["wert"]} indexBy="label" margin={{ top: 20, right: 20, bottom: 60, left: 40 }} padding={0.3} colors={({ data: d }: any) => d.color} borderRadius={6} axisBottom={{ tickSize: 0, tickPadding: 12 }} axisLeft={{ tickSize: 0, tickPadding: 8 }} enableLabel={false} animate theme={nivoTheme} /></div>;
+      return (
+        <motion.div style={{ height: 280 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, ease: "easeOut" }}>
+          <ResponsiveBar data={barData} keys={["wert"]} indexBy="label"
+            margin={{ top: 20, right: 20, bottom: 60, left: 50 }}
+            padding={0.35} colors={({ data: d }: any) => d.color}
+            borderRadius={8} borderWidth={0}
+            axisBottom={{ tickSize: 0, tickPadding: 14, tickRotation: 0 }}
+            axisLeft={{ tickSize: 0, tickPadding: 10 }}
+            enableLabel labelSkipHeight={12}
+            labelTextColor="#fff"
+            motionConfig="wobbly"
+            animate
+            theme={nivoTheme}
+          />
+        </motion.div>
+      );
     }
     if (block.type === "pie_chart") {
       const pieData = data.map(d => ({ id: d.label, label: d.label, value: d.currentVal, color: d.color }));
-      return <div style={{ height: 280 }}><ResponsivePie data={pieData} margin={{ top: 20, right: 80, bottom: 60, left: 80 }} innerRadius={0.5} padAngle={2} cornerRadius={8} colors={({ data: d }: any) => d.color} enableArcLinkLabels arcLinkLabelsSkipAngle={10} arcLabelsSkipAngle={20} arcLabelsTextColor="#fff" animate theme={nivoTheme} /></div>;
+      return (
+        <motion.div style={{ height: 300 }} initial={{ opacity: 0, scale: 0.8, rotate: -20 }} animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ type: "spring", damping: 15, stiffness: 100 }}>
+          <ResponsivePie data={pieData}
+            margin={{ top: 30, right: 80, bottom: 60, left: 80 }}
+            innerRadius={0.55} padAngle={2.5} cornerRadius={10}
+            colors={({ data: d }: any) => d.color}
+            enableArcLinkLabels arcLinkLabelsSkipAngle={10}
+            arcLinkLabelsThickness={2} arcLinkLabelsColor={{ from: "color" }}
+            arcLabelsSkipAngle={20} arcLabelsTextColor="#fff"
+            motionConfig="wobbly"
+            animate
+            theme={nivoTheme}
+          />
+        </motion.div>
+      );
     }
     if (block.type === "line_chart") {
       const lineData = [{ id: block.content || "Werte", color: "#137386", data: data.map(d => ({ x: d.label, y: d.currentVal })) }];
-      return <div style={{ height: 260 }}><ResponsiveLine data={lineData} margin={{ top: 20, right: 20, bottom: 60, left: 40 }} xScale={{ type: "point" }} yScale={{ type: "linear", min: "auto", max: "auto" }} curve="monotoneX" colors={["#137386"]} lineWidth={3} pointSize={10} pointColor="#fff" pointBorderWidth={2} pointBorderColor={{ from: "serieColor" }} enableSlices="x" animate theme={nivoTheme} /></div>;
+      return (
+        <motion.div style={{ height: 280 }} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+          <ResponsiveLine data={lineData}
+            margin={{ top: 20, right: 20, bottom: 60, left: 50 }}
+            xScale={{ type: "point" }}
+            yScale={{ type: "linear", min: "auto", max: "auto" }}
+            curve="catmullRom"
+            colors={["#137386"]}
+            lineWidth={4}
+            pointSize={14} pointColor="#fff" pointBorderWidth={3} pointBorderColor={{ from: "serieColor" }}
+            enableArea areaOpacity={0.12} areaBaselineValue={0}
+            enableSlices="x"
+            motionConfig="gentle"
+            animate
+            theme={nivoTheme}
+          />
+        </motion.div>
+      );
     }
     if (block.type === "spider_chart") {
       const radarData = data.map(d => ({ category: d.label, Wert: d.currentVal }));
-      return <div style={{ height: 300 }}><ResponsiveRadar data={radarData} keys={["Wert"]} indexBy="category" margin={{ top: 40, right: 80, bottom: 40, left: 80 }} dotSize={10} dotBorderWidth={2} colors={["#137386"]} gridShape="circular" motionConfig="wobbly" theme={nivoTheme} /></div>;
+      return (
+        <motion.div style={{ height: 320 }} initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", damping: 12, stiffness: 80 }}>
+          <ResponsiveRadar data={radarData} keys={["Wert"]} indexBy="category"
+            margin={{ top: 50, right: 90, bottom: 50, left: 90 }}
+            dotSize={12} dotBorderWidth={3} dotBorderColor="#fff"
+            dotColor="#137386"
+            colors={["#137386"]}
+            fillOpacity={0.25} borderWidth={3} borderColor="#137386"
+            gridShape="circular" gridLevels={5}
+            gridLabelOffset={20}
+            motionConfig="wobbly"
+            theme={{
+              ...nivoTheme,
+              dots: { text: { fontSize: 12, fontWeight: 800 } },
+            }}
+          />
+        </motion.div>
+      );
     }
     return null;
   };
 
   return (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring" }}>
-      {block.content && <p className="text-foreground font-semibold mb-5 text-center">{block.content}</p>}
-      <div className="bg-card rounded-3xl p-6 border border-border shadow-sm mb-6 overflow-hidden">
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", damping: 20 }}>
+      {block.content && (
+        <motion.p className="text-foreground font-bold text-lg mb-5 text-center"
+          initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          {block.content}
+        </motion.p>
+      )}
+      <motion.div className="bg-card rounded-3xl p-5 border border-border shadow-lg mb-6 overflow-hidden relative"
+        initial={{ boxShadow: "0 0 0 rgba(0,0,0,0)" }}
+        animate={{ boxShadow: "0 8px 32px rgba(0,0,0,0.08)" }}
+        transition={{ delay: 0.3 }}>
+        {/* Decorative gradient top bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 rounded-t-3xl" style={{
+          background: `linear-gradient(90deg, ${data[0]?.color || '#137386'}, ${data[Math.min(1, data.length - 1)]?.color || '#0EA5E9'}, ${data[Math.min(2, data.length - 1)]?.color || '#10B981'})`
+        }} />
         {renderChart()}
-      </div>
+      </motion.div>
       <div className="space-y-3">
-        <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider ml-1">Werte anpassen</p>
+        <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider ml-1 flex items-center gap-1.5">
+          ✏️ Werte anpassen
+        </p>
         {data.map((item, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-            className="flex items-center bg-card p-3.5 rounded-[18px] border border-border gap-3.5">
-            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
+          <motion.div key={i} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.15 + i * 0.08, type: "spring", damping: 20 }}
+            className="flex items-center bg-card p-4 rounded-2xl border border-border gap-3.5 shadow-sm hover:shadow-md transition-shadow">
+            <motion.div className="w-4 h-4 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card"
+              style={{ backgroundColor: item.color, ringColor: item.color }}
+              whileHover={{ scale: 1.3 }} />
             <span className="flex-1 font-bold text-foreground text-[15px] truncate">{item.label}</span>
-            <input
+            <motion.input
               value={currentValues[item.label] !== undefined ? String(currentValues[item.label]) : ""}
               onChange={(e) => updateValue(item.label, e.target.value)}
               placeholder={String(item.currentVal)}
               disabled={disabled}
               type="number"
-              className="bg-secondary px-3 py-2 rounded-xl text-center font-extrabold text-primary min-w-[70px] focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+              className="bg-secondary px-4 py-2.5 rounded-xl text-center font-extrabold text-primary min-w-[80px] focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 transition-all"
+              whileFocus={{ scale: 1.05 }}
             />
           </motion.div>
         ))}
@@ -431,20 +526,76 @@ function ProgressBarBlock({ block, value, onChange, disabled }: { block: Exercis
   const current = parseInt(value || "0");
   const pct = Math.min(Math.round((current / max) * 100), 100);
 
+  const emoji = pct >= 100 ? "🎉" : pct >= 75 ? "🔥" : pct >= 50 ? "💪" : pct >= 25 ? "🌱" : "🎯";
+
   return (
-    <div>
-      {block.content && <p className="text-foreground font-semibold mb-4 text-center">{block.content}</p>}
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", damping: 20 }}>
+      {block.content && (
+        <motion.p className="text-foreground font-bold text-lg mb-5 text-center"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+          {block.content}
+        </motion.p>
+      )}
+
+      {/* Circular progress */}
+      <div className="flex flex-col items-center mb-6">
+        <svg width={160} height={160} className="mb-3">
+          <defs>
+            <linearGradient id={`prog-${block.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor={meta.accent} />
+              <stop offset="100%" stopColor={meta.accent} stopOpacity={0.4} />
+            </linearGradient>
+            <filter id={`glow-${block.id}`}>
+              <feGaussianBlur stdDeviation="4" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
+          <circle cx={80} cy={80} r={64} fill="none" stroke="hsl(var(--border))" strokeWidth={10} />
+          <motion.circle cx={80} cy={80} r={64} fill="none"
+            stroke={`url(#prog-${block.id})`} strokeWidth={10}
+            strokeLinecap="round" strokeDasharray={2 * Math.PI * 64}
+            filter={`url(#glow-${block.id})`}
+            style={{ transformOrigin: "80px 80px", rotate: "-90deg" }}
+            initial={{ strokeDashoffset: 2 * Math.PI * 64 }}
+            animate={{ strokeDashoffset: 2 * Math.PI * 64 * (1 - pct / 100) }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
+          />
+          <motion.text x={80} y={70} textAnchor="middle" fontSize={28} fontWeight="900" fill={meta.accent}
+            initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.6, type: "spring" }}>
+            {pct}%
+          </motion.text>
+          <motion.text x={80} y={92} textAnchor="middle" fontSize={22}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+            {emoji}
+          </motion.text>
+        </svg>
+      </div>
+
+      {/* Linear bar */}
       <div className="flex items-center justify-between mb-2">
         <span className="text-sm font-bold text-foreground">{block.progressLabel || "Fortschritt"}</span>
-        <span className="text-sm font-extrabold" style={{ color: meta.accent }}>{current} / {max}</span>
+        <motion.span className="text-sm font-extrabold" style={{ color: meta.accent }}
+          key={current} initial={{ scale: 1.3 }} animate={{ scale: 1 }}>
+          {current} / {max}
+        </motion.span>
       </div>
-      <div className="h-5 bg-muted rounded-full overflow-hidden mb-4">
-        <motion.div className="h-full rounded-full" style={{ backgroundColor: meta.accent }} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.5 }} />
+      <div className="h-4 bg-muted rounded-full overflow-hidden mb-4 relative">
+        <motion.div className="h-full rounded-full relative"
+          style={{ backgroundColor: meta.accent }}
+          initial={{ width: 0 }}
+          animate={{ width: `${pct}%` }}
+          transition={{ duration: 0.8, ease: "easeOut" }}>
+          {/* Shimmer effect */}
+          <motion.div className="absolute inset-0 rounded-full"
+            style={{ background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%)" }}
+            animate={{ x: ["-100%", "200%"] }}
+            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1, ease: "easeInOut" }}
+          />
+        </motion.div>
       </div>
       <input type="range" min={0} max={max} step={1} value={current} onChange={e => onChange(e.target.value)} disabled={disabled}
-        className="w-full accent-[#06B6D4] disabled:opacity-60" />
-      <p className="text-center text-xs text-muted-foreground mt-2">{pct}% erreicht</p>
-    </div>
+        className="w-full accent-[#06B6D4] disabled:opacity-60 h-2" />
+    </motion.div>
   );
 }
 
@@ -453,43 +604,90 @@ function ProgressBarBlock({ block, value, onChange, disabled }: { block: Exercis
 function MoodWheelBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   const emotions = block.moodOptions || ["Freude", "Trauer", "Wut", "Angst", "Ekel", "Überraschung"];
   const PALETTE = ["#F97316", "#0EA5E9", "#EF4444", "#8B5CF6", "#10B981", "#F59E0B", "#EC4899", "#14B8A6", "#3B82F6", "#64748B"];
+  const EMOJIS = ["😊", "😢", "😤", "😰", "🤢", "😲", "🥰", "😌", "🤔", "😴"];
 
   return (
-    <div>
-      {block.content && <p className="text-foreground font-semibold mb-5 text-center">{block.content}</p>}
-      <svg width={240} height={240} className="mx-auto block mb-5">
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", damping: 20 }}>
+      {block.content && (
+        <motion.p className="text-foreground font-bold text-lg mb-5 text-center"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+          {block.content}
+        </motion.p>
+      )}
+      <svg width={260} height={260} className="mx-auto block mb-5" viewBox="0 0 260 260">
+        <defs>
+          {emotions.map((_, i) => (
+            <radialGradient key={i} id={`mood-grad-${block.id}-${i}`}>
+              <stop offset="30%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={0.9} />
+              <stop offset="100%" stopColor={PALETTE[i % PALETTE.length]} stopOpacity={0.6} />
+            </radialGradient>
+          ))}
+          <filter id={`mood-glow-${block.id}`}>
+            <feGaussianBlur stdDeviation="3" />
+          </filter>
+        </defs>
         {emotions.map((emo, i) => {
           const angle = (i / emotions.length) * Math.PI * 2 - Math.PI / 2;
           const nextAngle = ((i + 1) / emotions.length) * Math.PI * 2 - Math.PI / 2;
-          const R = 100, cx = 120, cy = 120;
+          const R = 110, cx = 130, cy = 130;
           const x1 = cx + Math.cos(angle) * R, y1 = cy + Math.sin(angle) * R;
           const x2 = cx + Math.cos(nextAngle) * R, y2 = cy + Math.sin(nextAngle) * R;
           const large = emotions.length <= 2 ? 1 : 0;
           const midAngle = (angle + nextAngle) / 2;
-          const lx = cx + Math.cos(midAngle) * (R * 0.6);
-          const ly = cy + Math.sin(midAngle) * (R * 0.6);
+          const emojiDist = R * 0.55;
+          const textDist = R * 0.8;
+          const ex = cx + Math.cos(midAngle) * emojiDist;
+          const ey = cy + Math.sin(midAngle) * emojiDist;
+          const tx = cx + Math.cos(midAngle) * textDist;
+          const ty = cy + Math.sin(midAngle) * textDist;
           const selected = value === emo;
           return (
             <g key={i} onClick={() => !disabled && onChange(emo)} style={{ cursor: disabled ? "default" : "pointer" }}>
               <motion.path
                 d={`M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} Z`}
-                fill={PALETTE[i % PALETTE.length]}
-                opacity={selected ? 1 : 0.6}
-                stroke="#fff" strokeWidth={2}
-                whileHover={!disabled ? { opacity: 0.9 } : undefined}
+                fill={`url(#mood-grad-${block.id}-${i})`}
+                stroke="hsl(var(--card))" strokeWidth={3}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{
+                  scale: selected ? 1.06 : 1,
+                  opacity: selected ? 1 : 0.75,
+                }}
+                whileHover={!disabled ? { scale: 1.05, opacity: 1 } : undefined}
+                whileTap={!disabled ? { scale: 0.95 } : undefined}
+                transition={{ delay: i * 0.08, type: "spring", damping: 15 }}
+                style={{ transformOrigin: `${cx}px ${cy}px` }}
               />
-              <text x={lx} y={ly + 4} textAnchor="middle" fontSize={11} fontWeight="700" fill="#fff">{emo.slice(0, 6)}</text>
+              {selected && (
+                <motion.circle cx={cx + Math.cos(midAngle) * (R + 4)} cy={cy + Math.sin(midAngle) * (R + 4)} r={4}
+                  fill={PALETTE[i % PALETTE.length]}
+                  filter={`url(#mood-glow-${block.id})`}
+                  initial={{ opacity: 0 }} animate={{ opacity: [0.5, 1, 0.5] }}
+                  transition={{ duration: 2, repeat: Infinity }} />
+              )}
+              <text x={ex} y={ey + 6} textAnchor="middle" fontSize={22}>{EMOJIS[i % EMOJIS.length]}</text>
+              <text x={tx} y={ty + 4} textAnchor="middle" fontSize={10} fontWeight="800" fill="#fff"
+                style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
+                {emo.slice(0, 8)}
+              </text>
             </g>
           );
         })}
+        {/* Center circle */}
+        <circle cx={130} cy={130} r={24} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={2} />
+        <text x={130} y={136} textAnchor="middle" fontSize={16}>
+          {value ? EMOJIS[emotions.indexOf(value) % EMOJIS.length] || "💫" : "💫"}
+        </text>
       </svg>
       {value && (
-        <motion.p className="text-center text-lg font-black" style={{ color: PALETTE[emotions.indexOf(value) % PALETTE.length] }}
-          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          {value}
-        </motion.p>
+        <motion.div className="text-center" initial={{ opacity: 0, y: 10, scale: 0.9 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring" }} key={value}>
+          <span className="text-3xl mb-1 block">{EMOJIS[emotions.indexOf(value) % EMOJIS.length]}</span>
+          <p className="text-xl font-black" style={{ color: PALETTE[emotions.indexOf(value) % PALETTE.length] }}>
+            {value}
+          </p>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -501,35 +699,49 @@ function TableBlock({ block, answers, onAnswerChange, disabled }: { block: Exerc
   const meta = getMeta("table");
 
   return (
-    <div>
-      {block.content && <p className="text-foreground font-semibold mb-4">{block.content}</p>}
-      <div className="overflow-x-auto rounded-2xl border border-border">
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", damping: 20 }}>
+      {block.content && (
+        <motion.p className="text-foreground font-bold text-lg mb-4"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+          {block.content}
+        </motion.p>
+      )}
+      <div className="overflow-x-auto rounded-2xl border border-border shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr>
               {columns.map((col, i) => (
-                <th key={i} className="text-left px-3 py-3 font-extrabold text-foreground bg-secondary border-b-2" style={{ borderColor: meta.accent + "40" }}>{col}</th>
+                <motion.th key={i}
+                  className="text-left px-4 py-3.5 font-extrabold text-primary-foreground"
+                  style={{ background: `linear-gradient(135deg, ${meta.accent}, ${meta.accent}CC)` }}
+                  initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.1 }}>
+                  {col}
+                </motion.th>
               ))}
             </tr>
           </thead>
           <tbody>
             {Array.from({ length: rows }).map((_, r) => (
-              <tr key={r}>
+              <motion.tr key={r} className="group"
+                initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + r * 0.08 }}>
                 {columns.map((col, c) => {
                   const key = `${block.id}_r${r}_c${c}`;
                   return (
-                    <td key={c} className="px-1 py-1 border-b border-border">
+                    <td key={c} className="px-1.5 py-1.5 border-b border-border bg-card group-hover:bg-secondary/50 transition-colors">
                       <input value={answers[key] || ""} onChange={e => onAnswerChange(key, e.target.value)} disabled={disabled}
-                        placeholder="…" className="w-full bg-transparent px-2 py-2 text-foreground font-medium focus:outline-none disabled:opacity-60" />
+                        placeholder="…"
+                        className="w-full bg-transparent px-3 py-2.5 text-foreground font-medium focus:outline-none focus:bg-primary/5 rounded-xl transition-colors disabled:opacity-60" />
                     </td>
                   );
                 })}
-              </tr>
+              </motion.tr>
             ))}
           </tbody>
         </table>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -538,6 +750,7 @@ function TableBlock({ block, answers, onAnswerChange, disabled }: { block: Exerc
 function SliderGroupBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
   const sliders = block.sliders || [{ label: "Energie", min: 0, max: 10, step: 1 }];
   const PALETTE = ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B", "#14B8A6", "#7C3AED", "#EC4899", "#3B82F6"];
+  const EMOJIS = ["⚡", "🌊", "🌿", "💜", "🔥", "☀️", "🧘", "✨", "💗", "🎯"];
   let values: Record<string, number> = {};
   try { values = value ? JSON.parse(value) : {}; } catch {}
 
@@ -548,43 +761,67 @@ function SliderGroupBlock({ block, value, onChange, disabled }: { block: Exercis
   };
 
   return (
-    <div>
-      {block.content && <p className="text-foreground font-semibold mb-5 text-center">{block.content}</p>}
-      <div className="space-y-5">
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", damping: 20 }}>
+      {block.content && (
+        <motion.p className="text-foreground font-bold text-lg mb-5 text-center"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}>
+          {block.content}
+        </motion.p>
+      )}
+      <div className="space-y-6">
         {sliders.map((slider, i) => {
           const current = values[slider.label] ?? slider.min;
           const pct = ((current - slider.min) / (slider.max - slider.min)) * 100;
           const color = PALETTE[i % PALETTE.length];
+          const emoji = EMOJIS[i % EMOJIS.length];
           return (
-            <div key={i}>
-              <div className="flex justify-between mb-1.5">
+            <motion.div key={i} className="bg-card rounded-2xl border border-border p-4 shadow-sm"
+              initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1 + i * 0.1, type: "spring", damping: 18 }}>
+              <div className="flex justify-between mb-3">
                 <span className="text-sm font-bold text-foreground flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                  <span className="text-lg">{emoji}</span>
                   {slider.label}
                 </span>
-                <span className="text-sm font-extrabold" style={{ color }}>{current}</span>
+                <motion.span className="text-lg font-black px-3 py-0.5 rounded-full"
+                  style={{ color, backgroundColor: color + "15" }}
+                  key={current} initial={{ scale: 1.3 }} animate={{ scale: 1 }}>
+                  {current}
+                </motion.span>
               </div>
-              <div className="relative">
-                <div className="h-3 bg-muted rounded-full overflow-hidden">
-                  <motion.div className="h-full rounded-full" style={{ backgroundColor: color, width: `${pct}%` }}
-                    initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }} />
+              <div className="relative h-5 mb-1">
+                <div className="absolute inset-0 bg-muted rounded-full overflow-hidden">
+                  <motion.div className="h-full rounded-full relative"
+                    style={{ backgroundColor: color }}
+                    initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.5, ease: "easeOut" }}>
+                    <motion.div className="absolute inset-0 rounded-full"
+                      style={{ background: `linear-gradient(90deg, transparent, ${color}40, transparent)` }}
+                      animate={{ x: ["-100%", "200%"] }}
+                      transition={{ duration: 2.5, repeat: Infinity, repeatDelay: 0.5 }} />
+                  </motion.div>
                 </div>
+                {/* Thumb indicator */}
+                <motion.div className="absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-card border-[3px] shadow-lg"
+                  style={{ borderColor: color, left: `calc(${pct}% - 12px)` }}
+                  animate={{ left: `calc(${pct}% - 12px)` }}
+                  transition={{ duration: 0.3 }}
+                />
                 <input type="range" min={slider.min} max={slider.max} step={slider.step || 1} value={current}
                   onChange={e => updateSlider(slider.label, parseFloat(e.target.value))} disabled={disabled}
                   className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-default" />
               </div>
-              <div className="flex justify-between mt-0.5">
-                <span className="text-[10px] text-muted-foreground">{slider.min}</span>
-                <span className="text-[10px] text-muted-foreground">{slider.max}</span>
+              <div className="flex justify-between mt-1">
+                <span className="text-[10px] text-muted-foreground font-semibold">{slider.min}</span>
+                <span className="text-[10px] text-muted-foreground font-semibold">{slider.max}</span>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 }
-
 // ─── Block Dispatcher ─────────────────────────────────────────────────────────
 
 function BlockRenderer({ block, answers, onAnswerChange, disabled }: {
