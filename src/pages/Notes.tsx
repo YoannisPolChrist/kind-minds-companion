@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale, TiltCard } from "../components/motion";
-import { EMOTION_PRESETS, getEmotionByScore, getEmotionLabel } from "../constants/emotions";
+import { EMOTION_PRESETS, getEmotionByScore, getEmotionLabel } from "../../constants/emotions";
 import { getRandomHeaderImage } from "../constants/headerImages";
 
 interface Note {
