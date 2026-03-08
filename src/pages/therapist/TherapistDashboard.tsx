@@ -243,13 +243,17 @@ export default function TherapistDashboard() {
             <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
               {recentActivity.map((act, i) => (
                 <motion.div
-                  key={act.id}
-                  className={`flex items-center gap-4 px-5 py-4 ${i < recentActivity.length - 1 ? "border-b border-border" : ""} hover:bg-secondary/50 transition-colors`}
+                  key={act.id + act.type}
+                  className={`flex items-center gap-4 px-5 py-4 ${i < recentActivity.length - 1 ? "border-b border-border" : ""} hover:bg-secondary/50 transition-colors cursor-pointer`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.06 }}
+                  onClick={() => {
+                    if (act.type === "note" && act.clientId) navigate(`/therapist/client/${act.clientId}/notes`);
+                    else if (act.clientId) navigate(`/therapist/client/${act.clientId}`);
+                  }}
                 >
-                  <span className="text-xl">{act.type === "exercise" ? "📋" : "📊"}</span>
+                  <span className="text-xl">{act.type === "exercise" ? "📋" : act.type === "note" ? "📝" : "📊"}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-foreground truncate">{act.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{act.clientName}</p>
@@ -259,6 +263,7 @@ export default function TherapistDashboard() {
                       {new Date(act.date).toLocaleDateString("de-DE", { day: "2-digit", month: "short" })}
                     </span>
                   )}
+                  <ArrowRight size={14} className="text-muted-foreground shrink-0" />
                 </motion.div>
               ))}
             </div>
