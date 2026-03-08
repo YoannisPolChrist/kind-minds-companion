@@ -14,6 +14,10 @@ import {
   Star,
   Zap,
 } from "lucide-react";
+import { HeaderOrbs } from "../components/motion";
+import { getRandomHeaderImage } from "../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 const EMOTION_PRESETS = [
   { id: "awesome", score: 10, emoji: "🤩", color: "#8B5CF6", label: "Großartig" },
