@@ -533,19 +533,22 @@ export default function Exercise() {
   const themeColor = exercise.themeColor || "hsl(var(--primary))";
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <div
-        className="rounded-b-[2rem] px-5 pt-14 pb-8 transition-all duration-500"
+        className="rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}CC)` }}
       >
-        <div className="max-w-2xl mx-auto animate-fade-in">
-          <button
+        <HeaderOrbs />
+        <div className="max-w-2xl mx-auto relative z-10">
+          <motion.button
             onClick={() => navigate(-1)}
             className="text-white/80 hover:text-white font-bold text-sm bg-white/20 px-4 py-2 rounded-xl mb-5 inline-flex items-center gap-1 hover:bg-white/30 transition-all"
+            whileHover={{ x: -3 }}
+            whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft size={16} /> Zurück
-          </button>
+          </motion.button>
           <h1 className="text-white text-2xl font-black tracking-tight">{exercise.title}</h1>
           <p className="text-white/60 text-sm font-medium mt-1">
             {exercise.blocks?.length || 0} Module
