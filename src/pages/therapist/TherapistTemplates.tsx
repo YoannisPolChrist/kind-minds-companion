@@ -162,6 +162,16 @@ export default function TherapistTemplates() {
                   </button>
 
                   <div className="mb-4 pr-10">
+                    {tpl.coverImage ? (
+                      <div className="-mx-5 -mt-5 mb-4 h-40 overflow-hidden border-b border-border bg-secondary relative">
+                        <img src={tpl.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-35" aria-hidden="true" loading="lazy" />
+                        <img src={tpl.coverImage} alt={`Titelbild von ${tpl.title}`} className="relative z-10 w-full h-full object-contain" loading="lazy" />
+                      </div>
+                    ) : (
+                      <div className="-mx-5 -mt-5 mb-4 h-40 border-b border-border bg-secondary flex items-center justify-center">
+                        <LayoutTemplate size={24} className="text-muted-foreground" />
+                      </div>
+                    )}
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}>
                       <LayoutTemplate size={18} style={{ color }} />
                     </div>
