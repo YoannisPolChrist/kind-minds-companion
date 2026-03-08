@@ -685,6 +685,10 @@ export default function Exercise() {
     setAnswers((prev) => ({ ...prev, [key]: val }));
   }, []);
 
+  const [isRedoing, setIsRedoing] = useState(false);
+
+  const isEditable = !exercise?.completed || isRedoing;
+
   const handleComplete = async () => {
     if (!id || !exercise) return;
     setSaving(true);
@@ -698,12 +702,19 @@ export default function Exercise() {
           await updateDoc(doc(db, "users", profile.id, "exercises", id), { completed: true, completedAt: new Date().toISOString(), lastCompletedAt: new Date().toISOString(), answers: cleanAnswers });
         }
       }
+      setIsRedoing(false);
       setSaved(true);
     } catch (e) {
       console.error("Error completing exercise:", e);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRedo = () => {
+    setIsRedoing(true);
+    // Optionally clear answers for a fresh start
+    // setAnswers({});
   };
 
   if (loading) {
@@ -765,7 +776,7 @@ export default function Exercise() {
               {exercise.recurrence === "daily" && " · 🔁 Täglich"}
               {exercise.recurrence === "weekly" && " · 🔁 Wöchentlich"}
             </p>
-            <motion.button onClick={() => generateExercisePdf(exercise)}
+            <motion.button onClick={() => generateExercisePdf({ ...exercise, answers })}
               className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors"
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Download size={14} /> PDF
@@ -811,7 +822,7 @@ export default function Exercise() {
                   </div>
                 </div>
                 <div className="p-6 bg-card">
-                  <BlockRenderer block={block} answers={answers} onAnswerChange={handleAnswerChange} disabled={exercise.completed} />
+                  <BlockRenderer block={block} answers={answers} onAnswerChange={handleAnswerChange} disabled={!isEditable} />
                 </div>
               </motion.div>
             </StaggerItem>
@@ -819,7 +830,7 @@ export default function Exercise() {
         })}
 
         {/* Sharing toggle */}
-        {!exercise.completed && (
+        {isEditable && (
           <div className="bg-card rounded-3xl border border-border p-5 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between">
               <div className="flex-1 pr-4">
@@ -834,19 +845,38 @@ export default function Exercise() {
           </div>
         )}
 
-        {/* Complete button */}
+        {/* Action buttons */}
         <div className="space-y-3 mt-4">
-          <motion.button onClick={handleComplete} disabled={saving || exercise.completed}
-            className={`w-full py-4 rounded-2xl font-black text-lg transition-all disabled:opacity-50 ${exercise.completed ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground shadow-lg shadow-primary/25"}`}
-            whileHover={!exercise.completed ? { scale: 1.02, y: -2 } : undefined}
-            whileTap={!exercise.completed ? { scale: 0.97 } : undefined}>
-            {saving ? (
-              <span className="inline-flex items-center gap-2">
-                <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-                Speichern...
-              </span>
-            ) : exercise.completed ? "Bereits abgeschlossen" : "Übung abschließen ✓"}
-          </motion.button>
+          {exercise.completed && !isRedoing ? (
+            <>
+              {/* Already completed state with redo option */}
+              <div className="bg-success/10 border border-success/20 rounded-2xl py-4 flex items-center justify-center gap-2">
+                <CheckCircle size={22} className="text-success" />
+                <span className="text-success font-black text-lg">Bereits abgeschlossen</span>
+              </div>
+              <motion.button
+                onClick={handleRedo}
+                className="w-full py-4 rounded-2xl bg-card border-2 border-primary text-primary font-black text-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Edit3 size={20} />
+                Erneut bearbeiten
+              </motion.button>
+            </>
+          ) : (
+            <motion.button onClick={handleComplete} disabled={saving}
+              className="w-full py-4 rounded-2xl font-black text-lg transition-all disabled:opacity-50 bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.97 }}>
+              {saving ? (
+                <span className="inline-flex items-center gap-2">
+                  <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+                  Speichern...
+                </span>
+              ) : isRedoing ? "Erneut abschließen ✓" : "Übung abschließen ✓"}
+            </motion.button>
+          )}
         </div>
 
         <div className="h-8" />
