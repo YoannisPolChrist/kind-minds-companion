@@ -499,7 +499,7 @@ function InteractiveChartBlock({ block, value, onChange, disabled }: {
             transition={{ delay: 0.15 + i * 0.08, type: "spring", damping: 20 }}
             className="flex items-center bg-card p-4 rounded-2xl border border-border gap-3.5 shadow-sm hover:shadow-md transition-shadow">
             <motion.div className="w-4 h-4 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card"
-              style={{ backgroundColor: item.color, ringColor: item.color }}
+              style={{ backgroundColor: item.color }}
               whileHover={{ scale: 1.3 }} />
             <span className="flex-1 font-bold text-foreground text-[15px] truncate">{item.label}</span>
             <motion.input
