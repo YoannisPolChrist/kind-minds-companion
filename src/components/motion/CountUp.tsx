@@ -1,10 +1,4 @@
-/**
- * CountUp — Animated number counter
- * Springs from 0 to target value with configurable duration.
- */
-
 import { useEffect, useRef, useState } from "react";
-import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
 
 interface CountUpProps {
   to: number;
@@ -15,28 +9,25 @@ interface CountUpProps {
 }
 
 export function CountUp({ to, duration = 1.2, className, suffix = "", prefix = "" }: CountUpProps) {
-  const motionValue = useMotionValue(0);
-  const springValue = useSpring(motionValue, { 
-    stiffness: 60, 
-    damping: 20,
-    duration: duration * 1000,
-  });
-  const [display, setDisplay] = useState("0");
+  const [value, setValue] = useState(0);
+  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    motionValue.set(to);
-  }, [to, motionValue]);
+    const start = performance.now();
+    const from = 0;
 
-  useEffect(() => {
-    const unsubscribe = springValue.on("change", (v) => {
-      setDisplay(Math.round(v).toString());
-    });
-    return unsubscribe;
-  }, [springValue]);
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / (duration * 1000), 1);
+      const next = Math.round(from + (to - from) * progress);
+      setValue(next);
+      if (progress < 1) frameRef.current = requestAnimationFrame(tick);
+    };
 
-  return (
-    <motion.span className={className}>
-      {prefix}{display}{suffix}
-    </motion.span>
-  );
+    frameRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+    };
+  }, [to, duration]);
+
+  return <span className={className}>{prefix}{value}{suffix}</span>;
 }
