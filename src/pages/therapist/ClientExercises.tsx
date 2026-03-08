@@ -31,6 +31,7 @@ export default function ClientExercises() {
   const [assigning, setAssigning] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
+  const headerImg = getRandomHeaderImage();
 
   useEffect(() => {
     if (!id || !profile?.id) return;
