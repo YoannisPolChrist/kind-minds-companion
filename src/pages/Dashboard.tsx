@@ -161,7 +161,7 @@ function NavCard({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "timing", duration: 300, delay }}
+      transition={{ duration: 0.3, delay }}
     >
       <PressableScale onClick={onClick}>
         <div className="bg-card rounded-[28px] border border-border p-6 flex items-center justify-between shadow-sm hover:border-primary/20 transition-colors">
