@@ -224,14 +224,15 @@ export default function Dashboard() {
         allCheckins.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setCheckins(allCheckins.slice(0, 7));
 
-        const slotDocId = `${profile.id}_${today}_${currentSlot}`;
-        const slotSnap = await getDoc(doc(db, "checkins", slotDocId));
-        if (slotSnap.exists()) {
-          setCheckedInToday(true);
-        } else {
-          const legacySnap = await getDoc(doc(db, "checkins", `${profile.id}_${today}`));
-          setCheckedInToday(legacySnap.exists());
-        }
+        // Check both morning and evening slots
+        const morningDocId = `${profile.id}_${today}_morning`;
+        const eveningDocId = `${profile.id}_${today}_evening`;
+        const [morningSnap, eveningSnap] = await Promise.all([
+          getDoc(doc(db, "checkins", morningDocId)),
+          getDoc(doc(db, "checkins", eveningDocId)),
+        ]);
+        setCheckedInMorning(morningSnap.exists());
+        setCheckedInEvening(eveningSnap.exists());
 
         if (profile.therapistId) {
           try {
