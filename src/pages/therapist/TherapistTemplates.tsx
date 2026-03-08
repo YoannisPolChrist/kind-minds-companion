@@ -103,34 +103,62 @@ export default function TherapistTemplates() {
 
   return (
     <PageTransition className="min-h-screen bg-background">
-      {/* Minimal Header */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          <div className="flex items-center justify-between mb-5">
-            <motion.button onClick={() => navigate("/therapist")} className="flex items-center gap-2 text-muted-foreground hover:text-foreground text-sm font-bold transition-colors" whileHover={{ x: -3 }}>
-              <ArrowLeft size={16} /> Dashboard
-            </motion.button>
-            <motion.button onClick={() => navigate("/therapist/template/new")} className="flex items-center gap-2 bg-foreground text-background px-4 py-2.5 rounded-xl text-sm font-bold" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Plus size={16} /> Neue Vorlage
-            </motion.button>
-          </div>
-          <div className="flex items-center gap-3 mb-1">
-            <h1 className="text-2xl font-black text-foreground tracking-tight">Übungsvorlagen</h1>
-            <Badge variant="muted">{templates.length}</Badge>
-          </div>
-          <p className="text-muted-foreground text-sm">Erstelle und verwalte interaktive Vorlagen für deine Klienten.</p>
+      <TherapistHeroHeader maxWidthClassName="max-w-5xl">
+        <div className="flex items-center justify-between mb-5">
+          <motion.button
+            onClick={() => navigate("/therapist")}
+            className="flex items-center gap-2 bg-primary-foreground/15 hover:bg-primary-foreground/25 px-4 py-2.5 rounded-2xl transition-colors text-sm font-bold"
+            whileHover={{ x: -3 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <ArrowLeft size={16} /> Dashboard
+          </motion.button>
 
-          <div className="mt-5 relative">
-            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Vorlagen durchsuchen..." className="w-full pl-11 pr-10 py-3 bg-secondary border border-border rounded-xl text-foreground font-medium placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring text-sm" />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-md hover:bg-muted">
-                <X size={14} className="text-muted-foreground" />
-              </button>
-            )}
-          </div>
+          <motion.button
+            onClick={() => navigate("/therapist/template/new")}
+            className="flex items-center gap-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 px-4 py-2.5 rounded-2xl transition-colors text-sm font-bold"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus size={16} /> Neue Vorlage
+          </motion.button>
         </div>
-      </div>
+
+        <div className="flex items-center gap-3 mb-1">
+          <h1 className="text-2xl font-black tracking-tight">Übungsvorlagen</h1>
+          <Badge
+            variant="muted"
+            className="bg-primary-foreground/15 border-primary-foreground/25 text-primary-foreground"
+          >
+            {templates.length}
+          </Badge>
+        </div>
+        <p className="text-primary-foreground/70 text-sm font-semibold">
+          Erstelle und verwalte interaktive Vorlagen für deine Klienten.
+        </p>
+
+        <div className="mt-5 relative">
+          <Search
+            size={16}
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-foreground/70"
+          />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Vorlagen durchsuchen…"
+            className="w-full pl-11 pr-10 py-3 rounded-2xl bg-primary-foreground/12 border border-primary-foreground/25 text-primary-foreground font-semibold placeholder-primary-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary-foreground/25 text-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-primary-foreground/15"
+              aria-label="Suche löschen"
+            >
+              <X size={14} className="text-primary-foreground/75" />
+            </button>
+          )}
+        </div>
+      </TherapistHeroHeader>
 
       <div className="max-w-5xl mx-auto px-6 py-8">
         {filtered.length === 0 ? (
