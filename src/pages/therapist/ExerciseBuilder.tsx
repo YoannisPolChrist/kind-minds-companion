@@ -574,6 +574,8 @@ export default function ExerciseBuilderPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }
