@@ -144,6 +144,51 @@ function generalTemplate(title: string, body: string): string {
   `);
 }
 
+function appointmentSavedTemplate(appointmentInfo: string): string {
+  return baseTemplate(`
+    <div class="header" style="background: linear-gradient(135deg, #E91E8C 0%, #C2185B 100%);">
+      <div class="header-logo" style="color:rgba(255,255,255,0.6);">Therapie-App</div>
+      <div class="header-title">Neuer Termin eingetragen 📅</div>
+      <div class="header-subtitle">Dein Therapeut hat einen Termin für dich geplant.</div>
+    </div>
+    <div class="body">
+      <p class="greeting">Hallo,</p>
+      <p class="message">
+        Dein Therapeut hat einen neuen Termin für dich eingetragen. Bitte merke dir den folgenden Termin vor:
+      </p>
+      <div class="info-box">
+        <div class="info-box-label">Nächster Termin</div>
+        <div class="info-box-value">📅 ${appointmentInfo}</div>
+      </div>
+      <p class="message">
+        Du findest den Termin auch auf deinem Dashboard in der App. Bei Fragen oder falls du den Termin verschieben möchtest, wende dich direkt an deinen Therapeuten.
+      </p>
+      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn" style="background: linear-gradient(135deg, #E91E8C, #C2185B);">Zum Dashboard →</a>
+    </div>
+  `);
+}
+
+function fileUploadedTemplate(fileName: string): string {
+  return baseTemplate(`
+    <div class="header">
+      <div class="header-logo">Therapie-App</div>
+      <div class="header-title">Neue Datei bereitgestellt 📎</div>
+      <div class="header-subtitle">Dein Therapeut hat eine Datei für dich hinterlegt.</div>
+    </div>
+    <div class="body">
+      <p class="greeting">Hallo,</p>
+      <p class="message">
+        Dein Therapeut hat eine neue Datei in deinem persönlichen Bereich hinterlegt. Du findest sie unter <em>Dateien</em> in der App.
+      </p>
+      <div class="info-box">
+        <div class="info-box-label">Datei</div>
+        <div class="info-box-value">📎 ${fileName}</div>
+      </div>
+      <a href="https://therapieprozessunterstuetzung.web.app" class="cta-btn">Dateien ansehen →</a>
+    </div>
+  `);
+}
+
 function passwordResetTemplate(resetLink: string): string {
   return baseTemplate(`
     <div class="header">
@@ -290,6 +335,14 @@ export const onNotificationCreated = onDocumentCreated(
           case "checkin_reminder":
             html = checkinReminderTemplate();
             subject = "🌅 Dein täglicher Check-in wartet auf dich";
+            break;
+          case "appointment_saved":
+            html = appointmentSavedTemplate(body || "Nächster Termin wurde eingetragen");
+            subject = "📅 Neuer Termin eingetragen";
+            break;
+          case "FILE_UPLOAD":
+            html = fileUploadedTemplate(title || "Neue Datei");
+            subject = `📎 Neue Datei: ${title || "Neue Datei"}`;
             break;
           default:
             html = generalTemplate(

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc, addDoc } from "firebase/firestore";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
@@ -12,6 +12,7 @@ import { motion } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard,
 } from "../../components/motion";
+import { Toast } from "../../components/ui/Toast";
 
 const HEADER_IMAGES = [
   "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
@@ -192,6 +193,7 @@ export default function TherapistClientDetail() {
   const [savingAppointment, setSavingAppointment] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
   // Stats
   const [exerciseCount, setExerciseCount] = useState(0);
@@ -237,8 +239,23 @@ export default function TherapistClientDetail() {
       const d = new Date(selectedDate);
       d.setHours(selectedTime.h, selectedTime.m, 0, 0);
       await updateDoc(doc(db, "users", id), { nextAppointment: d.toISOString() });
+
+      // Send email notification to client
+      const dateStr = d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const timeStr = `${String(selectedTime.h).padStart(2, "0")}:${String(selectedTime.m).padStart(2, "0")}`;
+      await addDoc(collection(db, "notifications"), {
+        userId: id,
+        type: "appointment_saved",
+        title: "Neuer Termin eingetragen 📅",
+        body: `Dein nächster Termin wurde auf ${dateStr} um ${timeStr} Uhr festgelegt.`,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      });
+
+      setToast({ visible: true, message: "Termin gespeichert!", subMessage: `${dateStr} um ${timeStr} Uhr – Klient wird per E-Mail benachrichtigt.`, type: "success" });
     } catch (e) {
       console.error("Failed to save appointment", e);
+      setToast({ visible: true, message: "Fehler beim Speichern", subMessage: "Termin konnte nicht gespeichert werden.", type: "error" });
     } finally {
       setSavingAppointment(false);
     }
@@ -468,6 +485,8 @@ export default function TherapistClientDetail() {
 
         <div className="h-8" />
       </StaggerContainer>
+
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }
