@@ -105,7 +105,7 @@ export default function Checkin() {
           if (preset) setSelectedEmotionId(preset.id);
           if (data.energy) setEnergy(data.energy);
           if (data.note) setNote(data.note);
-          if (data.tags) setTags(data.tags);
+          
         }
       } catch (e) {
         console.warn("Could not check existing checkin:", e);
