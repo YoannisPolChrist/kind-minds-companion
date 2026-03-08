@@ -776,7 +776,7 @@ export default function Exercise() {
               {exercise.recurrence === "daily" && " · 🔁 Täglich"}
               {exercise.recurrence === "weekly" && " · 🔁 Wöchentlich"}
             </p>
-            <motion.button onClick={() => generateExercisePdf(exercise)}
+            <motion.button onClick={() => generateExercisePdf({ ...exercise, answers })}
               className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors"
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Download size={14} /> PDF
