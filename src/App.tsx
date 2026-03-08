@@ -47,13 +47,15 @@ export default function App() {
         }
       />
       <Route
-        path="/exercise/:id"
+        path="/checkin"
         element={
           <ProtectedRoute>
-            <Exercise />
+            <Checkin />
           </ProtectedRoute>
         }
       />
+      <Route
+        path="/exercise/:id"
         element={
           <ProtectedRoute>
             <Exercise />
