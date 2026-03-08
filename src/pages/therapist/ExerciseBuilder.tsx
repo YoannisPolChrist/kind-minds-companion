@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "../../lib/firebase";
@@ -8,13 +8,17 @@ import {
   Edit3, Activity, CircleDot, ListChecks, CheckCircle2, Heart,
   BookOpen, Clock, Wind, Image as ImageIcon, Film, Radar,
   BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon,
-  Palette, GripVertical, Link as LinkIcon, X,
+  Palette, Link as LinkIcon, X, Search,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale,
 } from "../../components/motion";
 import { Toast } from "../../components/ui/Toast";
+import ExerciseCompositionChart from "../../components/charts/ExerciseCompositionChart";
+import ExerciseFlowTimeline from "../../components/charts/ExerciseFlowTimeline";
+import ExerciseDifficultyGauge from "../../components/charts/ExerciseDifficultyGauge";
+import * as d3 from "d3";
 
 // ─── Block Types ──────────────────────────────────────────────────────────────
 
@@ -58,18 +62,284 @@ const CATALOGUE: {
   { type: "line_chart", label: "Liniendiagramm", icon: LineChartIcon, desc: "Entwicklung", accent: "#10B981", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
 ];
 
+const CHART_PALETTE = ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B", "#14B8A6", "#64748B", "#EC4899", "#3B82F6"];
 const THEME_COLORS = ["#137386", "#3B82F6", "#8B5CF6", "#EC4899", "#F43F5E", "#F59E0B", "#10B981", "#64748B"];
 
-function uid() { return Math.random().toString(36).substring(2, 9); }
+const BLOCK_CATEGORIES: { label: string; types: BlockType[] }[] = [
+  { label: "Schnellzugriff", types: ["reflection", "checklist", "scale", "info"] },
+  { label: "📝 Interaktion", types: ["reflection", "scale", "choice", "checklist", "homework", "gratitude"] },
+  { label: "📖 Inhalt", types: ["info", "media", "video"] },
+  { label: "⏱ Zeit & Achtsamkeit", types: ["timer", "breathing"] },
+  { label: "📊 Visualisierung", types: ["spider_chart", "bar_chart", "pie_chart", "line_chart"] },
+];
 
+function uid() { return Math.random().toString(36).substring(2, 9); }
 function getCat(type: BlockType) { return CATALOGUE.find(c => c.type === type) || CATALOGUE[0]; }
 
 function defaultBlock(type: BlockType): Block {
   const b: any = { id: uid(), type, content: "" };
   if (type === "timer" || type === "breathing") b.duration = 120;
-  if (["choice", "checklist", "spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(type)) b.options = ["", ""];
+  if (["choice", "checklist"].includes(type)) b.options = ["", ""];
+  if (["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(type)) b.options = ["::", "::"];
   if (type === "scale") { b.minLabel = "Gar nicht"; b.maxLabel = "Sehr stark"; }
   return b as Block;
+}
+
+// ─── Chart Preview Components ─────────────────────────────────────────────────
+
+function BarChartPreview({ options }: { options: string[] }) {
+  const data = options.map((o, i) => {
+    const [label, val, color] = o.split(":");
+    return { label: label || "?", value: parseFloat(val || "0") || 0, color: color || CHART_PALETTE[i % CHART_PALETTE.length] };
+  });
+  const maxVal = Math.max(...data.map(d => d.value), 1);
+  const W = 320, H = 160, PAD = 40, BAR_PAD = 8;
+  const barW = Math.max(12, (W - PAD * 2) / data.length - BAR_PAD);
+
+  return (
+    <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-4">
+      <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+      <svg width={W} height={H} className="mx-auto block">
+        {data.map((d, i) => {
+          const x = PAD + i * (barW + BAR_PAD);
+          const barH = (d.value / maxVal) * (H - 50);
+          return (
+            <g key={i}>
+              <motion.rect
+                x={x} width={barW} rx={6}
+                y={H - 20 - barH} height={barH}
+                fill={d.color}
+                initial={{ height: 0, y: H - 20 }}
+                animate={{ height: barH, y: H - 20 - barH }}
+                transition={{ delay: i * 0.1, type: "spring", damping: 15 }}
+              />
+              <text x={x + barW / 2} y={H - 20 - barH - 6} textAnchor="middle" fontSize={10} fontWeight="700" fill={d.color}>{d.value}</text>
+              <text x={x + barW / 2} y={H - 4} textAnchor="middle" fontSize={9} fontWeight="600" fill="hsl(var(--muted-foreground))">{d.label.slice(0, 6)}</text>
+            </g>
+          );
+        })}
+        <line x1={PAD - 4} y1={H - 20} x2={W - PAD + 4} y2={H - 20} stroke="hsl(var(--border))" strokeWidth={1} />
+      </svg>
+    </div>
+  );
+}
+
+function PieChartPreview({ options }: { options: string[] }) {
+  const data = options.map((o, i) => {
+    const [label, val, color] = o.split(":");
+    return { label: label || "?", value: parseFloat(val || "0") || 1, color: color || CHART_PALETTE[i % CHART_PALETTE.length] };
+  });
+  const SIZE = 160, R = SIZE / 2 - 8, IR = R * 0.5;
+  const pie = d3.pie<(typeof data)[0]>().value(d => d.value).padAngle(0.04).sortValues(null);
+  const arc = d3.arc<d3.PieArcDatum<(typeof data)[0]>>().outerRadius(R).innerRadius(IR).cornerRadius(4);
+  const pieData = pie(data);
+
+  return (
+    <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-4">
+      <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+      <div className="flex items-center gap-4 justify-center">
+        <svg width={SIZE} height={SIZE}>
+          <g transform={`translate(${SIZE / 2},${SIZE / 2})`}>
+            {pieData.map((d, i) => (
+              <motion.path key={i} d={arc(d) ?? ""} fill={d.data.color}
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 0.9 }}
+                transition={{ delay: i * 0.1, type: "spring" }} />
+            ))}
+          </g>
+        </svg>
+        <div className="space-y-1.5">
+          {data.map((d, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+              <span className="text-xs font-semibold text-foreground">{d.label}</span>
+              <span className="text-[10px] font-bold text-muted-foreground">{d.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LineChartPreview({ options }: { options: string[] }) {
+  const data = options.map((o, i) => {
+    const [label, val] = o.split(":");
+    return { label: label || "?", value: parseFloat(val || "0") || 0 };
+  });
+  const W = 320, H = 140, PAD = 40;
+  const maxVal = Math.max(...data.map(d => d.value), 1);
+  const points = data.map((d, i) => ({
+    x: PAD + (i / Math.max(data.length - 1, 1)) * (W - PAD * 2),
+    y: H - 24 - (d.value / maxVal) * (H - 50),
+    ...d,
+  }));
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+
+  return (
+    <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-4">
+      <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+      <svg width={W} height={H} className="mx-auto block">
+        <motion.path d={linePath} fill="none" stroke="#10B981" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"
+          initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1 }} />
+        {points.map((p, i) => (
+          <g key={i}>
+            <motion.circle cx={p.x} cy={p.y} r={5} fill="#10B981" stroke="#fff" strokeWidth={2}
+              initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: i * 0.1 + 0.3 }} />
+            <text x={p.x} y={p.y - 10} textAnchor="middle" fontSize={9} fontWeight="700" fill="#10B981">{p.value}</text>
+            <text x={p.x} y={H - 4} textAnchor="middle" fontSize={9} fontWeight="600" fill="hsl(var(--muted-foreground))">{p.label.slice(0, 4)}</text>
+          </g>
+        ))}
+        <line x1={PAD - 4} y1={H - 24} x2={W - PAD + 4} y2={H - 24} stroke="hsl(var(--border))" strokeWidth={1} />
+      </svg>
+    </div>
+  );
+}
+
+function SpiderChartPreview({ options }: { options: string[] }) {
+  const data = options.map((o, i) => {
+    const [label, val, color] = o.split(":");
+    return { label: label || "?", value: Math.min(parseFloat(val || "0") || 0, 100), color: color || CHART_PALETTE[i % CHART_PALETTE.length] };
+  });
+  if (data.length < 3) return null;
+
+  const SIZE = 200, CX = SIZE / 2, CY = SIZE / 2, R = SIZE / 2 - 30;
+  const n = data.length;
+  const angleStep = (2 * Math.PI) / n;
+
+  const gridLevels = [0.25, 0.5, 0.75, 1];
+  const pointsFn = (level: number) => data.map((_, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    return { x: CX + Math.cos(angle) * R * level, y: CY + Math.sin(angle) * R * level };
+  });
+
+  const dataPoints = data.map((d, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    const r = (d.value / 100) * R;
+    return { x: CX + Math.cos(angle) * r, y: CY + Math.sin(angle) * r };
+  });
+  const dataPath = dataPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
+
+  return (
+    <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-4">
+      <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+      <svg width={SIZE} height={SIZE} className="mx-auto block">
+        {gridLevels.map(level => {
+          const pts = pointsFn(level);
+          const gridPath = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ") + " Z";
+          return <path key={level} d={gridPath} fill="none" stroke="hsl(var(--border))" strokeWidth={1} opacity={0.5} />;
+        })}
+        {data.map((_, i) => {
+          const angle = i * angleStep - Math.PI / 2;
+          return <line key={i} x1={CX} y1={CY} x2={CX + Math.cos(angle) * R} y2={CY + Math.sin(angle) * R} stroke="hsl(var(--border))" strokeWidth={0.5} opacity={0.5} />;
+        })}
+        <motion.path d={dataPath} fill="#F97316" fillOpacity={0.2} stroke="#F97316" strokeWidth={2}
+          initial={{ scale: 0, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", damping: 15 }} style={{ transformOrigin: `${CX}px ${CY}px` }} />
+        {dataPoints.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y} r={4} fill={data[i].color} stroke="#fff" strokeWidth={2} />
+        ))}
+        {data.map((d, i) => {
+          const angle = i * angleStep - Math.PI / 2;
+          const lx = CX + Math.cos(angle) * (R + 16);
+          const ly = CY + Math.sin(angle) * (R + 16);
+          return <text key={i} x={lx} y={ly + 3} textAnchor="middle" fontSize={9} fontWeight="700" fill="hsl(var(--foreground))">{d.label.slice(0, 6)}</text>;
+        })}
+      </svg>
+    </div>
+  );
+}
+
+// ─── Chart Option Editor ──────────────────────────────────────────────────────
+
+function ChartOptionEditor({ block, onChange, chartType }: {
+  block: Block;
+  onChange: (updates: Partial<Block>) => void;
+  chartType: "spider_chart" | "bar_chart" | "pie_chart" | "line_chart";
+}) {
+  const cat = getCat(block.type);
+  const isLine = chartType === "line_chart";
+  const hasColor = !isLine;
+
+  const parseOpt = (opt: string, i: number) => {
+    const parts = opt.split(":");
+    return { label: parts[0] || "", val: parts[1] || "", color: parts[2] || CHART_PALETTE[i % CHART_PALETTE.length] };
+  };
+
+  const updateOption = (i: number, label: string, val: string, color: string) => {
+    const opts = [...(block.options || [])];
+    opts[i] = isLine ? `${label}:${val}` : `${label}:${val}:${color}`;
+    onChange({ options: opts });
+  };
+
+  const addOption = () => {
+    const opts = [...(block.options || [])];
+    opts.push(isLine ? ":" : "::");
+    onChange({ options: opts });
+  };
+
+  const removeOption = (i: number) => {
+    onChange({ options: (block.options || []).filter((_, idx) => idx !== i) });
+  };
+
+  const labels: Record<string, { title: string; labelPh: string; valPh: string; addLabel: string }> = {
+    spider_chart: { title: "Kategorien & Werte (z.B. 0-100)", labelPh: "Kategorie", valPh: "Wert (z.B. 80)", addLabel: "+ Kategorie hinzufügen" },
+    bar_chart: { title: "Kategorien & Werte", labelPh: "Parameter", valPh: "Wert", addLabel: "+ Parameter hinzufügen" },
+    pie_chart: { title: "Kategorien & Werte", labelPh: "Segment", valPh: "Wert", addLabel: "+ Segment hinzufügen" },
+    line_chart: { title: "Kategorien & Werte (Zeitpunkte/Datenpunkte)", labelPh: "X-Achse (z.B. Mo)", valPh: "Y-Wert", addLabel: "+ Datenpunkt hinzufügen" },
+  };
+  const l = labels[chartType];
+
+  return (
+    <>
+      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Titel / Fragestellung</label>
+      <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Werteprofil der Lebensbereiche"
+        className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mt-2">{l.title}</label>
+      <AnimatePresence>
+        {(block.options || []).map((opt, i) => {
+          const parsed = parseOpt(opt, i);
+          return (
+            <motion.div key={`opt-${i}`} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, height: 0 }}
+              transition={{ type: "spring", damping: 20, delay: i * 0.05 }}
+              className="flex items-center gap-2 mb-2"
+            >
+              {hasColor && (
+                <button
+                  onClick={() => {
+                    const nextIdx = (CHART_PALETTE.indexOf(parsed.color) + 1) % CHART_PALETTE.length;
+                    updateOption(i, parsed.label, parsed.val, CHART_PALETTE[nextIdx]);
+                  }}
+                  className="w-4 h-4 rounded-full shrink-0 border-2 border-border hover:scale-125 transition-transform"
+                  style={{ backgroundColor: parsed.color }}
+                />
+              )}
+              <input value={parsed.label} onChange={e => updateOption(i, e.target.value, parsed.val, parsed.color)}
+                placeholder={`${l.labelPh} ${i + 1}...`}
+                className="flex-[2] bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+              <input value={parsed.val} onChange={e => updateOption(i, parsed.label, e.target.value, parsed.color)}
+                placeholder={l.valPh} type="number"
+                className="flex-1 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+              {(block.options?.length || 0) > 2 && (
+                <button onClick={() => removeOption(i)} className="text-destructive font-bold text-lg hover:scale-110 transition-transform">×</button>
+              )}
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+      <button onClick={addOption}
+        className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40 transition-colors"
+        style={{ color: cat.accent }}
+      >
+        {l.addLabel}
+      </button>
+
+      {/* Live Chart Preview */}
+      {chartType === "bar_chart" && <BarChartPreview options={block.options || []} />}
+      {chartType === "pie_chart" && <PieChartPreview options={block.options || []} />}
+      {chartType === "line_chart" && <LineChartPreview options={block.options || []} />}
+      {chartType === "spider_chart" && <SpiderChartPreview options={block.options || []} />}
+    </>
+  );
 }
 
 // ─── Block Form Component ─────────────────────────────────────────────────────
@@ -103,12 +373,10 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
       transition={{ type: "spring", damping: 22, stiffness: 180 }}
       className="rounded-[1.75rem] overflow-hidden border border-border bg-card shadow-sm"
     >
-      {/* Drag Handle */}
       <div className="flex justify-center pt-2 pb-1" style={{ backgroundColor: cat.bg }}>
         <div className="w-12 h-1 rounded-full opacity-20" style={{ backgroundColor: cat.text }} />
       </div>
 
-      {/* Header */}
       <div className="flex items-center px-6 py-4 border-b border-border" style={{ backgroundColor: cat.bg }}>
         <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 mr-3.5 text-white" style={{ backgroundColor: cat.accent, boxShadow: `0 4px 12px ${cat.accent}40` }}>
           <Icon size={20} />
@@ -125,7 +393,6 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
         </div>
       </div>
 
-      {/* Body */}
       <div className="p-6 space-y-4">
         {/* REFLECTION / INFO */}
         {(block.type === "reflection" || block.type === "info") && (
@@ -133,13 +400,9 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
             <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
               {block.type === "info" ? "Psychoedukations-Text" : "Aufgabe / Frage an den Klienten"}
             </label>
-            <textarea
-              value={block.content}
-              onChange={e => onChange({ content: e.target.value })}
-              placeholder={block.type === "info" ? "Erkläre dem Klienten z.B. das ABC-Modell…" : "Was möchtest du reflektieren?"}
-              rows={4}
-              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <textarea value={block.content} onChange={e => onChange({ content: e.target.value })}
+              placeholder={block.type === "info" ? "Erkläre dem Klienten z.B. das ABC-Modell…" : "Was möchtest du reflektieren?"} rows={4}
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring" />
           </>
         )}
 
@@ -315,29 +578,9 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
           </>
         )}
 
-        {/* CHART BLOCKS (spider, bar, pie, line) */}
-        {["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(block.type) && (
-          <>
-            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Titel / Fragestellung</label>
-            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Werteprofil der Lebensbereiche"
-              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
-            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Kategorien</label>
-            <AnimatePresence>
-              {(block.options || []).map((opt, i) => (
-                <motion.div key={`chart-${i}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-2 mb-2">
-                  <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B"][i % 6] }} />
-                  <input value={opt} onChange={e => updateOption(i, e.target.value)} placeholder={`Kategorie ${i + 1}`}
-                    className="flex-1 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
-                  {(block.options?.length || 0) > 2 && (
-                    <button onClick={() => removeOption(i)} className="text-destructive font-bold text-lg">×</button>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            <button onClick={addOption} className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm" style={{ color: cat.accent }}>
-              + Kategorie hinzufügen
-            </button>
-          </>
+        {/* CHART BLOCKS with live previews */}
+        {(["spider_chart", "bar_chart", "pie_chart", "line_chart"] as const).includes(block.type as any) && (
+          <ChartOptionEditor block={block} onChange={onChange} chartType={block.type as any} />
         )}
       </div>
     </motion.div>
@@ -360,7 +603,6 @@ export default function ExerciseBuilderPage() {
   const [showCatalogue, setShowCatalogue] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
-  // Load existing template
   useEffect(() => {
     if (isNew || !id) return;
     (async () => {
@@ -383,11 +625,9 @@ export default function ExerciseBuilderPage() {
   const updateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
     setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, ...updates } : b));
   }, []);
-
   const removeBlock = useCallback((blockId: string) => {
     setBlocks(prev => prev.filter(b => b.id !== blockId));
   }, []);
-
   const moveBlock = useCallback((blockId: string, dir: "up" | "down") => {
     setBlocks(prev => {
       const idx = prev.findIndex(b => b.id === blockId);
@@ -399,7 +639,6 @@ export default function ExerciseBuilderPage() {
       return next;
     });
   }, []);
-
   const duplicateBlock = useCallback((blockId: string) => {
     setBlocks(prev => {
       const idx = prev.findIndex(b => b.id === blockId);
@@ -410,7 +649,6 @@ export default function ExerciseBuilderPage() {
       return next;
     });
   }, []);
-
   const addBlock = useCallback((type: BlockType) => {
     setBlocks(prev => [...prev, defaultBlock(type)]);
     setShowCatalogue(false);
@@ -420,14 +658,7 @@ export default function ExerciseBuilderPage() {
     if (!title.trim()) return;
     setSaving(true);
     try {
-      const payload = {
-        title: title.trim(),
-        themeColor,
-        blocks,
-        therapistId: profile?.id,
-        updatedAt: serverTimestamp(),
-      };
-
+      const payload = { title: title.trim(), themeColor, blocks, therapistId: profile?.id, updatedAt: serverTimestamp() };
       if (isNew) {
         await addDoc(collection(db, "exercise_templates"), { ...payload, createdAt: serverTimestamp() });
       } else if (id) {
@@ -467,15 +698,10 @@ export default function ExerciseBuilderPage() {
             </motion.button>
           </div>
 
-          <input
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            placeholder="Übungstitel eingeben…"
-            className="w-full text-3xl font-black text-white bg-transparent placeholder-white/50 focus:outline-none mb-3 tracking-tight"
-          />
+          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Übungstitel eingeben…"
+            className="w-full text-3xl font-black text-white bg-transparent placeholder-white/50 focus:outline-none mb-3 tracking-tight" />
           <p className="text-white/60 text-sm font-medium">{blocks.length} {blocks.length === 1 ? "Modul" : "Module"} · {isNew ? "Neue Vorlage" : "Bearbeiten"}</p>
 
-          {/* Theme Color Picker */}
           <div className="flex items-center gap-3 mt-5">
             <Palette size={16} className="text-white/60" />
             <div className="flex gap-2">
@@ -489,35 +715,48 @@ export default function ExerciseBuilderPage() {
         </div>
       </div>
 
-      {/* Blocks */}
-      <div className="max-w-3xl mx-auto px-6 py-6 space-y-5">
-        <AnimatePresence mode="popLayout">
-          {blocks.map((block, idx) => (
-            <BlockForm
-              key={block.id}
-              block={block}
-              onChange={updates => updateBlock(block.id, updates)}
-              onRemove={() => removeBlock(block.id)}
-              onMove={dir => moveBlock(block.id, dir)}
-              onDuplicate={() => duplicateBlock(block.id)}
-              isFirst={idx === 0}
-              isLast={idx === blocks.length - 1}
-            />
-          ))}
-        </AnimatePresence>
-
-        {/* Add Block Button */}
-        <motion.button
-          onClick={() => setShowCatalogue(true)}
-          className="w-full border-2 border-dashed border-border rounded-[1.75rem] py-8 flex flex-col items-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all group"
-          whileHover={{ scale: 1.01 }}
-          whileTap={{ scale: 0.99 }}
-        >
-          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
-            <Plus size={24} className="text-primary" />
+      <div className="max-w-3xl mx-auto px-6 py-6">
+        {/* Analytics Widgets */}
+        {blocks.length > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <ExerciseCompositionChart blocks={blocks} />
+            <div className="space-y-4">
+              <ExerciseFlowTimeline blocks={blocks} />
+              <ExerciseDifficultyGauge blocks={blocks} />
+            </div>
           </div>
-          <span className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors">Modul hinzufügen</span>
-        </motion.button>
+        )}
+
+        {/* Blocks */}
+        <div className="space-y-5">
+          <AnimatePresence mode="popLayout">
+            {blocks.map((block, idx) => (
+              <BlockForm
+                key={block.id}
+                block={block}
+                onChange={updates => updateBlock(block.id, updates)}
+                onRemove={() => removeBlock(block.id)}
+                onMove={dir => moveBlock(block.id, dir)}
+                onDuplicate={() => duplicateBlock(block.id)}
+                isFirst={idx === 0}
+                isLast={idx === blocks.length - 1}
+              />
+            ))}
+          </AnimatePresence>
+
+          {/* Add Block Button */}
+          <motion.button
+            onClick={() => setShowCatalogue(true)}
+            className="w-full border-2 border-dashed border-border rounded-[1.75rem] py-8 flex flex-col items-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all group"
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+          >
+            <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+              <Plus size={24} className="text-primary" />
+            </div>
+            <span className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors">Modul hinzufügen</span>
+          </motion.button>
+        </div>
       </div>
 
       {/* Sticky Save Bar */}
@@ -536,46 +775,124 @@ export default function ExerciseBuilderPage() {
         </div>
       </div>
 
-      {/* Block Catalogue Modal */}
+      {/* Block Catalogue Modal with Search + Categories */}
       <AnimatePresence>
         {showCatalogue && (
-          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCatalogue(false)}>
-            <motion.div
-              className="bg-card rounded-t-3xl sm:rounded-3xl border border-border w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl"
-              initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 100 }}
-              transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              onClick={e => e.stopPropagation()}
-            >
-              <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card/95 backdrop-blur-xl z-10">
-                <h2 className="text-lg font-black text-foreground">Modul hinzufügen</h2>
-                <button onClick={() => setShowCatalogue(false)} className="p-2 rounded-xl hover:bg-secondary"><X size={20} className="text-muted-foreground" /></button>
-              </div>
-              <div className="p-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {CATALOGUE.map(cat => {
-                  const Icon = cat.icon;
-                  return (
-                    <motion.button
-                      key={cat.type}
-                      onClick={() => addBlock(cat.type)}
-                      className="bg-secondary rounded-2xl border border-border p-4 text-left hover:border-primary/30 transition-all group"
-                      whileHover={{ scale: 1.03, y: -2 }}
-                      whileTap={{ scale: 0.97 }}
-                    >
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 text-white" style={{ backgroundColor: cat.accent }}>
-                        <Icon size={18} />
-                      </div>
-                      <p className="text-sm font-bold text-foreground">{cat.label}</p>
-                      <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{cat.desc}</p>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </motion.div>
+          <CatalogueModal onAdd={addBlock} onClose={() => setShowCatalogue(false)} />
         )}
       </AnimatePresence>
 
       <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
+  );
+}
+
+// ─── Catalogue Modal ──────────────────────────────────────────────────────────
+
+function CatalogueModal({ onAdd, onClose }: { onAdd: (type: BlockType) => void; onClose: () => void }) {
+  const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("Schnellzugriff");
+
+  const quickTypes: BlockType[] = ["reflection", "checklist", "scale", "info"];
+
+  const filteredCatalogue = useMemo(() => {
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return CATALOGUE.filter(c => c.label.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q));
+    }
+    const cat = BLOCK_CATEGORIES.find(c => c.label === activeCategory);
+    if (!cat) return CATALOGUE;
+    return CATALOGUE.filter(c => cat.types.includes(c.type));
+  }, [search, activeCategory]);
+
+  return (
+    <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+      <motion.div
+        className="bg-card rounded-t-3xl sm:rounded-3xl border border-border w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl"
+        initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 100 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card/95 backdrop-blur-xl z-10">
+          <div>
+            <h2 className="text-lg font-black text-foreground">Block hinzufügen</h2>
+            <p className="text-xs text-muted-foreground font-semibold mt-0.5">{CATALOGUE.length} Blocktypen verfügbar</p>
+          </div>
+          <button onClick={onClose} className="p-2 rounded-xl hover:bg-secondary"><X size={20} className="text-muted-foreground" /></button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Quick-add Pills */}
+          <div>
+            <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-2.5">Häufig verwendet</p>
+            <div className="flex gap-2 flex-wrap">
+              {quickTypes.map(type => {
+                const cat = getCat(type);
+                const Icon = cat.icon;
+                return (
+                  <motion.button key={type} onClick={() => onAdd(type)}
+                    className="flex items-center gap-2 px-3.5 py-2.5 rounded-[20px] border font-extrabold text-sm"
+                    style={{ backgroundColor: cat.bg, borderColor: cat.border, color: cat.text }}
+                    whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                    <Icon size={16} style={{ color: cat.accent }} />
+                    {cat.label}
+                  </motion.button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="flex items-center gap-3 bg-secondary rounded-2xl border border-border px-4 py-3">
+            <Search size={16} className="text-muted-foreground shrink-0" />
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Block suchen…"
+              className="flex-1 bg-transparent text-foreground font-semibold focus:outline-none placeholder:text-muted-foreground" />
+            {search.length > 0 && (
+              <button onClick={() => setSearch("")} className="text-muted-foreground font-bold text-lg">×</button>
+            )}
+          </div>
+
+          {/* Category Tabs */}
+          {!search.trim() && (
+            <div className="flex gap-2 flex-wrap">
+              {BLOCK_CATEGORIES.filter(c => c.label !== "Schnellzugriff").map(cat => {
+                const isActive = activeCategory === cat.label;
+                return (
+                  <button key={cat.label} onClick={() => setActiveCategory(cat.label)}
+                    className={`px-3.5 py-2 rounded-2xl text-[13px] font-extrabold border transition-all ${isActive ? "bg-primary text-primary-foreground border-primary" : "bg-secondary text-muted-foreground border-border hover:border-primary/30"}`}>
+                    {cat.label}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Block Grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {filteredCatalogue.map(cat => {
+              const Icon = cat.icon;
+              return (
+                <motion.button key={cat.type} onClick={() => onAdd(cat.type)}
+                  className="bg-secondary rounded-2xl border border-border p-4 text-left hover:border-primary/30 transition-all group"
+                  whileHover={{ scale: 1.03, y: -2 }} whileTap={{ scale: 0.97 }}>
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 text-white" style={{ backgroundColor: cat.accent }}>
+                    <Icon size={18} />
+                  </div>
+                  <p className="text-sm font-bold text-foreground">{cat.label}</p>
+                  <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{cat.desc}</p>
+                </motion.button>
+              );
+            })}
+            {filteredCatalogue.length === 0 && (
+              <div className="col-span-full text-center py-10">
+                <span className="text-3xl block mb-2">🔍</span>
+                <p className="text-sm font-bold text-muted-foreground">Kein Block gefunden</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </motion.div>
   );
 }
