@@ -281,58 +281,72 @@ export default function Checkin() {
         {/* Energy */}
         <StaggerItem>
           <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              ⚡ Dein Energielevel (1-10)
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+              ⚡ Dein Energielevel
             </h3>
-            <div className="flex justify-between text-sm font-bold text-muted-foreground mb-3 px-1">
-              <span>Erschöpft</span>
+            <div className="flex items-center justify-center mb-4">
               <motion.span
-                className="text-2xl font-black"
+                className="text-5xl font-black tabular-nums"
                 key={energy}
-                initial={{ scale: 1.4, y: -4 }}
+                initial={{ scale: 1.3, y: -6 }}
                 animate={{ scale: 1, y: 0 }}
                 style={{ color: activeEmotion?.color || "hsl(var(--primary))" }}
               >
                 {energy}
               </motion.span>
-              <span>Voller Energie</span>
+              <span className="text-lg font-bold text-muted-foreground ml-1">/100</span>
             </div>
-            <div className="relative h-10 flex items-center">
-              <div className="absolute inset-y-0 left-0 right-0 flex items-center">
-                <div className="w-full h-2 bg-muted rounded-full relative overflow-hidden">
-                  <motion.div
-                    className="absolute h-full rounded-full"
-                    animate={{ width: `${((energy - 1) / 9) * 100}%` }}
-                    transition={{ type: "spring", damping: 20, stiffness: 200 }}
-                    style={{
-                      background: `linear-gradient(90deg, ${activeEmotion?.color || "hsl(var(--primary))"}88, ${activeEmotion?.color || "hsl(var(--primary))"})`,
-                    }}
-                  />
-                </div>
+            <div className="flex justify-between text-xs font-bold text-muted-foreground mb-2 px-1">
+              <span>😴 Erschöpft</span>
+              <span>⚡ Voller Energie</span>
+            </div>
+            <div className="relative group">
+              <div className="w-full h-3 bg-muted rounded-full relative overflow-hidden">
+                <motion.div
+                  className="absolute h-full rounded-full"
+                  animate={{ width: `${energy}%` }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  style={{
+                    background: `linear-gradient(90deg, #EF4444, #FBBF24, #10B981, #0EA5E9)`,
+                  }}
+                />
               </div>
-              <div className="absolute inset-0 flex justify-between items-center">
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((val) => (
-                  <button
-                    key={val}
-                    onClick={() => !alreadyCompleted && setEnergy(val)}
-                    className="w-8 h-8 flex items-center justify-center z-10"
-                  >
-                    <motion.div
-                      className="rounded-full"
-                      animate={{
-                        width: energy === val ? 26 : 12,
-                        height: energy === val ? 26 : 12,
-                        backgroundColor: energy === val ? (activeEmotion?.color || "hsl(var(--primary))") : "transparent",
-                        borderWidth: energy === val ? 3 : 2,
-                        borderColor: energy === val ? "#fff" : "hsl(var(--border))",
-                        boxShadow: energy === val ? `0 4px 14px ${activeEmotion?.color || "hsl(var(--primary))"}60` : "none",
-                      }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      style={{ borderStyle: "solid" }}
-                    />
-                  </button>
-                ))}
-              </div>
+              <input
+                type="range"
+                min={1}
+                max={100}
+                value={energy}
+                onChange={(e) => !alreadyCompleted && setEnergy(Number(e.target.value))}
+                disabled={alreadyCompleted}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-default"
+              />
+              {/* Thumb indicator */}
+              <motion.div
+                className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                animate={{ left: `${energy}%` }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                style={{ marginLeft: -12 }}
+              >
+                <div
+                  className="w-6 h-6 rounded-full border-[3px] border-white shadow-lg"
+                  style={{
+                    backgroundColor: activeEmotion?.color || "hsl(var(--primary))",
+                    boxShadow: `0 4px 14px ${activeEmotion?.color || "hsl(var(--primary))"}50`,
+                  }}
+                />
+              </motion.div>
+            </div>
+            {/* Tick marks */}
+            <div className="flex justify-between px-0.5 mt-2">
+              {[0, 25, 50, 75, 100].map((tick) => (
+                <button
+                  key={tick}
+                  onClick={() => !alreadyCompleted && setEnergy(tick || 1)}
+                  className="text-[10px] font-bold text-muted-foreground/60 hover:text-foreground transition-colors"
+                >
+                  {tick}
+                </button>
+              ))}
             </div>
           </div>
         </StaggerItem>
