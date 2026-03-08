@@ -723,28 +723,72 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
               className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40" style={{ color: cat.accent }}>
               + Emotion hinzufügen
             </button>
-            {/* Preview – Wheel */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              <svg width={200} height={200} className="mx-auto block">
-                {(block.moodOptions || []).map((opt, i, arr) => {
-                  const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
-                  const nextAngle = ((i + 1) / arr.length) * Math.PI * 2 - Math.PI / 2;
-                  const R = 80, cx = 100, cy = 100;
-                  const x1 = cx + Math.cos(angle) * R, y1 = cy + Math.sin(angle) * R;
-                  const x2 = cx + Math.cos(nextAngle) * R, y2 = cy + Math.sin(nextAngle) * R;
-                  const large = arr.length <= 2 ? 1 : 0;
-                  const lx = cx + Math.cos((angle + nextAngle) / 2) * (R * 0.6);
-                  const ly = cy + Math.sin((angle + nextAngle) / 2) * (R * 0.6);
-                  return (
-                    <g key={i}>
-                      <path d={`M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} Z`}
-                        fill={CHART_PALETTE[i % CHART_PALETTE.length]} opacity={0.7} stroke="#fff" strokeWidth={2} />
-                      <text x={lx} y={ly + 3} textAnchor="middle" fontSize={9} fontWeight="700" fill="#fff">{(opt || "?").slice(0, 5)}</text>
-                    </g>
-                  );
-                })}
-              </svg>
+            {/* Premium Mood Wheel Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              <div className="flex items-center gap-5 justify-center">
+                <svg width={200} height={200} className="shrink-0">
+                  <defs>
+                    {(block.moodOptions || []).map((_, i) => (
+                      <radialGradient key={i} id={`mood-grad-${block.id}-${i}`} cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor={CHART_PALETTE[i % CHART_PALETTE.length]} stopOpacity={0.9} />
+                        <stop offset="100%" stopColor={CHART_PALETTE[i % CHART_PALETTE.length]} stopOpacity={0.5} />
+                      </radialGradient>
+                    ))}
+                    <filter id={`mood-shadow-${block.id}`}>
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
+                    </filter>
+                  </defs>
+                  {(block.moodOptions || []).map((opt, i, arr) => {
+                    const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
+                    const nextAngle = ((i + 1) / arr.length) * Math.PI * 2 - Math.PI / 2;
+                    const R = 85, IR = 30, cx = 100, cy = 100;
+                    const x1 = cx + Math.cos(angle) * R, y1 = cy + Math.sin(angle) * R;
+                    const x2 = cx + Math.cos(nextAngle) * R, y2 = cy + Math.sin(nextAngle) * R;
+                    const ix1 = cx + Math.cos(angle) * IR, iy1 = cy + Math.sin(angle) * IR;
+                    const ix2 = cx + Math.cos(nextAngle) * IR, iy2 = cy + Math.sin(nextAngle) * IR;
+                    const large = arr.length <= 2 ? 1 : 0;
+                    const lx = cx + Math.cos((angle + nextAngle) / 2) * ((R + IR) / 2);
+                    const ly = cy + Math.sin((angle + nextAngle) / 2) * ((R + IR) / 2);
+                    return (
+                      <motion.g key={i} filter={`url(#mood-shadow-${block.id})`}
+                        initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.1, type: "spring", damping: 12 }}
+                        style={{ transformOrigin: `${cx}px ${cy}px` }}>
+                        <path
+                          d={`M${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} L${ix2},${iy2} A${IR},${IR} 0 ${large} 0 ${ix1},${iy1} Z`}
+                          fill={`url(#mood-grad-${block.id}-${i})`} stroke="rgba(255,255,255,0.6)" strokeWidth={1.5}
+                        />
+                        <text x={lx} y={ly + 3} textAnchor="middle" fontSize={10} fontWeight="800" fill="#fff"
+                          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
+                          {(opt || "?").slice(0, 6)}
+                        </text>
+                      </motion.g>
+                    );
+                  })}
+                  {/* Center circle */}
+                  <motion.circle cx={100} cy={100} r={28} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={2}
+                    initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4, type: "spring" }}
+                    style={{ transformOrigin: "100px 100px" }} />
+                  <motion.text x={100} y={97} textAnchor="middle" fontSize={16}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+                    🎯
+                  </motion.text>
+                  <motion.text x={100} y={112} textAnchor="middle" fontSize={7} fontWeight="700" fill="hsl(var(--muted-foreground))"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}>
+                    Gefühl?
+                  </motion.text>
+                </svg>
+                <div className="space-y-2">
+                  {(block.moodOptions || []).map((opt, i) => (
+                    <motion.div key={i} className="flex items-center gap-2.5"
+                      initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.08 }}>
+                      <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
+                      <span className="text-xs font-bold text-foreground">{opt || `Emotion ${i + 1}`}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
             </div>
           </>
         )}
