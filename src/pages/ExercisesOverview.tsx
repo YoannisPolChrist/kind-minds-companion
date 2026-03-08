@@ -222,8 +222,8 @@ export default function ExercisesOverview() {
     <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 to-primary/70" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/30 to-primary/40" />
         <HeaderOrbs />
         <div className="max-w-2xl mx-auto px-5 pt-12 pb-6 relative z-10">
           <motion.button
