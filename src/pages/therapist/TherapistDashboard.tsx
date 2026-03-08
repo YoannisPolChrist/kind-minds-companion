@@ -51,24 +51,29 @@ export default function TherapistDashboard() {
           .map(d => ({ id: d.id, ...d.data() } as any))
           .filter(c => !c.isArchived);
 
-        // Fetch exercises & checkins count
-        const [exSnap, ciSnap] = await Promise.all([
+        const clientIds = clients.map(c => c.id);
+        const safeClientIds = clientIds.length > 0 ? clientIds.slice(0, 10) : ["__none__"];
+
+        // Fetch exercises, checkins & notes in parallel
+        const [exSnap, ciSnap, notesSnap] = await Promise.all([
           getDocs(query(collection(db, "exercises"), where("therapistId", "==", profile.id))),
-          getDocs(query(collection(db, "checkins"), where("uid", "in", clients.map(c => c.id).slice(0, 10) || ["__none__"]))),
+          getDocs(query(collection(db, "checkins"), where("uid", "in", safeClientIds))),
+          getDocs(query(collection(db, "client_notes"), where("clientId", "in", safeClientIds))),
         ]);
 
         const completedExercises = exSnap.docs.filter(d => d.data().completed).length;
+        const sessionNotes = notesSnap.docs.filter(d => d.data().authorRole === "therapist");
 
         setStats([
           { label: "Klienten", value: clients.length, emoji: "👥", color: "hsl(var(--primary))" },
           { label: "Übungen", value: exSnap.size, emoji: "📋", color: "#0EA5E9" },
           { label: "Erledigt", value: completedExercises, emoji: "✅", color: "#10B981" },
-          { label: "Check-ins", value: ciSnap.size, emoji: "📊", color: "#F59E0B" },
+          { label: "Session Notes", value: sessionNotes.length, emoji: "📝", color: "#8B5CF6" },
         ]);
 
-        // Build recent activity from exercises
+        // Build recent activity from exercises + notes
         const activities: RecentActivity[] = [];
-        exSnap.docs.slice(0, 8).forEach(d => {
+        exSnap.docs.slice(0, 5).forEach(d => {
           const data = d.data();
           const client = clients.find(c => c.id === data.clientId);
           if (client) {
@@ -76,12 +81,31 @@ export default function TherapistDashboard() {
               id: d.id,
               type: "exercise",
               clientName: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+              clientId: data.clientId,
               title: data.title || "Übung",
               date: data.createdAt || data.assignedAt || "",
             });
           }
         });
-        setRecentActivity(activities.slice(0, 5));
+        // Add recent session notes
+        sessionNotes.sort((a, b) => new Date(b.data().createdAt || 0).getTime() - new Date(a.data().createdAt || 0).getTime());
+        sessionNotes.slice(0, 5).forEach(d => {
+          const data = d.data();
+          const client = clients.find(c => c.id === data.clientId);
+          if (client) {
+            activities.push({
+              id: d.id,
+              type: "note",
+              clientName: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+              clientId: data.clientId,
+              title: data.title || "Session Note",
+              date: data.sessionDate || data.createdAt || "",
+            });
+          }
+        });
+        // Sort all activities by date, newest first
+        activities.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        setRecentActivity(activities.slice(0, 6));
       } catch (e) {
         console.error("Error loading dashboard:", e);
       } finally {
