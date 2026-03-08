@@ -378,7 +378,7 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
         <div className="w-12 h-1 rounded-full opacity-20" style={{ backgroundColor: cat.text }} />
       </div>
 
-      <div className="flex items-center px-6 py-4 border-b border-border" style={{ backgroundColor: cat.bg }}>
+      <div className="flex items-center px-6 py-4 border-b-2" style={{ backgroundColor: cat.bg, borderBottomColor: `${cat.accent}30` }}>
         <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 mr-3.5 text-white" style={{ backgroundColor: cat.accent, boxShadow: `0 4px 12px ${cat.accent}40` }}>
           <Icon size={20} />
         </div>
