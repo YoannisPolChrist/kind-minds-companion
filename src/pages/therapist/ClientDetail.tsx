@@ -417,6 +417,54 @@ export default function TherapistClientDetail() {
           </div>
         </StaggerItem>
 
+        {/* Delete Client */}
+        <StaggerItem>
+          <div className="bg-card rounded-3xl border border-destructive/20 p-6 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                <Trash2 size={24} className="text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-foreground">Klient löschen</h3>
+                <p className="text-sm text-muted-foreground">Alle Daten werden dauerhaft entfernt</p>
+              </div>
+            </div>
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full py-3 rounded-2xl border-2 border-destructive/30 text-destructive font-bold hover:bg-destructive/5 transition-colors"
+              >
+                Klient dauerhaft löschen
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-destructive font-bold">
+                  ⚠️ Alle Übungen, Check-ins, Notizen und Dateien von {client?.firstName} {client?.lastName} werden unwiderruflich gelöscht.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 py-3 rounded-2xl bg-secondary border border-border text-foreground font-bold hover:bg-muted transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleDeleteClient}
+                    disabled={deleting}
+                    className="flex-1 py-3 rounded-2xl bg-destructive text-white font-bold disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {deleting ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block animate-spin" />
+                    ) : (
+                      <><Trash2 size={16} /> Endgültig löschen</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </StaggerItem>
+
         <div className="h-8" />
       </StaggerContainer>
     </PageTransition>
