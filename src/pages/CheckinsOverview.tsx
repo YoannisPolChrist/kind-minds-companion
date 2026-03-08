@@ -124,10 +124,10 @@ export default function CheckinsOverview() {
     // Trend: compare last 3 to previous 3
     let trend: "up" | "down" | "stable" = "stable";
     if (checkins.length >= 4) {
-      const recent = moods.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
-      const older = moods.slice(3, 6).reduce((a, b) => a + b, 0) / Math.min(moods.slice(3, 6).length, 3);
-      if (recent - older > 0.5) trend = "up";
-      else if (older - recent > 0.5) trend = "down";
+      const recent = moodValues.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
+      const older = moodValues.slice(3, 6).reduce((a, b) => a + b, 0) / Math.min(moodValues.slice(3, 6).length, 3);
+      if (recent - older > 5) trend = "up";
+      else if (older - recent > 5) trend = "down";
     }
 
     // Top emotions
