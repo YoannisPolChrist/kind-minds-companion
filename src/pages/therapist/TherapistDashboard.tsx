@@ -25,8 +25,9 @@ interface QuickStat {
 
 interface RecentActivity {
   id: string;
-  type: "exercise" | "checkin";
+  type: "exercise" | "checkin" | "note";
   clientName: string;
+  clientId?: string;
   title: string;
   date: string;
 }
@@ -50,24 +51,29 @@ export default function TherapistDashboard() {
           .map(d => ({ id: d.id, ...d.data() } as any))
           .filter(c => !c.isArchived);
 
-        // Fetch exercises & checkins count
-        const [exSnap, ciSnap] = await Promise.all([
+        const clientIds = clients.map(c => c.id);
+        const safeClientIds = clientIds.length > 0 ? clientIds.slice(0, 10) : ["__none__"];
+
+        // Fetch exercises, checkins & notes in parallel
+        const [exSnap, ciSnap, notesSnap] = await Promise.all([
           getDocs(query(collection(db, "exercises"), where("therapistId", "==", profile.id))),
-          getDocs(query(collection(db, "checkins"), where("uid", "in", clients.map(c => c.id).slice(0, 10) || ["__none__"]))),
+          getDocs(query(collection(db, "checkins"), where("uid", "in", safeClientIds))),
+          getDocs(query(collection(db, "client_notes"), where("clientId", "in", safeClientIds))),
         ]);
 
         const completedExercises = exSnap.docs.filter(d => d.data().completed).length;
+        const sessionNotes = notesSnap.docs.filter(d => d.data().authorRole === "therapist");
 
         setStats([
           { label: "Klienten", value: clients.length, emoji: "👥", color: "hsl(var(--primary))" },
           { label: "Übungen", value: exSnap.size, emoji: "📋", color: "#0EA5E9" },
           { label: "Erledigt", value: completedExercises, emoji: "✅", color: "#10B981" },
-          { label: "Check-ins", value: ciSnap.size, emoji: "📊", color: "#F59E0B" },
+          { label: "Session Notes", value: sessionNotes.length, emoji: "📝", color: "#8B5CF6" },
         ]);
 
-        // Build recent activity from exercises
+        // Build recent activity from exercises + notes
         const activities: RecentActivity[] = [];
-        exSnap.docs.slice(0, 8).forEach(d => {
+        exSnap.docs.slice(0, 5).forEach(d => {
           const data = d.data();
           const client = clients.find(c => c.id === data.clientId);
           if (client) {
@@ -75,12 +81,31 @@ export default function TherapistDashboard() {
               id: d.id,
               type: "exercise",
               clientName: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+              clientId: data.clientId,
               title: data.title || "Übung",
               date: data.createdAt || data.assignedAt || "",
             });
           }
         });
-        setRecentActivity(activities.slice(0, 5));
+        // Add recent session notes
+        sessionNotes.sort((a, b) => new Date(b.data().createdAt || 0).getTime() - new Date(a.data().createdAt || 0).getTime());
+        sessionNotes.slice(0, 5).forEach(d => {
+          const data = d.data();
+          const client = clients.find(c => c.id === data.clientId);
+          if (client) {
+            activities.push({
+              id: d.id,
+              type: "note",
+              clientName: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
+              clientId: data.clientId,
+              title: data.title || "Session Note",
+              date: data.sessionDate || data.createdAt || "",
+            });
+          }
+        });
+        // Sort all activities by date, newest first
+        activities.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
+        setRecentActivity(activities.slice(0, 6));
       } catch (e) {
         console.error("Error loading dashboard:", e);
       } finally {
@@ -218,13 +243,17 @@ export default function TherapistDashboard() {
             <div className="bg-card rounded-3xl border border-border overflow-hidden shadow-sm">
               {recentActivity.map((act, i) => (
                 <motion.div
-                  key={act.id}
-                  className={`flex items-center gap-4 px-5 py-4 ${i < recentActivity.length - 1 ? "border-b border-border" : ""} hover:bg-secondary/50 transition-colors`}
+                  key={act.id + act.type}
+                  className={`flex items-center gap-4 px-5 py-4 ${i < recentActivity.length - 1 ? "border-b border-border" : ""} hover:bg-secondary/50 transition-colors cursor-pointer`}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.06 }}
+                  onClick={() => {
+                    if (act.type === "note" && act.clientId) navigate(`/therapist/client/${act.clientId}/notes`);
+                    else if (act.clientId) navigate(`/therapist/client/${act.clientId}`);
+                  }}
                 >
-                  <span className="text-xl">{act.type === "exercise" ? "📋" : "📊"}</span>
+                  <span className="text-xl">{act.type === "exercise" ? "📋" : act.type === "note" ? "📝" : "📊"}</span>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-foreground truncate">{act.title}</p>
                     <p className="text-xs text-muted-foreground truncate">{act.clientName}</p>
@@ -234,6 +263,7 @@ export default function TherapistDashboard() {
                       {new Date(act.date).toLocaleDateString("de-DE", { day: "2-digit", month: "short" })}
                     </span>
                   )}
+                  <ArrowRight size={14} className="text-muted-foreground shrink-0" />
                 </motion.div>
               ))}
             </div>
