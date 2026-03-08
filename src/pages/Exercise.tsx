@@ -513,20 +513,19 @@ export default function Exercise() {
 
   if (saved) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center max-w-md animate-fade-in">
-          <div className="w-28 h-28 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center mx-auto mb-8 animate-bounce-in">
-            <CheckCircle size={56} className="text-success" />
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
+        <SuccessAnimation emoji="🎉">
           <h2 className="text-3xl font-black text-foreground mb-3">Super! 🎉</h2>
           <p className="text-muted-foreground font-medium mb-10">Du hast die Übung erfolgreich abgeschlossen.</p>
-          <button
+          <motion.button
             onClick={() => navigate("/")}
-            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/20"
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
           >
             Zurück zum Dashboard
-          </button>
-        </div>
+          </motion.button>
+        </SuccessAnimation>
       </div>
     );
   }
