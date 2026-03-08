@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+import type { User } from "firebase/auth";
 import { useAuth } from "./hooks/useAuth";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
@@ -23,8 +24,15 @@ import TherapistTemplates from "./pages/therapist/TherapistTemplates";
 import TherapistResources from "./pages/therapist/TherapistResources";
 import ExerciseBuilderPage from "./pages/therapist/ExerciseBuilder";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+function ProtectedRoute({
+  children,
+  user,
+  loading,
+}: {
+  children: React.ReactNode;
+  user: User | null;
+  loading: boolean;
+}) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -39,43 +47,40 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   const { user, loading, profile } = useAuth();
   const isTherapist = profile?.role === "therapist";
+  const withAuth = (element: React.ReactNode) => (
+    <ProtectedRoute user={user} loading={loading}>{element}</ProtectedRoute>
+  );
 
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={!loading && user ? <Navigate to="/" replace /> : <Login />}
-      />
+      <Route path="/login" element={!loading && user ? <Navigate to="/" replace /> : <Login />} />
 
       {/* Main dashboard - role based */}
-      <Route path="/" element={
-        <ProtectedRoute>
-          {isTherapist ? <TherapistDashboard /> : <Dashboard />}
-        </ProtectedRoute>
-      } />
+      <Route path="/" element={withAuth(isTherapist ? <TherapistDashboard /> : <Dashboard />)} />
 
       {/* Client pages */}
-      <Route path="/checkin" element={<ProtectedRoute><Checkin /></ProtectedRoute>} />
-      <Route path="/checkins" element={<ProtectedRoute><CheckinsOverview /></ProtectedRoute>} />
-      <Route path="/exercises" element={<ProtectedRoute><ExercisesOverview /></ProtectedRoute>} />
-      <Route path="/exercise/:id" element={<ProtectedRoute><Exercise /></ProtectedRoute>} />
-      <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
-      <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
-      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
-      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/checkin" element={withAuth(<Checkin />)} />
+      <Route path="/checkins" element={withAuth(<CheckinsOverview />)} />
+      <Route path="/exercises" element={withAuth(<ExercisesOverview />)} />
+      <Route path="/exercise/:id" element={withAuth(<Exercise />)} />
+      <Route path="/notes" element={withAuth(<Notes />)} />
+      <Route path="/resources" element={withAuth(<Resources />)} />
+      <Route path="/history" element={withAuth(<History />)} />
+      <Route path="/settings" element={withAuth(<Settings />)} />
 
       {/* Therapist pages */}
-      <Route path="/therapist" element={<ProtectedRoute><TherapistDashboard /></ProtectedRoute>} />
-      <Route path="/therapist/client/:id" element={<ProtectedRoute><ClientDetail /></ProtectedRoute>} />
-      <Route path="/therapist/client/:id/exercises" element={<ProtectedRoute><ClientExercises /></ProtectedRoute>} />
-      <Route path="/therapist/client/:id/checkins" element={<ProtectedRoute><ClientCheckins /></ProtectedRoute>} />
-      <Route path="/therapist/client/:id/notes" element={<ProtectedRoute><ClientNotes /></ProtectedRoute>} />
-      <Route path="/therapist/client/:id/files" element={<ProtectedRoute><ClientFiles /></ProtectedRoute>} />
-      <Route path="/therapist/templates" element={<ProtectedRoute><TherapistTemplates /></ProtectedRoute>} />
-      <Route path="/therapist/resources" element={<ProtectedRoute><TherapistResources /></ProtectedRoute>} />
-      <Route path="/therapist/template/:id" element={<ProtectedRoute><ExerciseBuilderPage /></ProtectedRoute>} />
+      <Route path="/therapist" element={withAuth(<TherapistDashboard />)} />
+      <Route path="/therapist/client/:id" element={withAuth(<ClientDetail />)} />
+      <Route path="/therapist/client/:id/exercises" element={withAuth(<ClientExercises />)} />
+      <Route path="/therapist/client/:id/checkins" element={withAuth(<ClientCheckins />)} />
+      <Route path="/therapist/client/:id/notes" element={withAuth(<ClientNotes />)} />
+      <Route path="/therapist/client/:id/files" element={withAuth(<ClientFiles />)} />
+      <Route path="/therapist/templates" element={withAuth(<TherapistTemplates />)} />
+      <Route path="/therapist/resources" element={withAuth(<TherapistResources />)} />
+      <Route path="/therapist/template/:id" element={withAuth(<ExerciseBuilderPage />)} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
+
