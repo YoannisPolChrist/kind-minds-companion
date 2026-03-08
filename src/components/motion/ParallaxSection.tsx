@@ -1,6 +1,6 @@
 /**
  * ParallaxSection — Scroll-driven parallax with focus-based opacity
- * Ported from CinematicInfoBlock: elements fade and shift based on scroll position.
+ * Ported from CinematicInfoBlock.
  */
 
 import { motion, useScroll, useTransform } from "motion/react";
@@ -10,9 +10,7 @@ interface ParallaxSectionProps {
   children: ReactNode;
   className?: string;
   style?: CSSProperties;
-  /** Parallax speed factor: 0 = static, 1 = full scroll speed */
   speed?: number;
-  /** Whether to fade in based on scroll intersection */
   fadeIn?: boolean;
 }
 
@@ -30,20 +28,19 @@ export function ParallaxSection({
   });
 
   const y = useTransform(scrollYProgress, [0, 1], [60 * speed, -60 * speed]);
-  const opacity = fadeIn
-    ? useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.3, 1, 1, 0.3])
-    : undefined;
+  const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0.3, 1, 1, 0.3]);
 
   return (
-    <motion.div ref={ref} className={className} style={{ y, opacity, ...style }}>
+    <motion.div
+      ref={ref}
+      className={className}
+      style={{ y, ...(fadeIn ? { opacity } : {}), ...style }}
+    >
       {children}
     </motion.div>
   );
 }
 
-/**
- * FloatingOrb — Decorative background orb with scroll-driven parallax
- */
 export function FloatingOrb({
   color,
   size,

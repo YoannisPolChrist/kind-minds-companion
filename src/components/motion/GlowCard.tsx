@@ -1,9 +1,8 @@
 /**
  * GlowCard — Card with animated glow border that follows mouse position
- * Cinematic effect inspired by Apple-style cards.
  */
 
-import { motion, useMotionValue, useTransform } from "motion/react";
+import { motion, useMotionValue, useMotionTemplate } from "motion/react";
 import { type ReactNode, type CSSProperties, useRef, useCallback } from "react";
 
 interface GlowCardProps {
@@ -16,26 +15,22 @@ interface GlowCardProps {
 
 export function GlowCard({ children, className, style, onClick, glowColor = "hsl(var(--primary))" }: GlowCardProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const mouseX = useMotionValue(0.5);
-  const mouseY = useMotionValue(0.5);
+  const mouseX = useMotionValue(50);
+  const mouseY = useMotionValue(50);
 
-  const background = useTransform(
-    [mouseX, mouseY],
-    ([x, y]: number[]) =>
-      `radial-gradient(400px circle at ${x * 100}% ${y * 100}%, ${glowColor}15, transparent 70%)`
-  );
+  const background = useMotionTemplate`radial-gradient(400px circle at ${mouseX}% ${mouseY}%, ${glowColor}15, transparent 70%)`;
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = ref.current;
     if (!el) return;
     const rect = el.getBoundingClientRect();
-    mouseX.set((e.clientX - rect.left) / rect.width);
-    mouseY.set((e.clientY - rect.top) / rect.height);
+    mouseX.set(((e.clientX - rect.left) / rect.width) * 100);
+    mouseY.set(((e.clientY - rect.top) / rect.height) * 100);
   }, [mouseX, mouseY]);
 
   const handleMouseLeave = useCallback(() => {
-    mouseX.set(0.5);
-    mouseY.set(0.5);
+    mouseX.set(50);
+    mouseY.set(50);
   }, [mouseX, mouseY]);
 
   return (
@@ -50,7 +45,6 @@ export function GlowCard({ children, className, style, onClick, glowColor = "hsl
       whileTap={onClick ? { scale: 0.98 } : undefined}
       transition={{ type: "spring", stiffness: 300, damping: 20 }}
     >
-      {/* Glow overlay */}
       <motion.div
         style={{
           position: "absolute",
