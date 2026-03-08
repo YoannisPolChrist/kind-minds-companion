@@ -44,6 +44,8 @@ export default function Settings() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/65 to-primary/50" />
         <HeaderOrbs />
         <div className="max-w-xl mx-auto relative z-10">
           <motion.button

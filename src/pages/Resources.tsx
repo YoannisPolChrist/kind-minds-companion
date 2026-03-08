@@ -268,13 +268,16 @@ export default function Resources() {
     <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <motion.div
-        className="rounded-b-[2rem] overflow-hidden"
+        className="rounded-b-[2rem] overflow-hidden relative"
         style={{ background: "linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)))" }}
         initial={{ opacity: 0, y: -40 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.05 }}
       >
-        <div className="max-w-2xl mx-auto px-6 pt-14 pb-6 flex items-center justify-between">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/60 to-primary/50" />
+        <HeaderOrbs />
+        <div className="max-w-2xl mx-auto px-6 pt-14 pb-6 flex items-center justify-between relative z-10">
           <button
             onClick={() => navigate("/")}
             className="flex items-center gap-2 bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.15] px-4 py-2.5 rounded-[20px] transition-colors text-white/90 text-sm font-bold"
