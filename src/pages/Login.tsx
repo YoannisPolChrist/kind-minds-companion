@@ -1,11 +1,31 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import type { FirebaseError } from "firebase/app";
 import { auth } from "../lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { motion } from "motion/react";
 import { LoginOrbs, PageTransition } from "../components/motion";
+
+const getLoginErrorMessage = (error: unknown) => {
+  const code = (error as FirebaseError | undefined)?.code;
+
+  switch (code) {
+    case "auth/invalid-credential":
+    case "auth/wrong-password":
+    case "auth/user-not-found":
+      return "E-Mail oder Passwort falsch.";
+    case "auth/too-many-requests":
+      return "Zu viele Versuche. Bitte kurz warten und erneut versuchen.";
+    case "auth/network-request-failed":
+      return "Netzwerkfehler. Bitte Internetverbindung prüfen.";
+    case "auth/unauthorized-domain":
+      return "Live-Domain nicht freigeschaltet. Bitte die Published-Domain in Firebase Authentication > Authorized domains ergänzen.";
+    default:
+      return "Login fehlgeschlagen. Bitte erneut versuchen.";
+  }
+};
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -24,10 +44,10 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email.trim(), password);
       navigate("/");
-    } catch {
-      setError("E-Mail oder Passwort falsch.");
+    } catch (err) {
+      setError(getLoginErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -40,7 +60,7 @@ export default function Login() {
     }
     try {
       await addDoc(collection(db, "mail_requests"), {
-        email,
+        email: email.trim(),
         type: "PASSWORD_RESET",
         createdAt: serverTimestamp(),
       });
@@ -161,7 +181,7 @@ export default function Login() {
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <motion.span
-                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block"
+                  className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full inline-block"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 />
