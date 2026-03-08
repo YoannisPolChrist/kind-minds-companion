@@ -15,7 +15,6 @@ import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale,
 } from "../../components/motion";
 import { Toast } from "../../components/ui/Toast";
-import ExerciseCompositionChart from "../../components/charts/ExerciseCompositionChart";
 import ExerciseFlowTimeline from "../../components/charts/ExerciseFlowTimeline";
 
 import * as d3 from "d3";
@@ -719,8 +718,7 @@ export default function ExerciseBuilderPage() {
       <div className="max-w-3xl mx-auto px-6 py-6">
         {/* Analytics Widgets */}
         {blocks.length > 0 && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-            <ExerciseCompositionChart blocks={blocks} />
+          <div className="mb-6">
             <ExerciseFlowTimeline blocks={blocks} />
           </div>
         )}
