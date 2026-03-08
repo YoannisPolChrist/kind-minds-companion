@@ -230,20 +230,20 @@ export default function CheckinsOverview() {
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-slide-up">
                   <StatCard
                     label="Durchschnitt"
-                    value={analytics.avg.toFixed(1)}
-                    suffix="/10"
+                    value={analytics.avg.toFixed(0)}
+                    suffix="/100"
                     icon={<Star size={16} className="text-amber-500" />}
                   />
                   <StatCard
                     label="Minimum"
                     value={String(analytics.min)}
-                    suffix="/10"
+                    suffix="/100"
                     icon={<TrendingDown size={16} className="text-destructive" />}
                   />
                   <StatCard
                     label="Maximum"
                     value={String(analytics.max)}
-                    suffix="/10"
+                    suffix="/100"
                     icon={<TrendingUp size={16} className="text-success" />}
                   />
                   <StatCard
