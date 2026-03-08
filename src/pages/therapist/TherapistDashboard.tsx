@@ -10,11 +10,17 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
-  TiltCard, PressableScale,
+  TiltCard, PressableScale, CountUp, GlowCard,
 } from "../../components/motion";
 import { Toast, BannerToast } from "../../components/ui/Toast";
 import { SkeletonCard, SkeletonMetrics } from "../../components/ui/Skeleton";
 import { Badge } from "../../components/ui/Badge";
+
+const HEADER_IMAGES = [
+  "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
+  "/images/HomeUi4.webp", "/images/HomeUi5.webp", "/images/HomeUi6.webp",
+];
+const headerImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
 
 interface Client {
   id: string;
@@ -142,6 +148,7 @@ export default function TherapistDashboard() {
     <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl shadow-primary/15 relative overflow-hidden">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
         <HeaderOrbs />
         <div className="max-w-5xl mx-auto px-6 pt-12 pb-10 relative z-10">
           <motion.div
@@ -180,7 +187,7 @@ export default function TherapistDashboard() {
                 transition={{ delay: 0.1 + i * 0.06, type: "spring", damping: 18 }}
               >
                 <s.icon size={18} className="mx-auto mb-1 text-white/70" />
-                <p className="text-2xl font-black text-white">{s.value}</p>
+                <CountUp to={s.value} className="text-2xl font-black text-white block" duration={1.5} />
                 <p className="text-xs font-bold text-white/50 uppercase">{s.label}</p>
               </motion.div>
             ))}
@@ -189,24 +196,31 @@ export default function TherapistDashboard() {
       </div>
 
       <StaggerContainer className="max-w-5xl mx-auto px-6 py-6 space-y-5">
-        {/* Quick Navigation */}
+        {/* Quick Navigation – Large Cards */}
         <StaggerItem>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { to: "/therapist/templates", icon: LayoutTemplate, label: "Vorlagen", color: "#6366F1" },
-              { to: "/therapist/resources", icon: FileText, label: "Bibliothek", color: "#C09D59" },
-              { to: "/exercises", icon: BookOpen, label: "Übungen", color: "#F97316" },
-              { to: "/checkins", icon: Activity, label: "Check-ins", color: "#10B981" },
-            ].map(({ to, icon: Icon, label, color }) => (
-              <PressableScale key={to} onClick={() => navigate(to)}>
-                <div className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:border-primary/30 transition-colors">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
-                    <Icon size={18} style={{ color }} />
-                  </div>
-                  <span className="font-bold text-sm text-foreground">{label}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <PressableScale onClick={() => navigate("/therapist/templates")}>
+              <div className="bg-card rounded-3xl border-2 border-primary/20 p-8 flex flex-col items-center justify-center gap-4 shadow-sm hover:border-primary/40 transition-colors min-h-[180px]">
+                <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                  <LayoutTemplate size={32} className="text-primary" />
                 </div>
-              </PressableScale>
-            ))}
+                <div className="text-center">
+                  <h3 className="text-xl font-black text-foreground">Vorlagen</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Übungsvorlagen erstellen & verwalten</p>
+                </div>
+              </div>
+            </PressableScale>
+            <PressableScale onClick={() => navigate("/therapist/resources")}>
+              <div className="bg-card rounded-3xl border-2 border-accent/20 p-8 flex flex-col items-center justify-center gap-4 shadow-sm hover:border-accent/40 transition-colors min-h-[180px]">
+                <div className="w-16 h-16 rounded-2xl bg-accent/10 flex items-center justify-center">
+                  <FileText size={32} className="text-accent" />
+                </div>
+                <div className="text-center">
+                  <h3 className="text-xl font-black text-foreground">Bibliothek</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Ressourcen & Materialien verwalten</p>
+                </div>
+              </div>
+            </PressableScale>
           </div>
         </StaggerItem>
 

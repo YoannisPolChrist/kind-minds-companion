@@ -8,6 +8,7 @@ import {
   CheckCircle2, Heart, BookOpen, Clock, Wind, Image as ImageIcon,
   Film, Lock, Unlock, Download, Radar, BarChart3,
   PieChart as PieChartIcon, LineChart as LineChartIcon,
+  Gauge, Target, Table2, SlidersHorizontal,
 } from "lucide-react";
 import { generateExercisePdf } from "../utils/generateExercisePdf";
 import { motion, AnimatePresence } from "motion/react";
@@ -34,6 +35,12 @@ interface ExerciseBlock {
   videoUrl?: string;
   mediaSize?: "small" | "medium" | "large";
   mediaType?: "image" | "video";
+  progressLabel?: string;
+  progressMax?: number;
+  moodOptions?: string[];
+  tableColumns?: string[];
+  tableRows?: number;
+  sliders?: { label: string; min: number; max: number; step: number }[];
 }
 
 interface ExerciseData {
@@ -79,6 +86,10 @@ const BLOCK_META: Record<string, { label: string; desc: string; accent: string; 
   bar_chart: { label: "Balkendiagramm", desc: "Wertevergleich", accent: "#0EA5E9", icon: BarChart3 },
   pie_chart: { label: "Kreisdiagramm", desc: "Verteilung", accent: "#8B5CF6", icon: PieChartIcon },
   line_chart: { label: "Liniendiagramm", desc: "Entwicklung", accent: "#10B981", icon: LineChartIcon },
+  progress_bar: { label: "Fortschrittsbalken", desc: "Ziel-Tracking", accent: "#06B6D4", icon: Gauge },
+  mood_wheel: { label: "Stimmungsrad", desc: "Emotionen erfassen", accent: "#F472B6", icon: Target },
+  table: { label: "Tabelle", desc: "Strukturierte Daten", accent: "#0D9488", icon: Table2 },
+  slider_group: { label: "Slider-Bereich", desc: "Parallele Bewertungen", accent: "#7C3AED", icon: SlidersHorizontal },
 };
 
 function getMeta(type: string) {
@@ -412,6 +423,168 @@ function InteractiveChartBlock({ block, value, onChange, disabled }: {
   );
 }
 
+// ─── Progress Bar Block ────────────────────────────────────────────────────────
+
+function ProgressBarBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const meta = getMeta("progress_bar");
+  const max = block.progressMax || 100;
+  const current = parseInt(value || "0");
+  const pct = Math.min(Math.round((current / max) * 100), 100);
+
+  return (
+    <div>
+      {block.content && <p className="text-foreground font-semibold mb-4 text-center">{block.content}</p>}
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-bold text-foreground">{block.progressLabel || "Fortschritt"}</span>
+        <span className="text-sm font-extrabold" style={{ color: meta.accent }}>{current} / {max}</span>
+      </div>
+      <div className="h-5 bg-muted rounded-full overflow-hidden mb-4">
+        <motion.div className="h-full rounded-full" style={{ backgroundColor: meta.accent }} initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.5 }} />
+      </div>
+      <input type="range" min={0} max={max} step={1} value={current} onChange={e => onChange(e.target.value)} disabled={disabled}
+        className="w-full accent-[#06B6D4] disabled:opacity-60" />
+      <p className="text-center text-xs text-muted-foreground mt-2">{pct}% erreicht</p>
+    </div>
+  );
+}
+
+// ─── Mood Wheel Block ──────────────────────────────────────────────────────────
+
+function MoodWheelBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const emotions = block.moodOptions || ["Freude", "Trauer", "Wut", "Angst", "Ekel", "Überraschung"];
+  const PALETTE = ["#F97316", "#0EA5E9", "#EF4444", "#8B5CF6", "#10B981", "#F59E0B", "#EC4899", "#14B8A6", "#3B82F6", "#64748B"];
+
+  return (
+    <div>
+      {block.content && <p className="text-foreground font-semibold mb-5 text-center">{block.content}</p>}
+      <svg width={240} height={240} className="mx-auto block mb-5">
+        {emotions.map((emo, i) => {
+          const angle = (i / emotions.length) * Math.PI * 2 - Math.PI / 2;
+          const nextAngle = ((i + 1) / emotions.length) * Math.PI * 2 - Math.PI / 2;
+          const R = 100, cx = 120, cy = 120;
+          const x1 = cx + Math.cos(angle) * R, y1 = cy + Math.sin(angle) * R;
+          const x2 = cx + Math.cos(nextAngle) * R, y2 = cy + Math.sin(nextAngle) * R;
+          const large = emotions.length <= 2 ? 1 : 0;
+          const midAngle = (angle + nextAngle) / 2;
+          const lx = cx + Math.cos(midAngle) * (R * 0.6);
+          const ly = cy + Math.sin(midAngle) * (R * 0.6);
+          const selected = value === emo;
+          return (
+            <g key={i} onClick={() => !disabled && onChange(emo)} style={{ cursor: disabled ? "default" : "pointer" }}>
+              <motion.path
+                d={`M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} Z`}
+                fill={PALETTE[i % PALETTE.length]}
+                opacity={selected ? 1 : 0.6}
+                stroke="#fff" strokeWidth={2}
+                whileHover={!disabled ? { opacity: 0.9 } : undefined}
+              />
+              <text x={lx} y={ly + 4} textAnchor="middle" fontSize={11} fontWeight="700" fill="#fff">{emo.slice(0, 6)}</text>
+            </g>
+          );
+        })}
+      </svg>
+      {value && (
+        <motion.p className="text-center text-lg font-black" style={{ color: PALETTE[emotions.indexOf(value) % PALETTE.length] }}
+          initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          {value}
+        </motion.p>
+      )}
+    </div>
+  );
+}
+
+// ─── Table Block ───────────────────────────────────────────────────────────────
+
+function TableBlock({ block, answers, onAnswerChange, disabled }: { block: ExerciseBlock; answers: Answers; onAnswerChange: (k: string, v: string) => void; disabled?: boolean }) {
+  const columns = block.tableColumns || ["Spalte 1", "Spalte 2"];
+  const rows = block.tableRows || 3;
+  const meta = getMeta("table");
+
+  return (
+    <div>
+      {block.content && <p className="text-foreground font-semibold mb-4">{block.content}</p>}
+      <div className="overflow-x-auto rounded-2xl border border-border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              {columns.map((col, i) => (
+                <th key={i} className="text-left px-3 py-3 font-extrabold text-foreground bg-secondary border-b-2" style={{ borderColor: meta.accent + "40" }}>{col}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: rows }).map((_, r) => (
+              <tr key={r}>
+                {columns.map((col, c) => {
+                  const key = `${block.id}_r${r}_c${c}`;
+                  return (
+                    <td key={c} className="px-1 py-1 border-b border-border">
+                      <input value={answers[key] || ""} onChange={e => onAnswerChange(key, e.target.value)} disabled={disabled}
+                        placeholder="…" className="w-full bg-transparent px-2 py-2 text-foreground font-medium focus:outline-none disabled:opacity-60" />
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Slider Group Block ────────────────────────────────────────────────────────
+
+function SliderGroupBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const sliders = block.sliders || [{ label: "Energie", min: 0, max: 10, step: 1 }];
+  const PALETTE = ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B", "#14B8A6", "#7C3AED", "#EC4899", "#3B82F6"];
+  let values: Record<string, number> = {};
+  try { values = value ? JSON.parse(value) : {}; } catch {}
+
+  const updateSlider = (label: string, val: number) => {
+    if (disabled) return;
+    const next = { ...values, [label]: val };
+    onChange(JSON.stringify(next));
+  };
+
+  return (
+    <div>
+      {block.content && <p className="text-foreground font-semibold mb-5 text-center">{block.content}</p>}
+      <div className="space-y-5">
+        {sliders.map((slider, i) => {
+          const current = values[slider.label] ?? slider.min;
+          const pct = ((current - slider.min) / (slider.max - slider.min)) * 100;
+          const color = PALETTE[i % PALETTE.length];
+          return (
+            <div key={i}>
+              <div className="flex justify-between mb-1.5">
+                <span className="text-sm font-bold text-foreground flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+                  {slider.label}
+                </span>
+                <span className="text-sm font-extrabold" style={{ color }}>{current}</span>
+              </div>
+              <div className="relative">
+                <div className="h-3 bg-muted rounded-full overflow-hidden">
+                  <motion.div className="h-full rounded-full" style={{ backgroundColor: color, width: `${pct}%` }}
+                    initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }} />
+                </div>
+                <input type="range" min={slider.min} max={slider.max} step={slider.step || 1} value={current}
+                  onChange={e => updateSlider(slider.label, parseFloat(e.target.value))} disabled={disabled}
+                  className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-default" />
+              </div>
+              <div className="flex justify-between mt-0.5">
+                <span className="text-[10px] text-muted-foreground">{slider.min}</span>
+                <span className="text-[10px] text-muted-foreground">{slider.max}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── Block Dispatcher ─────────────────────────────────────────────────────────
 
 function BlockRenderer({ block, answers, onAnswerChange, disabled }: {
@@ -438,6 +611,10 @@ function BlockRenderer({ block, answers, onAnswerChange, disabled }: {
     case "pie_chart":
     case "line_chart":
       return <InteractiveChartBlock block={block} value={value} onChange={onChange} disabled={disabled} />;
+    case "progress_bar": return <ProgressBarBlock block={block} value={value} onChange={onChange} disabled={disabled} />;
+    case "mood_wheel": return <MoodWheelBlock block={block} value={value} onChange={onChange} disabled={disabled} />;
+    case "table": return <TableBlock block={block} answers={answers} onAnswerChange={onAnswerChange} disabled={disabled} />;
+    case "slider_group": return <SliderGroupBlock block={block} value={value} onChange={onChange} disabled={disabled} />;
     default: return block.content ? <p className="text-foreground">{block.content}</p> : null;
   }
 }
@@ -508,6 +685,10 @@ export default function Exercise() {
     setAnswers((prev) => ({ ...prev, [key]: val }));
   }, []);
 
+  const [isRedoing, setIsRedoing] = useState(false);
+
+  const isEditable = !exercise?.completed || isRedoing;
+
   const handleComplete = async () => {
     if (!id || !exercise) return;
     setSaving(true);
@@ -521,12 +702,19 @@ export default function Exercise() {
           await updateDoc(doc(db, "users", profile.id, "exercises", id), { completed: true, completedAt: new Date().toISOString(), lastCompletedAt: new Date().toISOString(), answers: cleanAnswers });
         }
       }
+      setIsRedoing(false);
       setSaved(true);
     } catch (e) {
       console.error("Error completing exercise:", e);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRedo = () => {
+    setIsRedoing(true);
+    // Optionally clear answers for a fresh start
+    // setAnswers({});
   };
 
   if (loading) {
@@ -588,7 +776,7 @@ export default function Exercise() {
               {exercise.recurrence === "daily" && " · 🔁 Täglich"}
               {exercise.recurrence === "weekly" && " · 🔁 Wöchentlich"}
             </p>
-            <motion.button onClick={() => generateExercisePdf(exercise)}
+            <motion.button onClick={() => generateExercisePdf({ ...exercise, answers })}
               className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors"
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Download size={14} /> PDF
@@ -634,7 +822,7 @@ export default function Exercise() {
                   </div>
                 </div>
                 <div className="p-6 bg-card">
-                  <BlockRenderer block={block} answers={answers} onAnswerChange={handleAnswerChange} disabled={exercise.completed} />
+                  <BlockRenderer block={block} answers={answers} onAnswerChange={handleAnswerChange} disabled={!isEditable} />
                 </div>
               </motion.div>
             </StaggerItem>
@@ -642,7 +830,7 @@ export default function Exercise() {
         })}
 
         {/* Sharing toggle */}
-        {!exercise.completed && (
+        {isEditable && (
           <div className="bg-card rounded-3xl border border-border p-5 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between">
               <div className="flex-1 pr-4">
@@ -657,19 +845,38 @@ export default function Exercise() {
           </div>
         )}
 
-        {/* Complete button */}
+        {/* Action buttons */}
         <div className="space-y-3 mt-4">
-          <motion.button onClick={handleComplete} disabled={saving || exercise.completed}
-            className={`w-full py-4 rounded-2xl font-black text-lg transition-all disabled:opacity-50 ${exercise.completed ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground shadow-lg shadow-primary/25"}`}
-            whileHover={!exercise.completed ? { scale: 1.02, y: -2 } : undefined}
-            whileTap={!exercise.completed ? { scale: 0.97 } : undefined}>
-            {saving ? (
-              <span className="inline-flex items-center gap-2">
-                <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-                Speichern...
-              </span>
-            ) : exercise.completed ? "Bereits abgeschlossen" : "Übung abschließen ✓"}
-          </motion.button>
+          {exercise.completed && !isRedoing ? (
+            <>
+              {/* Already completed state with redo option */}
+              <div className="bg-success/10 border border-success/20 rounded-2xl py-4 flex items-center justify-center gap-2">
+                <CheckCircle size={22} className="text-success" />
+                <span className="text-success font-black text-lg">Bereits abgeschlossen</span>
+              </div>
+              <motion.button
+                onClick={handleRedo}
+                className="w-full py-4 rounded-2xl bg-card border-2 border-primary text-primary font-black text-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Edit3 size={20} />
+                Erneut bearbeiten
+              </motion.button>
+            </>
+          ) : (
+            <motion.button onClick={handleComplete} disabled={saving}
+              className="w-full py-4 rounded-2xl font-black text-lg transition-all disabled:opacity-50 bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.97 }}>
+              {saving ? (
+                <span className="inline-flex items-center gap-2">
+                  <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+                  Speichern...
+                </span>
+              ) : isRedoing ? "Erneut abschließen ✓" : "Übung abschließen ✓"}
+            </motion.button>
+          )}
         </div>
 
         <div className="h-8" />

@@ -5,7 +5,7 @@ import { db } from "../lib/firebase";
 import { useAuth } from "../hooks/useAuth";
 import { ArrowLeft, BookOpen, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
-import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../components/motion";
+import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard, GlowCard } from "../components/motion";
 
 const HEADER_IMAGES = [
   "/images/HomeUi1.webp",
@@ -69,8 +69,8 @@ export default function ExercisesOverview() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/80 to-primary/70" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-45 mix-blend-soft-light" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/60 to-primary/50" />
         <HeaderOrbs />
         <div className="max-w-2xl mx-auto px-5 pt-12 pb-8 relative z-10">
           <motion.button
@@ -110,11 +110,11 @@ export default function ExercisesOverview() {
                   </h2>
                   <div className="space-y-3">
                     {open.map((ex) => (
-                      <TiltCard
+                      <GlowCard
                         key={ex.id}
                         className="bg-card rounded-2xl border border-border p-5 cursor-pointer shadow-sm hover:border-primary/30 transition-colors"
                         onClick={() => navigate(`/exercise/${ex.id}`)}
-                        maxTilt={4}
+                        glowColor={ex.themeColor || "hsl(var(--primary))"}
                       >
                         <div className="flex items-center gap-4">
                           <div
@@ -133,7 +133,7 @@ export default function ExercisesOverview() {
                           </div>
                           <span className="text-sm font-bold text-primary">Start →</span>
                         </div>
-                      </TiltCard>
+                      </GlowCard>
                     ))}
                   </div>
                 </section>

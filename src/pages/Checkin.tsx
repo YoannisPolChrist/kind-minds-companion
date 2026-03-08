@@ -17,55 +17,70 @@ const HEADER_IMAGES = [
 const checkinHeaderImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
 
 const EMOTION_PRESETS = [
-  { id: "awesome", score: 10, emoji: "🤩", color: "#8B5CF6", label: "Großartig" },
-  { id: "ecstatic", score: 10, emoji: "🎉", color: "#A855F7", label: "Ekstatisch" },
-  { id: "motivated", score: 9, emoji: "🔥", color: "#0EA5E9", label: "Motiviert" },
-  { id: "proud", score: 9, emoji: "🥰", color: "#6366F1", label: "Stolz" },
-  { id: "inspired", score: 9, emoji: "✨", color: "#818CF8", label: "Inspiriert" },
-  { id: "loved", score: 9, emoji: "💕", color: "#EC4899", label: "Geliebt" },
-  { id: "happy", score: 8, emoji: "😊", color: "#10B981", label: "Fröhlich" },
-  { id: "grateful", score: 8, emoji: "🙏", color: "#22C55E", label: "Dankbar" },
-  { id: "confident", score: 8, emoji: "💪", color: "#14B8A6", label: "Selbstbewusst" },
-  { id: "playful", score: 8, emoji: "😜", color: "#F472B6", label: "Verspielt" },
-  { id: "content", score: 7, emoji: "🙂", color: "#4ADE80", label: "Zufrieden" },
-  { id: "hopeful", score: 7, emoji: "🌱", color: "#34D399", label: "Hoffnungsvoll" },
-  { id: "relieved", score: 7, emoji: "😮‍💨", color: "#6EE7B7", label: "Erleichtert" },
-  { id: "calm", score: 6, emoji: "😌", color: "#A3E635", label: "Entspannt" },
+  // 10 — Euphorie / Extase
+  { id: "awesome", score: 10, emoji: "🤩", color: "#7C3AED", label: "Großartig" },
+  { id: "ecstatic", score: 10, emoji: "🎉", color: "#8B5CF6", label: "Ekstatisch" },
+  { id: "blissful", score: 10, emoji: "🌈", color: "#A78BFA", label: "Glückselig" },
+  // 9 — Begeistert / Energiegeladen
+  { id: "motivated", score: 9, emoji: "🔥", color: "#2563EB", label: "Motiviert" },
+  { id: "proud", score: 9, emoji: "🥰", color: "#4F46E5", label: "Stolz" },
+  { id: "inspired", score: 9, emoji: "✨", color: "#6366F1", label: "Inspiriert" },
+  { id: "loved", score: 9, emoji: "💕", color: "#DB2777", label: "Geliebt" },
+  { id: "passionate", score: 9, emoji: "💖", color: "#E11D48", label: "Leidenschaftlich" },
+  // 8 — Fröhlich / Positiv
+  { id: "happy", score: 8, emoji: "😊", color: "#059669", label: "Fröhlich" },
+  { id: "grateful", score: 8, emoji: "🙏", color: "#10B981", label: "Dankbar" },
+  { id: "confident", score: 8, emoji: "💪", color: "#0D9488", label: "Selbstbewusst" },
+  { id: "playful", score: 8, emoji: "😜", color: "#EC4899", label: "Verspielt" },
+  { id: "energized", score: 8, emoji: "⚡", color: "#0891B2", label: "Energiegeladen" },
+  // 7 — Zufrieden / Warm
+  { id: "content", score: 7, emoji: "🙂", color: "#16A34A", label: "Zufrieden" },
+  { id: "hopeful", score: 7, emoji: "🌱", color: "#22C55E", label: "Hoffnungsvoll" },
+  { id: "relieved", score: 7, emoji: "😮‍💨", color: "#34D399", label: "Erleichtert" },
+  { id: "amused", score: 7, emoji: "😄", color: "#4ADE80", label: "Amüsiert" },
+  // 6 — Ruhig / Ausgeglichen
+  { id: "calm", score: 6, emoji: "😌", color: "#65A30D", label: "Entspannt" },
   { id: "curious", score: 6, emoji: "🤔", color: "#84CC16", label: "Neugierig" },
-  { id: "peaceful", score: 6, emoji: "🕊️", color: "#BEF264", label: "Friedlich" },
+  { id: "peaceful", score: 6, emoji: "🕊️", color: "#A3E635", label: "Friedlich" },
+  { id: "mindful", score: 6, emoji: "🧘", color: "#4D7C0F", label: "Achtsam" },
+  // 5 — Neutral / Gleichgültig
   { id: "neutral", score: 5, emoji: "😐", color: "#9CA3AF", label: "Neutral" },
   { id: "bored", score: 5, emoji: "🥱", color: "#94A3B8", label: "Gelangweilt" },
-  { id: "indifferent", score: 5, emoji: "🫤", color: "#A1A1AA", label: "Gleichgültig" },
-  { id: "stressed", score: 4, emoji: "🤯", color: "#FB923C", label: "Gestresst" },
-  { id: "anxious", score: 4, emoji: "😰", color: "#FBBF24", label: "Ängstlich" },
-  { id: "overwhelmed", score: 4, emoji: "😵‍💫", color: "#F59E0B", label: "Überfordert" },
-  { id: "restless", score: 4, emoji: "😤", color: "#D97706", label: "Unruhig" },
-  { id: "sad", score: 3, emoji: "😢", color: "#FB7185", label: "Traurig" },
-  { id: "lonely", score: 3, emoji: "🥺", color: "#F9A8D4", label: "Einsam" },
-  { id: "disappointed", score: 3, emoji: "😞", color: "#E879F9", label: "Enttäuscht" },
-  { id: "guilty", score: 3, emoji: "😣", color: "#C084FC", label: "Schuldig" },
-  { id: "exhausted", score: 2, emoji: "😫", color: "#F87171", label: "Erschöpft" },
-  { id: "angry", score: 2, emoji: "😡", color: "#F43F5E", label: "Wütend" },
-  { id: "frustrated", score: 2, emoji: "🤬", color: "#E11D48", label: "Frustriert" },
-  { id: "ashamed", score: 2, emoji: "😶", color: "#BE185D", label: "Beschämt" },
-  { id: "despair", score: 1, emoji: "😭", color: "#EF4444", label: "Verzweifelt" },
-  { id: "numb", score: 1, emoji: "🫥", color: "#DC2626", label: "Taub/Leer" },
-  { id: "hopeless", score: 1, emoji: "🖤", color: "#991B1B", label: "Hoffnungslos" },
+  { id: "indifferent", score: 5, emoji: "🫤", color: "#78716C", label: "Gleichgültig" },
+  { id: "distracted", score: 5, emoji: "🫠", color: "#A8A29E", label: "Abgelenkt" },
+  // 4 — Angespannt / Unruhig
+  { id: "stressed", score: 4, emoji: "🤯", color: "#EA580C", label: "Gestresst" },
+  { id: "anxious", score: 4, emoji: "😰", color: "#D97706", label: "Ängstlich" },
+  { id: "overwhelmed", score: 4, emoji: "😵‍💫", color: "#B45309", label: "Überfordert" },
+  { id: "restless", score: 4, emoji: "😤", color: "#92400E", label: "Unruhig" },
+  { id: "nervous", score: 4, emoji: "😬", color: "#A16207", label: "Nervös" },
+  // 3 — Traurig / Niedergeschlagen
+  { id: "sad", score: 3, emoji: "😢", color: "#BE123C", label: "Traurig" },
+  { id: "lonely", score: 3, emoji: "🥺", color: "#9F1239", label: "Einsam" },
+  { id: "disappointed", score: 3, emoji: "😞", color: "#881337", label: "Enttäuscht" },
+  { id: "guilty", score: 3, emoji: "😣", color: "#7F1D1D", label: "Schuldig" },
+  { id: "jealous", score: 3, emoji: "😒", color: "#6B21A8", label: "Eifersüchtig" },
+  // 2 — Wütend / Erschöpft
+  { id: "exhausted", score: 2, emoji: "😫", color: "#991B1B", label: "Erschöpft" },
+  { id: "angry", score: 2, emoji: "😡", color: "#B91C1C", label: "Wütend" },
+  { id: "frustrated", score: 2, emoji: "🤬", color: "#7F1D1D", label: "Frustriert" },
+  { id: "ashamed", score: 2, emoji: "😶", color: "#6B1E1E", label: "Beschämt" },
+  { id: "bitter", score: 2, emoji: "🫠", color: "#5C1414", label: "Verbittert" },
+  // 1 — Verzweifelt / Hoffnungslos — sehr dunkle Töne
+  { id: "despair", score: 1, emoji: "😭", color: "#450A0A", label: "Verzweifelt" },
+  { id: "numb", score: 1, emoji: "🫥", color: "#3B0A0A", label: "Taub/Leer" },
+  { id: "hopeless", score: 1, emoji: "🖤", color: "#1C1917", label: "Hoffnungslos" },
+  { id: "broken", score: 1, emoji: "💀", color: "#0C0A09", label: "Am Boden" },
 ];
 
-const QUICK_TAGS = [
-  "Erschöpft", "Ängstlich", "Ruhig", "Motiviert", "Traurig", "Dankbar",
-  "Überfordert", "Fokussiert", "Einsam", "Hoffnungsvoll", "Energiegeladen",
-  "Kreativ", "Genervt", "Verletzlich", "Nostalgisch",
-];
 
 export default function Checkin() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
-  const [energy, setEnergy] = useState(5);
+  const [energy, setEnergy] = useState(50);
   const [note, setNote] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -90,7 +105,7 @@ export default function Checkin() {
           if (preset) setSelectedEmotionId(preset.id);
           if (data.energy) setEnergy(data.energy);
           if (data.note) setNote(data.note);
-          if (data.tags) setTags(data.tags);
+          
         }
       } catch (e) {
         console.warn("Could not check existing checkin:", e);
@@ -105,6 +120,10 @@ export default function Checkin() {
       setError("Bitte wähle eine Stimmung aus.");
       return;
     }
+    if (!note.trim()) {
+      setError("Bitte schreibe noch eine kurze Notiz dazu.");
+      return;
+    }
     if (!profile?.id) return;
     setSaving(true);
     setError("");
@@ -117,7 +136,7 @@ export default function Checkin() {
         mood: activeEmotion.score,
         emotionId: activeEmotion.id,
         energy,
-        tags,
+        tags: [],
         note: note.trim(),
         createdAt: new Date().toISOString(),
       });
@@ -130,10 +149,6 @@ export default function Checkin() {
     }
   };
 
-  const toggleTag = (tag: string) => {
-    if (alreadyCompleted) return;
-    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
-  };
 
   if (loadingCheck) {
     return (
@@ -188,7 +203,7 @@ export default function Checkin() {
         }}
         transition={{ duration: 0.5 }}
       >
-        <img src={checkinHeaderImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none" />
+        <img src={checkinHeaderImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-br from-black/30 to-transparent pointer-events-none" />
         <HeaderOrbs />
         <div className="max-w-xl mx-auto relative z-10">
@@ -269,108 +284,93 @@ export default function Checkin() {
         {/* Energy */}
         <StaggerItem>
           <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              ⚡ Dein Energielevel (1-10)
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">
+              ⚡ Dein Energielevel
             </h3>
-            <div className="flex justify-between text-sm font-bold text-muted-foreground mb-3 px-1">
-              <span>Erschöpft</span>
+            <div className="flex items-center justify-center mb-4">
               <motion.span
-                className="text-2xl font-black"
+                className="text-5xl font-black tabular-nums"
                 key={energy}
-                initial={{ scale: 1.4, y: -4 }}
+                initial={{ scale: 1.3, y: -6 }}
                 animate={{ scale: 1, y: 0 }}
                 style={{ color: activeEmotion?.color || "hsl(var(--primary))" }}
               >
                 {energy}
               </motion.span>
-              <span>Voller Energie</span>
+              <span className="text-lg font-bold text-muted-foreground ml-1">/100</span>
             </div>
-            <div className="relative h-10 flex items-center">
-              <div className="absolute inset-y-0 left-0 right-0 flex items-center">
-                <div className="w-full h-2 bg-muted rounded-full relative overflow-hidden">
-                  <motion.div
-                    className="absolute h-full rounded-full"
-                    animate={{ width: `${((energy - 1) / 9) * 100}%` }}
-                    transition={{ type: "spring", damping: 20, stiffness: 200 }}
-                    style={{
-                      background: `linear-gradient(90deg, ${activeEmotion?.color || "hsl(var(--primary))"}88, ${activeEmotion?.color || "hsl(var(--primary))"})`,
-                    }}
-                  />
-                </div>
+            <div className="flex justify-between text-xs font-bold text-muted-foreground mb-2 px-1">
+              <span>😴 Erschöpft</span>
+              <span>⚡ Voller Energie</span>
+            </div>
+            <div className="relative group">
+              <div className="w-full h-3 bg-muted rounded-full relative overflow-hidden">
+                <motion.div
+                  className="absolute h-full rounded-full"
+                  animate={{ width: `${energy}%` }}
+                  transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                  style={{
+                    background: `linear-gradient(90deg, #EF4444, #FBBF24, #10B981, #0EA5E9)`,
+                  }}
+                />
               </div>
-              <div className="absolute inset-0 flex justify-between items-center">
-                {Array.from({ length: 10 }, (_, i) => i + 1).map((val) => (
-                  <button
-                    key={val}
-                    onClick={() => !alreadyCompleted && setEnergy(val)}
-                    className="w-8 h-8 flex items-center justify-center z-10"
-                  >
-                    <motion.div
-                      className="rounded-full"
-                      animate={{
-                        width: energy === val ? 26 : 12,
-                        height: energy === val ? 26 : 12,
-                        backgroundColor: energy === val ? (activeEmotion?.color || "hsl(var(--primary))") : "transparent",
-                        borderWidth: energy === val ? 3 : 2,
-                        borderColor: energy === val ? "#fff" : "hsl(var(--border))",
-                        boxShadow: energy === val ? `0 4px 14px ${activeEmotion?.color || "hsl(var(--primary))"}60` : "none",
-                      }}
-                      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                      style={{ borderStyle: "solid" }}
-                    />
-                  </button>
-                ))}
-              </div>
+              <input
+                type="range"
+                min={1}
+                max={100}
+                value={energy}
+                onChange={(e) => !alreadyCompleted && setEnergy(Number(e.target.value))}
+                disabled={alreadyCompleted}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-default"
+              />
+              {/* Thumb indicator */}
+              <motion.div
+                className="absolute top-1/2 -translate-y-1/2 pointer-events-none"
+                animate={{ left: `${energy}%` }}
+                transition={{ type: "spring", damping: 25, stiffness: 200 }}
+                style={{ marginLeft: -12 }}
+              >
+                <div
+                  className="w-6 h-6 rounded-full border-[3px] border-white shadow-lg"
+                  style={{
+                    backgroundColor: activeEmotion?.color || "hsl(var(--primary))",
+                    boxShadow: `0 4px 14px ${activeEmotion?.color || "hsl(var(--primary))"}50`,
+                  }}
+                />
+              </motion.div>
+            </div>
+            {/* Tick marks */}
+            <div className="flex justify-between px-0.5 mt-2">
+              {[0, 25, 50, 75, 100].map((tick) => (
+                <button
+                  key={tick}
+                  onClick={() => !alreadyCompleted && setEnergy(tick || 1)}
+                  className="text-[10px] font-bold text-muted-foreground/60 hover:text-foreground transition-colors"
+                >
+                  {tick}
+                </button>
+              ))}
             </div>
           </div>
         </StaggerItem>
 
-        {/* Tags */}
+        {/* Note — Pflichtfeld */}
         <StaggerItem>
           <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              🏷️ Was beschreibt dich gerade?
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+              ✏️ Was beschäftigt dich gerade?
+              <span className="text-destructive">*</span>
             </h3>
-            <div className="flex flex-wrap gap-2">
-              {QUICK_TAGS.map((tag) => {
-                const isActive = tags.includes(tag);
-                return (
-                  <motion.button
-                    key={tag}
-                    onClick={() => toggleTag(tag)}
-                    whileHover={{ scale: 1.06, y: -2 }}
-                    whileTap={{ scale: 0.92 }}
-                    animate={
-                      isActive
-                        ? { backgroundColor: "hsl(var(--primary))", color: "hsl(var(--primary-foreground))" }
-                        : { backgroundColor: "hsl(var(--secondary))", color: "hsl(var(--foreground))" }
-                    }
-                    className={`px-4 py-2 rounded-2xl text-sm font-bold transition-shadow ${
-                      isActive ? "shadow-md shadow-primary/20" : "border border-border"
-                    }`}
-                    style={{ opacity: alreadyCompleted && !isActive ? 0.3 : 1 }}
-                  >
-                    {tag}
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        </StaggerItem>
-
-        {/* Note */}
-        <StaggerItem>
-          <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              ✏️ Möchtest du noch etwas ergänzen?
-            </h3>
+            <p className="text-[11px] text-muted-foreground/70 mb-4">Pflichtfeld — schreibe mindestens ein paar Worte.</p>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Gedanken, Notizen..."
+              placeholder="Beschreibe kurz, was dich gerade bewegt…"
               rows={5}
               disabled={alreadyCompleted}
-              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring transition-all disabled:opacity-60"
+              className={`w-full bg-secondary rounded-2xl border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring transition-all disabled:opacity-60 ${
+                !note.trim() && error ? "border-destructive" : "border-border"
+              }`}
             />
           </div>
         </StaggerItem>

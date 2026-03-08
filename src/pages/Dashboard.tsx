@@ -11,7 +11,7 @@ import {
 import { motion } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem,
-  TiltCard, PressableScale,
+  TiltCard, PressableScale, CountUp, GlowCard,
 } from "../components/motion";
 import { SkeletonCard, SkeletonMetrics } from "../components/ui/Skeleton";
 
@@ -193,17 +193,24 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
-  const [checkedInToday, setCheckedInToday] = useState(false);
+  const [checkedInMorning, setCheckedInMorning] = useState(false);
+  const [checkedInEvening, setCheckedInEvening] = useState(false);
   const [loading, setLoading] = useState(true);
   const [bookingUrl, setBookingUrl] = useState<string | null>(null);
   const [nextAppointment, setNextAppointment] = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
-  const currentSlot = new Date().getHours() < 12 ? "morning" : "evening";
+  const currentHour = new Date().getHours();
+  const isMorningSlot = currentHour < 12;
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
+      setLoading(true);
       try {
         const globalExSnap = await getDocs(
           query(collection(db, "exercises"), where("clientId", "==", profile.id))
@@ -222,14 +229,15 @@ export default function Dashboard() {
         allCheckins.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         setCheckins(allCheckins.slice(0, 7));
 
-        const slotDocId = `${profile.id}_${today}_${currentSlot}`;
-        const slotSnap = await getDoc(doc(db, "checkins", slotDocId));
-        if (slotSnap.exists()) {
-          setCheckedInToday(true);
-        } else {
-          const legacySnap = await getDoc(doc(db, "checkins", `${profile.id}_${today}`));
-          setCheckedInToday(legacySnap.exists());
-        }
+        // Check both morning and evening slots
+        const morningDocId = `${profile.id}_${today}_morning`;
+        const eveningDocId = `${profile.id}_${today}_evening`;
+        const [morningSnap, eveningSnap] = await Promise.all([
+          getDoc(doc(db, "checkins", morningDocId)),
+          getDoc(doc(db, "checkins", eveningDocId)),
+        ]);
+        setCheckedInMorning(morningSnap.exists());
+        setCheckedInEvening(eveningSnap.exists());
 
         if (profile.therapistId) {
           try {
@@ -249,8 +257,9 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
+
     load();
-  }, [profile?.id]);
+  }, [profile?.id, today]);
 
   const openExercises = useMemo(() => exercises.filter((e) => !e.completed), [exercises]);
   const completedExercises = useMemo(() => exercises.filter((e) => e.completed), [exercises]);
@@ -357,6 +366,36 @@ export default function Dashboard() {
 
       {/* ── Content ─────────────────────────────────────────────────────── */}
       <div className="max-w-2xl mx-auto px-5 pb-10 space-y-5">
+        {/* Stats Row — directly under header */}
+        {exercises.length > 0 && (
+          <motion.div
+            className="grid grid-cols-3 gap-3 cursor-pointer"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.08 }}
+            onClick={() => navigate("/exercises")}
+          >
+            {[
+              { label: "Gesamt", value: exercises.length, cls: "text-primary" },
+              { label: "Offen", value: openExercises.length, cls: "text-accent" },
+              { label: "Erledigt", value: completedExercises.length, cls: "text-success" },
+            ].map((s, i) => (
+              <GlowCard
+                key={s.label}
+                className="bg-card rounded-2xl border border-border p-4 text-center shadow-sm"
+                glowColor={i === 0 ? "hsl(var(--primary))" : i === 1 ? "hsl(var(--accent))" : "hsl(var(--success))"}
+              >
+                <CountUp
+                  to={s.value}
+                  className={`text-3xl font-black block ${s.cls}`}
+                  duration={1.5}
+                />
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">{s.label}</p>
+              </GlowCard>
+            ))}
+          </motion.div>
+        )}
+
         {/* Next Appointment */}
         {nextAppointment && (
           <motion.div
@@ -391,88 +430,137 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Check-in Banner (matching native CheckinBanner) */}
-        {!checkedInToday ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", damping: 22, stiffness: 120, delay: 0.1 }}
-          >
+        {/* Dual Check-in Banners: Morning + Evening */}
+        <motion.div
+          className="space-y-3"
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+        >
+          {/* Morning Slot */}
+          {checkedInMorning ? (
+            <div
+              className="rounded-2xl p-4 flex items-center gap-4 border cursor-pointer"
+              style={{
+                background: "linear-gradient(135deg, hsl(160 84% 39% / 0.06), hsl(160 84% 39% / 0.02))",
+                borderColor: "hsl(160 84% 39% / 0.2)",
+              }}
+              onClick={() => navigate("/checkins")}
+            >
+              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(160 84% 39% / 0.12)" }}>
+                <CheckCircle size={22} className="text-success" />
+              </div>
+              <div className="flex-1">
+                <p className="font-black text-foreground text-sm">Morgen-Check-in ✓</p>
+                <p className="text-success text-xs font-bold">00:00 – 12:00 Uhr erledigt</p>
+              </div>
+            </div>
+          ) : isMorningSlot ? (
             <PressableScale onClick={() => navigate("/checkin")}>
               <div
-                className="relative rounded-[2rem] overflow-hidden p-6 flex items-center justify-between"
+                className="relative rounded-2xl overflow-hidden p-5 flex items-center justify-between"
                 style={{
                   background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-dark)))",
-                  boxShadow: "0 12px 32px hsl(var(--primary) / 0.25)",
+                  boxShadow: "0 8px 24px hsl(var(--primary) / 0.2)",
                 }}
               >
-                {/* Decorative circles */}
-                <div className="absolute -right-5 -top-5 w-36 h-36 rounded-full bg-white/5" />
-                <div className="absolute right-10 -bottom-10 w-24 h-24 rounded-full bg-white/5" />
-
-                <div className="flex items-center gap-5 flex-1 pr-4 relative z-10">
+                <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-white/5" />
+                <div className="flex items-center gap-4 flex-1 pr-3 relative z-10">
                   <motion.div
-                    className="w-16 h-16 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
-                    animate={{ scale: [0.9, 1, 0.9], opacity: [0.8, 1, 0.8] }}
-                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="w-12 h-12 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
+                    animate={{ scale: [0.9, 1, 0.9] }}
+                    transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <HeartPulse size={30} className="text-white" />
+                    <span className="text-xl">🌅</span>
                   </motion.div>
                   <div>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                      <span className="text-white/80 text-xs font-extrabold uppercase tracking-[1.5px]">
-                        Tages-Check-in
-                      </span>
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-tight">
-                      Wie geht es dir?
-                    </h3>
-                    <p className="text-white/70 text-[13px] font-semibold mt-1">
-                      Halte deinen Fortschritt fest
-                    </p>
+                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">00:00 – 12:00</p>
+                    <h3 className="text-lg font-black text-white tracking-tight">Morgen-Check-in</h3>
                   </div>
                 </div>
-
                 <motion.div
-                  className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0 relative z-10"
-                  animate={{ x: [0, 4, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                  className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 relative z-10"
+                  animate={{ x: [0, 3, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  <ArrowRight size={24} className="text-white" />
+                  <ArrowRight size={18} className="text-white" />
                 </motion.div>
               </div>
             </PressableScale>
-          </motion.div>
-        ) : (
-          <motion.div
-            className="rounded-[2rem] overflow-hidden p-6 flex items-center gap-4 border"
-            style={{
-              background: "linear-gradient(135deg, hsl(160 84% 39% / 0.08), hsl(160 84% 39% / 0.02))",
-              borderColor: "hsl(160 84% 39% / 0.2)",
-            }}
-            initial={{ opacity: 0, scale: 0.96 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: "spring", damping: 20, stiffness: 120 }}
-            onClick={() => navigate("/checkins")}
-            role="button"
-          >
-            <div className="w-14 h-14 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(160 84% 39% / 0.15)" }}>
-              <CheckCircle size={28} className="text-success" />
+          ) : (
+            <div className="rounded-2xl p-4 flex items-center gap-4 border border-destructive/20 bg-destructive/5">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-destructive/10">
+                <span className="text-lg">🌅</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-foreground text-sm">Morgen-Check-in verpasst</p>
+                <p className="text-destructive text-xs font-bold">00:00 – 12:00 Uhr</p>
+              </div>
             </div>
-            <div className="flex-1">
-              <p className="font-black text-foreground text-lg">Check-in erledigt!</p>
-              <p className="text-success text-[13px] font-bold">Auswertung anzeigen →</p>
-            </div>
-            <motion.div
-              animate={{ rotate: [0, 360] }}
-              transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
-            >
-              <Sparkles size={24} className="text-success/50" />
-            </motion.div>
-          </motion.div>
-        )}
+          )}
 
+          {/* Evening Slot */}
+          {checkedInEvening ? (
+            <div
+              className="rounded-2xl p-4 flex items-center gap-4 border cursor-pointer"
+              style={{
+                background: "linear-gradient(135deg, hsl(160 84% 39% / 0.06), hsl(160 84% 39% / 0.02))",
+                borderColor: "hsl(160 84% 39% / 0.2)",
+              }}
+              onClick={() => navigate("/checkins")}
+            >
+              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(160 84% 39% / 0.12)" }}>
+                <CheckCircle size={22} className="text-success" />
+              </div>
+              <div className="flex-1">
+                <p className="font-black text-foreground text-sm">Abend-Check-in ✓</p>
+                <p className="text-success text-xs font-bold">12:00 – 24:00 Uhr erledigt</p>
+              </div>
+            </div>
+          ) : !isMorningSlot ? (
+            <PressableScale onClick={() => navigate("/checkin")}>
+              <div
+                className="relative rounded-2xl overflow-hidden p-5 flex items-center justify-between"
+                style={{
+                  background: "linear-gradient(135deg, hsl(250 60% 35%), hsl(250 60% 25%))",
+                  boxShadow: "0 8px 24px hsl(250 60% 30% / 0.2)",
+                }}
+              >
+                <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-white/5" />
+                <div className="flex items-center gap-4 flex-1 pr-3 relative z-10">
+                  <motion.div
+                    className="w-12 h-12 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
+                    animate={{ scale: [0.9, 1, 0.9] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <span className="text-xl">🌙</span>
+                  </motion.div>
+                  <div>
+                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">12:00 – 24:00</p>
+                    <h3 className="text-lg font-black text-white tracking-tight">Abend-Check-in</h3>
+                  </div>
+                </div>
+                <motion.div
+                  className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 relative z-10"
+                  animate={{ x: [0, 3, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  <ArrowRight size={18} className="text-white" />
+                </motion.div>
+              </div>
+            </PressableScale>
+          ) : (
+            <div className="rounded-2xl p-4 flex items-center gap-4 border border-border bg-muted/50">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-muted">
+                <span className="text-lg">🌙</span>
+              </div>
+              <div className="flex-1">
+                <p className="font-bold text-muted-foreground text-sm">Abend-Check-in</p>
+                <p className="text-muted-foreground/60 text-xs font-bold">Ab 12:00 Uhr verfügbar</p>
+              </div>
+            </div>
+          )}
+        </motion.div>
         {/* Mood Chart */}
         {checkins.length > 1 && (
           <motion.div
@@ -552,39 +640,6 @@ export default function Dashboard() {
             delay={0.16}
           />
         </div>
-
-        {/* Stats row */}
-        {exercises.length > 0 && (
-          <motion.div
-            className="grid grid-cols-3 gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
-            {[
-              { label: "Gesamt", value: exercises.length, cls: "text-primary" },
-              { label: "Offen", value: openExercises.length, cls: "text-accent" },
-              { label: "Erledigt", value: completedExercises.length, cls: "text-success" },
-            ].map((s, i) => (
-              <motion.div
-                key={s.label}
-                className="bg-card rounded-2xl border border-border p-4 text-center shadow-sm"
-                whileHover={{ y: -3, scale: 1.03 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <motion.p
-                  className={`text-2xl font-black ${s.cls}`}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 + i * 0.1, type: "spring", damping: 10, stiffness: 200 }}
-                >
-                  {s.value}
-                </motion.p>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mt-1">{s.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
 
         {/* Open Exercises */}
         {exercises.length === 0 ? (
