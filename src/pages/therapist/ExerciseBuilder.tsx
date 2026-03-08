@@ -830,27 +830,41 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
                 ))}
               </div>
             </div>
-            {/* Preview */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2 overflow-x-auto">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr>
-                    {(block.tableColumns || []).map((col, i) => (
-                      <th key={i} className="text-left px-3 py-2 font-extrabold text-foreground border-b-2" style={{ borderColor: cat.accent + "40" }}>{col || `Spalte ${i + 1}`}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: block.tableRows || 3 }).map((_, r) => (
-                    <tr key={r}>
-                      {(block.tableColumns || []).map((_, c) => (
-                        <td key={c} className="px-3 py-2 border-b border-border text-muted-foreground">—</td>
+            {/* Premium Table Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3 overflow-x-auto">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              <div className="rounded-xl border border-border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ background: `linear-gradient(135deg, ${cat.accent}15, ${cat.accent}08)` }}>
+                      {(block.tableColumns || []).map((col, i) => (
+                        <motion.th key={i} className="text-left px-4 py-3 font-extrabold text-foreground border-b-2"
+                          style={{ borderColor: cat.accent + "40" }}
+                          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
+                            {col || `Spalte ${i + 1}`}
+                          </div>
+                        </motion.th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: block.tableRows || 3 }).map((_, r) => (
+                      <motion.tr key={r}
+                        className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + r * 0.06 }}>
+                        {(block.tableColumns || []).map((_, c) => (
+                          <td key={c} className="px-4 py-3">
+                            <div className="h-4 rounded-lg" style={{ backgroundColor: `${CHART_PALETTE[c % CHART_PALETTE.length]}10`, width: `${50 + Math.random() * 40}%` }} />
+                          </td>
+                        ))}
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
