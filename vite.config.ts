@@ -8,6 +8,13 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Prevent react-native / expo packages from pulling in their own React
+      "react-native": path.resolve(__dirname, "node_modules/react-native-web"),
     },
+    // Force single React instance across all dependencies
+    dedupe: ["react", "react-dom", "react/jsx-runtime"],
+  },
+  optimizeDeps: {
+    exclude: ["react-native"],
   },
 });
