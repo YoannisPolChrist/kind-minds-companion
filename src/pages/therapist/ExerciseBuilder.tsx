@@ -621,15 +621,78 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
                   className="w-full bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
             </div>
-            {/* Preview */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-foreground">{block.progressLabel || "Fortschritt"}</span>
-                <span className="text-xs font-extrabold" style={{ color: cat.accent }}>0 / {block.progressMax || 100}</span>
-              </div>
-              <div className="h-4 bg-muted rounded-full overflow-hidden">
-                <motion.div className="h-full rounded-full" style={{ backgroundColor: cat.accent, width: "35%" }} initial={{ width: 0 }} animate={{ width: "35%" }} transition={{ duration: 0.8 }} />
+            {/* Premium Animated Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              {/* Circular gauge */}
+              <div className="flex items-center gap-6">
+                <svg width={120} height={120} className="shrink-0">
+                  <defs>
+                    <linearGradient id={`prog-grad-${block.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor={cat.accent} />
+                      <stop offset="100%" stopColor={cat.accent} stopOpacity={0.5} />
+                    </linearGradient>
+                    <filter id={`prog-glow-${block.id}`}>
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  {/* Background track */}
+                  <circle cx={60} cy={60} r={48} fill="none" stroke="hsl(var(--border))" strokeWidth={8} />
+                  {/* Animated arc */}
+                  <motion.circle cx={60} cy={60} r={48} fill="none"
+                    stroke={`url(#prog-grad-${block.id})`} strokeWidth={8}
+                    strokeLinecap="round" strokeDasharray={2 * Math.PI * 48}
+                    filter={`url(#prog-glow-${block.id})`}
+                    style={{ transformOrigin: "60px 60px", rotate: "-90deg" }}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 48 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 48 * 0.65 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                  />
+                  {/* Center text */}
+                  <motion.text x={60} y={56} textAnchor="middle" fontSize={22} fontWeight="900" fill={cat.accent}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+                    35%
+                  </motion.text>
+                  <text x={60} y={72} textAnchor="middle" fontSize={9} fontWeight="600" fill="hsl(var(--muted-foreground))">
+                    abgeschlossen
+                  </text>
+                </svg>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-black text-foreground">{block.progressLabel || "Fortschritt"}</span>
+                      <motion.span className="text-sm font-extrabold" style={{ color: cat.accent }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+                        35 / {block.progressMax || 100}
+                      </motion.span>
+                    </div>
+                    <div className="h-3 bg-muted rounded-full overflow-hidden relative">
+                      <motion.div className="h-full rounded-full relative"
+                        style={{ background: `linear-gradient(90deg, ${cat.accent}, ${cat.accent}AA)` }}
+                        initial={{ width: 0 }} animate={{ width: "35%" }} transition={{ duration: 1.2, ease: "easeOut" }}>
+                        <motion.div className="absolute inset-0 rounded-full"
+                          style={{ background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)` }}
+                          animate={{ x: ["-100%", "200%"] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1, ease: "easeInOut" }} />
+                      </motion.div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {["Mo", "Di", "Mi", "Do", "Fr"].map((d, i) => (
+                      <motion.div key={d} className="flex-1 text-center"
+                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.08 }}>
+                        <div className="h-8 rounded-lg mb-1 relative overflow-hidden" style={{ backgroundColor: `${cat.accent}15` }}>
+                          <motion.div className="absolute bottom-0 left-0 right-0 rounded-lg"
+                            style={{ backgroundColor: cat.accent, opacity: 0.6 }}
+                            initial={{ height: 0 }} animate={{ height: `${[60, 80, 45, 90, 30][i]}%` }}
+                            transition={{ delay: 0.6 + i * 0.1, duration: 0.8, ease: "easeOut" }} />
+                        </div>
+                        <span className="text-[9px] font-bold text-muted-foreground">{d}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </>
@@ -660,28 +723,72 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
               className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40" style={{ color: cat.accent }}>
               + Emotion hinzufügen
             </button>
-            {/* Preview – Wheel */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              <svg width={200} height={200} className="mx-auto block">
-                {(block.moodOptions || []).map((opt, i, arr) => {
-                  const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
-                  const nextAngle = ((i + 1) / arr.length) * Math.PI * 2 - Math.PI / 2;
-                  const R = 80, cx = 100, cy = 100;
-                  const x1 = cx + Math.cos(angle) * R, y1 = cy + Math.sin(angle) * R;
-                  const x2 = cx + Math.cos(nextAngle) * R, y2 = cy + Math.sin(nextAngle) * R;
-                  const large = arr.length <= 2 ? 1 : 0;
-                  const lx = cx + Math.cos((angle + nextAngle) / 2) * (R * 0.6);
-                  const ly = cy + Math.sin((angle + nextAngle) / 2) * (R * 0.6);
-                  return (
-                    <g key={i}>
-                      <path d={`M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} Z`}
-                        fill={CHART_PALETTE[i % CHART_PALETTE.length]} opacity={0.7} stroke="#fff" strokeWidth={2} />
-                      <text x={lx} y={ly + 3} textAnchor="middle" fontSize={9} fontWeight="700" fill="#fff">{(opt || "?").slice(0, 5)}</text>
-                    </g>
-                  );
-                })}
-              </svg>
+            {/* Premium Mood Wheel Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              <div className="flex items-center gap-5 justify-center">
+                <svg width={200} height={200} className="shrink-0">
+                  <defs>
+                    {(block.moodOptions || []).map((_, i) => (
+                      <radialGradient key={i} id={`mood-grad-${block.id}-${i}`} cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stopColor={CHART_PALETTE[i % CHART_PALETTE.length]} stopOpacity={0.9} />
+                        <stop offset="100%" stopColor={CHART_PALETTE[i % CHART_PALETTE.length]} stopOpacity={0.5} />
+                      </radialGradient>
+                    ))}
+                    <filter id={`mood-shadow-${block.id}`}>
+                      <feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.15" />
+                    </filter>
+                  </defs>
+                  {(block.moodOptions || []).map((opt, i, arr) => {
+                    const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
+                    const nextAngle = ((i + 1) / arr.length) * Math.PI * 2 - Math.PI / 2;
+                    const R = 85, IR = 30, cx = 100, cy = 100;
+                    const x1 = cx + Math.cos(angle) * R, y1 = cy + Math.sin(angle) * R;
+                    const x2 = cx + Math.cos(nextAngle) * R, y2 = cy + Math.sin(nextAngle) * R;
+                    const ix1 = cx + Math.cos(angle) * IR, iy1 = cy + Math.sin(angle) * IR;
+                    const ix2 = cx + Math.cos(nextAngle) * IR, iy2 = cy + Math.sin(nextAngle) * IR;
+                    const large = arr.length <= 2 ? 1 : 0;
+                    const lx = cx + Math.cos((angle + nextAngle) / 2) * ((R + IR) / 2);
+                    const ly = cy + Math.sin((angle + nextAngle) / 2) * ((R + IR) / 2);
+                    return (
+                      <motion.g key={i} filter={`url(#mood-shadow-${block.id})`}
+                        initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: i * 0.1, type: "spring", damping: 12 }}
+                        style={{ transformOrigin: `${cx}px ${cy}px` }}>
+                        <path
+                          d={`M${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} L${ix2},${iy2} A${IR},${IR} 0 ${large} 0 ${ix1},${iy1} Z`}
+                          fill={`url(#mood-grad-${block.id}-${i})`} stroke="rgba(255,255,255,0.6)" strokeWidth={1.5}
+                        />
+                        <text x={lx} y={ly + 3} textAnchor="middle" fontSize={10} fontWeight="800" fill="#fff"
+                          style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}>
+                          {(opt || "?").slice(0, 6)}
+                        </text>
+                      </motion.g>
+                    );
+                  })}
+                  {/* Center circle */}
+                  <motion.circle cx={100} cy={100} r={28} fill="hsl(var(--card))" stroke="hsl(var(--border))" strokeWidth={2}
+                    initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.4, type: "spring" }}
+                    style={{ transformOrigin: "100px 100px" }} />
+                  <motion.text x={100} y={97} textAnchor="middle" fontSize={16}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+                    🎯
+                  </motion.text>
+                  <motion.text x={100} y={112} textAnchor="middle" fontSize={7} fontWeight="700" fill="hsl(var(--muted-foreground))"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}>
+                    Gefühl?
+                  </motion.text>
+                </svg>
+                <div className="space-y-2">
+                  {(block.moodOptions || []).map((opt, i) => (
+                    <motion.div key={i} className="flex items-center gap-2.5"
+                      initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 + i * 0.08 }}>
+                      <div className="w-3.5 h-3.5 rounded-full shadow-sm" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
+                      <span className="text-xs font-bold text-foreground">{opt || `Emotion ${i + 1}`}</span>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
             </div>
           </>
         )}
@@ -723,27 +830,41 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
                 ))}
               </div>
             </div>
-            {/* Preview */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2 overflow-x-auto">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr>
-                    {(block.tableColumns || []).map((col, i) => (
-                      <th key={i} className="text-left px-3 py-2 font-extrabold text-foreground border-b-2" style={{ borderColor: cat.accent + "40" }}>{col || `Spalte ${i + 1}`}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {Array.from({ length: block.tableRows || 3 }).map((_, r) => (
-                    <tr key={r}>
-                      {(block.tableColumns || []).map((_, c) => (
-                        <td key={c} className="px-3 py-2 border-b border-border text-muted-foreground">—</td>
+            {/* Premium Table Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3 overflow-x-auto">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              <div className="rounded-xl border border-border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ background: `linear-gradient(135deg, ${cat.accent}15, ${cat.accent}08)` }}>
+                      {(block.tableColumns || []).map((col, i) => (
+                        <motion.th key={i} className="text-left px-4 py-3 font-extrabold text-foreground border-b-2"
+                          style={{ borderColor: cat.accent + "40" }}
+                          initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
+                            {col || `Spalte ${i + 1}`}
+                          </div>
+                        </motion.th>
                       ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {Array.from({ length: block.tableRows || 3 }).map((_, r) => (
+                      <motion.tr key={r}
+                        className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
+                        initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.2 + r * 0.06 }}>
+                        {(block.tableColumns || []).map((_, c) => (
+                          <td key={c} className="px-4 py-3">
+                            <div className="h-4 rounded-lg" style={{ backgroundColor: `${CHART_PALETTE[c % CHART_PALETTE.length]}10`, width: `${50 + Math.random() * 40}%` }} />
+                          </td>
+                        ))}
+                      </motion.tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </>
         )}
@@ -781,24 +902,50 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
               className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40" style={{ color: cat.accent }}>
               + Slider hinzufügen
             </button>
-            {/* Preview */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              {(block.sliders || []).map((slider, i) => (
-                <div key={i} className="mb-3">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs font-bold text-foreground">{slider.label || `Bereich ${i + 1}`}</span>
-                    <span className="text-xs font-extrabold" style={{ color: CHART_PALETTE[i % CHART_PALETTE.length] }}>{slider.min}</span>
-                  </div>
-                  <div className="h-3 bg-muted rounded-full overflow-hidden relative">
-                    <div className="h-full rounded-full" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length], width: "40%", opacity: 0.8 }} />
-                  </div>
-                  <div className="flex justify-between mt-0.5">
-                    <span className="text-[10px] text-muted-foreground">{slider.min}</span>
-                    <span className="text-[10px] text-muted-foreground">{slider.max}</span>
-                  </div>
-                </div>
-              ))}
+            {/* Premium Slider Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              {(block.sliders || []).map((slider, i) => {
+                const color = CHART_PALETTE[i % CHART_PALETTE.length];
+                const randomVal = [65, 40, 80, 55, 72][i % 5];
+                const pct = ((randomVal - slider.min) / Math.max(slider.max - slider.min, 1)) * 100;
+                return (
+                  <motion.div key={i} className="mb-5 last:mb-0"
+                    initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.12, type: "spring", damping: 18 }}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full shadow-sm" style={{ backgroundColor: color }} />
+                        <span className="text-sm font-black text-foreground">{slider.label || `Bereich ${i + 1}`}</span>
+                      </div>
+                      <motion.span className="text-sm font-extrabold" style={{ color }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 + i * 0.1 }}>
+                        {randomVal}
+                      </motion.span>
+                    </div>
+                    <div className="h-4 bg-muted rounded-full overflow-hidden relative">
+                      <motion.div className="h-full rounded-full relative"
+                        style={{ background: `linear-gradient(90deg, ${color}, ${color}AA)` }}
+                        initial={{ width: 0 }} animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }}>
+                        <motion.div className="absolute inset-0 rounded-full"
+                          style={{ background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)` }}
+                          animate={{ x: ["-100%", "200%"] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1.5, ease: "easeInOut" }} />
+                      </motion.div>
+                      {/* Thumb indicator */}
+                      <motion.div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-md"
+                        style={{ backgroundColor: color }}
+                        initial={{ left: "0%" }} animate={{ left: `calc(${pct}% - 10px)` }}
+                        transition={{ duration: 1, delay: 0.2 + i * 0.15, ease: "easeOut" }} />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[10px] font-bold text-muted-foreground">{slider.min}</span>
+                      <span className="text-[10px] font-bold text-muted-foreground">{slider.max}</span>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
           </>
         )}
