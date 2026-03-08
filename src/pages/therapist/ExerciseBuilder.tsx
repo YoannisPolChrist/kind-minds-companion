@@ -16,7 +16,6 @@ import {
 } from "../../components/motion";
 import { Toast } from "../../components/ui/Toast";
 import ExerciseFlowTimeline from "../../components/charts/ExerciseFlowTimeline";
-import ExerciseFlowTimeline from "../../components/charts/ExerciseFlowTimeline";
 
 import * as d3 from "d3";
 
