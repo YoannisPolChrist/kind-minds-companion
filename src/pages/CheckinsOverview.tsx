@@ -52,8 +52,12 @@ const EMOTION_PRESETS = [
   { id: "hopeless", score: 1, emoji: "🖤", color: "#991B1B", label: "Hoffnungslos" },
 ];
 
-function getEmotion(score: number) {
-  return EMOTION_PRESETS.find((e) => e.score === score) || EMOTION_PRESETS[5];
+function getEmotion(score: number, emotionId?: string) {
+  if (emotionId) {
+    const byId = EMOTION_PRESETS.find((e) => e.id === emotionId);
+    if (byId) return byId;
+  }
+  return EMOTION_PRESETS.find((e) => e.score === score) || EMOTION_PRESETS[16];
 }
 
 interface Checkin {
