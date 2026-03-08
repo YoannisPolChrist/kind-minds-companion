@@ -190,6 +190,8 @@ export default function TherapistClientDetail() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState({ h: 10, m: 0 });
   const [savingAppointment, setSavingAppointment] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Stats
   const [exerciseCount, setExerciseCount] = useState(0);
