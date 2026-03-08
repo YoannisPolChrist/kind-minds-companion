@@ -4,6 +4,8 @@ import { ArrowLeft, LogOut, Key, BarChart3, BookOpen, User, Edit3, FileText, His
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "../lib/firebase";
 import { useState } from "react";
+import { motion } from "motion/react";
+import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale } from "../components/motion";
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
@@ -37,86 +39,108 @@ export default function Settings() {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] px-5 pt-14 pb-8">
-        <div className="max-w-xl mx-auto animate-fade-in">
-          <button
+    <PageTransition className="min-h-screen bg-background">
+      <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden">
+        <HeaderOrbs />
+        <div className="max-w-xl mx-auto relative z-10">
+          <motion.button
             onClick={() => navigate(-1)}
             className="text-white/80 hover:text-white font-bold text-sm bg-white/20 px-4 py-2 rounded-xl mb-5 inline-flex items-center gap-1 hover:bg-white/30 transition-all"
+            whileHover={{ x: -3 }}
+            whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft size={16} /> Zurück
-          </button>
+          </motion.button>
           <h1 className="text-2xl font-black tracking-tight">Einstellungen</h1>
         </div>
       </div>
 
-      <div className="max-w-xl mx-auto px-5 py-6 space-y-4">
+      <StaggerContainer className="max-w-xl mx-auto px-5 py-6 space-y-4">
         {/* Profile info */}
-        <div className="bg-card rounded-3xl border border-border p-6 shadow-sm animate-slide-up">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <User size={24} className="text-primary" />
-            </div>
-            <div>
-              <p className="font-bold text-foreground text-lg">{profile?.firstName} {profile?.lastName}</p>
-              <p className="text-sm text-muted-foreground">{profile?.email}</p>
-              <p className="text-xs text-muted-foreground mt-0.5 capitalize">{profile?.role || "Klient"}</p>
+        <StaggerItem>
+          <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
+            <div className="flex items-center gap-4">
+              <motion.div
+                className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center"
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                transition={{ type: "spring", stiffness: 200 }}
+              >
+                <User size={24} className="text-primary" />
+              </motion.div>
+              <div>
+                <p className="font-bold text-foreground text-lg">{profile?.firstName} {profile?.lastName}</p>
+                <p className="text-sm text-muted-foreground">{profile?.email}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 capitalize">{profile?.role || "Klient"}</p>
+              </div>
             </div>
           </div>
-        </div>
+        </StaggerItem>
 
         {/* Navigation */}
-        <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden divide-y divide-border animate-slide-up" style={{ animationDelay: "80ms" }}>
-          {navItems.map(({ path, icon: Icon, label, desc }) => (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className="w-full flex items-center gap-4 px-6 py-4 hover:bg-secondary/50 transition-colors text-left"
-            >
-              <Icon size={20} className="text-primary shrink-0" />
-              <div>
-                <p className="font-bold text-foreground">{label}</p>
-                <p className="text-xs text-muted-foreground">{desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
+        <StaggerItem>
+          <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden divide-y divide-border">
+            {navItems.map(({ path, icon: Icon, label, desc }, i) => (
+              <PressableScale key={path} onClick={() => navigate(path)}>
+                <div className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/50 transition-colors text-left w-full">
+                  <Icon size={20} className="text-primary shrink-0" />
+                  <div>
+                    <p className="font-bold text-foreground">{label}</p>
+                    <p className="text-xs text-muted-foreground">{desc}</p>
+                  </div>
+                </div>
+              </PressableScale>
+            ))}
+          </div>
+        </StaggerItem>
 
         {/* Actions */}
-        <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden divide-y divide-border animate-slide-up" style={{ animationDelay: "160ms" }}>
-          <button
-            onClick={handlePasswordReset}
-            className="w-full flex items-center gap-4 px-6 py-4 hover:bg-secondary/50 transition-colors text-left"
-          >
-            <Key size={20} className="text-primary shrink-0" />
-            <div>
-              <p className="font-bold text-foreground">Passwort zurücksetzen</p>
-              <p className="text-xs text-muted-foreground">Passwort-Reset E-Mail anfordern</p>
+        <StaggerItem>
+          <PressableScale onClick={handlePasswordReset}>
+            <div className="bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
+              <div className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/50 transition-colors text-left w-full">
+                <Key size={20} className="text-primary shrink-0" />
+                <div>
+                  <p className="font-bold text-foreground">Passwort zurücksetzen</p>
+                  <p className="text-xs text-muted-foreground">Passwort-Reset E-Mail anfordern</p>
+                </div>
+              </div>
             </div>
-          </button>
-        </div>
+          </PressableScale>
+        </StaggerItem>
 
         {resetSent && (
-          <div className="bg-success/10 text-success text-sm font-semibold rounded-2xl px-4 py-3 text-center animate-fade-in">
+          <motion.div
+            className="bg-success/10 text-success text-sm font-semibold rounded-2xl px-4 py-3 text-center"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+          >
             ✓ Ein Link zum Zurücksetzen wurde an {profile?.email} gesendet.
-          </div>
+          </motion.div>
         )}
         {resetError && (
-          <div className="bg-destructive/10 text-destructive text-sm font-semibold rounded-2xl px-4 py-3 text-center animate-shake">
+          <motion.div
+            className="bg-destructive/10 text-destructive text-sm font-semibold rounded-2xl px-4 py-3 text-center"
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: [0, -6, 6, -4, 4, 0] }}
+            transition={{ duration: 0.4 }}
+          >
             {resetError}
-          </div>
+          </motion.div>
         )}
 
         {/* Sign out */}
-        <button
-          onClick={handleSignOut}
-          className="w-full py-4 rounded-2xl bg-destructive/10 text-destructive font-black flex items-center justify-center gap-2 hover:bg-destructive/20 transition-colors animate-slide-up"
-          style={{ animationDelay: "240ms" }}
-        >
-          <LogOut size={20} />
-          Abmelden
-        </button>
-      </div>
-    </div>
+        <StaggerItem>
+          <motion.button
+            onClick={handleSignOut}
+            className="w-full py-4 rounded-2xl bg-destructive/10 text-destructive font-black flex items-center justify-center gap-2"
+            whileHover={{ scale: 1.02, backgroundColor: "hsl(var(--destructive) / 0.2)" }}
+            whileTap={{ scale: 0.97 }}
+          >
+            <LogOut size={20} />
+            Abmelden
+          </motion.button>
+        </StaggerItem>
+      </StaggerContainer>
+    </PageTransition>
   );
 }

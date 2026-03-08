@@ -8,6 +8,11 @@ import {
   CheckCircle2, Heart, BookOpen, Clock, Wind, Image as ImageIcon,
   Film, Lock, Unlock,
 } from "lucide-react";
+import { motion } from "motion/react";
+import {
+  PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
+  SuccessAnimation, BreathingCircle,
+} from "../components/motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -313,34 +318,34 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
     <div className="flex flex-col items-center py-6">
       {block.content && <p className="text-muted-foreground text-center mb-4 text-sm">{block.content}</p>}
       {currentPhase && (
-        <p className="text-xl font-bold mb-3 text-primary animate-fade-in">
+        <motion.p
+          className="text-xl font-bold mb-3 text-primary"
+          key={currentPhase}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", damping: 16 }}
+        >
           {currentPhase}
-        </p>
+        </motion.p>
       )}
       {isBreathing && !running && timeLeft === totalSecs && (
         <p className="text-xs text-muted-foreground mb-3">4-4-4 Atemrhythmus</p>
       )}
-      <div
-        className={`w-44 h-44 rounded-full flex flex-col items-center justify-center mb-6 transition-all duration-500 ${
-          running ? "animate-pulse-glow" : ""
-        }`}
-        style={{
-          backgroundColor: running ? (isBreathing ? "#14B8A6" : "hsl(var(--primary))") : "hsl(var(--secondary))",
-          border: running ? "none" : "10px solid hsl(var(--border))",
-        }}
-      >
+      <BreathingCircle running={running} isBreathing={isBreathing}>
         <span className={`text-4xl font-extrabold ${running ? "text-white" : "text-foreground"}`}>
           {mins}:{secs}
         </span>
         {running && <span className="text-xs text-white/60 mt-1">läuft...</span>}
-      </div>
-      <button
+      </BreathingCircle>
+      <motion.button
         onClick={toggle}
-        className="px-12 py-3.5 rounded-full text-white font-extrabold text-base transition-all hover:scale-105 active:scale-95"
+        className="px-12 py-3.5 rounded-full text-white font-extrabold text-base"
         style={{ backgroundColor: running ? "hsl(var(--destructive))" : (isBreathing ? "#14B8A6" : "hsl(var(--primary))") }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
         {running ? "⏸ Stop" : "▶ Starten"}
-      </button>
+      </motion.button>
     </div>
   );
 }
@@ -508,20 +513,19 @@ export default function Exercise() {
 
   if (saved) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center max-w-md animate-fade-in">
-          <div className="w-28 h-28 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center mx-auto mb-8 animate-bounce-in">
-            <CheckCircle size={56} className="text-success" />
-          </div>
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
+        <SuccessAnimation emoji="🎉">
           <h2 className="text-3xl font-black text-foreground mb-3">Super! 🎉</h2>
           <p className="text-muted-foreground font-medium mb-10">Du hast die Übung erfolgreich abgeschlossen.</p>
-          <button
+          <motion.button
             onClick={() => navigate("/")}
-            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/20"
+            whileHover={{ scale: 1.02, y: -2 }}
+            whileTap={{ scale: 0.97 }}
           >
             Zurück zum Dashboard
-          </button>
-        </div>
+          </motion.button>
+        </SuccessAnimation>
       </div>
     );
   }
@@ -529,19 +533,22 @@ export default function Exercise() {
   const themeColor = exercise.themeColor || "hsl(var(--primary))";
 
   return (
-    <div className="min-h-screen bg-background">
+    <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <div
-        className="rounded-b-[2rem] px-5 pt-14 pb-8 transition-all duration-500"
+        className="rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden"
         style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}CC)` }}
       >
-        <div className="max-w-2xl mx-auto animate-fade-in">
-          <button
+        <HeaderOrbs />
+        <div className="max-w-2xl mx-auto relative z-10">
+          <motion.button
             onClick={() => navigate(-1)}
             className="text-white/80 hover:text-white font-bold text-sm bg-white/20 px-4 py-2 rounded-xl mb-5 inline-flex items-center gap-1 hover:bg-white/30 transition-all"
+            whileHover={{ x: -3 }}
+            whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft size={16} /> Zurück
-          </button>
+          </motion.button>
           <h1 className="text-white text-2xl font-black tracking-tight">{exercise.title}</h1>
           <p className="text-white/60 text-sm font-medium mt-1">
             {exercise.blocks?.length || 0} Module
@@ -552,16 +559,15 @@ export default function Exercise() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-5 py-6 space-y-5">
+      <StaggerContainer className="max-w-2xl mx-auto px-5 py-6 space-y-5">
         {(exercise.blocks || []).map((block, idx) => {
           const meta = getMeta(block.type);
           const Icon = meta.icon;
           return (
-            <div
-              key={block.id}
-              className="rounded-[1.75rem] overflow-hidden border border-border shadow-sm bg-card animate-slide-up"
-              style={{ animationDelay: `${idx * 80}ms` }}
-            >
+            <StaggerItem key={block.id}>
+              <div
+                className="rounded-[1.75rem] overflow-hidden border border-border shadow-sm bg-card"
+              >
               {/* Drag handle */}
               <div className="flex justify-center pt-2 pb-1 bg-secondary">
                 <div className="w-12 h-1 rounded-full bg-border" />
@@ -596,7 +602,8 @@ export default function Exercise() {
                   disabled={exercise.completed}
                 />
               </div>
-            </div>
+              </div>
+            </StaggerItem>
           );
         })}
 
@@ -647,7 +654,7 @@ export default function Exercise() {
         </div>
 
         <div className="h-8" />
-      </div>
-    </div>
+      </StaggerContainer>
+    </PageTransition>
   );
 }
