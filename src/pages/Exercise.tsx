@@ -551,12 +551,22 @@ export default function Exercise() {
             <ArrowLeft size={16} /> Zurück
           </motion.button>
           <h1 className="text-white text-2xl font-black tracking-tight">{exercise.title}</h1>
-          <p className="text-white/60 text-sm font-medium mt-1">
-            {exercise.blocks?.length || 0} Module
-            {exercise.completed && " · ✅ Bereits abgeschlossen"}
-            {exercise.recurrence === "daily" && " · 🔁 Täglich"}
-            {exercise.recurrence === "weekly" && " · 🔁 Wöchentlich"}
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-white/60 text-sm font-medium">
+              {exercise.blocks?.length || 0} Module
+              {exercise.completed && " · ✅ Bereits abgeschlossen"}
+              {exercise.recurrence === "daily" && " · 🔁 Täglich"}
+              {exercise.recurrence === "weekly" && " · 🔁 Wöchentlich"}
+            </p>
+            <motion.button
+              onClick={() => generateExercisePdf(exercise)}
+              className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Download size={14} /> PDF
+            </motion.button>
+          </div>
         </div>
       </div>
 
