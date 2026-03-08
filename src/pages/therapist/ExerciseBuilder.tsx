@@ -9,6 +9,7 @@ import {
   BookOpen, Clock, Wind, Image as ImageIcon, Film, Radar,
   BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon,
   Palette, Link as LinkIcon, X, Search,
+  Gauge, Target, Table2, SlidersHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
