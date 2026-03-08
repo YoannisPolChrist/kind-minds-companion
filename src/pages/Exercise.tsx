@@ -830,7 +830,7 @@ export default function Exercise() {
         })}
 
         {/* Sharing toggle */}
-        {!exercise.completed && (
+        {isEditable && (
           <div className="bg-card rounded-3xl border border-border p-5 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between">
               <div className="flex-1 pr-4">
@@ -845,19 +845,38 @@ export default function Exercise() {
           </div>
         )}
 
-        {/* Complete button */}
+        {/* Action buttons */}
         <div className="space-y-3 mt-4">
-          <motion.button onClick={handleComplete} disabled={saving || exercise.completed}
-            className={`w-full py-4 rounded-2xl font-black text-lg transition-all disabled:opacity-50 ${exercise.completed ? "bg-muted text-muted-foreground" : "bg-primary text-primary-foreground shadow-lg shadow-primary/25"}`}
-            whileHover={!exercise.completed ? { scale: 1.02, y: -2 } : undefined}
-            whileTap={!exercise.completed ? { scale: 0.97 } : undefined}>
-            {saving ? (
-              <span className="inline-flex items-center gap-2">
-                <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-                Speichern...
-              </span>
-            ) : exercise.completed ? "Bereits abgeschlossen" : "Übung abschließen ✓"}
-          </motion.button>
+          {exercise.completed && !isRedoing ? (
+            <>
+              {/* Already completed state with redo option */}
+              <div className="bg-success/10 border border-success/20 rounded-2xl py-4 flex items-center justify-center gap-2">
+                <CheckCircle size={22} className="text-success" />
+                <span className="text-success font-black text-lg">Bereits abgeschlossen</span>
+              </div>
+              <motion.button
+                onClick={handleRedo}
+                className="w-full py-4 rounded-2xl bg-card border-2 border-primary text-primary font-black text-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Edit3 size={20} />
+                Erneut bearbeiten
+              </motion.button>
+            </>
+          ) : (
+            <motion.button onClick={handleComplete} disabled={saving}
+              className="w-full py-4 rounded-2xl font-black text-lg transition-all disabled:opacity-50 bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+              whileHover={{ scale: 1.02, y: -2 }}
+              whileTap={{ scale: 0.97 }}>
+              {saving ? (
+                <span className="inline-flex items-center gap-2">
+                  <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+                  Speichern...
+                </span>
+              ) : isRedoing ? "Erneut abschließen ✓" : "Übung abschließen ✓"}
+            </motion.button>
+          )}
         </div>
 
         <div className="h-8" />
