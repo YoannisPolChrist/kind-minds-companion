@@ -21,6 +21,12 @@ import { getStorage } from "firebase/storage";
 
 const storage = getStorage();
 
+const HEADER_IMAGES = [
+  "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
+  "/images/HomeUi4.webp", "/images/HomeUi5.webp", "/images/HomeUi6.webp",
+];
+const headerImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
+
 // ─── Type Config ─────────────────────────────────────────────────────────────
 
 const TYPE_CONFIG: Record<string, { bg: string; border: string; text: string; label: string; icon: string }> = {
