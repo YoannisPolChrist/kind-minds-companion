@@ -175,33 +175,32 @@ export default function TherapistTemplates() {
               {filtered.map((tpl) => {
                 const color = tpl.themeColor || "#6366F1";
                 return (
-                  <TiltCard key={tpl.id} className="bg-card rounded-3xl border-2 p-7 shadow-sm" maxTilt={4} style={{ borderColor: `${color}55` }}>
-                    <div className="mb-6">
-                      <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 border" style={{ backgroundColor: `${color}15`, borderColor: `${color}40` }}>
-                        <LayoutTemplate size={24} style={{ color }} />
+                  <TiltCard key={tpl.id} className="bg-card rounded-3xl border-2 p-6 shadow-sm relative" maxTilt={4} style={{ borderColor: `${color}55` }}>
+                    {/* Delete top-right */}
+                    <PressableScale onClick={() => setDeleteTarget(tpl)} className="absolute top-4 right-4 z-10">
+                      <div className="w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center hover:bg-destructive/20 transition-colors">
+                        <Trash2 size={15} className="text-destructive" />
                       </div>
-                      <h3 className="text-xl font-black text-foreground tracking-tight mb-2">{tpl.title}</h3>
+                    </PressableScale>
+
+                    <div className="mb-4 pr-12">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 border" style={{ backgroundColor: `${color}15`, borderColor: `${color}40` }}>
+                        <LayoutTemplate size={22} style={{ color }} />
+                      </div>
+                      <h3 className="text-lg font-black text-foreground tracking-tight mb-1.5">{tpl.title}</h3>
                       <Badge variant="muted">
                         <FileText size={12} className="mr-1 inline" />
                         {tpl.blocks?.length || 0} Module
                       </Badge>
                     </div>
 
-                    <div className="flex gap-3 pt-5 border-t border-border">
-                      <motion.button onClick={() => navigate(`/therapist/template/${tpl.id}`)} className="flex-1 bg-secondary border border-border py-3.5 rounded-2xl text-foreground font-black text-center" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                    <div className="flex gap-3 pt-4 border-t border-border">
+                      <motion.button onClick={() => navigate(`/therapist/template/${tpl.id}`)} className="flex-1 bg-secondary border border-border py-3 rounded-2xl text-foreground font-black text-center text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                         Bearbeiten
                       </motion.button>
-                      <motion.button onClick={() => { setAssignTemplate(tpl); setSelectedClientId(null); }} className="flex-1 py-3.5 rounded-2xl text-white font-black flex items-center justify-center gap-2 shadow-lg" style={{ backgroundColor: color, boxShadow: `0 6px 16px ${color}40` }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-                        <Send size={16} /> Zuweisen
+                      <motion.button onClick={() => { setAssignTemplate(tpl); setSelectedClientId(null); }} className="flex-1 py-3 rounded-2xl text-white font-black flex items-center justify-center gap-2 shadow-lg text-sm" style={{ backgroundColor: color, boxShadow: `0 6px 16px ${color}40` }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                        <Send size={15} /> Zuweisen
                       </motion.button>
-                    </div>
-
-                    <div className="flex gap-2 mt-3">
-                      <PressableScale onClick={() => setDeleteTarget(tpl)}>
-                        <div className="w-10 h-10 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
-                          <Trash2 size={16} className="text-destructive" />
-                        </div>
-                      </PressableScale>
                     </div>
                   </TiltCard>
                 );
