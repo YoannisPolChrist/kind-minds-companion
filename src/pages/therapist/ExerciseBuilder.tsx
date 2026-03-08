@@ -433,9 +433,11 @@ export default function ExerciseBuilderPage() {
       } else if (id) {
         await updateDoc(doc(db, "exercise_templates", id), payload);
       }
-      navigate("/therapist/templates");
+      setToast({ visible: true, message: isNew ? "Vorlage erstellt!" : "Vorlage gespeichert!", type: "success" });
+      setTimeout(() => navigate("/therapist/templates"), 1200);
     } catch (e) {
       console.error("Save failed:", e);
+      setToast({ visible: true, message: "Fehler beim Speichern", subMessage: "Bitte versuche es erneut.", type: "error" });
     } finally {
       setSaving(false);
     }
