@@ -397,7 +397,7 @@ export default function CheckinsOverview() {
                       <div className="grid grid-cols-3 gap-2 mt-5">
                         {[
                           { label: "Tiefpunkt", value: analytics.min, color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/10" },
-                          { label: "Durchschnitt", value: analytics.avg.toFixed(1), color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/10" },
+                          { label: "Durchschnitt", value: analytics.avg.toFixed(0), color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/10" },
                           { label: "Höchstwert", value: analytics.max, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/10" },
                         ].map((s) => (
                           <div
@@ -406,7 +406,7 @@ export default function CheckinsOverview() {
                           >
                             <p className={`text-xl font-black ${s.color}`}>
                               {s.value}
-                              <span className="text-[10px] font-bold text-white/20">/10</span>
+                              <span className="text-[10px] font-bold text-white/20">/100</span>
                             </p>
                             <p className="text-[10px] font-bold text-white/30 mt-0.5">{s.label}</p>
                           </div>
