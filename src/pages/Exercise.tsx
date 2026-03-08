@@ -685,6 +685,10 @@ export default function Exercise() {
     setAnswers((prev) => ({ ...prev, [key]: val }));
   }, []);
 
+  const [isRedoing, setIsRedoing] = useState(false);
+
+  const isEditable = !exercise?.completed || isRedoing;
+
   const handleComplete = async () => {
     if (!id || !exercise) return;
     setSaving(true);
@@ -698,12 +702,19 @@ export default function Exercise() {
           await updateDoc(doc(db, "users", profile.id, "exercises", id), { completed: true, completedAt: new Date().toISOString(), lastCompletedAt: new Date().toISOString(), answers: cleanAnswers });
         }
       }
+      setIsRedoing(false);
       setSaved(true);
     } catch (e) {
       console.error("Error completing exercise:", e);
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRedo = () => {
+    setIsRedoing(true);
+    // Optionally clear answers for a fresh start
+    // setAnswers({});
   };
 
   if (loading) {
