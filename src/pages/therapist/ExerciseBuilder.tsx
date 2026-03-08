@@ -97,6 +97,10 @@ function defaultBlock(type: BlockType): Block {
   if (["choice", "checklist"].includes(type)) b.options = ["", ""];
   if (["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(type)) b.options = ["::", "::"];
   if (type === "scale") { b.minLabel = "Gar nicht"; b.maxLabel = "Sehr stark"; }
+  if (type === "progress_bar") { b.progressLabel = "Fortschritt"; b.progressMax = 100; }
+  if (type === "mood_wheel") { b.moodOptions = ["Freude", "Trauer", "Wut", "Angst", "Ekel", "Überraschung"]; }
+  if (type === "table") { b.tableColumns = ["Situation", "Gedanke", "Gefühl"]; b.tableRows = 3; }
+  if (type === "slider_group") { b.sliders = [{ label: "Energie", min: 0, max: 10, step: 1 }, { label: "Motivation", min: 0, max: 10, step: 1 }, { label: "Schlaf", min: 0, max: 10, step: 1 }]; }
   return b as Block;
 }
 
