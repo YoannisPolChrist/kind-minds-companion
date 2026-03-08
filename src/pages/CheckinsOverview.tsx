@@ -209,9 +209,9 @@ export default function CheckinsOverview() {
           <>
             {/* Analytics Cards */}
             {analytics && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-fade-in">
                 {/* Top Stats Row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-slide-up">
                   <StatCard
                     label="Durchschnitt"
                     value={analytics.avg.toFixed(1)}
