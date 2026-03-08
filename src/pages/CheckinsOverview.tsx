@@ -248,154 +248,59 @@ export default function CheckinsOverview() {
 
                 {/* Mood Chart */}
                 {chartData.length > 1 && (
-                  <div
-                    className="rounded-3xl p-6 shadow-2xl animate-slide-up relative overflow-hidden"
-                    style={{
-                      animationDelay: "100ms",
-                      background: "linear-gradient(145deg, hsl(222 47% 8%), hsl(222 47% 14%), hsl(240 20% 10%))",
-                    }}
-                  >
-                    {/* Ambient glow */}
-                    <div
-                      className="absolute top-0 right-0 w-48 h-48 rounded-full blur-3xl opacity-20 pointer-events-none"
-                      style={{ background: `radial-gradient(circle, ${getEmotion(chartData[chartData.length - 1]?.mood, (chartData[chartData.length - 1] as any)?.emotionId).color}, transparent)` }}
-                    />
-                    <div className="absolute bottom-0 left-0 w-32 h-32 rounded-full blur-3xl opacity-10 pointer-events-none bg-primary" />
-
-                    <div className="relative z-10">
-                      <h3 className="text-[10px] font-bold text-white/30 uppercase tracking-[0.2em] mb-1">
-                        Stimmungsverlauf
-                      </h3>
-                      <div className="flex items-baseline gap-2 mb-6">
-                        <span className="text-4xl font-black text-white tracking-tight">
-                          {chartData[chartData.length - 1]?.mood}
-                        </span>
-                        <span className="text-sm font-bold text-white/25">/10</span>
-                        <span className="text-lg ml-1">
-                          {getEmotion(chartData[chartData.length - 1]?.mood, (chartData[chartData.length - 1] as any)?.emotionId).emoji}
-                        </span>
-                      </div>
-
-                      {/* SVG Area Chart */}
-                      <div className="relative h-40 mb-2">
-                        <svg viewBox={`0 0 ${(chartData.length - 1) * 60} 120`} className="w-full h-full" preserveAspectRatio="none">
-                          <defs>
-                            <linearGradient id="moodGradient" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={getEmotion(chartData[chartData.length - 1]?.mood, (chartData[chartData.length - 1] as any)?.emotionId).color} stopOpacity="0.5" />
-                              <stop offset="100%" stopColor={getEmotion(chartData[chartData.length - 1]?.mood, (chartData[chartData.length - 1] as any)?.emotionId).color} stopOpacity="0" />
-                            </linearGradient>
-                            <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
-                              {chartData.map((ci, i) => {
-                                const emotion = getEmotion(ci.mood, (ci as any).emotionId);
-                                return (
-                                  <stop
-                                    key={i}
-                                    offset={`${(i / (chartData.length - 1)) * 100}%`}
-                                    stopColor={emotion.color}
-                                  />
-                                );
-                              })}
-                            </linearGradient>
-                            <filter id="glow">
-                              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-                              <feMerge>
-                                <feMergeNode in="coloredBlur" />
-                                <feMergeNode in="SourceGraphic" />
-                              </feMerge>
-                            </filter>
-                          </defs>
-
-                          {/* Grid lines */}
-                          {[0, 25, 50, 75, 100].map((y) => (
-                            <line key={y} x1="0" y1={120 - (y / 100) * 120} x2={(chartData.length - 1) * 60} y2={120 - (y / 100) * 120} stroke="white" strokeOpacity="0.04" strokeWidth="1" />
-                          ))}
-
-                          {/* Area fill */}
-                          <path
-                            d={(() => {
-                              const pts = chartData.map((ci, i) => ({
-                                x: i * 60,
-                                y: 120 - (ci.mood / 10) * 110,
-                              }));
-                              // Smooth cubic bezier
-                              let d = `M ${pts[0].x} ${pts[0].y}`;
-                              for (let i = 1; i < pts.length; i++) {
-                                const cp1x = pts[i - 1].x + 20;
-                                const cp2x = pts[i].x - 20;
-                                d += ` C ${cp1x} ${pts[i - 1].y}, ${cp2x} ${pts[i].y}, ${pts[i].x} ${pts[i].y}`;
-                              }
-                              d += ` L ${pts[pts.length - 1].x} 120 L ${pts[0].x} 120 Z`;
-                              return d;
-                            })()}
-                            fill="url(#moodGradient)"
-                          />
-
-                          {/* Line */}
-                          <path
-                            d={(() => {
-                              const pts = chartData.map((ci, i) => ({
-                                x: i * 60,
-                                y: 120 - (ci.mood / 10) * 110,
-                              }));
-                              let d = `M ${pts[0].x} ${pts[0].y}`;
-                              for (let i = 1; i < pts.length; i++) {
-                                const cp1x = pts[i - 1].x + 20;
-                                const cp2x = pts[i].x - 20;
-                                d += ` C ${cp1x} ${pts[i - 1].y}, ${cp2x} ${pts[i].y}, ${pts[i].x} ${pts[i].y}`;
-                              }
-                              return d;
-                            })()}
-                            fill="none"
-                            stroke="url(#lineGradient)"
-                            strokeWidth="3"
-                            strokeLinecap="round"
-                            filter="url(#glow)"
-                          />
-
-                          {/* Dots */}
-                          {chartData.map((ci, i) => {
-                            const emotion = getEmotion(ci.mood, (ci as any).emotionId);
-                            const x = i * 60;
-                            const y = 120 - (ci.mood / 10) * 110;
-                            return (
-                              <g key={ci.id}>
-                                <circle cx={x} cy={y} r="8" fill={emotion.color} fillOpacity="0.15" />
-                                <circle cx={x} cy={y} r="4" fill={emotion.color} />
-                                <circle cx={x} cy={y} r="2" fill="white" />
-                              </g>
-                            );
-                          })}
-                        </svg>
-                      </div>
-
-                      {/* Date labels */}
-                      <div className="flex justify-between px-0">
-                        {chartData.map((ci) => (
-                          <span key={ci.id} className="text-[9px] font-bold text-white/20 text-center" style={{ width: 60 }}>
-                            {new Date(ci.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Bottom stats */}
-                      <div className="grid grid-cols-3 gap-2 mt-5">
-                        {[
-                          { label: "Tiefpunkt", value: analytics.min, color: "text-rose-400", bg: "bg-rose-500/10", border: "border-rose-500/10" },
-                          { label: "Durchschnitt", value: analytics.avg.toFixed(1), color: "text-sky-400", bg: "bg-sky-500/10", border: "border-sky-500/10" },
-                          { label: "Höchstwert", value: analytics.max, color: "text-emerald-400", bg: "bg-emerald-500/10", border: "border-emerald-500/10" },
-                        ].map((s) => (
-                          <div
-                            key={s.label}
-                            className={`${s.bg} border ${s.border} rounded-2xl py-3 text-center backdrop-blur-sm`}
-                          >
-                            <p className={`text-xl font-black ${s.color}`}>
-                              {s.value}
-                              <span className="text-[10px] font-bold text-white/20">/10</span>
-                            </p>
-                            <p className="text-[10px] font-bold text-white/30 mt-0.5">{s.label}</p>
+                  <div className="bg-[hsl(var(--card-dark,222_47%_11%))] rounded-3xl p-6 shadow-lg animate-slide-up" style={{ animationDelay: "100ms" }}>
+                    <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1">
+                      Stimmungsverlauf
+                    </h3>
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <span className="text-2xl font-black text-white">
+                        {chartData[chartData.length - 1]?.mood}
+                      </span>
+                      <span className="text-sm font-semibold text-white/40">/10</span>
+                    </div>
+                    <div className="flex items-end gap-1.5 h-28">
+                      {chartData.map((ci, i) => {
+                        const emotion = getEmotion(ci.mood, (ci as any).emotionId);
+                        const heightPct = (ci.mood / 10) * 100;
+                        return (
+                          <div key={ci.id} className="flex-1 flex flex-col items-center gap-1">
+                            <span className="text-xs" title={emotion.label}>
+                              {emotion.emoji}
+                            </span>
+                            <div className="w-full relative rounded-lg overflow-hidden bg-white/10" style={{ height: "80px" }}>
+                              <div
+                                className="absolute bottom-0 w-full rounded-lg transition-all duration-500"
+                                style={{
+                                  height: `${heightPct}%`,
+                                  background: `linear-gradient(to top, ${emotion.color}88, ${emotion.color}44)`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-[9px] font-bold text-white/30">
+                              {new Date(ci.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}
+                            </span>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
+                    </div>
+                    {/* Mini stats */}
+                    <div className="flex gap-3 mt-4">
+                      {[
+                        { label: "Min", value: analytics.min, color: "text-destructive" },
+                        { label: "Ø", value: analytics.avg.toFixed(1), color: "text-primary" },
+                        { label: "Max", value: analytics.max, color: "text-success" },
+                      ].map((s) => (
+                        <div
+                          key={s.label}
+                          className="flex-1 bg-white/5 rounded-xl py-2 text-center border border-white/5"
+                        >
+                          <p className={`text-lg font-black ${s.color}`}>
+                            {s.value}
+                            <span className="text-xs font-semibold text-white/30">/10</span>
+                          </p>
+                          <p className="text-[10px] font-semibold text-white/30">{s.label}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}

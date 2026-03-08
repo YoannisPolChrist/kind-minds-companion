@@ -6,180 +6,12 @@ import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
   ArrowLeft, Activity, Edit3, FileText, Calendar, BookOpen,
-  CheckCircle, Users, Clock, ChevronLeft, ChevronRight,
+  CheckCircle, Users,
 } from "lucide-react";
 import { motion } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard,
 } from "../../components/motion";
-
-const HEADER_IMAGES = [
-  "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
-  "/images/HomeUi4.webp", "/images/HomeUi5.webp", "/images/HomeUi6.webp",
-];
-const headerImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
-
-// ─── Custom Calendar ──────────────────────────────────────────────────────────
-
-function MiniCalendar({ selected, onSelect }: { selected: Date | null; onSelect: (d: Date) => void }) {
-  const [viewMonth, setViewMonth] = useState(() => selected || new Date());
-
-  const year = viewMonth.getFullYear();
-  const month = viewMonth.getMonth();
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const offset = firstDay === 0 ? 6 : firstDay - 1; // Monday start
-
-  const monthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
-  const dayNames = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
-
-  const today = new Date();
-  const isToday = (d: number) => today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
-  const isSelected = (d: number) => selected && selected.getFullYear() === year && selected.getMonth() === month && selected.getDate() === d;
-  const isPast = (d: number) => {
-    const date = new Date(year, month, d);
-    date.setHours(23, 59, 59);
-    return date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  };
-
-  const prev = () => setViewMonth(new Date(year, month - 1, 1));
-  const next = () => setViewMonth(new Date(year, month + 1, 1));
-
-  const cells: (number | null)[] = [];
-  for (let i = 0; i < offset; i++) cells.push(null);
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  return (
-    <div className="bg-card rounded-3xl border border-border p-5 shadow-sm">
-      {/* Month navigation */}
-      <div className="flex items-center justify-between mb-4">
-        <motion.button onClick={prev} className="w-9 h-9 rounded-xl bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors" whileTap={{ scale: 0.9 }}>
-          <ChevronLeft size={18} className="text-foreground" />
-        </motion.button>
-        <h4 className="text-base font-black text-foreground">{monthNames[month]} {year}</h4>
-        <motion.button onClick={next} className="w-9 h-9 rounded-xl bg-secondary border border-border flex items-center justify-center hover:bg-muted transition-colors" whileTap={{ scale: 0.9 }}>
-          <ChevronRight size={18} className="text-foreground" />
-        </motion.button>
-      </div>
-
-      {/* Day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
-        {dayNames.map(d => (
-          <div key={d} className="text-center text-[11px] font-bold text-muted-foreground uppercase py-1">{d}</div>
-        ))}
-      </div>
-
-      {/* Day grid */}
-      <div className="grid grid-cols-7 gap-1">
-        {cells.map((day, i) => {
-          if (day === null) return <div key={`empty-${i}`} />;
-          const past = isPast(day);
-          const sel = isSelected(day);
-          const tod = isToday(day);
-          return (
-            <motion.button
-              key={day}
-              onClick={() => {
-                if (!past) {
-                  const newDate = new Date(year, month, day);
-                  if (selected) {
-                    newDate.setHours(selected.getHours(), selected.getMinutes());
-                  }
-                  onSelect(newDate);
-                }
-              }}
-              disabled={past}
-              className={`aspect-square rounded-xl flex items-center justify-center text-sm font-bold transition-all ${
-                sel
-                  ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                  : tod
-                  ? "bg-primary/10 text-primary border border-primary/30"
-                  : past
-                  ? "text-muted-foreground/40 cursor-not-allowed"
-                  : "text-foreground hover:bg-secondary"
-              }`}
-              whileTap={!past ? { scale: 0.85 } : undefined}
-            >
-              {day}
-            </motion.button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Time Picker ──────────────────────────────────────────────────────────────
-
-function TimePicker({ value, onChange }: { value: { h: number; m: number }; onChange: (v: { h: number; m: number }) => void }) {
-  const hours = Array.from({ length: 14 }, (_, i) => i + 7); // 7:00 - 20:00
-  const minutes = [0, 15, 30, 45];
-
-  return (
-    <div className="bg-card rounded-3xl border border-border p-5 shadow-sm">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-          <Clock size={20} className="text-primary" />
-        </div>
-        <h4 className="text-base font-black text-foreground">Uhrzeit</h4>
-      </div>
-
-      <div className="flex gap-4">
-        {/* Hours */}
-        <div className="flex-1">
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Stunde</p>
-          <div className="grid grid-cols-4 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
-            {hours.map(h => (
-              <motion.button
-                key={h}
-                onClick={() => onChange({ ...value, h })}
-                className={`py-2 rounded-xl text-sm font-bold transition-all ${
-                  value.h === h
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-secondary text-foreground hover:bg-muted border border-border"
-                }`}
-                whileTap={{ scale: 0.9 }}
-              >
-                {String(h).padStart(2, "0")}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-
-        {/* Minutes */}
-        <div className="w-24">
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Minute</p>
-          <div className="space-y-1.5">
-            {minutes.map(m => (
-              <motion.button
-                key={m}
-                onClick={() => onChange({ ...value, m })}
-                className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all ${
-                  value.m === m
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-secondary text-foreground hover:bg-muted border border-border"
-                }`}
-                whileTap={{ scale: 0.9 }}
-              >
-                :{String(m).padStart(2, "0")}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Preview */}
-      <div className="mt-4 bg-secondary rounded-2xl border border-border p-3 text-center">
-        <p className="text-2xl font-black text-foreground">
-          {String(value.h).padStart(2, "0")}:{String(value.m).padStart(2, "0")}
-        </p>
-        <p className="text-[11px] text-muted-foreground font-medium mt-0.5">Uhr</p>
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function TherapistClientDetail() {
   const { id } = useParams<{ id: string }>();
@@ -187,8 +19,7 @@ export default function TherapistClientDetail() {
   const navigate = useNavigate();
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedTime, setSelectedTime] = useState({ h: 10, m: 0 });
+  const [nextAppointment, setNextAppointment] = useState("");
   const [savingAppointment, setSavingAppointment] = useState(false);
 
   // Stats
@@ -204,13 +35,7 @@ export default function TherapistClientDetail() {
         if (cSnap.exists()) {
           const cData = { id: cSnap.id, ...cSnap.data() };
           setClient(cData);
-          if ((cData as any).nextAppointment) {
-            const d = new Date((cData as any).nextAppointment);
-            if (!isNaN(d.getTime())) {
-              setSelectedDate(d);
-              setSelectedTime({ h: d.getHours(), m: d.getMinutes() });
-            }
-          }
+          if ((cData as any).nextAppointment) setNextAppointment((cData as any).nextAppointment);
         }
 
         const [exSnap, ciSnap] = await Promise.all([
@@ -229,12 +54,10 @@ export default function TherapistClientDetail() {
   }, [id]);
 
   const handleSaveAppointment = async () => {
-    if (!id || !selectedDate) return;
+    if (!id) return;
     setSavingAppointment(true);
     try {
-      const d = new Date(selectedDate);
-      d.setHours(selectedTime.h, selectedTime.m, 0, 0);
-      await updateDoc(doc(db, "users", id), { nextAppointment: d.toISOString() });
+      await updateDoc(doc(db, "users", id), { nextAppointment: nextAppointment.trim() });
     } catch (e) {
       console.error("Failed to save appointment", e);
     } finally {
@@ -257,15 +80,10 @@ export default function TherapistClientDetail() {
     { path: `/therapist/client/${id}/checkins`, icon: Activity, label: "Check-ins", desc: "Stimmungs-Tagebuch", color: "#10B981", bg: "bg-emerald-50" },
   ];
 
-  const appointmentFormatted = selectedDate
-    ? `${selectedDate.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long" })} um ${String(selectedTime.h).padStart(2, "0")}:${String(selectedTime.m).padStart(2, "0")} Uhr`
-    : null;
-
   return (
     <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay" />
         <HeaderOrbs />
         <div className="max-w-5xl mx-auto px-6 pt-12 pb-8 relative z-10">
           <div className="flex items-center justify-between mb-6">
@@ -339,45 +157,31 @@ export default function TherapistClientDetail() {
         <StaggerItem>
           <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-pink-100 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-pink-50 flex items-center justify-center">
                 <Calendar size={24} className="text-pink-600" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-foreground">Nächster Termin</h3>
+                <h3 className="text-lg font-bold text-foreground">Nächster Termin</h3>
                 <p className="text-sm text-muted-foreground">Wird dem Klienten auf dem Dashboard angezeigt</p>
               </div>
             </div>
-
-            {/* Selected appointment preview */}
-            {appointmentFormatted && (
-              <motion.div
-                className="bg-primary/5 border border-primary/20 rounded-2xl p-4 mb-5 flex items-center gap-3"
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
+            <div className="flex gap-3">
+              <input
+                type="datetime-local"
+                value={nextAppointment}
+                onChange={(e) => setNextAppointment(e.target.value)}
+                className="flex-1 bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <motion.button
+                onClick={handleSaveAppointment}
+                disabled={savingAppointment}
+                className="bg-primary text-primary-foreground px-6 py-3.5 rounded-2xl font-bold disabled:opacity-50"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
               >
-                <Calendar size={20} className="text-primary shrink-0" />
-                <p className="text-sm font-bold text-foreground">{appointmentFormatted}</p>
-              </motion.div>
-            )}
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <MiniCalendar selected={selectedDate} onSelect={setSelectedDate} />
-              <TimePicker value={selectedTime} onChange={setSelectedTime} />
+                {savingAppointment ? "..." : "Speichern"}
+              </motion.button>
             </div>
-
-            <motion.button
-              onClick={handleSaveAppointment}
-              disabled={savingAppointment || !selectedDate}
-              className="w-full mt-5 bg-primary text-primary-foreground py-4 rounded-2xl font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-primary/20"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.97 }}
-            >
-              {savingAppointment ? (
-                <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-              ) : (
-                <><Calendar size={18} /> Termin speichern</>
-              )}
-            </motion.button>
           </div>
         </StaggerItem>
 

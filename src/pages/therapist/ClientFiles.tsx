@@ -6,7 +6,7 @@ import { db, storage } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
   ArrowLeft, FileUp, FileText, Trash2, Search, X, FolderOpen,
-  Image as ImageIcon, Film, Eye, FileCode, File, Upload, Filter,
+  Image as ImageIcon, Film, Eye, FileCode, File, Upload,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale } from "../../components/motion";
@@ -15,45 +15,20 @@ import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { Badge } from "../../components/ui/Badge";
 import { SkeletonCard } from "../../components/ui/Skeleton";
 
-const HEADER_IMAGES = [
-  "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
-  "/images/HomeUi4.webp", "/images/HomeUi5.webp", "/images/HomeUi6.webp",
-];
-const headerImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
-
 // ─── File type helpers ─────────────────────────────────────────────────────────
 
-type FileCategory = "all" | "pdf" | "image" | "video" | "doc" | "spreadsheet" | "other";
-
-const FILE_CATEGORIES: { key: FileCategory; label: string; icon: any; color: string }[] = [
-  { key: "all", label: "Alle", icon: FolderOpen, color: "#64748B" },
-  { key: "pdf", label: "PDF", icon: FileText, color: "#EF4444" },
-  { key: "image", label: "Bilder", icon: ImageIcon, color: "#8B5CF6" },
-  { key: "video", label: "Videos", icon: Film, color: "#F59E0B" },
-  { key: "doc", label: "Dokumente", icon: FileText, color: "#2563EB" },
-  { key: "spreadsheet", label: "Tabellen", icon: FileCode, color: "#10B981" },
-];
-
-function getFileCategory(file: any): FileCategory {
-  const name = (file.originalName || file.title || "").toLowerCase();
-  if (name.endsWith(".pdf")) return "pdf";
-  if ([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"].some((e) => name.endsWith(e))) return "image";
-  if ([".mp4", ".mov", ".avi", ".mkv"].some((e) => name.endsWith(e))) return "video";
-  if ([".doc", ".docx"].some((e) => name.endsWith(e))) return "doc";
-  if ([".xls", ".xlsx", ".csv"].some((e) => name.endsWith(e))) return "spreadsheet";
-  return "other";
-}
-
 function getFileInfo(file: any) {
-  const cat = getFileCategory(file);
-  switch (cat) {
-    case "pdf": return { icon: FileText, color: "#EF4444", bg: "bg-destructive/10", label: "PDF" };
-    case "image": return { icon: ImageIcon, color: "#8B5CF6", bg: "bg-[#8B5CF6]/10", label: "Bild" };
-    case "video": return { icon: Film, color: "#F59E0B", bg: "bg-[#F59E0B]/10", label: "Video" };
-    case "doc": return { icon: FileText, color: "#2563EB", bg: "bg-[#2563EB]/10", label: "Word" };
-    case "spreadsheet": return { icon: FileCode, color: "#10B981", bg: "bg-[#10B981]/10", label: "Excel" };
-    default: return { icon: File, color: "#64748B", bg: "bg-muted", label: "Datei" };
-  }
+  const name = (file.originalName || file.title || "").toLowerCase();
+  if (name.endsWith(".pdf")) return { icon: FileText, color: "#EF4444", bg: "bg-destructive/10", label: "PDF" };
+  if ([".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg"].some((e) => name.endsWith(e)))
+    return { icon: ImageIcon, color: "#8B5CF6", bg: "bg-[#8B5CF6]/10", label: "Bild" };
+  if ([".mp4", ".mov", ".avi", ".mkv"].some((e) => name.endsWith(e)))
+    return { icon: Film, color: "#F59E0B", bg: "bg-[#F59E0B]/10", label: "Video" };
+  if ([".doc", ".docx"].some((e) => name.endsWith(e)))
+    return { icon: FileText, color: "#2563EB", bg: "bg-[#2563EB]/10", label: "Word" };
+  if ([".xls", ".xlsx", ".csv"].some((e) => name.endsWith(e)))
+    return { icon: FileCode, color: "#10B981", bg: "bg-[#10B981]/10", label: "Excel" };
+  return { icon: File, color: "#64748B", bg: "bg-muted", label: "Datei" };
 }
 
 function formatFileSize(bytes?: number): string {
@@ -121,7 +96,6 @@ function UploadModal({ visible, onClose, onUpload }: {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -131,7 +105,6 @@ function UploadModal({ visible, onClose, onUpload }: {
     if (files.length > 0) {
       const file = files[0];
       setSelectedFile(file);
-      setError("");
       if (!title.trim()) setTitle(file.name.replace(/\.[^/.]+$/, ""));
     }
   }, [title]);
@@ -141,7 +114,6 @@ function UploadModal({ visible, onClose, onUpload }: {
     if (files && files.length > 0) {
       const file = files[0];
       setSelectedFile(file);
-      setError("");
       if (!title.trim()) setTitle(file.name.replace(/\.[^/.]+$/, ""));
     }
   }, [title]);
@@ -149,20 +121,11 @@ function UploadModal({ visible, onClose, onUpload }: {
   const handleSubmit = async () => {
     if (!title.trim() || !selectedFile) return;
     setUploading(true);
-    setError("");
     try {
       await onUpload(title.trim(), desc.trim(), selectedFile);
       setTitle("");
       setDesc("");
       setSelectedFile(null);
-    } catch (e: any) {
-      console.error("Upload error:", e);
-      const msg = e?.code === "storage/unauthorized"
-        ? "Keine Berechtigung. Bitte stelle sicher, dass du eingeloggt bist."
-        : e?.code === "storage/quota-exceeded"
-        ? "Speicherplatz erschöpft."
-        : `Upload fehlgeschlagen: ${e?.message || "Unbekannter Fehler"}`;
-      setError(msg);
     } finally {
       setUploading(false);
     }
@@ -173,7 +136,6 @@ function UploadModal({ visible, onClose, onUpload }: {
     setDesc("");
     setSelectedFile(null);
     setUploading(false);
-    setError("");
     onClose();
   };
 
@@ -221,12 +183,6 @@ function UploadModal({ visible, onClose, onUpload }: {
             )}
           </div>
 
-          {error && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-2xl p-3 text-sm text-destructive font-medium">
-              {error}
-            </div>
-          )}
-
           <div>
             <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Titel *</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="z.B. Arbeitsblatt CBT" className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -246,35 +202,6 @@ function UploadModal({ visible, onClose, onUpload }: {
   );
 }
 
-// ─── Filter Chips ──────────────────────────────────────────────────────────────
-
-function FilterChips({ active, onChange, fileCounts }: {
-  active: FileCategory;
-  onChange: (cat: FileCategory) => void;
-  fileCounts: Record<FileCategory, number>;
-}) {
-  return (
-    <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-      {FILE_CATEGORIES.filter(c => c.key === "all" || (fileCounts[c.key] || 0) > 0).map(({ key, label, icon: Icon, color }) => (
-        <motion.button
-          key={key}
-          onClick={() => onChange(key)}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-            active === key
-              ? "bg-primary text-primary-foreground border-primary shadow-sm"
-              : "bg-card text-muted-foreground border-border hover:border-primary/30"
-          }`}
-          whileTap={{ scale: 0.95 }}
-        >
-          <Icon size={14} style={active !== key ? { color } : undefined} />
-          {label}
-          {key !== "all" && <span className="opacity-60">({fileCounts[key] || 0})</span>}
-        </motion.button>
-      ))}
-    </div>
-  );
-}
-
 // ─── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function ClientFiles() {
@@ -284,7 +211,6 @@ export default function ClientFiles() {
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [filterCat, setFilterCat] = useState<FileCategory>("all");
   const [showUpload, setShowUpload] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
   const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
@@ -310,27 +236,27 @@ export default function ClientFiles() {
 
   const handleUpload = async (title: string, desc: string, file: File | null) => {
     if (!file || !id) return;
-    const storagePath = `client_resources/${id}/${Date.now()}_${file.name}`;
-    const storageRef = ref(storage, storagePath);
-    await uploadBytes(storageRef, file);
-    const url = await getDownloadURL(storageRef);
-
-    const docRef = await addDoc(collection(db, "client_resources"), {
-      clientId: id,
-      therapistId: profile?.id || "unknown",
-      title,
-      description: desc,
-      type: "document",
-      url,
-      originalName: file.name,
-      storagePath,
-      fileSize: file.size,
-      mimeType: file.type,
-      createdAt: serverTimestamp(),
-    });
-
-    // Notification for client
     try {
+      const storagePath = `client_resources/${id}/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, storagePath);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+
+      const docRef = await addDoc(collection(db, "client_resources"), {
+        clientId: id,
+        therapistId: profile?.id || "unknown",
+        title,
+        description: desc,
+        type: "document",
+        url,
+        originalName: file.name,
+        storagePath,
+        fileSize: file.size,
+        mimeType: file.type,
+        createdAt: serverTimestamp(),
+      });
+
+      // Notification for client
       await addDoc(collection(db, "notifications"), {
         userId: id,
         type: "FILE_UPLOAD",
@@ -340,17 +266,19 @@ export default function ClientFiles() {
         read: false,
         createdAt: serverTimestamp(),
       });
-    } catch (notifErr) {
-      console.warn("Could not create notification:", notifErr);
-    }
 
-    setFiles((prev) => [{
-      id: docRef.id, title, description: desc, type: "document", url,
-      originalName: file.name, storagePath, fileSize: file.size, mimeType: file.type,
-      createdAt: { seconds: Date.now() / 1000 },
-    }, ...prev]);
-    setShowUpload(false);
-    setToast({ visible: true, message: "Hochgeladen!", subMessage: "Klient wurde benachrichtigt.", type: "success" });
+      setFiles((prev) => [{
+        id: docRef.id, title, description: desc, type: "document", url,
+        originalName: file.name, storagePath, fileSize: file.size, mimeType: file.type,
+        createdAt: { seconds: Date.now() / 1000 },
+      }, ...prev]);
+      setShowUpload(false);
+      setToast({ visible: true, message: "Hochgeladen!", subMessage: "Klient wurde benachrichtigt.", type: "success" });
+    } catch (e) {
+      console.error("Error uploading:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Upload fehlgeschlagen.", type: "error" });
+      throw e;
+    }
   };
 
   const handleDelete = async () => {
@@ -370,29 +298,22 @@ export default function ClientFiles() {
     }
   };
 
-  // Compute counts per category
-  const fileCounts = files.reduce((acc, f) => {
-    const cat = getFileCategory(f);
-    acc[cat] = (acc[cat] || 0) + 1;
-    return acc;
-  }, {} as Record<FileCategory, number>);
-
   const filtered = files.filter((f) => {
-    // Category filter
-    if (filterCat !== "all" && getFileCategory(f) !== filterCat) return false;
-    // Search filter
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return f.title?.toLowerCase().includes(q) || f.originalName?.toLowerCase().includes(q);
   });
 
-  // Page-level drop handler
+  // Page-level drop handler: open modal with file pre-selected
   const handlePageDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setPageDragOver(false);
     const droppedFiles = e.dataTransfer.files;
     if (droppedFiles.length > 0) {
       setShowUpload(true);
+      // Small delay to let modal mount, then dispatch a synthetic approach
+      // We'll use a simpler approach: store the file and pass it
+      (window as any).__pendingDropFile = droppedFiles[0];
     }
   }, []);
 
@@ -447,7 +368,6 @@ export default function ClientFiles() {
       </AnimatePresence>
 
       <div className="rounded-b-[2rem] relative overflow-hidden" style={{ background: "linear-gradient(135deg, #C09D59, #A8843D)" }}>
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay" />
         <HeaderOrbs />
         <div className="max-w-4xl mx-auto px-6 pt-12 pb-8 relative z-10 text-white">
           <div className="flex items-center justify-between mb-5">
@@ -473,24 +393,17 @@ export default function ClientFiles() {
       </div>
 
       <StaggerContainer className="max-w-4xl mx-auto px-6 py-6 space-y-4">
-        {/* Filter Chips */}
-        {files.length > 0 && (
-          <StaggerItem>
-            <FilterChips active={filterCat} onChange={setFilterCat} fileCounts={fileCounts} />
-          </StaggerItem>
-        )}
-
         {filtered.length === 0 ? (
           <StaggerItem>
             <div className="text-center py-16">
               <motion.div animate={{ y: [0, -8, 0], rotate: [0, 3, -3, 0] }} transition={{ duration: 3, repeat: Infinity }}>
                 <FolderOpen size={48} className="text-muted-foreground mx-auto mb-4" />
               </motion.div>
-              <h2 className="text-xl font-black text-foreground mb-2">{search || filterCat !== "all" ? "Keine Treffer" : "Noch keine Dateien"}</h2>
+              <h2 className="text-xl font-black text-foreground mb-2">{search ? "Keine Treffer" : "Noch keine Dateien"}</h2>
               <p className="text-muted-foreground text-sm mb-6">
-                {search ? `Keine Dateien für „${search}" gefunden.` : filterCat !== "all" ? "Keine Dateien in dieser Kategorie." : "Lade PDFs, Arbeitsblätter oder Dokumente hoch – oder ziehe sie einfach in dieses Fenster."}
+                {search ? `Keine Dateien für „${search}" gefunden.` : "Lade PDFs, Arbeitsblätter oder Dokumente hoch – oder ziehe sie einfach in dieses Fenster."}
               </p>
-              {!search && filterCat === "all" && (
+              {!search && (
                 <motion.button onClick={() => setShowUpload(true)} className="bg-accent text-accent-foreground px-6 py-3 rounded-2xl font-bold inline-flex items-center gap-2" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <FileUp size={18} /> Erste Datei hochladen
                 </motion.button>
