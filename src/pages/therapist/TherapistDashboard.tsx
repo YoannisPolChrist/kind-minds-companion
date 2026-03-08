@@ -10,7 +10,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
-  TiltCard, PressableScale,
+  TiltCard, PressableScale, CountUp, GlowCard,
 } from "../../components/motion";
 import { Toast, BannerToast } from "../../components/ui/Toast";
 import { SkeletonCard, SkeletonMetrics } from "../../components/ui/Skeleton";
@@ -187,7 +187,7 @@ export default function TherapistDashboard() {
                 transition={{ delay: 0.1 + i * 0.06, type: "spring", damping: 18 }}
               >
                 <s.icon size={18} className="mx-auto mb-1 text-white/70" />
-                <p className="text-2xl font-black text-white">{s.value}</p>
+                <CountUp to={s.value} className="text-2xl font-black text-white block" duration={1.5} />
                 <p className="text-xs font-bold text-white/50 uppercase">{s.label}</p>
               </motion.div>
             ))}
