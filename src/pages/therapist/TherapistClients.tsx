@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageTransition, PressableScale } from "../../components/motion";
+import TherapistHeroHeader from "../../components/therapist/TherapistHeroHeader";
 import { Toast } from "../../components/ui/Toast";
 import { Badge } from "../../components/ui/Badge";
-
 interface Client {
   id: string;
   firstName?: string;

@@ -3,15 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { collection, query, where, getDocs, deleteDoc, doc, addDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
-import {
-  ArrowLeft, Plus, Trash2, Send, Search, X, LayoutTemplate, FileText,
-} from "lucide-react";
+import { ArrowLeft, Plus, Search, X, LayoutTemplate } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageTransition, PressableScale } from "../../components/motion";
+import TherapistHeroHeader from "../../components/therapist/TherapistHeroHeader";
+import TemplateCard from "../../components/therapist/TemplateCard";
 import { Toast } from "../../components/ui/Toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { Badge } from "../../components/ui/Badge";
-
 export default function TherapistTemplates() {
   const { profile } = useAuth();
   const navigate = useNavigate();
