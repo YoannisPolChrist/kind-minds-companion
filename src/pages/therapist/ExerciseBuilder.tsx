@@ -371,7 +371,8 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0 }}
       transition={{ type: "spring", damping: 22, stiffness: 180 }}
-      className="rounded-[1.75rem] overflow-hidden border border-border bg-card shadow-sm"
+      className="rounded-[1.75rem] overflow-hidden border-2 bg-card shadow-sm"
+      style={{ borderColor: `${cat.accent}50` }}
     >
       <div className="flex justify-center pt-2 pb-1" style={{ backgroundColor: cat.bg }}>
         <div className="w-12 h-1 rounded-full opacity-20" style={{ backgroundColor: cat.text }} />
