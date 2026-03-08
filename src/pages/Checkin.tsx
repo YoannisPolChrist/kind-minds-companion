@@ -73,23 +73,6 @@ const EMOTION_PRESETS = [
   { id: "broken", score: 1, emoji: "💀", color: "#0C0A09", label: "Am Boden" },
 ];
 
-const QUICK_TAGS = [
-  { emoji: "😫", label: "Erschöpft" },
-  { emoji: "😰", label: "Ängstlich" },
-  { emoji: "😌", label: "Ruhig" },
-  { emoji: "🔥", label: "Motiviert" },
-  { emoji: "😢", label: "Traurig" },
-  { emoji: "🙏", label: "Dankbar" },
-  { emoji: "😵‍💫", label: "Überfordert" },
-  { emoji: "🎯", label: "Fokussiert" },
-  { emoji: "🥺", label: "Einsam" },
-  { emoji: "🌱", label: "Hoffnungsvoll" },
-  { emoji: "⚡", label: "Energiegeladen" },
-  { emoji: "🎨", label: "Kreativ" },
-  { emoji: "😤", label: "Genervt" },
-  { emoji: "💔", label: "Verletzlich" },
-  { emoji: "🌅", label: "Nostalgisch" },
-];
 
 export default function Checkin() {
   const { profile } = useAuth();
@@ -97,7 +80,7 @@ export default function Checkin() {
   const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
   const [energy, setEnergy] = useState(50);
   const [note, setNote] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -122,7 +105,7 @@ export default function Checkin() {
           if (preset) setSelectedEmotionId(preset.id);
           if (data.energy) setEnergy(data.energy);
           if (data.note) setNote(data.note);
-          if (data.tags) setTags(data.tags);
+          
         }
       } catch (e) {
         console.warn("Could not check existing checkin:", e);
@@ -137,6 +120,10 @@ export default function Checkin() {
       setError("Bitte wähle eine Stimmung aus.");
       return;
     }
+    if (!note.trim()) {
+      setError("Bitte schreibe noch eine kurze Notiz dazu.");
+      return;
+    }
     if (!profile?.id) return;
     setSaving(true);
     setError("");
@@ -149,7 +136,7 @@ export default function Checkin() {
         mood: activeEmotion.score,
         emotionId: activeEmotion.id,
         energy,
-        tags,
+        tags: [],
         note: note.trim(),
         createdAt: new Date().toISOString(),
       });
@@ -162,10 +149,6 @@ export default function Checkin() {
     }
   };
 
-  const toggleTag = (label: string) => {
-    if (alreadyCompleted) return;
-    setTags((prev) => (prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label]));
-  };
 
   if (loadingCheck) {
     return (
@@ -371,61 +354,23 @@ export default function Checkin() {
           </div>
         </StaggerItem>
 
-        {/* Tags — emoji-only */}
+        {/* Note — Pflichtfeld */}
         <StaggerItem>
           <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              🏷️ Was beschreibt dich gerade?
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+              ✏️ Was beschäftigt dich gerade?
+              <span className="text-destructive">*</span>
             </h3>
-            <div className="flex flex-wrap gap-2 justify-center">
-              {QUICK_TAGS.map((tag) => {
-                const isActive = tags.includes(tag.label);
-                return (
-                  <motion.button
-                    key={tag.label}
-                    onClick={() => toggleTag(tag.label)}
-                    whileHover={{ scale: 1.15, y: -3 }}
-                    whileTap={{ scale: 0.85 }}
-                    className="relative group"
-                    style={{ opacity: alreadyCompleted && !isActive ? 0.3 : 1 }}
-                  >
-                    <motion.div
-                      animate={{
-                        backgroundColor: isActive ? "hsl(var(--primary))" : "hsl(var(--secondary))",
-                        boxShadow: isActive ? "0 4px 16px hsl(var(--primary) / 0.3)" : "0 0 0 transparent",
-                      }}
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center text-2xl ${
-                        isActive ? "ring-2 ring-primary/30" : "border border-border"
-                      }`}
-                    >
-                      {tag.emoji}
-                    </motion.div>
-                    {/* Tooltip on hover */}
-                    <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                      <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap bg-card px-2 py-0.5 rounded-lg border border-border shadow-sm">
-                        {tag.label}
-                      </span>
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-        </StaggerItem>
-
-        {/* Note */}
-        <StaggerItem>
-          <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              ✏️ Möchtest du noch etwas ergänzen?
-            </h3>
+            <p className="text-[11px] text-muted-foreground/70 mb-4">Pflichtfeld — schreibe mindestens ein paar Worte.</p>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Gedanken, Notizen..."
+              placeholder="Beschreibe kurz, was dich gerade bewegt…"
               rows={5}
               disabled={alreadyCompleted}
-              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring transition-all disabled:opacity-60"
+              className={`w-full bg-secondary rounded-2xl border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring transition-all disabled:opacity-60 ${
+                !note.trim() && error ? "border-destructive" : "border-border"
+              }`}
             />
           </div>
         </StaggerItem>
