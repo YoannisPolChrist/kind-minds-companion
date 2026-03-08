@@ -37,7 +37,7 @@ export default function Settings() {
 
   const navItems = isTherapist
     ? [
-        { path: "/therapist", icon: BarChart3, label: "Alle Klienten", desc: "Klienten verwalten & Übersicht" },
+        { path: "/therapist/clients", icon: BarChart3, label: "Alle Klienten", desc: "Klienten verwalten & Übersicht" },
         { path: "/therapist/templates", icon: BookOpen, label: "Vorlagen", desc: "Übungsvorlagen erstellen & verwalten" },
         { path: "/therapist/resources", icon: FileText, label: "Bibliothek", desc: "Ressourcen & Materialien" },
       ]
@@ -52,8 +52,8 @@ export default function Settings() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/65 to-primary/50" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/30 to-primary/25" />
         <HeaderOrbs />
         <div className="max-w-xl mx-auto relative z-10">
           <motion.button

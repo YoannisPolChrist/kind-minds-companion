@@ -22,6 +22,7 @@ import ClientNotes from "./pages/therapist/ClientNotes";
 import ClientFiles from "./pages/therapist/ClientFiles";
 import TherapistTemplates from "./pages/therapist/TherapistTemplates";
 import TherapistResources from "./pages/therapist/TherapistResources";
+import TherapistClients from "./pages/therapist/TherapistClients";
 import ExerciseBuilderPage from "./pages/therapist/ExerciseBuilder";
 
 function ProtectedRoute({
@@ -70,6 +71,7 @@ export default function App() {
 
       {/* Therapist pages */}
       <Route path="/therapist" element={withAuth(<TherapistDashboard />)} />
+      <Route path="/therapist/clients" element={withAuth(<TherapistClients />)} />
       <Route path="/therapist/client/:id" element={withAuth(<ClientDetail />)} />
       <Route path="/therapist/client/:id/exercises" element={withAuth(<ClientExercises />)} />
       <Route path="/therapist/client/:id/checkins" element={withAuth(<ClientCheckins />)} />

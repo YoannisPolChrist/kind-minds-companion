@@ -447,7 +447,7 @@ export default function ClientFiles() {
       </AnimatePresence>
 
       <div className="rounded-b-[2rem] relative overflow-hidden" style={{ background: "linear-gradient(135deg, #C09D59, #A8843D)" }}>
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
         <HeaderOrbs />
         <div className="max-w-4xl mx-auto px-6 pt-12 pb-8 relative z-10 text-white">
           <div className="flex items-center justify-between mb-5">

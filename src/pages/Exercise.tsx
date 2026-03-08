@@ -759,8 +759,8 @@ export default function Exercise() {
     <PageTransition className="min-h-screen bg-background">
       {/* Header with background image */}
       <div className="rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}CC)` }}>
-        <img src={coverImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20" />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/40 to-transparent" />
+        <img src={coverImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-60" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/25 to-transparent" />
         <HeaderOrbs />
         <div className="max-w-2xl mx-auto relative z-10">
           <motion.button onClick={() => navigate(-1)}

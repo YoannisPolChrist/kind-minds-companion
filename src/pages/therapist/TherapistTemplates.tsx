@@ -122,8 +122,8 @@ export default function TherapistTemplates() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 to-primary/70" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/30 to-primary/40" />
         <HeaderOrbs />
         <div className="max-w-5xl mx-auto px-6 pt-12 pb-8 relative z-10">
           <div className="flex items-center justify-between mb-5">
