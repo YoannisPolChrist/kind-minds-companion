@@ -17,7 +17,7 @@ import {
 import { Toast } from "../../components/ui/Toast";
 import ExerciseCompositionChart from "../../components/charts/ExerciseCompositionChart";
 import ExerciseFlowTimeline from "../../components/charts/ExerciseFlowTimeline";
-import ExerciseDifficultyGauge from "../../components/charts/ExerciseDifficultyGauge";
+
 import * as d3 from "d3";
 
 // ─── Block Types ──────────────────────────────────────────────────────────────
