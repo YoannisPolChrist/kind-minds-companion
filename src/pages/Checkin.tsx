@@ -75,7 +75,7 @@ export default function Checkin() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
-  const [energy, setEnergy] = useState(5);
+  const [energy, setEnergy] = useState(50);
   const [note, setNote] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
