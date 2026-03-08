@@ -17,7 +17,7 @@ import {
 import { Toast } from "../../components/ui/Toast";
 import ExerciseCompositionChart from "../../components/charts/ExerciseCompositionChart";
 import ExerciseFlowTimeline from "../../components/charts/ExerciseFlowTimeline";
-import ExerciseDifficultyGauge from "../../components/charts/ExerciseDifficultyGauge";
+
 import * as d3 from "d3";
 
 // ─── Block Types ──────────────────────────────────────────────────────────────
@@ -720,10 +720,7 @@ export default function ExerciseBuilderPage() {
         {blocks.length > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
             <ExerciseCompositionChart blocks={blocks} />
-            <div className="space-y-4">
-              <ExerciseFlowTimeline blocks={blocks} />
-              <ExerciseDifficultyGauge blocks={blocks} />
-            </div>
+            <ExerciseFlowTimeline blocks={blocks} />
           </div>
         )}
 
