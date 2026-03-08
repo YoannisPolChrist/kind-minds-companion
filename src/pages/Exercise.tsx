@@ -602,6 +602,7 @@ export default function Exercise() {
                   disabled={exercise.completed}
                 />
               </div>
+              </div>
             </StaggerItem>
           );
         })}
