@@ -614,7 +614,7 @@ export default function Exercise() {
                 className="rounded-[1.75rem] overflow-hidden border border-border shadow-sm bg-card"
                 initial={{ opacity: 0, y: 14, scale: 0.97 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                transition={{ type: "timing", duration: 380, delay: idx * 0.07 }}
+                transition={{ type: "spring", damping: 22, stiffness: 180, delay: idx * 0.07 }}
               >
                 <div className="flex justify-center pt-2 pb-1 bg-secondary">
                   <div className="w-12 h-1 rounded-full bg-border" />
