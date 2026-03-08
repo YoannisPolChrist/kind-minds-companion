@@ -10,11 +10,100 @@
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import { type ReactNode, type CSSProperties } from "react";
 
-// Re-export new motion components
-export { TiltCard } from "./TiltCard";
-export { CountUp } from "./CountUp";
-export { ParallaxSection, FloatingOrb } from "./ParallaxSection";
-export { GlowCard } from "./GlowCard";
+// ─── TiltCard (inline) ────────────────────────────────────────────────────────
+
+export function TiltCard({
+  children,
+  className,
+  style,
+  onClick,
+  maxTilt = 6,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  onClick?: () => void;
+  maxTilt?: number;
+}) {
+  return (
+    <motion.div
+      className={className}
+      style={{ perspective: 900, transformStyle: "preserve-3d", ...style }}
+      onClick={onClick}
+      whileHover={{
+        rotateX: -maxTilt * 0.5,
+        rotateY: maxTilt * 0.5,
+        scale: 1.02,
+        y: -3,
+      }}
+      whileTap={{ scale: 0.98 }}
+      transition={{ type: "spring", stiffness: 220, damping: 18 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── GlowCard (inline) ──────────────────────────────────────────────────────
+
+export function GlowCard({
+  children,
+  className,
+  style,
+  onClick,
+  glowColor,
+}: {
+  children: ReactNode;
+  className?: string;
+  style?: CSSProperties;
+  onClick?: () => void;
+  glowColor?: string;
+}) {
+  return (
+    <motion.div
+      className={className}
+      style={style}
+      onClick={onClick}
+      whileHover={{ scale: 1.02, y: -2 }}
+      whileTap={onClick ? { scale: 0.98 } : undefined}
+      transition={{ type: "spring", stiffness: 260, damping: 20 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── CountUp (inline) ───────────────────────────────────────────────────────
+
+export function CountUp({
+  to,
+  duration = 1.2,
+  className,
+  suffix = "",
+  prefix = "",
+}: {
+  to: number;
+  duration?: number;
+  className?: string;
+  suffix?: string;
+  prefix?: string;
+}) {
+  const [value, setValue] = useState(0);
+
+  useEffect(() => {
+    const start = performance.now();
+    let frame: number;
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / (duration * 1000), 1);
+      setValue(Math.round(to * progress));
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [to, duration]);
+
+  return <span className={className}>{prefix}{value}{suffix}</span>;
+}
 
 // ─── Stagger Container + Item ────────────────────────────────────────────────
 // Ported from Block3DEntrance: perspective + rotateX + scale entrance
