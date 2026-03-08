@@ -168,7 +168,7 @@ export default function TherapistTemplates() {
               {filtered.map((tpl) => {
                 const color = tpl.themeColor || "#6366F1";
                 return (
-                  <TiltCard key={tpl.id} className="bg-card rounded-3xl border border-border p-7 shadow-sm" maxTilt={4} style={{ borderColor: `${color}40` }}>
+                  <TiltCard key={tpl.id} className="bg-card rounded-3xl border-2 p-7 shadow-sm" maxTilt={4} style={{ borderColor: `${color}55` }}>
                     <div className="mb-6">
                       <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 border" style={{ backgroundColor: `${color}15`, borderColor: `${color}40` }}>
                         <LayoutTemplate size={24} style={{ color }} />
