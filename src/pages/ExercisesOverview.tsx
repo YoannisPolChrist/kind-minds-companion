@@ -111,11 +111,11 @@ export default function ExercisesOverview() {
                   </h2>
                   <div className="space-y-3">
                     {open.map((ex) => (
-                      <TiltCard
+                      <GlowCard
                         key={ex.id}
                         className="bg-card rounded-2xl border border-border p-5 cursor-pointer shadow-sm hover:border-primary/30 transition-colors"
                         onClick={() => navigate(`/exercise/${ex.id}`)}
-                        maxTilt={4}
+                        glowColor={ex.themeColor || "hsl(var(--primary))"}
                       >
                         <div className="flex items-center gap-4">
                           <div
@@ -134,7 +134,7 @@ export default function ExercisesOverview() {
                           </div>
                           <span className="text-sm font-bold text-primary">Start →</span>
                         </div>
-                      </TiltCard>
+                      </GlowCard>
                     ))}
                   </div>
                 </section>
