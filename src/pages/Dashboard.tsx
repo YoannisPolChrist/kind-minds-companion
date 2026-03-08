@@ -1,11 +1,11 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { useAuth } from "../hooks/useAuth";
 import {
   Settings, Calendar, BookOpen, TrendingUp, CheckCircle, ArrowRight,
-  BarChart3, Clock,
+  BarChart3, Clock, Edit3, FileText, History,
 } from "lucide-react";
 
 interface Exercise {
@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [checkins, setCheckins] = useState<Checkin[]>([]);
   const [checkedInToday, setCheckedInToday] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [bookingUrl, setBookingUrl] = useState<string | null>(null);
+  const [nextAppointment, setNextAppointment] = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
   const currentSlot = new Date().getHours() < 12 ? "morning" : "evening";
@@ -47,16 +49,13 @@ export default function Dashboard() {
     if (!profile?.id) return;
     const load = async () => {
       try {
-        // Fetch exercises (try global collection, then user-scoped)
+        // Fetch exercises
         const globalExSnap = await getDocs(
           query(collection(db, "exercises"), where("clientId", "==", profile.id))
         );
         let exs = globalExSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Exercise));
-
         if (exs.length === 0) {
-          const userExSnap = await getDocs(
-            query(collection(db, "users", profile.id, "exercises"))
-          );
+          const userExSnap = await getDocs(query(collection(db, "users", profile.id, "exercises")));
           exs = userExSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Exercise));
         }
         setExercises(exs);
@@ -67,8 +66,7 @@ export default function Dashboard() {
         );
         const allCheckins = ciSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Checkin));
         allCheckins.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-        const cis = allCheckins.slice(0, 7);
-        setCheckins(cis);
+        setCheckins(allCheckins.slice(0, 7));
 
         // Check today's status
         const slotDocId = `${profile.id}_${today}_${currentSlot}`;
@@ -78,6 +76,20 @@ export default function Dashboard() {
         } else {
           const legacySnap = await getDoc(doc(db, "checkins", `${profile.id}_${today}`));
           setCheckedInToday(legacySnap.exists());
+        }
+
+        // Fetch therapist info (booking URL, next appointment)
+        if (profile.therapistId) {
+          try {
+            const therapistSnap = await getDoc(doc(db, "users", profile.therapistId));
+            if (therapistSnap.exists()) {
+              const tData = therapistSnap.data();
+              if (tData.bookingUrl) setBookingUrl(tData.bookingUrl);
+            }
+          } catch {}
+        }
+        if (profile.nextAppointment) {
+          setNextAppointment(profile.nextAppointment);
         }
       } catch (e) {
         console.error("Dashboard load error:", e);
@@ -104,7 +116,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl shadow-primary/15">
         <div className="max-w-2xl mx-auto px-5 pt-12 pb-10">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 animate-fade-in">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
                 Hi {profile?.firstName || "dort"} 👋
@@ -121,9 +133,32 @@ export default function Dashboard() {
             </button>
           </div>
 
+          {/* Next appointment */}
+          {nextAppointment && (
+            <div className="bg-white/10 rounded-2xl p-4 mb-4 flex items-center gap-3 animate-slide-up">
+              <Calendar size={18} className="text-white/70 shrink-0" />
+              <div>
+                <p className="text-xs font-bold text-white/50 uppercase">Nächster Termin</p>
+                <p className="font-bold text-white">
+                  {new Date(nextAppointment).toLocaleDateString("de-DE", { weekday: "short", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+              {bookingUrl && (
+                <a
+                  href={bookingUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-auto text-xs font-bold bg-white/20 px-3 py-1.5 rounded-xl hover:bg-white/30 transition-colors"
+                >
+                  Umbuchen
+                </a>
+              )}
+            </div>
+          )}
+
           {/* Progress bar */}
           {exercises.length > 0 && (
-            <div className="bg-white/10 rounded-2xl p-4">
+            <div className="bg-white/10 rounded-2xl p-4 animate-slide-up" style={{ animationDelay: "80ms" }}>
               <div className="flex justify-between text-sm font-bold mb-2">
                 <span>Fortschritt</span>
                 <span>{completedExercises.length} / {exercises.length}</span>
@@ -139,12 +174,12 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-5 py-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-5 py-6 space-y-5">
         {/* Check-in Banner */}
         {!checkedInToday ? (
           <Link
             to="/checkin"
-            className="block bg-gradient-to-r from-accent to-amber-500 rounded-3xl p-6 shadow-lg shadow-accent/20 hover:shadow-accent/30 transition-all group"
+            className="block bg-gradient-to-r from-accent to-amber-500 rounded-3xl p-6 shadow-lg shadow-accent/20 hover:shadow-accent/30 hover:scale-[1.01] active:scale-[0.99] transition-all group animate-slide-up"
           >
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-3xl shrink-0">
@@ -158,7 +193,7 @@ export default function Dashboard() {
             </div>
           </Link>
         ) : (
-          <div className="bg-success/10 border border-success/20 rounded-3xl p-5 flex items-center gap-4">
+          <div className="bg-success/10 border border-success/20 rounded-3xl p-5 flex items-center gap-4 animate-slide-up">
             <CheckCircle className="text-success shrink-0" size={28} />
             <div>
               <p className="font-bold text-foreground">Check-in erledigt! ✓</p>
@@ -173,7 +208,8 @@ export default function Dashboard() {
         {checkins.length > 1 && (
           <Link
             to="/checkins"
-            className="block bg-card rounded-3xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow group"
+            className="block bg-card rounded-3xl border border-border p-6 shadow-sm hover:shadow-md transition-all group animate-slide-up"
+            style={{ animationDelay: "80ms" }}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
@@ -188,8 +224,11 @@ export default function Dashboard() {
                 <div key={ci.id} className="flex-1 flex flex-col items-center gap-1">
                   <span className="text-lg">{MOOD_EMOJIS[ci.mood] || "😐"}</span>
                   <div
-                    className="w-full bg-primary/20 rounded-lg min-h-[4px] transition-all"
-                    style={{ height: `${ci.mood * 10}%` }}
+                    className="w-full rounded-lg min-h-[4px] transition-all duration-500"
+                    style={{
+                      height: `${ci.mood * 10}%`,
+                      background: `linear-gradient(to top, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.3) 100%)`,
+                    }}
                   />
                   <span className="text-[10px] font-bold text-muted-foreground">
                     {new Date(ci.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}
@@ -201,7 +240,7 @@ export default function Dashboard() {
         )}
 
         {/* Stats row */}
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-3 gap-3 animate-slide-up" style={{ animationDelay: "160ms" }}>
           {[
             { label: "Gesamt", value: exercises.length, cls: "text-primary" },
             { label: "Offen", value: openExercises.length, cls: "text-accent" },
@@ -215,19 +254,26 @@ export default function Dashboard() {
         </div>
 
         {/* Quick Links */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link to="/checkins" className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-            <BarChart3 size={20} className="text-primary shrink-0" />
-            <span className="font-bold text-sm text-foreground">Mein Tagebuch</span>
-          </Link>
-          <Link to="/exercises" className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
-            <BookOpen size={20} className="text-primary shrink-0" />
-            <span className="font-bold text-sm text-foreground">Alle Übungen</span>
-          </Link>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-slide-up" style={{ animationDelay: "240ms" }}>
+          {[
+            { to: "/checkins", icon: BarChart3, label: "Tagebuch" },
+            { to: "/exercises", icon: BookOpen, label: "Übungen" },
+            { to: "/notes", icon: Edit3, label: "Notizen" },
+            { to: "/resources", icon: FileText, label: "Bibliothek" },
+          ].map(({ to, icon: Icon, label }) => (
+            <Link
+              key={to}
+              to={to}
+              className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:shadow-md hover:border-primary/30 transition-all"
+            >
+              <Icon size={18} className="text-primary shrink-0" />
+              <span className="font-bold text-sm text-foreground">{label}</span>
+            </Link>
+          ))}
         </div>
 
         {/* Open Exercises */}
-        <section>
+        <section className="animate-slide-up" style={{ animationDelay: "320ms" }}>
           <h2 className="text-lg font-black text-foreground mb-4 flex items-center gap-2">
             <BookOpen size={20} className="text-primary" />
             Deine Aufgaben
@@ -249,7 +295,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-4">
                     <div
                       className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0"
-                      style={{ backgroundColor: (ex.themeColor || "#137386") + "20" }}
+                      style={{ backgroundColor: (ex.themeColor || "hsl(var(--primary))") + "20" }}
                     >
                       📋
                     </div>
@@ -297,6 +343,17 @@ export default function Dashboard() {
             </div>
           </section>
         )}
+
+        {/* History Link */}
+        <Link
+          to="/history"
+          className="block bg-card rounded-2xl border border-border p-4 shadow-sm hover:shadow-md transition-all text-center"
+        >
+          <div className="flex items-center justify-center gap-2">
+            <History size={18} className="text-primary" />
+            <span className="font-bold text-foreground">Gesamter Verlauf anzeigen</span>
+          </div>
+        </Link>
 
         <div className="h-8" />
       </div>

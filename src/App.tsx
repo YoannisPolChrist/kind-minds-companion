@@ -7,6 +7,9 @@ import CheckinsOverview from "./pages/CheckinsOverview";
 import ExercisesOverview from "./pages/ExercisesOverview";
 import Exercise from "./pages/Exercise";
 import Settings from "./pages/Settings";
+import Notes from "./pages/Notes";
+import Resources from "./pages/Resources";
+import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -31,54 +34,15 @@ export default function App() {
         path="/login"
         element={!loading && user ? <Navigate to="/" replace /> : <Login />}
       />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Dashboard />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/checkin"
-        element={
-          <ProtectedRoute>
-            <Checkin />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/checkins"
-        element={
-          <ProtectedRoute>
-            <CheckinsOverview />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/exercises"
-        element={
-          <ProtectedRoute>
-            <ExercisesOverview />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/exercise/:id"
-        element={
-          <ProtectedRoute>
-            <Exercise />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/settings"
-        element={
-          <ProtectedRoute>
-            <Settings />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+      <Route path="/checkin" element={<ProtectedRoute><Checkin /></ProtectedRoute>} />
+      <Route path="/checkins" element={<ProtectedRoute><CheckinsOverview /></ProtectedRoute>} />
+      <Route path="/exercises" element={<ProtectedRoute><ExercisesOverview /></ProtectedRoute>} />
+      <Route path="/exercise/:id" element={<ProtectedRoute><Exercise /></ProtectedRoute>} />
+      <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+      <Route path="/resources" element={<ProtectedRoute><Resources /></ProtectedRoute>} />
+      <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
