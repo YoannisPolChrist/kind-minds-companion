@@ -1,9 +1,12 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, limit, doc, getDoc } from "firebase/firestore";
 import { db } from "../lib/firebase";
-import { useAuth, UserProfile } from "../hooks/useAuth";
-import { Settings, Calendar, BookOpen, TrendingUp, CheckCircle, Circle, ArrowRight } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import {
+  Settings, Calendar, BookOpen, TrendingUp, CheckCircle, ArrowRight,
+  BarChart3, Clock,
+} from "lucide-react";
 
 interface Exercise {
   id: string;
@@ -21,7 +24,13 @@ interface Checkin {
   energy?: number;
   date: string;
   note?: string;
+  createdAt?: string;
 }
+
+const MOOD_EMOJIS: Record<number, string> = {
+  10: "🤩", 9: "🔥", 8: "😊", 7: "🙂", 6: "😌",
+  5: "😐", 4: "🤯", 3: "😢", 2: "😫", 1: "😭",
+};
 
 export default function Dashboard() {
   const { profile, signOut } = useAuth();
@@ -32,30 +41,44 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   const today = new Date().toISOString().split("T")[0];
+  const currentSlot = new Date().getHours() < 12 ? "morning" : "evening";
 
   useEffect(() => {
     if (!profile?.id) return;
     const load = async () => {
       try {
-        // Fetch exercises
-        const exSnap = await getDocs(
-          query(collection(db, "users", profile.id, "exercises"))
+        // Fetch exercises (try global collection, then user-scoped)
+        const globalExSnap = await getDocs(
+          query(collection(db, "exercises"), where("clientId", "==", profile.id))
         );
-        const exs = exSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Exercise));
+        let exs = globalExSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Exercise));
+
+        if (exs.length === 0) {
+          const userExSnap = await getDocs(
+            query(collection(db, "users", profile.id, "exercises"))
+          );
+          exs = userExSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Exercise));
+        }
         setExercises(exs);
 
         // Fetch recent checkins
         const ciSnap = await getDocs(
-          query(
-            collection(db, "checkins"),
-            where("uid", "==", profile.id),
-            orderBy("date", "desc"),
-            limit(7)
-          )
+          query(collection(db, "checkins"), where("uid", "==", profile.id))
         );
-        const cis = ciSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Checkin));
+        const allCheckins = ciSnap.docs.map((d) => ({ id: d.id, ...d.data() } as Checkin));
+        allCheckins.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        const cis = allCheckins.slice(0, 7);
         setCheckins(cis);
-        setCheckedInToday(cis.some((c) => c.date === today));
+
+        // Check today's status
+        const slotDocId = `${profile.id}_${today}_${currentSlot}`;
+        const slotSnap = await getDoc(doc(db, "checkins", slotDocId));
+        if (slotSnap.exists()) {
+          setCheckedInToday(true);
+        } else {
+          const legacySnap = await getDoc(doc(db, "checkins", `${profile.id}_${today}`));
+          setCheckedInToday(legacySnap.exists());
+        }
       } catch (e) {
         console.error("Dashboard load error:", e);
       } finally {
@@ -67,8 +90,6 @@ export default function Dashboard() {
 
   const openExercises = useMemo(() => exercises.filter((e) => !e.completed), [exercises]);
   const completedExercises = useMemo(() => exercises.filter((e) => e.completed), [exercises]);
-
-  const moodEmojis = ["😞", "😔", "😐", "🙂", "😊", "😄", "🥰", "🤩", "✨", "🌟"];
 
   if (loading) {
     return (
@@ -141,7 +162,9 @@ export default function Dashboard() {
             <CheckCircle className="text-success shrink-0" size={28} />
             <div>
               <p className="font-bold text-foreground">Check-in erledigt! ✓</p>
-              <p className="text-sm text-text-subtle">Morgen wieder verfügbar.</p>
+              <p className="text-sm text-muted-foreground">
+                {currentSlot === "morning" ? "Abend-Check-in ab 12:00 verfügbar." : "Morgen wieder verfügbar."}
+              </p>
             </div>
           </div>
         )}
@@ -153,7 +176,7 @@ export default function Dashboard() {
             className="block bg-card rounded-3xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow group"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-bold text-text-subtle uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
                 Stimmungsverlauf (letzte 7 Tage)
               </h3>
               <span className="text-xs font-bold text-primary group-hover:translate-x-0.5 transition-transform">
@@ -163,12 +186,12 @@ export default function Dashboard() {
             <div className="flex items-end gap-2 h-24">
               {[...checkins].reverse().map((ci) => (
                 <div key={ci.id} className="flex-1 flex flex-col items-center gap-1">
-                  <span className="text-lg">{moodEmojis[Math.min(ci.mood - 1, 9)] || "😐"}</span>
+                  <span className="text-lg">{MOOD_EMOJIS[ci.mood] || "😐"}</span>
                   <div
                     className="w-full bg-primary/20 rounded-lg min-h-[4px] transition-all"
                     style={{ height: `${ci.mood * 10}%` }}
                   />
-                  <span className="text-[10px] font-bold text-text-subtle">
+                  <span className="text-[10px] font-bold text-muted-foreground">
                     {new Date(ci.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}
                   </span>
                 </div>
@@ -180,15 +203,27 @@ export default function Dashboard() {
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3">
           {[
-            { label: "Gesamt", value: exercises.length, color: "bg-primary/10 text-primary" },
-            { label: "Offen", value: openExercises.length, color: "bg-accent/10 text-accent" },
-            { label: "Erledigt", value: completedExercises.length, color: "bg-success/10 text-success" },
+            { label: "Gesamt", value: exercises.length, cls: "text-primary" },
+            { label: "Offen", value: openExercises.length, cls: "text-accent" },
+            { label: "Erledigt", value: completedExercises.length, cls: "text-success" },
           ].map((s) => (
             <div key={s.label} className="bg-card rounded-2xl border border-border p-4 text-center shadow-sm">
-              <p className={`text-2xl font-black ${s.color.split(" ")[1]}`}>{s.value}</p>
-              <p className="text-xs font-bold text-text-subtle uppercase tracking-wide mt-1">{s.label}</p>
+              <p className={`text-2xl font-black ${s.cls}`}>{s.value}</p>
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mt-1">{s.label}</p>
             </div>
           ))}
+        </div>
+
+        {/* Quick Links */}
+        <div className="grid grid-cols-2 gap-3">
+          <Link to="/checkins" className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+            <BarChart3 size={20} className="text-primary shrink-0" />
+            <span className="font-bold text-sm text-foreground">Mein Tagebuch</span>
+          </Link>
+          <Link to="/exercises" className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:shadow-md transition-shadow">
+            <BookOpen size={20} className="text-primary shrink-0" />
+            <span className="font-bold text-sm text-foreground">Alle Übungen</span>
+          </Link>
         </div>
 
         {/* Open Exercises */}
@@ -201,7 +236,7 @@ export default function Dashboard() {
             <div className="bg-card rounded-3xl border border-border p-8 text-center">
               <p className="text-4xl mb-3">📋</p>
               <p className="font-bold text-foreground">Keine Aufgaben vorhanden</p>
-              <p className="text-sm text-text-subtle mt-1">Sobald dein Therapeut dir eine Übung zuweist, erscheint sie hier.</p>
+              <p className="text-sm text-muted-foreground mt-1">Sobald dein Therapeut dir eine Übung zuweist, erscheint sie hier.</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -220,7 +255,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-foreground truncate">{ex.title}</h3>
-                      <p className="text-xs text-text-subtle font-semibold mt-0.5">
+                      <p className="text-xs text-muted-foreground font-semibold mt-0.5">
                         {ex.blocks?.length || 0} Module
                         {ex.recurrence === "daily" && " · 🔁 Täglich"}
                         {ex.recurrence === "weekly" && " · 🔁 Wöchentlich"}
@@ -253,7 +288,7 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <CheckCircle size={18} className="text-success shrink-0" />
                     <span className="font-semibold text-foreground truncate">{ex.title}</span>
-                    <span className="ml-auto text-xs text-text-subtle font-medium whitespace-nowrap">
+                    <span className="ml-auto text-xs text-muted-foreground font-medium whitespace-nowrap">
                       ✓ Erledigt
                     </span>
                   </div>
@@ -263,7 +298,6 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* Footer spacer */}
         <div className="h-8" />
       </div>
     </div>

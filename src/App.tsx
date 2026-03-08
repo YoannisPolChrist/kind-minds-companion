@@ -4,6 +4,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Checkin from "./pages/Checkin";
 import CheckinsOverview from "./pages/CheckinsOverview";
+import ExercisesOverview from "./pages/ExercisesOverview";
 import Exercise from "./pages/Exercise";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,14 @@ export default function App() {
         }
       />
       <Route
+        path="/checkin"
+        element={
+          <ProtectedRoute>
+            <Checkin />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/checkins"
         element={
           <ProtectedRoute>
@@ -47,10 +56,10 @@ export default function App() {
         }
       />
       <Route
-        path="/checkin"
+        path="/exercises"
         element={
           <ProtectedRoute>
-            <Checkin />
+            <ExercisesOverview />
           </ProtectedRoute>
         }
       />
