@@ -15,6 +15,7 @@ import { Toast } from "../../components/ui/Toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { Badge } from "../../components/ui/Badge";
 import { SkeletonCard } from "../../components/ui/Skeleton";
+import { getRandomHeaderImage } from "../../constants/headerImages";
 
 export default function ClientExercises() {
   const { id } = useParams<{ id: string }>();
