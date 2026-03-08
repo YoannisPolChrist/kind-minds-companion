@@ -480,13 +480,22 @@ export default function Dashboard() {
             delay={0.15}
           />
           <NavCard
-            icon={Edit3}
-            iconColor="#3B82F6"
-            iconBg="rgba(59,130,246,0.1)"
-            title="Session Notes"
-            description="Füge Notizen und Erkenntnisse nach deiner Session hinzu."
-            onClick={() => navigate("/notes")}
+            icon={BarChart3}
+            iconColor="hsl(var(--primary))"
+            iconBg="hsl(var(--primary) / 0.1)"
+            title="Meine Check-ins"
+            description="Sieh deinen Check-in Verlauf und die Auswertung"
+            onClick={() => navigate("/checkins")}
             delay={0.16}
+          />
+          <NavCard
+            icon={Edit3}
+            iconColor="hsl(var(--accent))"
+            iconBg="hsl(var(--accent) / 0.15)"
+            title="Therapie-Tagebuch"
+            description="Notizen, Gedanken und Emotionen festhalten."
+            onClick={() => navigate("/notes")}
+            delay={0.18}
           />
         </div>
 
