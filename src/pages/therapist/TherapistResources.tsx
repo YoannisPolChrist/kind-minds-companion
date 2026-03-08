@@ -13,13 +13,19 @@ import {
   Upload, Check, Filter,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { PageTransition, PressableScale } from "../../components/motion";
+import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale } from "../../components/motion";
 import { SkeletonCard } from "../../components/ui/Skeleton";
 import { BannerToast } from "../../components/ui/Toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { getStorage } from "firebase/storage";
 
 const storage = getStorage();
+
+const HEADER_IMAGES = [
+  "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
+  "/images/HomeUi4.webp", "/images/HomeUi5.webp", "/images/HomeUi6.webp",
+];
+const headerImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
 
 // ─── Type Config ─────────────────────────────────────────────────────────────
 
@@ -559,55 +565,48 @@ export default function TherapistResources() {
         />
       )}
 
-      {/* Header */}
-      <motion.div
-        className="rounded-b-[2rem] overflow-hidden"
-        style={{ background: "linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)))" }}
-        initial={{ opacity: 0, y: -40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="max-w-3xl mx-auto px-6 pt-14 pb-6 flex items-center justify-between">
-          <button
-            onClick={() => navigate("/therapist")}
-            className="flex items-center gap-2 bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.15] px-4 py-2.5 rounded-[20px] text-white/90 text-sm font-bold transition-colors"
-          >
-            <ArrowLeft size={16} /> Zurück
-          </button>
-          <h1 className="text-xl font-black text-white">Bibliothek</h1>
-        </div>
-      </motion.div>
+      {/* Header – matching TherapistDashboard / Templates style */}
+      <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl shadow-primary/15 relative overflow-hidden">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <HeaderOrbs />
+        <div className="max-w-3xl mx-auto px-6 pt-12 pb-8 relative z-10">
+          <div className="flex items-center justify-between mb-5">
+            <motion.button
+              onClick={() => navigate("/therapist")}
+              className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-4 py-2.5 rounded-2xl text-sm font-bold"
+              whileHover={{ x: -3 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowLeft size={16} /> Zurück
+            </motion.button>
+            <PressableScale onClick={() => setAddModalOpen(true)}>
+              <div className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-2xl text-sm font-bold transition-colors">
+                <PlusCircle size={16} /> Hinzufügen
+              </div>
+            </PressableScale>
+          </div>
+          <h1 className="text-3xl font-black tracking-tight">Bibliothek</h1>
+          <p className="text-white/70 text-sm font-medium mt-1">Ressourcen & Materialien für deine Klienten verwalten.</p>
 
-      <div className="max-w-3xl mx-auto px-6 py-6">
-        {/* Search + Add */}
-        <motion.div
-          className="flex gap-3 mb-4"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
-        >
-          <div className="flex-1 flex items-center bg-card rounded-[20px] border border-border px-4 py-3 shadow-sm">
-            <Search size={20} className="text-muted-foreground mr-3 shrink-0" />
+          {/* Search in header */}
+          <div className="mt-6 relative">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/50" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Bibliothek durchsuchen..."
-              className="flex-1 bg-transparent text-foreground font-semibold outline-none placeholder:text-muted-foreground"
+              className="w-full pl-12 pr-10 py-4 bg-white/15 border border-white/25 rounded-2xl text-white font-bold placeholder-white/50 focus:outline-none text-lg"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center ml-2">
-                <X size={14} className="text-muted-foreground" />
+              <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/15 p-1.5 rounded-lg">
+                <X size={16} className="text-white/80" />
               </button>
             )}
           </div>
-          <PressableScale onClick={() => setAddModalOpen(true)}>
-            <div className="h-full flex items-center gap-2 bg-primary text-primary-foreground px-5 rounded-[20px] font-bold shadow-lg whitespace-nowrap">
-              <PlusCircle size={18} />
-              <span className="hidden sm:inline">Hinzufügen</span>
-            </div>
-          </PressableScale>
-        </motion.div>
+        </div>
+      </div>
 
+      <div className="max-w-3xl mx-auto px-6 py-6">
         {/* Filter chips */}
         <motion.div
           className="flex gap-2 mb-6 overflow-x-auto pb-1"
