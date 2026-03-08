@@ -71,6 +71,10 @@ const CATALOGUE: {
   { type: "bar_chart", label: "Balkendiagramm", icon: BarChart3, desc: "Wertevergleich", accent: "#0EA5E9", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
   { type: "pie_chart", label: "Kreisdiagramm", icon: PieChartIcon, desc: "Verteilung", accent: "#8B5CF6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
   { type: "line_chart", label: "Liniendiagramm", icon: LineChartIcon, desc: "Entwicklung", accent: "#10B981", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "progress_bar", label: "Fortschrittsbalken", icon: Gauge, desc: "Ziel-Tracking 0–100%", accent: "#06B6D4", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "mood_wheel", label: "Stimmungsrad", icon: Target, desc: "Emotionen visuell erfassen", accent: "#F472B6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "table", label: "Tabelle", icon: Table2, desc: "Strukturierte Daten", accent: "#0D9488", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "slider_group", label: "Slider-Bereich", icon: SlidersHorizontal, desc: "Parallele Bewertungen", accent: "#7C3AED", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
 ];
 
 const CHART_PALETTE = ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B", "#14B8A6", "#64748B", "#EC4899", "#3B82F6"];
