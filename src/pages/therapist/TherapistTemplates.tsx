@@ -64,10 +64,11 @@ export default function TherapistTemplates() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
+      // Delete the template document
       await deleteDoc(doc(db, "exercise_templates", deleteTarget.id));
       setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget.id));
       setDeleteTarget(null);
-      setToast({ visible: true, message: "Vorlage gelöscht", subMessage: `„${deleteTarget.title}" wurde entfernt.`, type: "success" });
+      setToast({ visible: true, message: "Vorlage gelöscht", subMessage: `„${deleteTarget.title}" wurde dauerhaft entfernt.`, type: "success" });
     } catch (e) {
       console.error("Error deleting template:", e);
       setToast({ visible: true, message: "Fehler", subMessage: "Vorlage konnte nicht gelöscht werden.", type: "error" });
@@ -172,16 +173,14 @@ export default function TherapistTemplates() {
         ) : (
           <StaggerItem>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {filtered.map((tpl) => {
+                    {filtered.map((tpl) => {
                 const color = tpl.themeColor || "#6366F1";
                 return (
-                  <TiltCard key={tpl.id} className="bg-card rounded-3xl border-2 p-6 shadow-sm relative" maxTilt={4} style={{ borderColor: `${color}55` }}>
+                  <div key={tpl.id} className="bg-card rounded-3xl border-2 p-6 shadow-sm relative hover:shadow-md transition-shadow" style={{ borderColor: `${color}55` }}>
                     {/* Delete top-right */}
-                    <PressableScale onClick={() => setDeleteTarget(tpl)} className="absolute top-4 right-4 z-10">
-                      <div className="w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center hover:bg-destructive/20 transition-colors">
-                        <Trash2 size={15} className="text-destructive" />
-                      </div>
-                    </PressableScale>
+                    <button onClick={() => setDeleteTarget(tpl)} className="absolute top-4 right-4 z-10 w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center hover:bg-destructive/20 transition-colors">
+                      <Trash2 size={15} className="text-destructive" />
+                    </button>
 
                     <div className="mb-4 pr-12">
                       <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3 border" style={{ backgroundColor: `${color}15`, borderColor: `${color}40` }}>
@@ -195,14 +194,14 @@ export default function TherapistTemplates() {
                     </div>
 
                     <div className="flex gap-3 pt-4 border-t border-border">
-                      <motion.button onClick={() => navigate(`/therapist/template/${tpl.id}`)} className="flex-1 bg-secondary border border-border py-3 rounded-2xl text-foreground font-black text-center text-sm" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                      <button onClick={() => navigate(`/therapist/template/${tpl.id}`)} className="flex-1 bg-secondary border border-border py-3 rounded-2xl text-foreground font-black text-center text-sm hover:bg-muted transition-colors">
                         Bearbeiten
-                      </motion.button>
-                      <motion.button onClick={() => { setAssignTemplate(tpl); setSelectedClientId(null); }} className="flex-1 py-3 rounded-2xl text-white font-black flex items-center justify-center gap-2 shadow-lg text-sm" style={{ backgroundColor: color, boxShadow: `0 6px 16px ${color}40` }} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                      </button>
+                      <button onClick={() => { setAssignTemplate(tpl); setSelectedClientId(null); }} className="flex-1 py-3 rounded-2xl text-white font-black flex items-center justify-center gap-2 shadow-lg text-sm hover:opacity-90 transition-opacity" style={{ backgroundColor: color, boxShadow: `0 6px 16px ${color}40` }}>
                         <Send size={15} /> Zuweisen
-                      </motion.button>
+                      </button>
                     </div>
-                  </TiltCard>
+                  </div>
                 );
               })}
             </div>

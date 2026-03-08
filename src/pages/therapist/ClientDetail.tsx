@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
   ArrowLeft, Activity, Edit3, FileText, Calendar, BookOpen,
-  CheckCircle, Users, Clock, ChevronLeft, ChevronRight,
+  CheckCircle, Users, Clock, ChevronLeft, ChevronRight, Trash2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import {
@@ -190,6 +190,8 @@ export default function TherapistClientDetail() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState({ h: 10, m: 0 });
   const [savingAppointment, setSavingAppointment] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Stats
   const [exerciseCount, setExerciseCount] = useState(0);
@@ -239,6 +241,40 @@ export default function TherapistClientDetail() {
       console.error("Failed to save appointment", e);
     } finally {
       setSavingAppointment(false);
+    }
+  };
+
+  const handleDeleteClient = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      // Cascading delete: remove all related data first
+      const collections = ["exercises", "checkins", "client_notes", "client_files", "client_resources"];
+      const fieldMap: Record<string, string> = {
+        exercises: "clientId",
+        checkins: "uid",
+        client_notes: "clientId",
+        client_files: "clientId",
+        client_resources: "clientId",
+      };
+
+      for (const col of collections) {
+        try {
+          const field = fieldMap[col] || "clientId";
+          const snap = await getDocs(query(collection(db, col), where(field, "==", id)));
+          const deletePromises = snap.docs.map((d) => deleteDoc(doc(db, col, d.id)));
+          await Promise.all(deletePromises);
+        } catch (e) {
+          console.warn(`Could not delete from ${col}:`, e);
+        }
+      }
+
+      // Finally delete the user profile
+      await deleteDoc(doc(db, "users", id));
+      navigate("/therapist");
+    } catch (e) {
+      console.error("Error deleting client:", e);
+      setDeleting(false);
     }
   };
 
@@ -378,6 +414,54 @@ export default function TherapistClientDetail() {
                 <><Calendar size={18} /> Termin speichern</>
               )}
             </motion.button>
+          </div>
+        </StaggerItem>
+
+        {/* Delete Client */}
+        <StaggerItem>
+          <div className="bg-card rounded-3xl border border-destructive/20 p-6 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-destructive/10 flex items-center justify-center">
+                <Trash2 size={24} className="text-destructive" />
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-foreground">Klient löschen</h3>
+                <p className="text-sm text-muted-foreground">Alle Daten werden dauerhaft entfernt</p>
+              </div>
+            </div>
+            {!showDeleteConfirm ? (
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="w-full py-3 rounded-2xl border-2 border-destructive/30 text-destructive font-bold hover:bg-destructive/5 transition-colors"
+              >
+                Klient dauerhaft löschen
+              </button>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-destructive font-bold">
+                  ⚠️ Alle Übungen, Check-ins, Notizen und Dateien von {client?.firstName} {client?.lastName} werden unwiderruflich gelöscht.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 py-3 rounded-2xl bg-secondary border border-border text-foreground font-bold hover:bg-muted transition-colors"
+                  >
+                    Abbrechen
+                  </button>
+                  <button
+                    onClick={handleDeleteClient}
+                    disabled={deleting}
+                    className="flex-1 py-3 rounded-2xl bg-destructive text-white font-bold disabled:opacity-40 flex items-center justify-center gap-2"
+                  >
+                    {deleting ? (
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block animate-spin" />
+                    ) : (
+                      <><Trash2 size={16} /> Endgültig löschen</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </StaggerItem>
 
