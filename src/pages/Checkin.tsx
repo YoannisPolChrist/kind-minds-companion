@@ -354,19 +354,23 @@ export default function Checkin() {
           </div>
         </StaggerItem>
 
-        {/* Note */}
+        {/* Note — Pflichtfeld */}
         <StaggerItem>
           <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4">
-              ✏️ Möchtest du noch etwas ergänzen?
+            <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-2">
+              ✏️ Was beschäftigt dich gerade?
+              <span className="text-destructive">*</span>
             </h3>
+            <p className="text-[11px] text-muted-foreground/70 mb-4">Pflichtfeld — schreibe mindestens ein paar Worte.</p>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="Gedanken, Notizen..."
+              placeholder="Beschreibe kurz, was dich gerade bewegt…"
               rows={5}
               disabled={alreadyCompleted}
-              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring transition-all disabled:opacity-60"
+              className={`w-full bg-secondary rounded-2xl border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring transition-all disabled:opacity-60 ${
+                !note.trim() && error ? "border-destructive" : "border-border"
+              }`}
             />
           </div>
         </StaggerItem>
