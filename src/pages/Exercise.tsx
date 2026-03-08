@@ -8,6 +8,11 @@ import {
   CheckCircle2, Heart, BookOpen, Clock, Wind, Image as ImageIcon,
   Film, Lock, Unlock,
 } from "lucide-react";
+import { motion } from "motion/react";
+import {
+  PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
+  SuccessAnimation, BreathingCircle,
+} from "../components/motion";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
