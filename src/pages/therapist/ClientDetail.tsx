@@ -239,8 +239,23 @@ export default function TherapistClientDetail() {
       const d = new Date(selectedDate);
       d.setHours(selectedTime.h, selectedTime.m, 0, 0);
       await updateDoc(doc(db, "users", id), { nextAppointment: d.toISOString() });
+
+      // Send email notification to client
+      const dateStr = d.toLocaleDateString("de-DE", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+      const timeStr = `${String(selectedTime.h).padStart(2, "0")}:${String(selectedTime.m).padStart(2, "0")}`;
+      await addDoc(collection(db, "notifications"), {
+        userId: id,
+        type: "appointment_saved",
+        title: "Neuer Termin eingetragen 📅",
+        body: `Dein nächster Termin wurde auf ${dateStr} um ${timeStr} Uhr festgelegt.`,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      });
+
+      setToast({ visible: true, message: "Termin gespeichert!", subMessage: `${dateStr} um ${timeStr} Uhr – Klient wird per E-Mail benachrichtigt.`, type: "success" });
     } catch (e) {
       console.error("Failed to save appointment", e);
+      setToast({ visible: true, message: "Fehler beim Speichern", subMessage: "Termin konnte nicht gespeichert werden.", type: "error" });
     } finally {
       setSavingAppointment(false);
     }
