@@ -73,23 +73,6 @@ const EMOTION_PRESETS = [
   { id: "broken", score: 1, emoji: "💀", color: "#0C0A09", label: "Am Boden" },
 ];
 
-const QUICK_TAGS = [
-  { emoji: "😫", label: "Erschöpft" },
-  { emoji: "😰", label: "Ängstlich" },
-  { emoji: "😌", label: "Ruhig" },
-  { emoji: "🔥", label: "Motiviert" },
-  { emoji: "😢", label: "Traurig" },
-  { emoji: "🙏", label: "Dankbar" },
-  { emoji: "😵‍💫", label: "Überfordert" },
-  { emoji: "🎯", label: "Fokussiert" },
-  { emoji: "🥺", label: "Einsam" },
-  { emoji: "🌱", label: "Hoffnungsvoll" },
-  { emoji: "⚡", label: "Energiegeladen" },
-  { emoji: "🎨", label: "Kreativ" },
-  { emoji: "😤", label: "Genervt" },
-  { emoji: "💔", label: "Verletzlich" },
-  { emoji: "🌅", label: "Nostalgisch" },
-];
 
 export default function Checkin() {
   const { profile } = useAuth();
