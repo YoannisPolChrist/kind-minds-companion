@@ -497,8 +497,8 @@ export default function CheckinsOverview() {
                       <div>
                         <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Ø Energie</p>
                         <p className="text-2xl font-black text-foreground">
-                          {analytics.avgEnergy.toFixed(1)}
-                          <span className="text-sm font-semibold text-muted-foreground">/10</span>
+                          {analytics.avgEnergy.toFixed(0)}
+                          <span className="text-sm font-semibold text-muted-foreground">/100</span>
                         </p>
                       </div>
                     </div>
