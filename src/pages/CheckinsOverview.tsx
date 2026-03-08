@@ -120,7 +120,7 @@ export default function CheckinsOverview() {
     // Top emotions
     const emotionCounts: Record<string, { count: number; emotion: (typeof EMOTION_PRESETS)[0] }> = {};
     checkins.forEach((c) => {
-      const e = getEmotion(c.mood);
+      const e = getEmotion(c.mood, (c as any).emotionId);
       if (!emotionCounts[e.id]) emotionCounts[e.id] = { count: 0, emotion: e };
       emotionCounts[e.id].count++;
     });
