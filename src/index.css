@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 40 20% 96%;
+  --foreground: 200 30% 15%;
+  --card: 0 0% 100%;
+  --card-foreground: 200 30% 15%;
+  --primary: 190 38% 30%;
+  --primary-foreground: 0 0% 100%;
+  --primary-dark: 200 35% 18%;
+  --secondary: 40 20% 92%;
+  --secondary-foreground: 200 30% 15%;
+  --muted: 40 15% 90%;
+  --muted-foreground: 215 16% 47%;
+  --accent: 43 60% 52%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 40 15% 88%;
+  --input: 40 15% 88%;
+  --ring: 190 38% 30%;
+  --radius: 1rem;
+  --surface: 0 0% 100%;
+  --text-subtle: 215 16% 47%;
+  --success: 160 84% 39%;
+  --success-foreground: 0 0% 100%;
+}
+
+.dark {
+  --background: 222 47% 11%;
+  --foreground: 210 40% 98%;
+  --card: 217 33% 17%;
+  --card-foreground: 210 40% 98%;
+  --primary: 185 50% 35%;
+  --primary-foreground: 0 0% 100%;
+  --primary-dark: 200 35% 12%;
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+  --accent: 43 60% 52%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 217 33% 22%;
+  --input: 217 33% 22%;
+  --ring: 185 50% 35%;
+  --surface: 217 33% 17%;
+  --text-subtle: 215 20% 65%;
+  --success: 160 84% 39%;
+  --success-foreground: 0 0% 100%;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+}
