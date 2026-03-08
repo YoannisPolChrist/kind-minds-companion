@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
   ArrowLeft, Activity, Edit3, FileText, Calendar, BookOpen,
-  CheckCircle, Users, Clock, ChevronLeft, ChevronRight,
+  CheckCircle, Users, Clock, ChevronLeft, ChevronRight, Trash2,
 } from "lucide-react";
 import { motion } from "motion/react";
 import {
