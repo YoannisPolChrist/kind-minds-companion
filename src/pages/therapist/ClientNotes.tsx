@@ -133,7 +133,7 @@ export default function ClientNotes() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
         <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/60 to-primary/50" />
         <HeaderOrbs />
         <div className="max-w-4xl mx-auto px-6 pt-12 pb-8 relative z-10">

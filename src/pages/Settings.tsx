@@ -33,13 +33,21 @@ export default function Settings() {
     navigate("/login");
   };
 
-  const navItems = [
-    { path: "/checkins", icon: BarChart3, label: "Mein Tagebuch", desc: "Check-in Verlauf & Statistiken" },
-    { path: "/exercises", icon: BookOpen, label: "Alle Übungen", desc: "Übersicht aller zugewiesenen Übungen" },
-    { path: "/notes", icon: Edit3, label: "Therapie-Tagebuch", desc: "Eigene Notizen & Emotionen" },
-    { path: "/resources", icon: FileText, label: "Bibliothek", desc: "Dokumente & Links vom Therapeuten" },
-    { path: "/history", icon: History, label: "Verlauf", desc: "Alle erledigten Aktivitäten" },
-  ];
+  const isTherapist = profile?.role === "therapist";
+
+  const navItems = isTherapist
+    ? [
+        { path: "/therapist", icon: BarChart3, label: "Alle Klienten", desc: "Klienten verwalten & Übersicht" },
+        { path: "/therapist/templates", icon: BookOpen, label: "Vorlagen", desc: "Übungsvorlagen erstellen & verwalten" },
+        { path: "/therapist/resources", icon: FileText, label: "Bibliothek", desc: "Ressourcen & Materialien" },
+      ]
+    : [
+        { path: "/checkins", icon: BarChart3, label: "Mein Tagebuch", desc: "Check-in Verlauf & Statistiken" },
+        { path: "/exercises", icon: BookOpen, label: "Alle Übungen", desc: "Übersicht aller zugewiesenen Übungen" },
+        { path: "/notes", icon: Edit3, label: "Therapie-Tagebuch", desc: "Eigene Notizen & Emotionen" },
+        { path: "/resources", icon: FileText, label: "Bibliothek", desc: "Dokumente & Links vom Therapeuten" },
+        { path: "/history", icon: History, label: "Verlauf", desc: "Alle erledigten Aktivitäten" },
+      ];
 
   return (
     <PageTransition className="min-h-screen bg-background">
