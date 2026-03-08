@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Settings } from "lucide-react";
 
 interface Slice {
   path: string;
@@ -30,27 +30,23 @@ const SLICES: Slice[] = [
   },
 ];
 
-// SVG clip-path polygons for three pie slices (center = 50% 50%)
-// Top slice: center → top-left → top-right → center-right (120° each)
 const CLIP_PATHS = [
-  "polygon(50% 50%, 50% 0%, 100% 0%, 100% 75%)",       // top-right slice
-  "polygon(50% 50%, 100% 75%, 50% 100%, 0% 100%, 0% 75%)", // bottom slice
-  "polygon(50% 50%, 0% 75%, 0% 0%, 50% 0%)",            // top-left slice
+  "polygon(50% 50%, 50% 0%, 100% 0%, 100% 75%)",
+  "polygon(50% 50%, 100% 75%, 50% 100%, 0% 100%, 0% 75%)",
+  "polygon(50% 50%, 0% 75%, 0% 0%, 50% 0%)",
 ];
 
 export default function TherapistDashboardTiles({
   onNavigate,
+  onOpenSettings,
 }: {
   onNavigate: (path: string) => void;
+  onOpenSettings: () => void;
 }) {
   const [hovered, setHovered] = useState<number | null>(null);
 
   return (
-    <section
-      aria-label="Hauptnavigation Therapeut"
-      className="relative w-full"
-      style={{ height: "calc(100vh - 10rem)", minHeight: "28rem" }}
-    >
+    <section aria-label="Hauptnavigation Therapeut" className="relative w-full h-screen min-h-[32rem] overflow-hidden">
       {SLICES.map((slice, i) => {
         const isHovered = hovered === i;
         const otherHovered = hovered !== null && hovered !== i;
@@ -63,55 +59,39 @@ export default function TherapistDashboardTiles({
             onMouseLeave={() => setHovered(null)}
             className="absolute inset-0 w-full h-full cursor-pointer overflow-hidden focus:outline-none"
             style={{ clipPath: CLIP_PATHS[i] }}
-            animate={{
-              opacity: otherHovered ? 0.55 : 1,
-              scale: isHovered ? 1.015 : 1,
-            }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            animate={{ opacity: otherHovered ? 0.58 : 1, scale: isHovered ? 1.02 : 1 }}
+            transition={{ duration: 0.35, ease: "easeOut" }}
           >
-            {/* Background image */}
             <motion.img
               src={slice.image}
-              alt=""
-              className="absolute inset-0 w-full h-full object-cover"
-              animate={{ scale: isHovered ? 1.08 : 1 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
+              alt={slice.label}
+              className="absolute inset-0 w-full h-full object-cover object-center"
+              animate={{ scale: isHovered ? 1.1 : 1.03 }}
+              transition={{ duration: 0.55, ease: "easeOut" }}
+              loading="lazy"
             />
 
-            {/* Overlay */}
-            <motion.div
-              className="absolute inset-0"
-              animate={{
-                background: isHovered
-                  ? "linear-gradient(to top, hsla(200,35%,12%,0.85) 0%, hsla(200,35%,12%,0.3) 60%, transparent 100%)"
-                  : "linear-gradient(to top, hsla(200,35%,12%,0.7) 0%, hsla(200,35%,12%,0.25) 50%, transparent 100%)",
-              }}
-              transition={{ duration: 0.4 }}
-            />
+            <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/90 via-primary-dark/45 to-primary-dark/15" />
 
-            {/* Label – positioned at each slice's visual center */}
-            <div
-              className="absolute z-10 flex flex-col items-center text-center pointer-events-none"
-              style={getLabelPosition(i)}
-            >
+            <div className="absolute z-10 flex flex-col items-center text-center pointer-events-none" style={getLabelPosition(i)}>
               <motion.h2
                 className="text-primary-foreground text-2xl sm:text-3xl lg:text-4xl font-black leading-tight drop-shadow-lg"
                 animate={{ y: isHovered ? -4 : 0 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.25 }}
               >
                 {slice.label}
               </motion.h2>
               <motion.p
-                className="text-primary-foreground/80 text-xs sm:text-sm font-medium mt-1 max-w-[10rem]"
-                animate={{ opacity: isHovered ? 1 : 0.7 }}
-                transition={{ duration: 0.3 }}
+                className="text-primary-foreground/85 text-xs sm:text-sm font-medium mt-1 max-w-[12rem]"
+                animate={{ opacity: isHovered ? 1 : 0.8 }}
+                transition={{ duration: 0.25 }}
               >
                 {slice.description}
               </motion.p>
               <motion.span
                 className="inline-flex items-center gap-1.5 mt-3 text-primary-foreground font-bold text-sm"
                 animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 8 }}
-                transition={{ duration: 0.3 }}
+                transition={{ duration: 0.25 }}
               >
                 Öffnen <ArrowRight size={14} />
               </motion.span>
@@ -120,15 +100,21 @@ export default function TherapistDashboardTiles({
         );
       })}
 
-      {/* Thin divider lines from center */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none z-20"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
+      <motion.button
+        type="button"
+        onClick={onOpenSettings}
+        className="absolute z-30 top-6 left-1/2 -translate-x-1/2 p-3 rounded-2xl bg-primary-foreground/15 hover:bg-primary-foreground/25 border border-primary-foreground/25 text-primary-foreground backdrop-blur-sm transition-colors"
+        whileHover={{ scale: 1.06, y: -1 }}
+        whileTap={{ scale: 0.96 }}
+        aria-label="Einstellungen öffnen"
       >
-        <line x1="50" y1="50" x2="50" y2="0" stroke="white" strokeOpacity="0.15" strokeWidth="0.15" />
-        <line x1="50" y1="50" x2="100" y2="75" stroke="white" strokeOpacity="0.15" strokeWidth="0.15" />
-        <line x1="50" y1="50" x2="0" y2="75" stroke="white" strokeOpacity="0.15" strokeWidth="0.15" />
+        <Settings size={20} />
+      </motion.button>
+
+      <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 text-primary-foreground/30" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <line x1="50" y1="50" x2="50" y2="0" stroke="currentColor" strokeWidth="0.14" />
+        <line x1="50" y1="50" x2="100" y2="75" stroke="currentColor" strokeWidth="0.14" />
+        <line x1="50" y1="50" x2="0" y2="75" stroke="currentColor" strokeWidth="0.14" />
       </svg>
     </section>
   );
@@ -136,13 +122,14 @@ export default function TherapistDashboardTiles({
 
 function getLabelPosition(index: number): React.CSSProperties {
   switch (index) {
-    case 0: // top-right
-      return { top: "25%", left: "68%", transform: "translate(-50%, -50%)" };
-    case 1: // bottom
-      return { top: "78%", left: "50%", transform: "translate(-50%, -50%)" };
-    case 2: // top-left
-      return { top: "25%", left: "32%", transform: "translate(-50%, -50%)" };
+    case 0:
+      return { top: "24%", left: "69%", transform: "translate(-50%, -50%)" };
+    case 1:
+      return { top: "79%", left: "50%", transform: "translate(-50%, -50%)" };
+    case 2:
+      return { top: "24%", left: "31%", transform: "translate(-50%, -50%)" };
     default:
       return {};
   }
 }
+
