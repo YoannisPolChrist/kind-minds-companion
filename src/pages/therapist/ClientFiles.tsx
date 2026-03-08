@@ -335,16 +335,16 @@ export default function ClientFiles() {
   }
 
   return (
-    <PageTransition
+    <div
       className="min-h-screen bg-background relative"
       onDragOver={(e: React.DragEvent) => { e.preventDefault(); setPageDragOver(true); }}
       onDragLeave={(e: React.DragEvent) => {
-        // Only trigger if leaving the page element
         if (e.currentTarget.contains(e.relatedTarget as Node)) return;
         setPageDragOver(false);
       }}
       onDrop={handlePageDrop}
     >
+    <PageTransition className="min-h-screen">
       {/* Full-page drop overlay */}
       <AnimatePresence>
         {pageDragOver && (
