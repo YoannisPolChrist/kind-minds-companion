@@ -567,7 +567,8 @@ export default function TherapistResources() {
 
       {/* Header – matching TherapistDashboard / Templates style */}
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl shadow-primary/15 relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/60 to-primary/70" />
         <HeaderOrbs />
         <div className="max-w-3xl mx-auto px-6 pt-12 pb-8 relative z-10">
           <div className="flex items-center justify-between mb-5">

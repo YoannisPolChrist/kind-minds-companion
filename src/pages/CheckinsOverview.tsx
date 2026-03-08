@@ -184,7 +184,7 @@ export default function CheckinsOverview() {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground relative overflow-hidden rounded-b-[2rem]">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
         <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/60 to-primary/50" />
         <HeaderOrbs />
         <div className="max-w-3xl mx-auto px-5 pt-12 pb-8 relative z-10">

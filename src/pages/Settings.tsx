@@ -33,18 +33,26 @@ export default function Settings() {
     navigate("/login");
   };
 
-  const navItems = [
-    { path: "/checkins", icon: BarChart3, label: "Mein Tagebuch", desc: "Check-in Verlauf & Statistiken" },
-    { path: "/exercises", icon: BookOpen, label: "Alle Übungen", desc: "Übersicht aller zugewiesenen Übungen" },
-    { path: "/notes", icon: Edit3, label: "Therapie-Tagebuch", desc: "Eigene Notizen & Emotionen" },
-    { path: "/resources", icon: FileText, label: "Bibliothek", desc: "Dokumente & Links vom Therapeuten" },
-    { path: "/history", icon: History, label: "Verlauf", desc: "Alle erledigten Aktivitäten" },
-  ];
+  const isTherapist = profile?.role === "therapist";
+
+  const navItems = isTherapist
+    ? [
+        { path: "/therapist", icon: BarChart3, label: "Alle Klienten", desc: "Klienten verwalten & Übersicht" },
+        { path: "/therapist/templates", icon: BookOpen, label: "Vorlagen", desc: "Übungsvorlagen erstellen & verwalten" },
+        { path: "/therapist/resources", icon: FileText, label: "Bibliothek", desc: "Ressourcen & Materialien" },
+      ]
+    : [
+        { path: "/checkins", icon: BarChart3, label: "Mein Tagebuch", desc: "Check-in Verlauf & Statistiken" },
+        { path: "/exercises", icon: BookOpen, label: "Alle Übungen", desc: "Übersicht aller zugewiesenen Übungen" },
+        { path: "/notes", icon: Edit3, label: "Therapie-Tagebuch", desc: "Eigene Notizen & Emotionen" },
+        { path: "/resources", icon: FileText, label: "Bibliothek", desc: "Dokumente & Links vom Therapeuten" },
+        { path: "/history", icon: History, label: "Verlauf", desc: "Alle erledigten Aktivitäten" },
+      ];
 
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] px-5 pt-14 pb-8 relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
         <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/65 to-primary/50" />
         <HeaderOrbs />
         <div className="max-w-xl mx-auto relative z-10">
