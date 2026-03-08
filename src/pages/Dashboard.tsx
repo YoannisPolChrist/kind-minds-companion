@@ -204,8 +204,13 @@ export default function Dashboard() {
   const isMorningSlot = currentHour < 12;
 
   useEffect(() => {
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
+      setLoading(true);
       try {
         const globalExSnap = await getDocs(
           query(collection(db, "exercises"), where("clientId", "==", profile.id))
@@ -252,8 +257,9 @@ export default function Dashboard() {
         setLoading(false);
       }
     };
+
     load();
-  }, [profile?.id]);
+  }, [profile?.id, today]);
 
   const openExercises = useMemo(() => exercises.filter((e) => !e.completed), [exercises]);
   const completedExercises = useMemo(() => exercises.filter((e) => e.completed), [exercises]);
