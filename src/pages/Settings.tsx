@@ -37,7 +37,7 @@ export default function Settings() {
 
   const navItems = isTherapist
     ? [
-        { path: "/therapist", icon: BarChart3, label: "Alle Klienten", desc: "Klienten verwalten & Übersicht" },
+        { path: "/therapist/clients", icon: BarChart3, label: "Alle Klienten", desc: "Klienten verwalten & Übersicht" },
         { path: "/therapist/templates", icon: BookOpen, label: "Vorlagen", desc: "Übungsvorlagen erstellen & verwalten" },
         { path: "/therapist/resources", icon: FileText, label: "Bibliothek", desc: "Ressourcen & Materialien" },
       ]
