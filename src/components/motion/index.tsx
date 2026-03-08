@@ -10,8 +10,15 @@
 import { motion, AnimatePresence, type Variants } from "motion/react";
 import { type ReactNode, type CSSProperties } from "react";
 
+// Re-export new motion components
+export { TiltCard } from "./TiltCard";
+export { CountUp } from "./CountUp";
+export { ParallaxSection, FloatingOrb } from "./ParallaxSection";
+export { GlowCard } from "./GlowCard";
+
 // ─── Stagger Container + Item ────────────────────────────────────────────────
 // Ported from Block3DEntrance: perspective + rotateX + scale entrance
+// Enhanced with more dramatic values matching native Block3DEntrance (rotateX: 40, scale: 0.6)
 
 const containerVariants: Variants = {
   hidden: {},
@@ -23,9 +30,9 @@ const containerVariants: Variants = {
 const itemVariants: Variants = {
   hidden: {
     opacity: 0,
-    y: 24,
-    rotateX: 12,
-    scale: 0.92,
+    y: 30,
+    rotateX: 25,
+    scale: 0.85,
   },
   visible: {
     opacity: 1,
@@ -34,7 +41,7 @@ const itemVariants: Variants = {
     scale: 1,
     transition: {
       type: "spring",
-      damping: 16,
+      damping: 14,
       stiffness: 120,
     },
   },
@@ -78,40 +85,8 @@ export function StaggerItem({
   );
 }
 
-// ─── 3D Tilt Card ────────────────────────────────────────────────────────────
-// Ported from Block3DTiltWrapper: hover perspective tilt
+// TiltCard is now in ./TiltCard.tsx (mouse-tracking 3D tilt)
 
-export function TiltCard({
-  children,
-  className,
-  style,
-  onClick,
-  maxTilt = 6,
-}: {
-  children: ReactNode;
-  className?: string;
-  style?: CSSProperties;
-  onClick?: () => void;
-  maxTilt?: number;
-}) {
-  return (
-    <motion.div
-      className={className}
-      style={{ perspective: 900, transformStyle: "preserve-3d", ...style }}
-      onClick={onClick}
-      whileHover={{
-        rotateX: -maxTilt * 0.5,
-        rotateY: maxTilt * 0.5,
-        scale: 1.02,
-        y: -4,
-        transition: { type: "spring", stiffness: 200, damping: 14 },
-      }}
-      whileTap={{ scale: 0.97 }}
-    >
-      {children}
-    </motion.div>
-  );
-}
 
 // ─── Pressable Scale ─────────────────────────────────────────────────────────
 // Ported from PressableScale web branch
