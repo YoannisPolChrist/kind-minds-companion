@@ -7,6 +7,16 @@ import { ArrowLeft, BookOpen, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../components/motion";
 
+const HEADER_IMAGES = [
+  "/images/HomeUi1.webp",
+  "/images/HomeUi2.webp",
+  "/images/HomeUi3.webp",
+  "/images/HomeUi4.webp",
+  "/images/HomeUi5.webp",
+  "/images/HomeUi6.webp",
+];
+const headerImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
+
 interface Exercise {
   id: string;
   title: string;
@@ -59,6 +69,8 @@ export default function ExercisesOverview() {
   return (
     <PageTransition className="min-h-screen bg-background">
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] relative overflow-hidden">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/80 to-primary/70" />
         <HeaderOrbs />
         <div className="max-w-2xl mx-auto px-5 pt-12 pb-8 relative z-10">
           <motion.button
