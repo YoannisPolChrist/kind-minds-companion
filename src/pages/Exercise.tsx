@@ -86,6 +86,10 @@ const BLOCK_META: Record<string, { label: string; desc: string; accent: string; 
   bar_chart: { label: "Balkendiagramm", desc: "Wertevergleich", accent: "#0EA5E9", icon: BarChart3 },
   pie_chart: { label: "Kreisdiagramm", desc: "Verteilung", accent: "#8B5CF6", icon: PieChartIcon },
   line_chart: { label: "Liniendiagramm", desc: "Entwicklung", accent: "#10B981", icon: LineChartIcon },
+  progress_bar: { label: "Fortschrittsbalken", desc: "Ziel-Tracking", accent: "#06B6D4", icon: Gauge },
+  mood_wheel: { label: "Stimmungsrad", desc: "Emotionen erfassen", accent: "#F472B6", icon: Target },
+  table: { label: "Tabelle", desc: "Strukturierte Daten", accent: "#0D9488", icon: Table2 },
+  slider_group: { label: "Slider-Bereich", desc: "Parallele Bewertungen", accent: "#7C3AED", icon: SlidersHorizontal },
 };
 
 function getMeta(type: string) {
