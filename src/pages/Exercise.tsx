@@ -564,11 +564,10 @@ export default function Exercise() {
           const meta = getMeta(block.type);
           const Icon = meta.icon;
           return (
-            <div
-              key={block.id}
-              className="rounded-[1.75rem] overflow-hidden border border-border shadow-sm bg-card animate-slide-up"
-              style={{ animationDelay: `${idx * 80}ms` }}
-            >
+            <StaggerItem key={block.id}>
+              <div
+                className="rounded-[1.75rem] overflow-hidden border border-border shadow-sm bg-card"
+              >
               {/* Drag handle */}
               <div className="flex justify-center pt-2 pb-1 bg-secondary">
                 <div className="w-12 h-1 rounded-full bg-border" />
