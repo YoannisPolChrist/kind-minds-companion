@@ -9,13 +9,58 @@ const expo = new Expo();
 const resend = new Resend("re_CUA2weaM_FhRyT7CzpA9RK6jE3vnC2aNL");
 
 // ────────────────────────────────────────────────────────────
+// Multi-language email translations
+// ────────────────────────────────────────────────────────────
+
+type Lang = "de" | "en" | "fr" | "es" | "it" | "tr" | "ar";
+
+const t: Record<string, Record<Lang, string>> = {
+  greeting: { de: "Hallo", en: "Hello", fr: "Bonjour", es: "Hola", it: "Ciao", tr: "Merhaba", ar: "مرحباً" },
+  footerSent: { de: "Diese E-Mail wurde von", en: "This email was sent by", fr: "Cet e-mail a été envoyé par", es: "Este correo fue enviado por", it: "Questa email è stata inviata da", tr: "Bu e-posta tarafından gönderildi", ar: "تم إرسال هذا البريد الإلكتروني من" },
+  footerQuestions: { de: "Fragen? Antworte einfach auf diese E-Mail.", en: "Questions? Simply reply to this email.", fr: "Des questions ? Répondez simplement à cet e-mail.", es: "¿Preguntas? Simplemente responde a este correo.", it: "Domande? Rispondi semplicemente a questa email.", tr: "Sorularınız mı var? Bu e-postayı yanıtlayın.", ar: "أسئلة؟ ببساطة قم بالرد على هذا البريد الإلكتروني." },
+  footerRights: { de: "Alle Rechte vorbehalten.", en: "All rights reserved.", fr: "Tous droits réservés.", es: "Todos los derechos reservados.", it: "Tutti i diritti riservati.", tr: "Tüm hakları saklıdır.", ar: "جميع الحقوق محفوظة." },
+  exerciseTitle: { de: "Neue Übung zugewiesen ✨", en: "New Exercise Assigned ✨", fr: "Nouvel exercice attribué ✨", es: "Nuevo ejercicio asignado ✨", it: "Nuovo esercizio assegnato ✨", tr: "Yeni Egzersiz Atandı ✨", ar: "تم تعيين تمرين جديد ✨" },
+  exerciseSubtitle: { de: "Dein Therapeut hat etwas Neues für dich vorbereitet.", en: "Your therapist has prepared something new for you.", fr: "Votre thérapeute a préparé quelque chose de nouveau pour vous.", es: "Tu terapeuta ha preparado algo nuevo para ti.", it: "Il tuo terapeuta ha preparato qualcosa di nuovo per te.", tr: "Terapistiniz sizin için yeni bir şey hazırladı.", ar: "قام معالجك بتحضير شيء جديد لك." },
+  exerciseBody: { de: "Dein Therapeut hat dir eine neue Übung zugewiesen. Öffne die App, um sie zu starten und deinen Fortschritt zu dokumentieren.", en: "Your therapist has assigned you a new exercise. Open the app to start it and track your progress.", fr: "Votre thérapeute vous a attribué un nouvel exercice. Ouvrez l'application pour le commencer.", es: "Tu terapeuta te ha asignado un nuevo ejercicio. Abre la app para comenzar.", it: "Il tuo terapeuta ti ha assegnato un nuovo esercizio. Apri l'app per iniziare.", tr: "Terapistiniz size yeni bir egzersiz atadı. Başlamak için uygulamayı açın.", ar: "قام معالجك بتعيين تمرين جديد لك. افتح التطبيق للبدء." },
+  exerciseLabel: { de: "Übung", en: "Exercise", fr: "Exercice", es: "Ejercicio", it: "Esercizio", tr: "Egzersiz", ar: "تمرين" },
+  exerciseEncouragement: { de: "Regelmäßiges Üben ist ein wichtiger Teil deines Therapieprozesses. 💙", en: "Regular practice is an important part of your therapy process. 💙", fr: "La pratique régulière est une partie importante de votre processus thérapeutique. 💙", es: "La práctica regular es una parte importante de tu proceso terapéutico. 💙", it: "La pratica regolare è una parte importante del tuo percorso terapeutico. 💙", tr: "Düzenli pratik terapi sürecinizin önemli bir parçasıdır. 💙", ar: "التدريب المنتظم جزء مهم من عملية العلاج الخاصة بك. 💙" },
+  openExercise: { de: "Übung öffnen →", en: "Open Exercise →", fr: "Ouvrir l'exercice →", es: "Abrir ejercicio →", it: "Apri esercizio →", tr: "Egzersizi Aç →", ar: "فتح التمرين ←" },
+  appointmentTitle: { de: "Neuer Termin eingetragen 📅", en: "New Appointment Scheduled 📅", fr: "Nouveau rendez-vous planifié 📅", es: "Nueva cita programada 📅", it: "Nuovo appuntamento programmato 📅", tr: "Yeni Randevu Planlandı 📅", ar: "تم تحديد موعد جديد 📅" },
+  appointmentSubtitle: { de: "Dein Therapeut hat einen Termin für dich geplant.", en: "Your therapist has scheduled an appointment for you.", fr: "Votre thérapeute a planifié un rendez-vous pour vous.", es: "Tu terapeuta ha programado una cita para ti.", it: "Il tuo terapeuta ha programmato un appuntamento per te.", tr: "Terapistiniz sizin için bir randevu planladı.", ar: "حدد معالجك موعداً لك." },
+  appointmentBody: { de: "Dein Therapeut hat einen neuen Termin für dich eingetragen. Bitte merke dir den folgenden Termin vor:", en: "Your therapist has scheduled a new appointment for you. Please note the following date:", fr: "Votre thérapeute a planifié un nouveau rendez-vous. Veuillez noter la date suivante :", es: "Tu terapeuta ha programado una nueva cita. Anota la siguiente fecha:", it: "Il tuo terapeuta ha programmato un nuovo appuntamento. Prendi nota della seguente data:", tr: "Terapistiniz sizin için yeni bir randevu planladı. Lütfen aşağıdaki tarihi not edin:", ar: "حدد معالجك موعداً جديداً لك. يرجى ملاحظة التاريخ التالي:" },
+  appointmentLabel: { de: "Nächster Termin", en: "Next Appointment", fr: "Prochain rendez-vous", es: "Próxima cita", it: "Prossimo appuntamento", tr: "Sonraki Randevu", ar: "الموعد التالي" },
+  toDashboard: { de: "Zum Dashboard →", en: "Go to Dashboard →", fr: "Aller au tableau de bord →", es: "Ir al panel →", it: "Vai alla dashboard →", tr: "Panoya Git →", ar: "انتقل إلى لوحة المعلومات ←" },
+  fileTitle: { de: "Neue Datei bereitgestellt 📎", en: "New File Uploaded 📎", fr: "Nouveau fichier partagé 📎", es: "Nuevo archivo compartido 📎", it: "Nuovo file condiviso 📎", tr: "Yeni Dosya Yüklendi 📎", ar: "تم رفع ملف جديد 📎" },
+  fileSubtitle: { de: "Dein Therapeut hat eine Datei für dich hinterlegt.", en: "Your therapist has uploaded a file for you.", fr: "Votre thérapeute a déposé un fichier pour vous.", es: "Tu terapeuta ha subido un archivo para ti.", it: "Il tuo terapeuta ha caricato un file per te.", tr: "Terapistiniz sizin için bir dosya yükledi.", ar: "قام معالجك برفع ملف لك." },
+  fileBody: { de: "Dein Therapeut hat eine neue Datei in deinem persönlichen Bereich hinterlegt. Du findest sie unter <em>Dateien</em> in der App.", en: "Your therapist has uploaded a new file to your personal area. You can find it under <em>Files</em> in the app.", fr: "Votre thérapeute a déposé un nouveau fichier dans votre espace personnel. Vous le trouverez sous <em>Fichiers</em> dans l'application.", es: "Tu terapeuta ha subido un nuevo archivo a tu área personal. Lo encontrarás en <em>Archivos</em> en la app.", it: "Il tuo terapeuta ha caricato un nuovo file nella tua area personale. Lo trovi sotto <em>File</em> nell'app.", tr: "Terapistiniz kişisel alanınıza yeni bir dosya yükledi. Bunu uygulamada <em>Dosyalar</em> altında bulabilirsiniz.", ar: "قام معالجك برفع ملف جديد في منطقتك الشخصية. يمكنك العثور عليه تحت <em>الملفات</em> في التطبيق." },
+  fileLabel: { de: "Datei", en: "File", fr: "Fichier", es: "Archivo", it: "File", tr: "Dosya", ar: "ملف" },
+  viewFiles: { de: "Dateien ansehen →", en: "View Files →", fr: "Voir les fichiers →", es: "Ver archivos →", it: "Vedi file →", tr: "Dosyaları Görüntüle →", ar: "عرض الملفات ←" },
+  resourceTitle: { de: "Neue Ressource geteilt", en: "New Resource Shared", fr: "Nouvelle ressource partagée", es: "Nuevo recurso compartido", it: "Nuova risorsa condivisa", tr: "Yeni Kaynak Paylaşıldı", ar: "تمت مشاركة مورد جديد" },
+  resourceSubtitle: { de: "Dein Therapeut hat dir etwas Nützliches bereitgestellt.", en: "Your therapist has shared something useful with you.", fr: "Votre thérapeute a partagé quelque chose d'utile avec vous.", es: "Tu terapeuta ha compartido algo útil contigo.", it: "Il tuo terapeuta ha condiviso qualcosa di utile con te.", tr: "Terapistiniz sizinle faydalı bir şey paylaştı.", ar: "شارك معالجك شيئاً مفيداً معك." },
+  viewResources: { de: "Ressourcen ansehen →", en: "View Resources →", fr: "Voir les ressources →", es: "Ver recursos →", it: "Vedi risorse →", tr: "Kaynakları Görüntüle →", ar: "عرض الموارد ←" },
+  checkinTitle: { de: "Dein täglicher Check-in wartet 🌅", en: "Your Daily Check-in Awaits 🌅", fr: "Votre check-in quotidien vous attend 🌅", es: "Tu check-in diario te espera 🌅", it: "Il tuo check-in giornaliero ti aspetta 🌅", tr: "Günlük Check-in'iniz Bekliyor 🌅", ar: "تسجيل الدخول اليومي في انتظارك 🌅" },
+  checkinSubtitle: { de: "Wie geht es dir heute?", en: "How are you feeling today?", fr: "Comment vous sentez-vous aujourd'hui ?", es: "¿Cómo te sientes hoy?", it: "Come ti senti oggi?", tr: "Bugün nasıl hissediyorsunuz?", ar: "كيف تشعر اليوم؟" },
+  checkinBody: { de: "Du hast deinen heutigen Check-in noch nicht abgeschlossen. Nimm dir kurz einen Moment, um deine Stimmung zu reflektieren. Es dauert nur 30 Sekunden!", en: "You haven't completed your daily check-in yet. Take a moment to reflect on your mood. It only takes 30 seconds!", fr: "Vous n'avez pas encore complété votre check-in du jour. Prenez un moment pour réfléchir à votre humeur.", es: "Aún no has completado tu check-in diario. Tómate un momento para reflexionar sobre tu estado de ánimo.", it: "Non hai ancora completato il check-in di oggi. Prenditi un momento per riflettere sul tuo umore.", tr: "Günlük check-in'inizi henüz tamamlamadınız. Ruh halinizi yansıtmak için bir dakikanızı ayırın.", ar: "لم تكمل تسجيل الدخول اليومي بعد. خذ لحظة للتفكير في مزاجك." },
+  startCheckin: { de: "Check-in starten →", en: "Start Check-in →", fr: "Démarrer le check-in →", es: "Iniciar check-in →", it: "Inizia check-in →", tr: "Check-in'i Başlat →", ar: "ابدأ تسجيل الدخول ←" },
+  openApp: { de: "App öffnen →", en: "Open App →", fr: "Ouvrir l'app →", es: "Abrir app →", it: "Apri app →", tr: "Uygulamayı Aç →", ar: "فتح التطبيق ←" },
+  newNotification: { de: "Neue Benachrichtigung", en: "New Notification", fr: "Nouvelle notification", es: "Nueva notificación", it: "Nuova notifica", tr: "Yeni Bildirim", ar: "إشعار جديد" },
+  notificationReceived: { de: "Du hast eine neue Benachrichtigung erhalten.", en: "You have received a new notification.", fr: "Vous avez reçu une nouvelle notification.", es: "Has recibido una nueva notificación.", it: "Hai ricevuto una nuova notifica.", tr: "Yeni bir bildirim aldınız.", ar: "لقد تلقيت إشعاراً جديداً." },
+  contactTherapist: { de: "Falls du Fragen hast, wende dich direkt an deinen Therapeuten.", en: "If you have questions, contact your therapist directly.", fr: "Si vous avez des questions, contactez directement votre thérapeute.", es: "Si tienes preguntas, contacta directamente a tu terapeuta.", it: "Se hai domande, contatta direttamente il tuo terapeuta.", tr: "Sorularınız varsa doğrudan terapistinizle iletişime geçin.", ar: "إذا كانت لديك أسئلة، تواصل مع معالجك مباشرة." },
+};
+
+function tr(key: string, lang: Lang): string {
+  return t[key]?.[lang] || t[key]?.["de"] || key;
+}
+
+// ────────────────────────────────────────────────────────────
 // Email HTML Template Builder
 // ────────────────────────────────────────────────────────────
 
-function baseTemplate(content: string): string {
+function baseTemplate(content: string, lang: Lang = "de"): string {
+  const dir = lang === "ar" ? ' dir="rtl"' : '';
   return `
 <!DOCTYPE html>
-<html lang="de">
+<html lang="${lang}"${dir}>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -40,7 +85,6 @@ function baseTemplate(content: string): string {
   .footer p { font-size: 12px; color: #9CA3AF; line-height: 1.6; }
   .footer a { color: #6B7280; text-decoration: none; }
   .accent { color: #D4AF37; }
-  .icon-circle { width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 20px; }
 </style>
 </head>
 <body>
@@ -49,10 +93,10 @@ function baseTemplate(content: string): string {
     ${content}
   </div>
   <div class="footer">
-    <p>Diese E-Mail wurde von <strong>Therapie-App</strong> gesendet.<br>
-    Fragen? Antworte einfach auf diese E-Mail.<br>
+    <p>${tr("footerSent", lang)} <strong>Therapie-App</strong>.<br>
+    ${tr("footerQuestions", lang)}<br>
     <br>
-    &copy; 2025 johanneschrist.com &mdash; Alle Rechte vorbehalten.</p>
+    &copy; ${new Date().getFullYear()} johanneschrist.com &mdash; ${tr("footerRights", lang)}</p>
   </div>
 </div>
 </body>
