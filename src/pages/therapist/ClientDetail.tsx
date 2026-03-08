@@ -194,6 +194,8 @@ export default function TherapistClientDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
+  const [clientLang, setClientLang] = useState<string>("de");
+  const [savingLang, setSavingLang] = useState(false);
 
   // Stats
   const [exerciseCount, setExerciseCount] = useState(0);
@@ -208,6 +210,7 @@ export default function TherapistClientDetail() {
         if (cSnap.exists()) {
           const cData = { id: cSnap.id, ...cSnap.data() };
           setClient(cData);
+          setClientLang((cData as any).language || "de");
           if ((cData as any).nextAppointment) {
             const d = new Date((cData as any).nextAppointment);
             if (!isNaN(d.getTime())) {
@@ -386,6 +389,58 @@ export default function TherapistClientDetail() {
                 <p className="text-sm text-muted-foreground">{desc}</p>
               </TiltCard>
             ))}
+          </div>
+        </StaggerItem>
+
+        {/* Language Setting */}
+        <StaggerItem>
+          <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <span className="text-xl">🌐</span>
+              </div>
+              <div>
+                <h3 className="text-lg font-black text-foreground">Sprache</h3>
+                <p className="text-sm text-muted-foreground">E-Mails und Benachrichtigungen werden in dieser Sprache versendet</p>
+              </div>
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[
+                { code: "de", label: "Deutsch", flag: "🇩🇪" },
+                { code: "en", label: "English", flag: "🇬🇧" },
+                { code: "fr", label: "Français", flag: "🇫🇷" },
+                { code: "es", label: "Español", flag: "🇪🇸" },
+                { code: "it", label: "Italiano", flag: "🇮🇹" },
+                { code: "tr", label: "Türkçe", flag: "🇹🇷" },
+                { code: "ar", label: "العربية", flag: "🇸🇦" },
+              ].map(lang => (
+                <motion.button
+                  key={lang.code}
+                  onClick={async () => {
+                    if (!id || clientLang === lang.code) return;
+                    setSavingLang(true);
+                    try {
+                      await updateDoc(doc(db, "users", id), { language: lang.code });
+                      setClientLang(lang.code);
+                      setToast({ visible: true, message: `Sprache auf ${lang.label} gesetzt`, type: "success" });
+                    } catch {
+                      setToast({ visible: true, message: "Fehler beim Speichern der Sprache", type: "error" });
+                    } finally {
+                      setSavingLang(false);
+                    }
+                  }}
+                  disabled={savingLang}
+                  className={`px-4 py-2.5 rounded-2xl text-sm font-bold transition-all flex items-center gap-2 ${
+                    clientLang === lang.code
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-secondary border border-border text-foreground hover:bg-muted"
+                  }`}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <span>{lang.flag}</span> {lang.label}
+                </motion.button>
+              ))}
+            </div>
           </div>
         </StaggerItem>
 

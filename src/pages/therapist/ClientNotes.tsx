@@ -47,6 +47,7 @@ export default function ClientNotes() {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const [notes, setNotes] = useState<SessionNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -141,10 +142,9 @@ export default function ClientNotes() {
     setShowModal(true);
   };
 
-  // File upload
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
+  // File upload (shared by input + drag&drop)
+  const uploadFile = async (file: File) => {
+    if (!id) return;
     setUploading(true);
     try {
       const path = `session_notes/${id}/${Date.now()}_${file.name}`;
@@ -158,7 +158,34 @@ export default function ClientNotes() {
       setToast({ visible: true, message: "Upload fehlgeschlagen", type: "error" });
     } finally {
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  // Drag & Drop handlers
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+    const files = Array.from(e.dataTransfer.files);
+    for (const file of files) {
+      await uploadFile(file);
     }
   };
 
@@ -439,13 +466,28 @@ export default function ClientNotes() {
       <AnimatePresence>
         {showModal && (
           <motion.div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-start justify-center p-4 pt-12 overflow-y-auto" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={(e) => e.target === e.currentTarget && resetModal()}>
-            <motion.div className="bg-card rounded-3xl border border-border w-full max-w-lg shadow-2xl" initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }} transition={{ type: "spring", damping: 20, stiffness: 150 }}>
+            <motion.div
+              className={`bg-card rounded-3xl border-2 w-full max-w-lg shadow-2xl transition-colors ${isDragging ? "border-primary border-dashed bg-primary/5" : "border-border"}`}
+              initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }}
+              transition={{ type: "spring", damping: 20, stiffness: 150 }}
+              onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}
+            >
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h2 className="text-lg font-black text-foreground">{editingNote ? "Notiz bearbeiten" : "Neue Session Note"}</h2>
                 <button onClick={resetModal} className="p-2 rounded-xl hover:bg-secondary"><X size={20} className="text-muted-foreground" /></button>
               </div>
 
-              <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto">
+              {/* Drag overlay */}
+              {isDragging && (
+                <div className="absolute inset-0 z-20 bg-primary/10 backdrop-blur-sm rounded-3xl flex items-center justify-center pointer-events-none">
+                  <div className="text-center">
+                    <Paperclip size={40} className="text-primary mx-auto mb-2" />
+                    <p className="text-primary font-black text-lg">Dateien hier ablegen</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-6 space-y-4 max-h-[65vh] overflow-y-auto relative">
                 {/* Title */}
                 <div>
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Titel *</label>

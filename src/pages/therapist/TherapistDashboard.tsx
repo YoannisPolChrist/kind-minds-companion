@@ -1,16 +1,16 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
-  Users, BookOpen, FileText, LayoutTemplate, Settings,
-  Activity, TrendingUp, Calendar, ArrowRight,
+  Users, FileText, LayoutTemplate, Settings,
+  Activity, ArrowRight,
 } from "lucide-react";
 import { motion } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
-  PressableScale, CountUp, TiltCard,
+  PressableScale, CountUp,
 } from "../../components/motion";
 import { getRandomHeaderImage } from "../../constants/headerImages";
 
@@ -20,7 +20,6 @@ interface QuickStat {
   label: string;
   value: number;
   emoji: string;
-  color: string;
 }
 
 interface RecentActivity {
@@ -43,7 +42,6 @@ export default function TherapistDashboard() {
     if (!profile?.id) return;
     (async () => {
       try {
-        // Fetch clients
         const clientSnap = await getDocs(
           query(collection(db, "users"), where("role", "==", "client"), where("therapistId", "==", profile.id))
         );
@@ -54,7 +52,6 @@ export default function TherapistDashboard() {
         const clientIds = clients.map(c => c.id);
         const safeClientIds = clientIds.length > 0 ? clientIds.slice(0, 10) : ["__none__"];
 
-        // Fetch exercises, checkins & notes in parallel
         const [exSnap, ciSnap, notesSnap] = await Promise.all([
           getDocs(query(collection(db, "exercises"), where("therapistId", "==", profile.id))),
           getDocs(query(collection(db, "checkins"), where("uid", "in", safeClientIds))),
@@ -65,21 +62,19 @@ export default function TherapistDashboard() {
         const sessionNotes = notesSnap.docs.filter(d => d.data().authorRole === "therapist");
 
         setStats([
-          { label: "Klienten", value: clients.length, emoji: "👥", color: "hsl(var(--primary))" },
-          { label: "Übungen", value: exSnap.size, emoji: "📋", color: "#0EA5E9" },
-          { label: "Erledigt", value: completedExercises, emoji: "✅", color: "#10B981" },
-          { label: "Session Notes", value: sessionNotes.length, emoji: "📝", color: "#8B5CF6" },
+          { label: "Klienten", value: clients.length, emoji: "👥" },
+          { label: "Übungen", value: exSnap.size, emoji: "📋" },
+          { label: "Erledigt", value: completedExercises, emoji: "✅" },
+          { label: "Notes", value: sessionNotes.length, emoji: "📝" },
         ]);
 
-        // Build recent activity from exercises + notes
         const activities: RecentActivity[] = [];
         exSnap.docs.slice(0, 5).forEach(d => {
           const data = d.data();
           const client = clients.find(c => c.id === data.clientId);
           if (client) {
             activities.push({
-              id: d.id,
-              type: "exercise",
+              id: d.id, type: "exercise",
               clientName: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
               clientId: data.clientId,
               title: data.title || "Übung",
@@ -87,15 +82,13 @@ export default function TherapistDashboard() {
             });
           }
         });
-        // Add recent session notes
         sessionNotes.sort((a, b) => new Date(b.data().createdAt || 0).getTime() - new Date(a.data().createdAt || 0).getTime());
         sessionNotes.slice(0, 5).forEach(d => {
           const data = d.data();
           const client = clients.find(c => c.id === data.clientId);
           if (client) {
             activities.push({
-              id: d.id,
-              type: "note",
+              id: d.id, type: "note",
               clientName: `${client.firstName || ""} ${client.lastName || ""}`.trim(),
               clientId: data.clientId,
               title: data.title || "Session Note",
@@ -103,7 +96,6 @@ export default function TherapistDashboard() {
             });
           }
         });
-        // Sort all activities by date, newest first
         activities.sort((a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime());
         setRecentActivity(activities.slice(0, 6));
       } catch (e) {
@@ -122,9 +114,27 @@ export default function TherapistDashboard() {
   };
 
   const navCards = [
-    { path: "/therapist/clients", icon: Users, label: "Klienten", desc: "Alle Klienten verwalten", emoji: "👥", accent: "hsl(var(--primary))" },
-    { path: "/therapist/templates", icon: LayoutTemplate, label: "Vorlagen", desc: "Übungen erstellen & verwalten", emoji: "📝", accent: "#8B5CF6" },
-    { path: "/therapist/resources", icon: FileText, label: "Bibliothek", desc: "Ressourcen & Materialien", emoji: "📚", accent: "#F59E0B" },
+    {
+      path: "/therapist/clients",
+      icon: Users,
+      label: "Klienten",
+      desc: "Alle Klienten verwalten",
+      gradient: "from-primary to-primary-dark",
+    },
+    {
+      path: "/therapist/templates",
+      icon: LayoutTemplate,
+      label: "Vorlagen",
+      desc: "Übungen erstellen & verwalten",
+      gradient: "from-accent to-accent/80",
+    },
+    {
+      path: "/therapist/resources",
+      icon: FileText,
+      label: "Bibliothek",
+      desc: "Ressourcen & Materialien",
+      gradient: "from-success to-success/80",
+    },
   ];
 
   if (loading) {
@@ -184,7 +194,7 @@ export default function TherapistDashboard() {
             </PressableScale>
           </motion.div>
 
-          {/* Quick Stats in Header */}
+          {/* Quick Stats */}
           <div className="grid grid-cols-4 gap-2.5">
             {stats.map((s, i) => (
               <motion.div
@@ -204,32 +214,38 @@ export default function TherapistDashboard() {
       </div>
 
       <StaggerContainer className="max-w-5xl mx-auto px-6 py-6 space-y-6">
-        {/* Navigation Cards */}
+        {/* Navigation Cards — clean, icon-driven */}
         <StaggerItem>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {navCards.map((card, i) => (
-              <TiltCard
-                key={card.path}
-                className="bg-card rounded-3xl border-2 border-border p-6 flex flex-col items-center justify-center gap-3 shadow-sm hover:border-primary/30 transition-all cursor-pointer min-h-[160px] relative overflow-hidden group"
-                onClick={() => navigate(card.path)}
-                maxTilt={5}
-              >
-                {/* Accent gradient top */}
-                <div className="absolute top-0 left-0 right-0 h-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                  style={{ background: `linear-gradient(90deg, ${card.accent}, ${card.accent}80)` }} />
-                <motion.span className="text-4xl"
-                  initial={{ scale: 0.5, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ delay: 0.2 + i * 0.08, type: "spring", damping: 12 }}>
-                  {card.emoji}
-                </motion.span>
-                <div className="text-center">
-                  <h3 className="text-lg font-black text-foreground">{card.label}</h3>
-                  <p className="text-xs text-muted-foreground mt-0.5">{card.desc}</p>
-                </div>
-                <ArrowRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
-              </TiltCard>
-            ))}
+            {navCards.map((card, i) => {
+              const Icon = card.icon;
+              return (
+                <motion.button
+                  key={card.path}
+                  onClick={() => navigate(card.path)}
+                  className="bg-card rounded-3xl border border-border p-6 shadow-sm hover:shadow-md hover:border-primary/25 transition-all text-left group relative overflow-hidden"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 + i * 0.08, type: "spring", damping: 18 }}
+                  whileHover={{ y: -3 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {/* Subtle gradient accent bar */}
+                  <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient} opacity-60 group-hover:opacity-100 transition-opacity`} />
+
+                  <div className="flex items-start gap-4">
+                    <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${card.gradient} flex items-center justify-center shrink-0 shadow-sm`}>
+                      <Icon size={22} className="text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-black text-foreground leading-tight">{card.label}</h3>
+                      <p className="text-xs text-muted-foreground mt-0.5">{card.desc}</p>
+                    </div>
+                    <ArrowRight size={16} className="text-muted-foreground group-hover:text-primary transition-colors mt-1 shrink-0" />
+                  </div>
+                </motion.button>
+              );
+            })}
           </div>
         </StaggerItem>
 
@@ -269,21 +285,6 @@ export default function TherapistDashboard() {
             </div>
           </StaggerItem>
         )}
-
-        {/* Quick Tip */}
-        <StaggerItem>
-          <motion.div className="bg-primary/5 rounded-3xl border border-primary/15 p-6 flex items-start gap-4"
-            whileHover={{ scale: 1.01 }}>
-            <span className="text-3xl shrink-0">💡</span>
-            <div>
-              <p className="font-bold text-foreground text-sm">Tipp des Tages</p>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                Erstelle Übungsvorlagen mit verschiedenen Modulen wie Reflexion, Skalen, Diagrammen und Atemübungen — 
-                und weise sie deinen Klienten mit einem Klick zu.
-              </p>
-            </div>
-          </motion.div>
-        </StaggerItem>
 
         <div className="h-8" />
       </StaggerContainer>
