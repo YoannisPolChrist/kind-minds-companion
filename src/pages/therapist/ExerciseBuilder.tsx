@@ -40,6 +40,16 @@ interface Block {
   mediaType?: "image" | "video";
   mediaSize?: "small" | "medium" | "large";
   videoUrl?: string;
+  // Progress bar
+  progressLabel?: string;
+  progressMax?: number;
+  // Mood wheel
+  moodOptions?: string[];
+  // Table
+  tableColumns?: string[];
+  tableRows?: number;
+  // Slider group
+  sliders?: { label: string; min: number; max: number; step: number }[];
 }
 
 const CATALOGUE: {
