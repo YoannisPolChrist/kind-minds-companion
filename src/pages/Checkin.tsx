@@ -80,7 +80,7 @@ export default function Checkin() {
   const [selectedEmotionId, setSelectedEmotionId] = useState<string | null>(null);
   const [energy, setEnergy] = useState(50);
   const [note, setNote] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
