@@ -22,6 +22,7 @@ import ClientNotes from "./pages/therapist/ClientNotes";
 import ClientFiles from "./pages/therapist/ClientFiles";
 import TherapistTemplates from "./pages/therapist/TherapistTemplates";
 import TherapistResources from "./pages/therapist/TherapistResources";
+import TherapistClients from "./pages/therapist/TherapistClients";
 import ExerciseBuilderPage from "./pages/therapist/ExerciseBuilder";
 
 function ProtectedRoute({
