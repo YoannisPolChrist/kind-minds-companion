@@ -64,10 +64,11 @@ export default function TherapistTemplates() {
   const handleDelete = async () => {
     if (!deleteTarget) return;
     try {
+      // Delete the template document
       await deleteDoc(doc(db, "exercise_templates", deleteTarget.id));
       setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget.id));
       setDeleteTarget(null);
-      setToast({ visible: true, message: "Vorlage gelöscht", subMessage: `„${deleteTarget.title}" wurde entfernt.`, type: "success" });
+      setToast({ visible: true, message: "Vorlage gelöscht", subMessage: `„${deleteTarget.title}" wurde dauerhaft entfernt.`, type: "success" });
     } catch (e) {
       console.error("Error deleting template:", e);
       setToast({ visible: true, message: "Fehler", subMessage: "Vorlage konnte nicht gelöscht werden.", type: "error" });
