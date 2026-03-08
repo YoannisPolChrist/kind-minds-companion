@@ -358,6 +358,7 @@ export default function ExerciseBuilderPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [showCatalogue, setShowCatalogue] = useState(false);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
   // Load existing template
   useEffect(() => {
