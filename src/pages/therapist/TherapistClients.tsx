@@ -106,19 +106,20 @@ export default function TherapistClients() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="border-b border-border bg-card px-6 py-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="h-8 w-48 bg-muted rounded-lg mb-2 animate-pulse" />
-            <div className="h-4 w-64 bg-muted rounded-lg animate-pulse" />
-          </div>
-        </div>
+        <TherapistHeroHeader maxWidthClassName="max-w-5xl">
+          <div className="h-6 w-32 bg-primary-foreground/20 rounded-xl mb-3" />
+          <div className="h-9 w-56 bg-primary-foreground/15 rounded-2xl" />
+          <div className="h-4 w-72 bg-primary-foreground/10 rounded-xl mt-3" />
+        </TherapistHeroHeader>
+
         <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[1, 2, 3].map(i => <div key={i} className="bg-card rounded-xl border border-border h-20 animate-pulse" />)}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-card rounded-xl border border-border h-20 animate-pulse" />
+          ))}
         </div>
       </div>
     );
   }
-
   return (
     <PageTransition className="min-h-screen bg-background">
       {/* Minimal Header */}
