@@ -8,7 +8,7 @@
  */
 
 import { motion, AnimatePresence, type Variants } from "motion/react";
-import { type ReactNode, type CSSProperties } from "react";
+import { type ReactNode, type CSSProperties, useState, useEffect } from "react";
 
 // ─── TiltCard (inline) ────────────────────────────────────────────────────────
 

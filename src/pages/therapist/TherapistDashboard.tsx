@@ -10,10 +10,8 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
-  TiltCard, PressableScale,
+  TiltCard, PressableScale, CountUp, GlowCard,
 } from "../../components/motion";
-import { CountUp } from "../../components/motion/CountUp";
-import { GlowCard } from "../../components/motion/GlowCard";
 import { Toast, BannerToast } from "../../components/ui/Toast";
 import { SkeletonCard, SkeletonMetrics } from "../../components/ui/Skeleton";
 import { Badge } from "../../components/ui/Badge";
