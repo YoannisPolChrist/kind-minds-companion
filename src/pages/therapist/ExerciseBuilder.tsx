@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale,
 } from "../../components/motion";
+import { Toast } from "../../components/ui/Toast";
 
 // ─── Block Types ──────────────────────────────────────────────────────────────
 
