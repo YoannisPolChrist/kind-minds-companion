@@ -54,9 +54,21 @@ const EMOTION_PRESETS = [
 ];
 
 const QUICK_TAGS = [
-  "Erschöpft", "Ängstlich", "Ruhig", "Motiviert", "Traurig", "Dankbar",
-  "Überfordert", "Fokussiert", "Einsam", "Hoffnungsvoll", "Energiegeladen",
-  "Kreativ", "Genervt", "Verletzlich", "Nostalgisch",
+  { emoji: "😫", label: "Erschöpft" },
+  { emoji: "😰", label: "Ängstlich" },
+  { emoji: "😌", label: "Ruhig" },
+  { emoji: "🔥", label: "Motiviert" },
+  { emoji: "😢", label: "Traurig" },
+  { emoji: "🙏", label: "Dankbar" },
+  { emoji: "😵‍💫", label: "Überfordert" },
+  { emoji: "🎯", label: "Fokussiert" },
+  { emoji: "🥺", label: "Einsam" },
+  { emoji: "🌱", label: "Hoffnungsvoll" },
+  { emoji: "⚡", label: "Energiegeladen" },
+  { emoji: "🎨", label: "Kreativ" },
+  { emoji: "😤", label: "Genervt" },
+  { emoji: "💔", label: "Verletzlich" },
+  { emoji: "🌅", label: "Nostalgisch" },
 ];
 
 export default function Checkin() {
