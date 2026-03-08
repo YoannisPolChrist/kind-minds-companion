@@ -6,8 +6,9 @@ import { useAuth } from "../hooks/useAuth";
 import {
   ArrowLeft, CheckCircle, Edit3, Activity, CircleDot, ListChecks,
   CheckCircle2, Heart, BookOpen, Clock, Wind, Image as ImageIcon,
-  Film, Lock, Unlock,
+  Film, Lock, Unlock, Download,
 } from "lucide-react";
+import { generateExercisePdf } from "../utils/generateExercisePdf";
 import { motion } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
