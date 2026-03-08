@@ -1,7 +1,6 @@
 /**
  * TiltCard — Mouse-tracking 3D tilt effect
  * Ported from Block3DTiltWrapper: tracks actual mouse position for realistic 3D perspective tilt.
- * Falls back to simple hover tilt on touch devices.
  */
 
 import { motion, useMotionValue, useSpring, useTransform } from "motion/react";
@@ -25,7 +24,6 @@ export function TiltCard({ children, className, style, onClick, maxTilt = 8 }: T
   const rotateX = useSpring(useTransform(mouseY, [0, 1], [maxTilt, -maxTilt]), SPRING_CONFIG);
   const rotateY = useSpring(useTransform(mouseX, [0, 1], [-maxTilt, maxTilt]), SPRING_CONFIG);
   const scale = useSpring(1, SPRING_CONFIG);
-  const brightness = useTransform(mouseY, [0, 1], [1.04, 0.98]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const el = ref.current;
@@ -55,7 +53,6 @@ export function TiltCard({ children, className, style, onClick, maxTilt = 8 }: T
         rotateX,
         rotateY,
         scale,
-        filter: useTransform(brightness, (v) => `brightness(${v})`),
         ...style,
       }}
       onClick={onClick}
