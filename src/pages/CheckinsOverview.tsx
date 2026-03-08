@@ -17,19 +17,47 @@ import {
 
 const EMOTION_PRESETS = [
   { id: "awesome", score: 10, emoji: "🤩", color: "#8B5CF6", label: "Großartig" },
+  { id: "ecstatic", score: 10, emoji: "🎉", color: "#A855F7", label: "Ekstatisch" },
   { id: "motivated", score: 9, emoji: "🔥", color: "#0EA5E9", label: "Motiviert" },
+  { id: "proud", score: 9, emoji: "🥰", color: "#6366F1", label: "Stolz" },
+  { id: "inspired", score: 9, emoji: "✨", color: "#818CF8", label: "Inspiriert" },
+  { id: "loved", score: 9, emoji: "💕", color: "#EC4899", label: "Geliebt" },
   { id: "happy", score: 8, emoji: "😊", color: "#10B981", label: "Fröhlich" },
+  { id: "grateful", score: 8, emoji: "🙏", color: "#22C55E", label: "Dankbar" },
+  { id: "confident", score: 8, emoji: "💪", color: "#14B8A6", label: "Selbstbewusst" },
+  { id: "playful", score: 8, emoji: "😜", color: "#F472B6", label: "Verspielt" },
   { id: "content", score: 7, emoji: "🙂", color: "#4ADE80", label: "Zufrieden" },
+  { id: "hopeful", score: 7, emoji: "🌱", color: "#34D399", label: "Hoffnungsvoll" },
+  { id: "relieved", score: 7, emoji: "😮‍💨", color: "#6EE7B7", label: "Erleichtert" },
   { id: "calm", score: 6, emoji: "😌", color: "#A3E635", label: "Entspannt" },
+  { id: "curious", score: 6, emoji: "🤔", color: "#84CC16", label: "Neugierig" },
+  { id: "peaceful", score: 6, emoji: "🕊️", color: "#BEF264", label: "Friedlich" },
   { id: "neutral", score: 5, emoji: "😐", color: "#9CA3AF", label: "Neutral" },
+  { id: "bored", score: 5, emoji: "🥱", color: "#94A3B8", label: "Gelangweilt" },
+  { id: "indifferent", score: 5, emoji: "🫤", color: "#A1A1AA", label: "Gleichgültig" },
   { id: "stressed", score: 4, emoji: "🤯", color: "#FB923C", label: "Gestresst" },
+  { id: "anxious", score: 4, emoji: "😰", color: "#FBBF24", label: "Ängstlich" },
+  { id: "overwhelmed", score: 4, emoji: "😵‍💫", color: "#F59E0B", label: "Überfordert" },
+  { id: "restless", score: 4, emoji: "😤", color: "#D97706", label: "Unruhig" },
   { id: "sad", score: 3, emoji: "😢", color: "#FB7185", label: "Traurig" },
+  { id: "lonely", score: 3, emoji: "🥺", color: "#F9A8D4", label: "Einsam" },
+  { id: "disappointed", score: 3, emoji: "😞", color: "#E879F9", label: "Enttäuscht" },
+  { id: "guilty", score: 3, emoji: "😣", color: "#C084FC", label: "Schuldig" },
   { id: "exhausted", score: 2, emoji: "😫", color: "#F87171", label: "Erschöpft" },
+  { id: "angry", score: 2, emoji: "😡", color: "#F43F5E", label: "Wütend" },
+  { id: "frustrated", score: 2, emoji: "🤬", color: "#E11D48", label: "Frustriert" },
+  { id: "ashamed", score: 2, emoji: "😶", color: "#BE185D", label: "Beschämt" },
   { id: "despair", score: 1, emoji: "😭", color: "#EF4444", label: "Verzweifelt" },
+  { id: "numb", score: 1, emoji: "🫥", color: "#DC2626", label: "Taub/Leer" },
+  { id: "hopeless", score: 1, emoji: "🖤", color: "#991B1B", label: "Hoffnungslos" },
 ];
 
-function getEmotion(score: number) {
-  return EMOTION_PRESETS.find((e) => e.score === score) || EMOTION_PRESETS[5];
+function getEmotion(score: number, emotionId?: string) {
+  if (emotionId) {
+    const byId = EMOTION_PRESETS.find((e) => e.id === emotionId);
+    if (byId) return byId;
+  }
+  return EMOTION_PRESETS.find((e) => e.score === score) || EMOTION_PRESETS[16];
 }
 
 interface Checkin {
@@ -92,7 +120,7 @@ export default function CheckinsOverview() {
     // Top emotions
     const emotionCounts: Record<string, { count: number; emotion: (typeof EMOTION_PRESETS)[0] }> = {};
     checkins.forEach((c) => {
-      const e = getEmotion(c.mood);
+      const e = getEmotion(c.mood, (c as any).emotionId);
       if (!emotionCounts[e.id]) emotionCounts[e.id] = { count: 0, emotion: e };
       emotionCounts[e.id].count++;
     });
@@ -181,9 +209,9 @@ export default function CheckinsOverview() {
           <>
             {/* Analytics Cards */}
             {analytics && (
-              <div className="space-y-4">
+              <div className="space-y-4 animate-fade-in">
                 {/* Top Stats Row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-slide-up">
                   <StatCard
                     label="Durchschnitt"
                     value={analytics.avg.toFixed(1)}
@@ -220,7 +248,7 @@ export default function CheckinsOverview() {
 
                 {/* Mood Chart */}
                 {chartData.length > 1 && (
-                  <div className="bg-[hsl(var(--card-dark,222_47%_11%))] rounded-3xl p-6 shadow-lg">
+                  <div className="bg-[hsl(var(--card-dark,222_47%_11%))] rounded-3xl p-6 shadow-lg animate-slide-up" style={{ animationDelay: "100ms" }}>
                     <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1">
                       Stimmungsverlauf
                     </h3>
@@ -232,7 +260,7 @@ export default function CheckinsOverview() {
                     </div>
                     <div className="flex items-end gap-1.5 h-28">
                       {chartData.map((ci, i) => {
-                        const emotion = getEmotion(ci.mood);
+                        const emotion = getEmotion(ci.mood, (ci as any).emotionId);
                         const heightPct = (ci.mood / 10) * 100;
                         return (
                           <div key={ci.id} className="flex-1 flex flex-col items-center gap-1">
