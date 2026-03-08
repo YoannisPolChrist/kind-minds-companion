@@ -41,12 +41,20 @@ export function useAuth() {
           if (snap.exists()) {
             setProfile({ id: snap.id, ...snap.data() } as UserProfile);
           } else {
-            setProfile(null);
+            setProfile({
+              id: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              role: "client",
+            });
           }
         } catch (e) {
           if (isActive) {
             console.error("Error fetching profile:", e);
-            setProfile(null);
+            setProfile({
+              id: firebaseUser.uid,
+              email: firebaseUser.email || "",
+              role: "client",
+            });
           }
         }
       })();
