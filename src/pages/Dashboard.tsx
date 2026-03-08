@@ -639,39 +639,6 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Stats row */}
-        {exercises.length > 0 && (
-          <motion.div
-            className="grid grid-cols-3 gap-3"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
-          >
-            {[
-              { label: "Gesamt", value: exercises.length, cls: "text-primary" },
-              { label: "Offen", value: openExercises.length, cls: "text-accent" },
-              { label: "Erledigt", value: completedExercises.length, cls: "text-success" },
-            ].map((s, i) => (
-              <motion.div
-                key={s.label}
-                className="bg-card rounded-2xl border border-border p-4 text-center shadow-sm"
-                whileHover={{ y: -3, scale: 1.03 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              >
-                <motion.p
-                  className={`text-2xl font-black ${s.cls}`}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.5 + i * 0.1, type: "spring", damping: 10, stiffness: 200 }}
-                >
-                  {s.value}
-                </motion.p>
-                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide mt-1">{s.label}</p>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-
         {/* Open Exercises */}
         {exercises.length === 0 ? (
           <motion.div
