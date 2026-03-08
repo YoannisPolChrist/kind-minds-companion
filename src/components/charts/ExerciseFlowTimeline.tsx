@@ -10,7 +10,8 @@ import { motion } from "motion/react";
 type BlockType =
   | "reflection" | "scale" | "choice" | "checklist" | "homework"
   | "gratitude" | "info" | "timer" | "breathing" | "media" | "video"
-  | "spider_chart" | "bar_chart" | "pie_chart" | "line_chart";
+  | "spider_chart" | "bar_chart" | "pie_chart" | "line_chart"
+  | "progress_bar" | "mood_wheel" | "table" | "slider_group";
 
 interface Block { id: string; type: BlockType; [key: string]: any; }
 
