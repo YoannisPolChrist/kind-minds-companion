@@ -20,6 +20,7 @@ import ClientCheckins from "./pages/therapist/ClientCheckins";
 import ClientNotes from "./pages/therapist/ClientNotes";
 import ClientFiles from "./pages/therapist/ClientFiles";
 import TherapistTemplates from "./pages/therapist/TherapistTemplates";
+import ExerciseBuilderPage from "./pages/therapist/ExerciseBuilder";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
