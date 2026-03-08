@@ -822,7 +822,7 @@ export default function Exercise() {
                   </div>
                 </div>
                 <div className="p-6 bg-card">
-                  <BlockRenderer block={block} answers={answers} onAnswerChange={handleAnswerChange} disabled={exercise.completed} />
+                  <BlockRenderer block={block} answers={answers} onAnswerChange={handleAnswerChange} disabled={!isEditable} />
                 </div>
               </motion.div>
             </StaggerItem>
