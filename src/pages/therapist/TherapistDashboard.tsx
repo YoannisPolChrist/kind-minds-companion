@@ -10,7 +10,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
-  TiltCard, PressableScale, CountUp, GlowCard,
+  TiltCard, PressableScale,
 } from "../../components/motion";
 import { Toast, BannerToast } from "../../components/ui/Toast";
 import { SkeletonCard, SkeletonMetrics } from "../../components/ui/Skeleton";
@@ -148,7 +148,7 @@ export default function TherapistDashboard() {
     <PageTransition className="min-h-screen bg-background">
       {/* Header */}
       <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl shadow-primary/15 relative overflow-hidden">
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay" />
         <HeaderOrbs />
         <div className="max-w-5xl mx-auto px-6 pt-12 pb-10 relative z-10">
           <motion.div
@@ -187,7 +187,7 @@ export default function TherapistDashboard() {
                 transition={{ delay: 0.1 + i * 0.06, type: "spring", damping: 18 }}
               >
                 <s.icon size={18} className="mx-auto mb-1 text-white/70" />
-                <CountUp to={s.value} className="text-2xl font-black text-white block" duration={1.5} />
+                <p className="text-2xl font-black text-white">{s.value}</p>
                 <p className="text-xs font-bold text-white/50 uppercase">{s.label}</p>
               </motion.div>
             ))}
