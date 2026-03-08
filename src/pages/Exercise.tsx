@@ -43,18 +43,18 @@ type Answers = Record<string, string>;
 // ─── Block Catalogue ──────────────────────────────────────────────────────────
 
 const BLOCK_META: Record<string, { label: string; desc: string; accent: string; bg: string; text: string; border: string; icon: typeof Edit3 }> = {
-  reflection: { label: "Reflektion", desc: "Freie Texteingabe", accent: "#3B82F6", bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", icon: Edit3 },
-  text: { label: "Reflektion", desc: "Freie Texteingabe", accent: "#3B82F6", bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", icon: Edit3 },
-  scale: { label: "Skala 1–10", desc: "Numerische Bewertung", accent: "#F59E0B", bg: "#FFFBEB", text: "#92400E", border: "#FDE68A", icon: Activity },
-  choice: { label: "Auswahl", desc: "Einzelauswahl", accent: "#6366F1", bg: "#EEF2FF", text: "#4338CA", border: "#C7D2FE", icon: CircleDot },
-  checklist: { label: "Checkliste", desc: "Mehrfachauswahl", accent: "#10B981", bg: "#ECFDF5", text: "#065F46", border: "#A7F3D0", icon: ListChecks },
-  homework: { label: "ABC-Protokoll", desc: "Verhaltens-Tagebuch", accent: "#C09D59", bg: "#F9F8F6", text: "#243842", border: "#E5E7EB", icon: CheckCircle2 },
-  gratitude: { label: "Dankbarkeit", desc: "Dankbarkeits-Journal", accent: "#EC4899", bg: "#FDF2F8", text: "#9D174D", border: "#FBCFE8", icon: Heart },
-  info: { label: "Info-Text", desc: "Psychoedukation", accent: "#14B8A6", bg: "#F0FDFA", text: "#134E4A", border: "#99F6E4", icon: BookOpen },
-  media: { label: "Foto / Video", desc: "Medien-Upload", accent: "#F43F5E", bg: "#FEF2F2", text: "#991B1B", border: "#FECACA", icon: ImageIcon },
-  video: { label: "Web-Video", desc: "YouTube / Vimeo Link", accent: "#E11D48", bg: "#FFF1F2", text: "#9F1239", border: "#FECDD3", icon: Film },
-  timer: { label: "Timer", desc: "Countdown Start", accent: "#8B5CF6", bg: "#F5F3FF", text: "#5B21B6", border: "#DDD6FE", icon: Clock },
-  breathing: { label: "Atemübung", desc: "4-4-4 Rhythmus", accent: "#137386", bg: "#F9F8F6", text: "#243842", border: "#E5E7EB", icon: Wind },
+  reflection: { label: "Reflektion", desc: "Freie Texteingabe", accent: "#3B82F6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: Edit3 },
+  text: { label: "Reflektion", desc: "Freie Texteingabe", accent: "#3B82F6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: Edit3 },
+  scale: { label: "Skala 1–10", desc: "Numerische Bewertung", accent: "#F59E0B", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: Activity },
+  choice: { label: "Auswahl", desc: "Einzelauswahl", accent: "#6366F1", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: CircleDot },
+  checklist: { label: "Checkliste", desc: "Mehrfachauswahl", accent: "#10B981", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: ListChecks },
+  homework: { label: "ABC-Protokoll", desc: "Verhaltens-Tagebuch", accent: "#C09D59", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: CheckCircle2 },
+  gratitude: { label: "Dankbarkeit", desc: "Dankbarkeits-Journal", accent: "#EC4899", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: Heart },
+  info: { label: "Info-Text", desc: "Psychoedukation", accent: "#14B8A6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: BookOpen },
+  media: { label: "Foto / Video", desc: "Medien-Upload", accent: "#F43F5E", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: ImageIcon },
+  video: { label: "Web-Video", desc: "YouTube / Vimeo Link", accent: "#E11D48", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: Film },
+  timer: { label: "Timer", desc: "Countdown Start", accent: "#8B5CF6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: Clock },
+  breathing: { label: "Atemübung", desc: "4-4-4 Rhythmus", accent: "#137386", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))", icon: Wind },
 };
 
 function getMeta(type: string) {
@@ -89,7 +89,7 @@ function ScaleBlock({ block, value, onChange, disabled }: { block: ExerciseBlock
   return (
     <div>
       {block.content && <p className="text-foreground font-semibold mb-4 text-center leading-relaxed">{block.content}</p>}
-      <div className="flex justify-between text-xs font-semibold mb-3 px-1" style={{ color: meta.text }}>
+      <div className="flex justify-between text-xs font-semibold mb-3 px-1 text-muted-foreground">
         <span>{block.minLabel || "Gar nicht"}</span>
         <span>{block.maxLabel || "Sehr stark"}</span>
       </div>
@@ -100,12 +100,14 @@ function ScaleBlock({ block, value, onChange, disabled }: { block: ExerciseBlock
             <button
               key={num}
               onClick={() => !disabled && onChange(String(num))}
-              className="w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-sm transition-all"
+              className={`w-11 h-11 rounded-full flex items-center justify-center font-extrabold text-sm transition-all duration-200 ${
+                selected
+                  ? "text-white shadow-lg scale-110"
+                  : "bg-secondary text-foreground border border-border hover:scale-105"
+              }`}
               style={{
-                backgroundColor: selected ? meta.accent : meta.bg,
-                color: selected ? "#fff" : meta.text,
-                border: `1.5px solid ${selected ? meta.accent : meta.border}`,
-                boxShadow: selected ? `0 2px 8px ${meta.accent}40` : "none",
+                backgroundColor: selected ? meta.accent : undefined,
+                boxShadow: selected ? `0 4px 12px ${meta.accent}40` : undefined,
               }}
             >
               {num}
@@ -134,11 +136,13 @@ function ChoiceBlock({ block, value, onChange, disabled }: { block: ExerciseBloc
             <button
               key={i}
               onClick={() => !disabled && onChange(opt)}
-              className="w-full text-left px-4 py-4 rounded-2xl font-medium flex items-center gap-3.5 transition-all"
+              className={`w-full text-left px-4 py-4 rounded-2xl font-medium flex items-center gap-3.5 transition-all duration-200 ${
+                selected ? "shadow-md" : "bg-secondary border border-border hover:border-primary/30"
+              }`}
               style={{
-                backgroundColor: selected ? meta.bg : "hsl(var(--secondary))",
-                border: `1.5px solid ${selected ? meta.accent : "hsl(var(--border))"}`,
-                boxShadow: selected ? `0 2px 8px ${meta.accent}20` : "none",
+                backgroundColor: selected ? `${meta.accent}15` : undefined,
+                borderColor: selected ? meta.accent : undefined,
+                border: selected ? `2px solid ${meta.accent}` : undefined,
               }}
             >
               <div
@@ -150,7 +154,7 @@ function ChoiceBlock({ block, value, onChange, disabled }: { block: ExerciseBloc
               >
                 {selected && <div className="w-2 h-2 rounded-full bg-white" />}
               </div>
-              <span style={{ color: selected ? meta.text : "hsl(var(--foreground))", fontWeight: selected ? 700 : 500 }}>
+              <span className={`${selected ? "font-bold" : "font-medium"} text-foreground`}>
                 {opt}
               </span>
             </button>
@@ -180,10 +184,12 @@ function ChecklistBlock({ block, value, onChange, disabled }: { block: ExerciseB
             <button
               key={i}
               onClick={() => toggle(opt)}
-              className="w-full text-left px-4 py-4 rounded-2xl font-medium flex items-center gap-3.5 transition-all"
+              className={`w-full text-left px-4 py-4 rounded-2xl font-medium flex items-center gap-3.5 transition-all duration-200 ${
+                isChecked ? "shadow-sm" : "bg-secondary border border-border hover:border-primary/30"
+              }`}
               style={{
-                backgroundColor: isChecked ? meta.bg : "hsl(var(--secondary))",
-                border: `1.5px solid ${isChecked ? meta.accent : "hsl(var(--border))"}`,
+                backgroundColor: isChecked ? `${meta.accent}12` : undefined,
+                border: isChecked ? `2px solid ${meta.accent}` : undefined,
               }}
             >
               <div
@@ -196,7 +202,7 @@ function ChecklistBlock({ block, value, onChange, disabled }: { block: ExerciseB
               >
                 ✓
               </div>
-              <span style={{ color: isChecked ? meta.text : "hsl(var(--foreground))", fontWeight: isChecked ? 700 : 500 }}>
+              <span className={`${isChecked ? "font-bold" : "font-medium"} text-foreground`}>
                 {opt}
               </span>
             </button>
@@ -219,12 +225,11 @@ const ABC_FIELDS = [
 ];
 
 function HomeworkBlock({ block, answers, onAnswerChange, disabled }: { block: ExerciseBlock; answers: Answers; onAnswerChange: (k: string, v: string) => void; disabled?: boolean }) {
-  const meta = getMeta("homework");
   return (
     <div>
       {block.content && <p className="text-foreground font-medium mb-4 leading-relaxed">{block.content}</p>}
-      <div className="rounded-2xl p-4 border" style={{ backgroundColor: meta.bg, borderColor: meta.border }}>
-        <p className="text-sm font-extrabold mb-3" style={{ color: meta.text }}>📝 ABC-Protokoll</p>
+      <div className="rounded-2xl p-4 bg-secondary border border-border">
+        <p className="text-sm font-extrabold text-foreground mb-3">📝 ABC-Protokoll</p>
         {ABC_FIELDS.map((field) => (
           <div key={field.key} className="mb-3">
             <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{field.label}</label>
@@ -234,7 +239,7 @@ function HomeworkBlock({ block, answers, onAnswerChange, disabled }: { block: Ex
               onChange={(e) => onAnswerChange(`${block.id}_${field.key}`, e.target.value)}
               rows={3}
               disabled={disabled}
-              className="w-full bg-white rounded-2xl border border-border p-3 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 text-sm"
+              className="w-full bg-background rounded-2xl border border-border p-3 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60 text-sm"
             />
           </div>
         ))}
@@ -250,9 +255,9 @@ function GratitudeBlock({ block, answers, onAnswerChange, disabled }: { block: E
       {block.content && <p className="text-foreground font-medium mb-4 leading-relaxed">{block.content}</p>}
       <div className="flex gap-3 mb-4">
         {["1.", "2.", "3."].map((n) => (
-          <div key={n} className="flex-1 rounded-2xl border py-5 flex flex-col items-center" style={{ backgroundColor: meta.bg, borderColor: meta.border }}>
+          <div key={n} className="flex-1 rounded-2xl border border-border py-5 flex flex-col items-center bg-secondary">
             <span className="text-2xl">🙏</span>
-            <span className="text-sm font-extrabold mt-1" style={{ color: meta.text }}>{n}</span>
+            <span className="text-sm font-extrabold mt-1" style={{ color: meta.accent }}>{n}</span>
           </div>
         ))}
       </div>
@@ -308,7 +313,7 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
     <div className="flex flex-col items-center py-6">
       {block.content && <p className="text-muted-foreground text-center mb-4 text-sm">{block.content}</p>}
       {currentPhase && (
-        <p className="text-xl font-bold mb-3" style={{ color: isBreathing ? "#0D9488" : "hsl(var(--primary))" }}>
+        <p className="text-xl font-bold mb-3 text-primary animate-fade-in">
           {currentPhase}
         </p>
       )}
@@ -316,10 +321,12 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
         <p className="text-xs text-muted-foreground mb-3">4-4-4 Atemrhythmus</p>
       )}
       <div
-        className="w-44 h-44 rounded-full flex flex-col items-center justify-center mb-6 transition-all duration-300"
+        className={`w-44 h-44 rounded-full flex flex-col items-center justify-center mb-6 transition-all duration-500 ${
+          running ? "animate-pulse-glow" : ""
+        }`}
         style={{
-          backgroundColor: running ? (isBreathing ? "#14B8A6" : "#2C3E50") : (isBreathing ? "#F0FDFA" : "hsl(var(--secondary))"),
-          border: running ? "none" : `10px solid ${isBreathing ? "#99F6E4" : "hsl(var(--border))"}`,
+          backgroundColor: running ? (isBreathing ? "#14B8A6" : "hsl(var(--primary))") : "hsl(var(--secondary))",
+          border: running ? "none" : "10px solid hsl(var(--border))",
         }}
       >
         <span className={`text-4xl font-extrabold ${running ? "text-white" : "text-foreground"}`}>
@@ -329,8 +336,8 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
       </div>
       <button
         onClick={toggle}
-        className="px-12 py-3.5 rounded-full text-white font-extrabold text-base transition-all"
-        style={{ backgroundColor: running ? "#EF4444" : (isBreathing ? "#14B8A6" : "#2C3E50") }}
+        className="px-12 py-3.5 rounded-full text-white font-extrabold text-base transition-all hover:scale-105 active:scale-95"
+        style={{ backgroundColor: running ? "hsl(var(--destructive))" : (isBreathing ? "#14B8A6" : "hsl(var(--primary))") }}
       >
         {running ? "⏸ Stop" : "▶ Starten"}
       </button>
@@ -423,10 +430,8 @@ export default function Exercise() {
     if (!id) return;
     (async () => {
       try {
-        // Try global exercises collection first (therapist-assigned)
         let snap = await getDoc(doc(db, "exercises", id));
         if (!snap.exists() && profile?.id) {
-          // Fallback: user-scoped exercises
           snap = await getDoc(doc(db, "users", profile.id, "exercises", id));
         }
         if (snap.exists()) {
@@ -453,7 +458,6 @@ export default function Exercise() {
       const cleanAnswers: Record<string, string> = {};
       Object.entries(answers).forEach(([k, v]) => { if (v != null) cleanAnswers[k] = v; });
 
-      // Try global collection first
       try {
         await updateDoc(doc(db, "exercises", id), {
           completed: true,
@@ -462,7 +466,6 @@ export default function Exercise() {
           lastCompletedAt: new Date().toISOString(),
         });
       } catch {
-        // Fallback to user-scoped
         if (profile?.id) {
           await updateDoc(doc(db, "users", profile.id, "exercises", id), {
             completed: true,
@@ -491,11 +494,11 @@ export default function Exercise() {
   if (!exercise) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center">
+        <div className="text-center animate-fade-in">
           <p className="text-5xl mb-4">🔒</p>
           <h2 className="text-xl font-extrabold text-foreground mb-2">Übung nicht gefunden</h2>
           <p className="text-muted-foreground text-sm mb-6">Diese Übung konnte nicht geladen werden.</p>
-          <button onClick={() => navigate("/")} className="bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-bold">
+          <button onClick={() => navigate("/")} className="bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-bold hover:opacity-90 transition-opacity">
             Zurück
           </button>
         </div>
@@ -506,15 +509,15 @@ export default function Exercise() {
   if (saved) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
-        <div className="text-center max-w-md animate-in fade-in">
-          <div className="w-28 h-28 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center mx-auto mb-8">
+        <div className="text-center max-w-md animate-fade-in">
+          <div className="w-28 h-28 rounded-full bg-success/10 border-2 border-success/30 flex items-center justify-center mx-auto mb-8 animate-bounce-in">
             <CheckCircle size={56} className="text-success" />
           </div>
           <h2 className="text-3xl font-black text-foreground mb-3">Super! 🎉</h2>
           <p className="text-muted-foreground font-medium mb-10">Du hast die Übung erfolgreich abgeschlossen.</p>
           <button
             onClick={() => navigate("/")}
-            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/20"
+            className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-transform"
           >
             Zurück zum Dashboard
           </button>
@@ -523,19 +526,19 @@ export default function Exercise() {
     );
   }
 
-  const themeColor = exercise.themeColor || "#137386";
+  const themeColor = exercise.themeColor || "hsl(var(--primary))";
 
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <div
-        className="rounded-b-[2rem] px-5 pt-14 pb-8"
+        className="rounded-b-[2rem] px-5 pt-14 pb-8 transition-all duration-500"
         style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}CC)` }}
       >
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto animate-fade-in">
           <button
             onClick={() => navigate(-1)}
-            className="text-white/80 hover:text-white font-bold text-sm bg-white/20 px-4 py-2 rounded-xl mb-5 inline-flex items-center gap-1"
+            className="text-white/80 hover:text-white font-bold text-sm bg-white/20 px-4 py-2 rounded-xl mb-5 inline-flex items-center gap-1 hover:bg-white/30 transition-all"
           >
             <ArrowLeft size={16} /> Zurück
           </button>
@@ -556,19 +559,16 @@ export default function Exercise() {
           return (
             <div
               key={block.id}
-              className="rounded-[1.75rem] overflow-hidden border shadow-sm"
-              style={{ borderColor: meta.border, backgroundColor: "#FFFFFF" }}
+              className="rounded-[1.75rem] overflow-hidden border border-border shadow-sm bg-card animate-slide-up"
+              style={{ animationDelay: `${idx * 80}ms` }}
             >
               {/* Drag handle */}
-              <div className="flex justify-center pt-2 pb-1" style={{ backgroundColor: meta.bg }}>
-                <div className="w-12 h-1 rounded-full" style={{ backgroundColor: meta.text, opacity: 0.12 }} />
+              <div className="flex justify-center pt-2 pb-1 bg-secondary">
+                <div className="w-12 h-1 rounded-full bg-border" />
               </div>
 
               {/* Card Header */}
-              <div
-                className="flex items-center px-6 py-4 border-b"
-                style={{ backgroundColor: meta.bg, borderColor: meta.border }}
-              >
+              <div className="flex items-center px-6 py-4 border-b border-border bg-secondary">
                 <div
                   className="w-11 h-11 rounded-[0.875rem] flex items-center justify-center shrink-0 mr-3.5"
                   style={{ backgroundColor: meta.accent, boxShadow: `0 4px 12px ${meta.accent}40` }}
@@ -576,8 +576,8 @@ export default function Exercise() {
                   <Icon size={20} color="#fff" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] font-extrabold" style={{ color: meta.text }}>{meta.label}</p>
-                  <p className="text-xs font-semibold opacity-70" style={{ color: meta.text }}>{meta.desc}</p>
+                  <p className="text-[17px] font-extrabold text-foreground">{meta.label}</p>
+                  <p className="text-xs font-semibold text-muted-foreground">{meta.desc}</p>
                 </div>
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center border-[1.5px] text-xs font-black"
@@ -588,7 +588,7 @@ export default function Exercise() {
               </div>
 
               {/* Card Body */}
-              <div className="p-6 bg-white">
+              <div className="p-6 bg-card">
                 <BlockRenderer
                   block={block}
                   answers={answers}
@@ -602,7 +602,7 @@ export default function Exercise() {
 
         {/* Sharing toggle */}
         {!exercise.completed && (
-          <div className="bg-card rounded-3xl border border-border p-5 shadow-sm">
+          <div className="bg-card rounded-3xl border border-border p-5 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between">
               <div className="flex-1 pr-4">
                 <p className="font-bold text-foreground">Antworten teilen</p>
@@ -614,13 +614,13 @@ export default function Exercise() {
               </div>
               <button
                 onClick={() => setSharedAnswers(!sharedAnswers)}
-                className="w-14 h-14 rounded-full flex items-center justify-center transition-all"
-                style={{
-                  backgroundColor: sharedAnswers ? "#DBEAFE" : "hsl(var(--secondary))",
-                  border: sharedAnswers ? "2px solid #3B82F6" : "1px solid hsl(var(--border))",
-                }}
+                className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 ${
+                  sharedAnswers
+                    ? "bg-primary/15 border-2 border-primary"
+                    : "bg-secondary border border-border"
+                }`}
               >
-                {sharedAnswers ? <Unlock size={22} color="#3B82F6" /> : <Lock size={22} color="#9CA3AF" />}
+                {sharedAnswers ? <Unlock size={22} className="text-primary" /> : <Lock size={22} className="text-muted-foreground" />}
               </button>
             </div>
           </div>
@@ -631,14 +631,18 @@ export default function Exercise() {
           <button
             onClick={handleComplete}
             disabled={saving || exercise.completed}
-            className="w-full py-4 rounded-2xl font-black text-lg transition-all disabled:opacity-50"
-            style={{
-              backgroundColor: exercise.completed ? "#E5E7EB" : "#137386",
-              color: exercise.completed ? "#9CA3AF" : "white",
-              boxShadow: exercise.completed ? "none" : "0 8px 24px rgba(19,115,134,0.25)",
-            }}
+            className={`w-full py-4 rounded-2xl font-black text-lg transition-all duration-300 disabled:opacity-50 hover:scale-[1.02] active:scale-[0.98] ${
+              exercise.completed
+                ? "bg-muted text-muted-foreground"
+                : "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
+            }`}
           >
-            {saving ? "Speichern..." : exercise.completed ? "Bereits abgeschlossen" : "Übung abschließen ✓"}
+            {saving ? (
+              <span className="inline-flex items-center gap-2">
+                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Speichern...
+              </span>
+            ) : exercise.completed ? "Bereits abgeschlossen" : "Übung abschließen ✓"}
           </button>
         </div>
 
