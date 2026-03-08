@@ -621,15 +621,78 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
                   className="w-full bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
               </div>
             </div>
-            {/* Preview */}
-            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
-              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-foreground">{block.progressLabel || "Fortschritt"}</span>
-                <span className="text-xs font-extrabold" style={{ color: cat.accent }}>0 / {block.progressMax || 100}</span>
-              </div>
-              <div className="h-4 bg-muted rounded-full overflow-hidden">
-                <motion.div className="h-full rounded-full" style={{ backgroundColor: cat.accent, width: "35%" }} initial={{ width: 0 }} animate={{ width: "35%" }} transition={{ duration: 0.8 }} />
+            {/* Premium Animated Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-5 mt-3">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-4 text-center">Vorschau</p>
+              {/* Circular gauge */}
+              <div className="flex items-center gap-6">
+                <svg width={120} height={120} className="shrink-0">
+                  <defs>
+                    <linearGradient id={`prog-grad-${block.id}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor={cat.accent} />
+                      <stop offset="100%" stopColor={cat.accent} stopOpacity={0.5} />
+                    </linearGradient>
+                    <filter id={`prog-glow-${block.id}`}>
+                      <feGaussianBlur stdDeviation="3" result="blur" />
+                      <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
+                  {/* Background track */}
+                  <circle cx={60} cy={60} r={48} fill="none" stroke="hsl(var(--border))" strokeWidth={8} />
+                  {/* Animated arc */}
+                  <motion.circle cx={60} cy={60} r={48} fill="none"
+                    stroke={`url(#prog-grad-${block.id})`} strokeWidth={8}
+                    strokeLinecap="round" strokeDasharray={2 * Math.PI * 48}
+                    filter={`url(#prog-glow-${block.id})`}
+                    style={{ transformOrigin: "60px 60px", rotate: "-90deg" }}
+                    initial={{ strokeDashoffset: 2 * Math.PI * 48 }}
+                    animate={{ strokeDashoffset: 2 * Math.PI * 48 * 0.65 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                  />
+                  {/* Center text */}
+                  <motion.text x={60} y={56} textAnchor="middle" fontSize={22} fontWeight="900" fill={cat.accent}
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.8 }}>
+                    35%
+                  </motion.text>
+                  <text x={60} y={72} textAnchor="middle" fontSize={9} fontWeight="600" fill="hsl(var(--muted-foreground))">
+                    abgeschlossen
+                  </text>
+                </svg>
+                <div className="flex-1 space-y-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-black text-foreground">{block.progressLabel || "Fortschritt"}</span>
+                      <motion.span className="text-sm font-extrabold" style={{ color: cat.accent }}
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
+                        35 / {block.progressMax || 100}
+                      </motion.span>
+                    </div>
+                    <div className="h-3 bg-muted rounded-full overflow-hidden relative">
+                      <motion.div className="h-full rounded-full relative"
+                        style={{ background: `linear-gradient(90deg, ${cat.accent}, ${cat.accent}AA)` }}
+                        initial={{ width: 0 }} animate={{ width: "35%" }} transition={{ duration: 1.2, ease: "easeOut" }}>
+                        <motion.div className="absolute inset-0 rounded-full"
+                          style={{ background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)` }}
+                          animate={{ x: ["-100%", "200%"] }}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 1, ease: "easeInOut" }} />
+                      </motion.div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {["Mo", "Di", "Mi", "Do", "Fr"].map((d, i) => (
+                      <motion.div key={d} className="flex-1 text-center"
+                        initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.08 }}>
+                        <div className="h-8 rounded-lg mb-1 relative overflow-hidden" style={{ backgroundColor: `${cat.accent}15` }}>
+                          <motion.div className="absolute bottom-0 left-0 right-0 rounded-lg"
+                            style={{ backgroundColor: cat.accent, opacity: 0.6 }}
+                            initial={{ height: 0 }} animate={{ height: `${[60, 80, 45, 90, 30][i]}%` }}
+                            transition={{ delay: 0.6 + i * 0.1, duration: 0.8, ease: "easeOut" }} />
+                        </div>
+                        <span className="text-[9px] font-bold text-muted-foreground">{d}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </>
