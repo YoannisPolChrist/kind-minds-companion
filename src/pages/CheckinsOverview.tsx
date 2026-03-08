@@ -116,10 +116,10 @@ export default function CheckinsOverview() {
   const analytics = useMemo(() => {
     if (checkins.length === 0) return null;
 
-    const moods = checkins.map((c) => c.mood);
-    const avg = moods.reduce((a, b) => a + b, 0) / moods.length;
-    const min = Math.min(...moods);
-    const max = Math.max(...moods);
+    const moodValues = checkins.map((c) => normalizeMoodTo100(c.mood));
+    const avg = moodValues.reduce((a, b) => a + b, 0) / moodValues.length;
+    const min = Math.min(...moodValues);
+    const max = Math.max(...moodValues);
 
     // Trend: compare last 3 to previous 3
     let trend: "up" | "down" | "stable" = "stable";
