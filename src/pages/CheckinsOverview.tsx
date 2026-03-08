@@ -248,7 +248,7 @@ export default function CheckinsOverview() {
 
                 {/* Mood Chart */}
                 {chartData.length > 1 && (
-                  <div className="bg-[hsl(var(--card-dark,222_47%_11%))] rounded-3xl p-6 shadow-lg">
+                  <div className="bg-[hsl(var(--card-dark,222_47%_11%))] rounded-3xl p-6 shadow-lg animate-slide-up" style={{ animationDelay: "100ms" }}>
                     <h3 className="text-xs font-bold text-white/40 uppercase tracking-widest mb-1">
                       Stimmungsverlauf
                     </h3>
