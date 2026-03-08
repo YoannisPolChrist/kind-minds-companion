@@ -559,7 +559,7 @@ export default function Exercise() {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-5 py-6 space-y-5">
+      <StaggerContainer className="max-w-2xl mx-auto px-5 py-6 space-y-5">
         {(exercise.blocks || []).map((block, idx) => {
           const meta = getMeta(block.type);
           const Icon = meta.icon;
