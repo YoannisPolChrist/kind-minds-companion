@@ -565,24 +565,46 @@ export default function TherapistResources() {
         />
       )}
 
-      {/* Header */}
-      <motion.div
-        className="rounded-b-[2rem] overflow-hidden"
-        style={{ background: "linear-gradient(135deg, hsl(var(--primary-dark)), hsl(var(--primary)))" }}
-        initial={{ opacity: 0, y: -40 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-      >
-        <div className="max-w-3xl mx-auto px-6 pt-14 pb-6 flex items-center justify-between">
-          <button
-            onClick={() => navigate("/therapist")}
-            className="flex items-center gap-2 bg-white/[0.12] hover:bg-white/[0.2] border border-white/[0.15] px-4 py-2.5 rounded-[20px] text-white/90 text-sm font-bold transition-colors"
-          >
-            <ArrowLeft size={16} /> Zurück
-          </button>
-          <h1 className="text-xl font-black text-white">Bibliothek</h1>
+      {/* Header – matching TherapistDashboard / Templates style */}
+      <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl shadow-primary/15 relative overflow-hidden">
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-soft-light" />
+        <HeaderOrbs />
+        <div className="max-w-3xl mx-auto px-6 pt-12 pb-8 relative z-10">
+          <div className="flex items-center justify-between mb-5">
+            <motion.button
+              onClick={() => navigate("/therapist")}
+              className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-4 py-2.5 rounded-2xl text-sm font-bold"
+              whileHover={{ x: -3 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowLeft size={16} /> Zurück
+            </motion.button>
+            <PressableScale onClick={() => setAddModalOpen(true)}>
+              <div className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-2xl text-sm font-bold transition-colors">
+                <PlusCircle size={16} /> Hinzufügen
+              </div>
+            </PressableScale>
+          </div>
+          <h1 className="text-3xl font-black tracking-tight">Bibliothek</h1>
+          <p className="text-white/70 text-sm font-medium mt-1">Ressourcen & Materialien für deine Klienten verwalten.</p>
+
+          {/* Search in header */}
+          <div className="mt-6 relative">
+            <Search size={18} className="absolute left-5 top-1/2 -translate-y-1/2 text-white/50" />
+            <input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Bibliothek durchsuchen..."
+              className="w-full pl-12 pr-10 py-4 bg-white/15 border border-white/25 rounded-2xl text-white font-bold placeholder-white/50 focus:outline-none text-lg"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/15 p-1.5 rounded-lg">
+                <X size={16} className="text-white/80" />
+              </button>
+            )}
+          </div>
         </div>
-      </motion.div>
+      </div>
 
       <div className="max-w-3xl mx-auto px-6 py-6">
         {/* Search + Add */}
