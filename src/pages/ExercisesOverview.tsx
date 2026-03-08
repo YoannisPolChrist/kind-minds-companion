@@ -6,7 +6,6 @@ import { useAuth } from "../hooks/useAuth";
 import { ArrowLeft, BookOpen, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../components/motion";
-import { GlowCard } from "../components/motion/GlowCard";
 
 const HEADER_IMAGES = [
   "/images/HomeUi1.webp",
@@ -111,11 +110,11 @@ export default function ExercisesOverview() {
                   </h2>
                   <div className="space-y-3">
                     {open.map((ex) => (
-                      <GlowCard
+                      <TiltCard
                         key={ex.id}
                         className="bg-card rounded-2xl border border-border p-5 cursor-pointer shadow-sm hover:border-primary/30 transition-colors"
                         onClick={() => navigate(`/exercise/${ex.id}`)}
-                        glowColor={ex.themeColor || "hsl(var(--primary))"}
+                        maxTilt={4}
                       >
                         <div className="flex items-center gap-4">
                           <div
@@ -134,7 +133,7 @@ export default function ExercisesOverview() {
                           </div>
                           <span className="text-sm font-bold text-primary">Start →</span>
                         </div>
-                      </GlowCard>
+                      </TiltCard>
                     ))}
                   </div>
                 </section>

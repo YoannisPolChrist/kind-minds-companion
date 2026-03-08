@@ -13,8 +13,6 @@ import {
   PageTransition, StaggerContainer, StaggerItem,
   TiltCard, PressableScale,
 } from "../components/motion";
-import { CountUp } from "../components/motion/CountUp";
-import { GlowCard } from "../components/motion/GlowCard";
 import { SkeletonCard, SkeletonMetrics } from "../components/ui/Skeleton";
 
 // ─── Background Images ───────────────────────────────────────────────────────
@@ -376,18 +374,22 @@ export default function Dashboard() {
               { label: "Offen", value: openExercises.length, cls: "text-accent" },
               { label: "Erledigt", value: completedExercises.length, cls: "text-success" },
             ].map((s, i) => (
-              <GlowCard
+              <motion.div
                 key={s.label}
                 className="bg-card rounded-2xl border border-border p-4 text-center shadow-sm"
-                glowColor={i === 0 ? "hsl(var(--primary))" : i === 1 ? "hsl(var(--accent))" : "hsl(var(--success))"}
+                whileHover={{ y: -3, scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
               >
-                <CountUp
-                  to={s.value}
-                  className={`text-3xl font-black block ${s.cls}`}
-                  duration={1.5}
-                />
+                <motion.p
+                  className={`text-3xl font-black ${s.cls}`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.3 + i * 0.1, type: "spring", damping: 10, stiffness: 200 }}
+                >
+                  {s.value}
+                </motion.p>
                 <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mt-1">{s.label}</p>
-              </GlowCard>
+              </motion.div>
             ))}
           </motion.div>
         )}

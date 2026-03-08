@@ -12,8 +12,6 @@ import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
   TiltCard, PressableScale,
 } from "../../components/motion";
-import { CountUp } from "../../components/motion/CountUp";
-import { GlowCard } from "../../components/motion/GlowCard";
 import { Toast, BannerToast } from "../../components/ui/Toast";
 import { SkeletonCard, SkeletonMetrics } from "../../components/ui/Skeleton";
 import { Badge } from "../../components/ui/Badge";
@@ -189,7 +187,7 @@ export default function TherapistDashboard() {
                 transition={{ delay: 0.1 + i * 0.06, type: "spring", damping: 18 }}
               >
                 <s.icon size={18} className="mx-auto mb-1 text-white/70" />
-                <CountUp to={s.value} className="text-2xl font-black text-white block" duration={1.5} />
+                <p className="text-2xl font-black text-white">{s.value}</p>
                 <p className="text-xs font-bold text-white/50 uppercase">{s.label}</p>
               </motion.div>
             ))}
