@@ -35,6 +35,12 @@ interface ExerciseBlock {
   videoUrl?: string;
   mediaSize?: "small" | "medium" | "large";
   mediaType?: "image" | "video";
+  progressLabel?: string;
+  progressMax?: number;
+  moodOptions?: string[];
+  tableColumns?: string[];
+  tableRows?: number;
+  sliders?: { label: string; min: number; max: number; step: number }[];
 }
 
 interface ExerciseData {
