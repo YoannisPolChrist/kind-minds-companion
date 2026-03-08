@@ -3,6 +3,7 @@ import { useAuth } from "./hooks/useAuth";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Checkin from "./pages/Checkin";
+import CheckinsOverview from "./pages/CheckinsOverview";
 import Exercise from "./pages/Exercise";
 import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
@@ -34,6 +35,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/checkins"
+        element={
+          <ProtectedRoute>
+            <CheckinsOverview />
           </ProtectedRoute>
         }
       />

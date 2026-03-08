@@ -148,10 +148,18 @@ export default function Dashboard() {
 
         {/* Recent Mood Chart */}
         {checkins.length > 1 && (
-          <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-            <h3 className="text-xs font-bold text-text-subtle uppercase tracking-wider mb-4">
-              Stimmungsverlauf (letzte 7 Tage)
-            </h3>
+          <Link
+            to="/checkins"
+            className="block bg-card rounded-3xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow group"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-bold text-text-subtle uppercase tracking-wider">
+                Stimmungsverlauf (letzte 7 Tage)
+              </h3>
+              <span className="text-xs font-bold text-primary group-hover:translate-x-0.5 transition-transform">
+                Alle ansehen →
+              </span>
+            </div>
             <div className="flex items-end gap-2 h-24">
               {[...checkins].reverse().map((ci) => (
                 <div key={ci.id} className="flex-1 flex flex-col items-center gap-1">
@@ -166,7 +174,7 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
-          </div>
+          </Link>
         )}
 
         {/* Stats row */}
