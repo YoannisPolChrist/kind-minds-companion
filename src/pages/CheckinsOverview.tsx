@@ -284,9 +284,9 @@ export default function CheckinsOverview() {
                       </h3>
                       <div className="flex items-baseline gap-2 mb-6">
                         <span className="text-4xl font-black text-white tracking-tight">
-                          {chartData[chartData.length - 1]?.mood}
+                          {normalizeMoodTo100(chartData[chartData.length - 1]?.mood)}
                         </span>
-                        <span className="text-sm font-bold text-white/25">/10</span>
+                        <span className="text-sm font-bold text-white/25">/100</span>
                         <span className="text-lg ml-1">
                           {getEmotion(chartData[chartData.length - 1]?.mood, (chartData[chartData.length - 1] as any)?.emotionId).emoji}
                         </span>
