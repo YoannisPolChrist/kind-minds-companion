@@ -39,9 +39,11 @@ const CLIP_PATHS = [
 export default function TherapistDashboardTiles({
   onNavigate,
   onOpenSettings,
+  therapistName,
 }: {
   onNavigate: (path: string) => void;
   onOpenSettings: () => void;
+  therapistName?: string;
 }) {
   const [hovered, setHovered] = useState<number | null>(null);
 
