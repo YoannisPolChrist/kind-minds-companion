@@ -210,6 +210,7 @@ export default function TherapistClientDetail() {
         if (cSnap.exists()) {
           const cData = { id: cSnap.id, ...cSnap.data() };
           setClient(cData);
+          setClientLang((cData as any).language || "de");
           if ((cData as any).nextAppointment) {
             const d = new Date((cData as any).nextAppointment);
             if (!isNaN(d.getTime())) {
