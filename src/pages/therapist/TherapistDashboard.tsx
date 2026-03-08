@@ -25,8 +25,9 @@ interface QuickStat {
 
 interface RecentActivity {
   id: string;
-  type: "exercise" | "checkin";
+  type: "exercise" | "checkin" | "note";
   clientName: string;
+  clientId?: string;
   title: string;
   date: string;
 }
