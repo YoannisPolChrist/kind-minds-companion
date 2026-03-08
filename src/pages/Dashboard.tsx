@@ -499,7 +499,7 @@ export default function Dashboard() {
           />
         </div>
 
-        {/* Open Exercises – right after Session Notes */}
+        {/* Open Exercises */}
         {openExercises.length > 0 && (
           <section>
             <motion.h2
@@ -508,7 +508,7 @@ export default function Dashboard() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.2 }}
             >
-              📋 Offene Aufgaben
+              🎯 Offene Aufgaben
               <span className="text-sm font-bold text-accent bg-accent/10 px-2.5 py-1 rounded-xl">{openExercises.length}</span>
             </motion.h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -526,41 +526,7 @@ export default function Dashboard() {
           </section>
         )}
 
-        {/* Completed Exercises */}
-        {completedExercises.length > 0 && (
-          <section>
-            <div className="flex items-center gap-4 my-4">
-              <div className="h-px flex-1 bg-border" />
-              <span className="text-xs font-extrabold text-muted-foreground uppercase tracking-widest">Erledigt</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {completedExercises.map((ex, idx) => (
-                <motion.div
-                  key={ex.id}
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 + idx * 0.05 }}
-                >
-                  <Link
-                    to={`/exercise/${ex.id}`}
-                    className="block bg-card rounded-3xl border border-border p-5 opacity-70 hover:opacity-100 transition-all"
-                  >
-                    <div className="flex items-center gap-3">
-                      <CheckCircle size={18} className="text-success shrink-0" />
-                      <span className="font-bold text-foreground truncate">{ex.title}</span>
-                      <span className="ml-auto text-xs text-muted-foreground font-medium whitespace-nowrap">
-                        ✓ Erledigt
-                      </span>
-                    </div>
-                  </Link>
-                </motion.div>
-              ))}
-            </div>
-          </section>
-        )}
-
-        {/* Empty state when no exercises at all */}
+        {/* Empty state */}
         {exercises.length === 0 && (
           <motion.div
             className="bg-card rounded-3xl border border-border p-8 text-center"
@@ -580,18 +546,17 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Quick links row */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Quick links – Übungen, Verlauf, Einstellungen */}
+        <div className="grid grid-cols-3 gap-3">
           {[
-            { to: "/checkins", icon: BarChart3, label: "Tagebuch" },
-            { to: "/exercises", icon: BookOpen, label: "Übungen" },
-            { to: "/history", icon: History, label: "Verlauf" },
-            { to: "/settings", icon: Settings, label: "Einstellungen" },
-          ].map(({ to, icon: Icon, label }) => (
+            { to: "/exercises", icon: BookOpen, label: "Übungen", emoji: "📚" },
+            { to: "/history", icon: History, label: "Verlauf", emoji: "📊" },
+            { to: "/settings", icon: Settings, label: "Settings", emoji: "⚙️" },
+          ].map(({ to, icon: Icon, label, emoji }) => (
             <PressableScale key={to} onClick={() => navigate(to)}>
-              <div className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:border-primary/30 transition-colors">
-                <Icon size={18} className="text-primary shrink-0" />
-                <span className="font-bold text-sm text-foreground">{label}</span>
+              <div className="bg-card rounded-2xl border border-border p-4 flex flex-col items-center gap-2 shadow-sm hover:border-primary/30 transition-colors">
+                <span className="text-xl">{emoji}</span>
+                <span className="font-bold text-xs text-foreground">{label}</span>
               </div>
             </PressableScale>
           ))}
