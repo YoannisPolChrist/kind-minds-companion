@@ -430,183 +430,41 @@ export default function Dashboard() {
           </motion.div>
         )}
 
-        {/* Dual Check-in Banners: Morning + Evening */}
-        <motion.div
-          className="space-y-3"
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-        >
-          {/* Morning Slot */}
-          {checkedInMorning ? (
-            <div
-              className="rounded-2xl p-4 flex items-center gap-4 border cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, hsl(160 84% 39% / 0.06), hsl(160 84% 39% / 0.02))",
-                borderColor: "hsl(160 84% 39% / 0.2)",
-              }}
-              onClick={() => navigate("/checkins")}
-            >
-              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(160 84% 39% / 0.12)" }}>
-                <CheckCircle size={22} className="text-success" />
-              </div>
-              <div className="flex-1">
-                <p className="font-black text-foreground text-sm">Morgen-Check-in ✓</p>
-                <p className="text-success text-xs font-bold">00:00 – 12:00 Uhr erledigt</p>
-              </div>
-            </div>
-          ) : isMorningSlot ? (
-            <PressableScale onClick={() => navigate("/checkin")}>
-              <div
-                className="relative rounded-2xl overflow-hidden p-5 flex items-center justify-between"
-                style={{
-                  background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-dark)))",
-                  boxShadow: "0 8px 24px hsl(var(--primary) / 0.2)",
-                }}
-              >
-                <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-white/5" />
-                <div className="flex items-center gap-4 flex-1 pr-3 relative z-10">
-                  <motion.div
-                    className="w-12 h-12 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
-                    animate={{ scale: [0.9, 1, 0.9] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <span className="text-xl">🌅</span>
-                  </motion.div>
-                  <div>
-                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">00:00 – 12:00</p>
-                    <h3 className="text-lg font-black text-white tracking-tight">Morgen-Check-in</h3>
-                  </div>
-                </div>
-                <motion.div
-                  className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 relative z-10"
-                  animate={{ x: [0, 3, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <ArrowRight size={18} className="text-white" />
-                </motion.div>
-              </div>
-            </PressableScale>
-          ) : (
-            <div className="rounded-2xl p-4 flex items-center gap-4 border border-destructive/20 bg-destructive/5">
-              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-destructive/10">
-                <span className="text-lg">🌅</span>
-              </div>
-              <div className="flex-1">
-                <p className="font-bold text-foreground text-sm">Morgen-Check-in verpasst</p>
-                <p className="text-destructive text-xs font-bold">00:00 – 12:00 Uhr</p>
-              </div>
-            </div>
-          )}
-
-          {/* Evening Slot */}
-          {checkedInEvening ? (
-            <div
-              className="rounded-2xl p-4 flex items-center gap-4 border cursor-pointer"
-              style={{
-                background: "linear-gradient(135deg, hsl(160 84% 39% / 0.06), hsl(160 84% 39% / 0.02))",
-                borderColor: "hsl(160 84% 39% / 0.2)",
-              }}
-              onClick={() => navigate("/checkins")}
-            >
-              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "hsl(160 84% 39% / 0.12)" }}>
-                <CheckCircle size={22} className="text-success" />
-              </div>
-              <div className="flex-1">
-                <p className="font-black text-foreground text-sm">Abend-Check-in ✓</p>
-                <p className="text-success text-xs font-bold">12:00 – 24:00 Uhr erledigt</p>
-              </div>
-            </div>
-          ) : !isMorningSlot ? (
-            <PressableScale onClick={() => navigate("/checkin")}>
-              <div
-                className="relative rounded-2xl overflow-hidden p-5 flex items-center justify-between"
-                style={{
-                  background: "linear-gradient(135deg, hsl(250 60% 35%), hsl(250 60% 25%))",
-                  boxShadow: "0 8px 24px hsl(250 60% 30% / 0.2)",
-                }}
-              >
-                <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-white/5" />
-                <div className="flex items-center gap-4 flex-1 pr-3 relative z-10">
-                  <motion.div
-                    className="w-12 h-12 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
-                    animate={{ scale: [0.9, 1, 0.9] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
-                    <span className="text-xl">🌙</span>
-                  </motion.div>
-                  <div>
-                    <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">12:00 – 24:00</p>
-                    <h3 className="text-lg font-black text-white tracking-tight">Abend-Check-in</h3>
-                  </div>
-                </div>
-                <motion.div
-                  className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 relative z-10"
-                  animate={{ x: [0, 3, 0] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                >
-                  <ArrowRight size={18} className="text-white" />
-                </motion.div>
-              </div>
-            </PressableScale>
-          ) : (
-            <div className="rounded-2xl p-4 flex items-center gap-4 border border-border bg-muted/50">
-              <div className="w-11 h-11 rounded-full flex items-center justify-center shrink-0 bg-muted">
-                <span className="text-lg">🌙</span>
-              </div>
-              <div className="flex-1">
-                <p className="font-bold text-muted-foreground text-sm">Abend-Check-in</p>
-                <p className="text-muted-foreground/60 text-xs font-bold">Ab 12:00 Uhr verfügbar</p>
-              </div>
-            </div>
-          )}
-        </motion.div>
-        {/* Mood Chart */}
-        {checkins.length > 1 && (
+        {/* Check-in Banner – always show simple "Check-in" */}
+        <PressableScale onClick={() => navigate("/checkin")}>
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            className="relative rounded-2xl overflow-hidden p-5 flex items-center justify-between"
+            style={{
+              background: "linear-gradient(135deg, hsl(var(--primary)), hsl(var(--primary-dark)))",
+              boxShadow: "0 8px 24px hsl(var(--primary) / 0.2)",
+            }}
+            initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.12 }}
           >
-            <TiltCard
-              className="bg-card rounded-3xl border border-border p-6 shadow-sm cursor-pointer"
-              onClick={() => navigate("/checkins")}
-              maxTilt={4}
+            <div className="absolute -right-4 -top-4 w-28 h-28 rounded-full bg-white/5" />
+            <div className="flex items-center gap-4 flex-1 pr-3 relative z-10">
+              <motion.div
+                className="w-12 h-12 rounded-full bg-white/15 border border-white/20 flex items-center justify-center shrink-0"
+                animate={{ scale: [0.9, 1, 0.9] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <HeartPulse size={22} className="text-white" />
+              </motion.div>
+              <div>
+                <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest">Tägliches Wohlbefinden</p>
+                <h3 className="text-lg font-black text-white tracking-tight">Check-in</h3>
+              </div>
+            </div>
+            <motion.div
+              className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center shrink-0 relative z-10"
+              animate={{ x: [0, 3, 0] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                  Stimmungsverlauf (letzte 7 Tage)
-                </h3>
-                <span className="text-xs font-bold text-primary">Alle ansehen →</span>
-              </div>
-              <div className="flex items-end gap-2 h-24">
-                {[...checkins].reverse().map((ci, i) => (
-                  <motion.div
-                    key={ci.id}
-                    className="flex-1 flex flex-col items-center gap-1"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + i * 0.06, type: "spring", damping: 16 }}
-                  >
-                    <span className="text-lg">{MOOD_EMOJIS[ci.mood] || "😐"}</span>
-                    <motion.div
-                      className="w-full rounded-lg min-h-[4px]"
-                      initial={{ height: 0 }}
-                      animate={{ height: `${ci.mood * 10}%` }}
-                      transition={{ delay: 0.4 + i * 0.06, duration: 0.6, ease: "easeOut" }}
-                      style={{
-                        background: "linear-gradient(to top, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.3) 100%)",
-                      }}
-                    />
-                    <span className="text-[10px] font-bold text-muted-foreground">
-                      {new Date(ci.date).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" })}
-                    </span>
-                  </motion.div>
-                ))}
-              </div>
-            </TiltCard>
+              <ArrowRight size={18} className="text-white" />
+            </motion.div>
           </motion.div>
-        )}
+        </PressableScale>
 
         {/* Navigation Cards (matching native pattern) */}
         <div className="space-y-3">
