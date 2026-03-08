@@ -20,6 +20,7 @@ import ClientCheckins from "./pages/therapist/ClientCheckins";
 import ClientNotes from "./pages/therapist/ClientNotes";
 import ClientFiles from "./pages/therapist/ClientFiles";
 import TherapistTemplates from "./pages/therapist/TherapistTemplates";
+import ExerciseBuilderPage from "./pages/therapist/ExerciseBuilder";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -70,6 +71,7 @@ export default function App() {
       <Route path="/therapist/client/:id/notes" element={<ProtectedRoute><ClientNotes /></ProtectedRoute>} />
       <Route path="/therapist/client/:id/files" element={<ProtectedRoute><ClientFiles /></ProtectedRoute>} />
       <Route path="/therapist/templates" element={<ProtectedRoute><TherapistTemplates /></ProtectedRoute>} />
+      <Route path="/therapist/template/:id" element={<ProtectedRoute><ExerciseBuilderPage /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />
     </Routes>

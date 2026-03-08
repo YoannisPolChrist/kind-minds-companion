@@ -1,0 +1,575 @@
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../../lib/firebase";
+import { useAuth } from "../../hooks/useAuth";
+import {
+  ArrowLeft, Save, Plus, Trash2, ChevronUp, ChevronDown, Copy,
+  Edit3, Activity, CircleDot, ListChecks, CheckCircle2, Heart,
+  BookOpen, Clock, Wind, Image as ImageIcon, Film, Radar,
+  BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon,
+  Palette, GripVertical, Link as LinkIcon, X,
+} from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale,
+} from "../../components/motion";
+
+// ─── Block Types ──────────────────────────────────────────────────────────────
+
+type BlockType =
+  | "reflection" | "scale" | "choice" | "checklist" | "homework"
+  | "gratitude" | "info" | "timer" | "breathing" | "media" | "video"
+  | "spider_chart" | "bar_chart" | "pie_chart" | "line_chart";
+
+interface Block {
+  id: string;
+  type: BlockType;
+  content: string;
+  duration?: number;
+  options?: string[];
+  minLabel?: string;
+  maxLabel?: string;
+  mediaUri?: string;
+  mediaType?: "image" | "video";
+  mediaSize?: "small" | "medium" | "large";
+  videoUrl?: string;
+}
+
+const CATALOGUE: {
+  type: BlockType; label: string; icon: any; desc: string;
+  accent: string; bg: string; text: string; border: string;
+}[] = [
+  { type: "reflection", label: "Reflektion", icon: Edit3, desc: "Freie Texteingabe", accent: "#3B82F6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "scale", label: "Skala 1–10", icon: Activity, desc: "Numerische Bewertung", accent: "#F59E0B", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "choice", label: "Auswahl", icon: CircleDot, desc: "Einzelauswahl", accent: "#6366F1", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "checklist", label: "Checkliste", icon: ListChecks, desc: "Mehrfachauswahl", accent: "#10B981", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "homework", label: "ABC-Protokoll", icon: CheckCircle2, desc: "Verhaltens-Tagebuch", accent: "#C09D59", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "gratitude", label: "Dankbarkeit", icon: Heart, desc: "Dankbarkeits-Journal", accent: "#EC4899", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "info", label: "Info-Text", icon: BookOpen, desc: "Psychoedukation", accent: "#14B8A6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "media", label: "Foto / Video", icon: ImageIcon, desc: "Medien-Upload", accent: "#F43F5E", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "video", label: "Web-Video", icon: Film, desc: "YouTube / Vimeo Link", accent: "#E11D48", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "timer", label: "Timer", icon: Clock, desc: "Countdown Start", accent: "#8B5CF6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "breathing", label: "Atemübung", icon: Wind, desc: "4-4-4 Rhythmus", accent: "#137386", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "spider_chart", label: "Netzdiagramm", icon: Radar, desc: "Profilanalyse", accent: "#F97316", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "bar_chart", label: "Balkendiagramm", icon: BarChart3, desc: "Wertevergleich", accent: "#0EA5E9", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "pie_chart", label: "Kreisdiagramm", icon: PieChartIcon, desc: "Verteilung", accent: "#8B5CF6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "line_chart", label: "Liniendiagramm", icon: LineChartIcon, desc: "Entwicklung", accent: "#10B981", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+];
+
+const THEME_COLORS = ["#137386", "#3B82F6", "#8B5CF6", "#EC4899", "#F43F5E", "#F59E0B", "#10B981", "#64748B"];
+
+function uid() { return Math.random().toString(36).substring(2, 9); }
+
+function getCat(type: BlockType) { return CATALOGUE.find(c => c.type === type) || CATALOGUE[0]; }
+
+function defaultBlock(type: BlockType): Block {
+  const b: any = { id: uid(), type, content: "" };
+  if (type === "timer" || type === "breathing") b.duration = 120;
+  if (["choice", "checklist", "spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(type)) b.options = ["", ""];
+  if (type === "scale") { b.minLabel = "Gar nicht"; b.maxLabel = "Sehr stark"; }
+  return b as Block;
+}
+
+// ─── Block Form Component ─────────────────────────────────────────────────────
+
+function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, isLast }: {
+  block: Block;
+  onChange: (updates: Partial<Block>) => void;
+  onRemove: () => void;
+  onMove: (dir: "up" | "down") => void;
+  onDuplicate: () => void;
+  isFirst: boolean;
+  isLast: boolean;
+}) {
+  const cat = getCat(block.type);
+  const Icon = cat.icon;
+
+  const addOption = () => onChange({ options: [...(block.options || []), ""] });
+  const removeOption = (i: number) => onChange({ options: (block.options || []).filter((_, idx) => idx !== i) });
+  const updateOption = (i: number, val: string) => {
+    const opts = [...(block.options || [])];
+    opts[i] = val;
+    onChange({ options: opts });
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95, height: 0, marginBottom: 0 }}
+      transition={{ type: "spring", damping: 22, stiffness: 180 }}
+      className="rounded-[1.75rem] overflow-hidden border border-border bg-card shadow-sm"
+    >
+      {/* Drag Handle */}
+      <div className="flex justify-center pt-2 pb-1" style={{ backgroundColor: cat.bg }}>
+        <div className="w-12 h-1 rounded-full opacity-20" style={{ backgroundColor: cat.text }} />
+      </div>
+
+      {/* Header */}
+      <div className="flex items-center px-6 py-4 border-b border-border" style={{ backgroundColor: cat.bg }}>
+        <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 mr-3.5 text-white" style={{ backgroundColor: cat.accent, boxShadow: `0 4px 12px ${cat.accent}40` }}>
+          <Icon size={20} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[17px] font-extrabold text-foreground">{cat.label}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{cat.desc}</p>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => onMove("up")} disabled={isFirst} className="w-8 h-8 rounded-lg bg-background/60 flex items-center justify-center disabled:opacity-30 hover:bg-background transition-colors"><ChevronUp size={16} className="text-foreground" /></button>
+          <button onClick={() => onMove("down")} disabled={isLast} className="w-8 h-8 rounded-lg bg-background/60 flex items-center justify-center disabled:opacity-30 hover:bg-background transition-colors"><ChevronDown size={16} className="text-foreground" /></button>
+          <button onClick={onDuplicate} className="w-8 h-8 rounded-lg bg-background/60 flex items-center justify-center hover:bg-background transition-colors"><Copy size={14} className="text-foreground" /></button>
+          <button onClick={onRemove} className="w-8 h-8 rounded-lg bg-destructive/10 flex items-center justify-center hover:bg-destructive/20 transition-colors"><Trash2 size={14} className="text-destructive" /></button>
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="p-6 space-y-4">
+        {/* REFLECTION / INFO */}
+        {(block.type === "reflection" || block.type === "info") && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+              {block.type === "info" ? "Psychoedukations-Text" : "Aufgabe / Frage an den Klienten"}
+            </label>
+            <textarea
+              value={block.content}
+              onChange={e => onChange({ content: e.target.value })}
+              placeholder={block.type === "info" ? "Erkläre dem Klienten z.B. das ABC-Modell…" : "Was möchtest du reflektieren?"}
+              rows={4}
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </>
+        )}
+
+        {/* SCALE */}
+        {block.type === "scale" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Frage für die Skala</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Wie stark ist deine Anspannung?"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Label 1 (links)</label>
+                <input value={block.minLabel || ""} onChange={e => onChange({ minLabel: e.target.value })} placeholder="Gar nicht"
+                  className="w-full bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Label 10 (rechts)</label>
+                <input value={block.maxLabel || ""} onChange={e => onChange({ maxLabel: e.target.value })} placeholder="Sehr stark"
+                  className="w-full bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+            </div>
+            <div className="flex justify-between gap-1 pt-2">
+              {Array.from({ length: 10 }, (_, i) => (
+                <div key={i} className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-xs font-bold text-muted-foreground">{i + 1}</div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* CHOICE / CHECKLIST */}
+        {(block.type === "choice" || block.type === "checklist") && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Frage</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Wie war deine Stimmung?"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+              {block.type === "choice" ? "Antwortmöglichkeiten (Einzelauswahl)" : "Checklisten-Elemente"}
+            </label>
+            <AnimatePresence>
+              {(block.options || []).map((opt, i) => (
+                <motion.div key={`opt-${i}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-2 mb-2">
+                  <div className={`w-5 h-5 shrink-0 border-2 flex items-center justify-center ${block.type === "choice" ? "rounded-full" : "rounded-md"}`} style={{ borderColor: cat.accent }} />
+                  <input value={opt} onChange={e => updateOption(i, e.target.value)} placeholder={`Option ${i + 1}...`}
+                    className="flex-1 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+                  {(block.options?.length || 0) > 2 && (
+                    <button onClick={() => removeOption(i)} className="text-destructive font-bold text-lg hover:scale-110 transition-transform">×</button>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <button onClick={addOption} className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40 hover:text-primary transition-colors" style={{ color: cat.accent }}>
+              + Option hinzufügen
+            </button>
+          </>
+        )}
+
+        {/* HOMEWORK */}
+        {block.type === "homework" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Aufgabe / Anweisung</label>
+            <textarea value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Notiere täglich eine belastende Situation…" rows={3}
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring" />
+            <div className="bg-secondary rounded-2xl border border-border p-4">
+              <p className="text-sm font-extrabold text-foreground mb-3">📝 ABC-Protokoll Vorlage</p>
+              {["A – Auslöser: Was ist passiert?", "B – Bewertung: Was habe ich gedacht?", "C – Konsequenz: Was habe ich gefühlt?"].map(r => (
+                <div key={r} className="flex items-start gap-2 mb-2">
+                  <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: cat.accent }} />
+                  <p className="text-sm text-foreground font-medium">{r}</p>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* GRATITUDE */}
+        {block.type === "gratitude" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Anweisung an den Klienten</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Notiere 3 Dinge, für die du heute dankbar bist…"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <div className="flex gap-3">
+              {["1.", "2.", "3."].map(n => (
+                <div key={n} className="flex-1 bg-secondary rounded-2xl border border-border py-5 flex flex-col items-center">
+                  <span className="text-2xl">🙏</span>
+                  <span className="text-sm font-extrabold mt-1" style={{ color: cat.accent }}>{n}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* MEDIA */}
+        {block.type === "media" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Beschreibung zum Medium</label>
+            <textarea value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Schau dir dieses Bild an…" rows={2}
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Bild-URL (optional)</label>
+            <div className="flex items-center gap-2 bg-secondary rounded-2xl border border-border p-3">
+              <LinkIcon size={16} className="text-muted-foreground shrink-0" />
+              <input value={block.mediaUri || ""} onChange={e => onChange({ mediaUri: e.target.value })} placeholder="https://..."
+                className="flex-1 bg-transparent text-foreground text-sm font-medium focus:outline-none" />
+            </div>
+            {block.mediaUri && (
+              <div className="rounded-2xl overflow-hidden border border-border h-48 bg-muted">
+                <img src={block.mediaUri} alt="" className="w-full h-full object-cover" />
+              </div>
+            )}
+            <div className="flex gap-2">
+              {(["small", "medium", "large"] as const).map(size => {
+                const active = block.mediaSize === size || (!block.mediaSize && size === "medium");
+                const labels = { small: "Klein", medium: "Mittel", large: "Vollbild" };
+                return (
+                  <button key={size} onClick={() => onChange({ mediaSize: size })}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-bold border transition-colors ${active ? "border-primary bg-primary/10 text-primary" : "border-border bg-secondary text-muted-foreground"}`}>
+                    {labels[size]}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* VIDEO */}
+        {block.type === "video" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Titel / Beschreibung</label>
+            <textarea value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Schau dir dieses Achtsamkeits-Video an…" rows={2}
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">YouTube / Vimeo URL</label>
+            <div className="flex items-center gap-2 bg-secondary rounded-2xl border border-border p-3">
+              <Film size={16} className="text-muted-foreground shrink-0" />
+              <input value={block.videoUrl || ""} onChange={e => onChange({ videoUrl: e.target.value })} placeholder="https://www.youtube.com/watch?v=..."
+                className="flex-1 bg-transparent text-foreground text-sm font-medium focus:outline-none" />
+            </div>
+          </>
+        )}
+
+        {/* TIMER / BREATHING */}
+        {(block.type === "timer" || block.type === "breathing") && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">
+              {block.type === "breathing" ? "Anweisung zur Atemübung" : "Anweisung / Beschreibung"}
+            </label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })}
+              placeholder={block.type === "breathing" ? "z.B. Atme ruhig und gleichmäßig." : "z.B. Halte inne und entspanne dich."}
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <div className="flex items-center justify-between bg-secondary rounded-2xl border border-border p-4">
+              <span className="text-sm font-extrabold text-foreground">Dauer</span>
+              <div className="flex gap-2">
+                {[30, 60, 120, 300].map(sec => {
+                  const active = block.duration === sec;
+                  return (
+                    <button key={sec} onClick={() => onChange({ duration: sec })}
+                      className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${active ? "text-white shadow-md" : "bg-background text-muted-foreground"}`}
+                      style={active ? { backgroundColor: cat.accent, boxShadow: `0 3px 8px ${cat.accent}40` } : {}}>
+                      {sec < 60 ? `${sec}s` : `${sec / 60}min`}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {block.type === "breathing" && (
+              <div className="flex justify-around bg-secondary rounded-2xl border border-border p-4">
+                {["4s Einatmen", "4s Halten", "4s Ausatmen"].map(phase => (
+                  <div key={phase} className="text-center">
+                    <span className="text-2xl">🌬️</span>
+                    <p className="text-xs font-bold text-muted-foreground mt-1">{phase}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* CHART BLOCKS (spider, bar, pie, line) */}
+        {["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(block.type) && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Titel / Fragestellung</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Werteprofil der Lebensbereiche"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Kategorien</label>
+            <AnimatePresence>
+              {(block.options || []).map((opt, i) => (
+                <motion.div key={`chart-${i}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B"][i % 6] }} />
+                  <input value={opt} onChange={e => updateOption(i, e.target.value)} placeholder={`Kategorie ${i + 1}`}
+                    className="flex-1 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+                  {(block.options?.length || 0) > 2 && (
+                    <button onClick={() => removeOption(i)} className="text-destructive font-bold text-lg">×</button>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <button onClick={addOption} className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm" style={{ color: cat.accent }}>
+              + Kategorie hinzufügen
+            </button>
+          </>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+export default function ExerciseBuilderPage() {
+  const { id } = useParams<{ id: string }>();
+  const isNew = id === "new";
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+
+  const [title, setTitle] = useState("");
+  const [themeColor, setThemeColor] = useState(THEME_COLORS[0]);
+  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [loading, setLoading] = useState(!isNew);
+  const [saving, setSaving] = useState(false);
+  const [showCatalogue, setShowCatalogue] = useState(false);
+
+  // Load existing template
+  useEffect(() => {
+    if (isNew || !id) return;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, "exercise_templates", id));
+        if (snap.exists()) {
+          const data = snap.data();
+          setTitle(data.title || "");
+          setThemeColor(data.themeColor || THEME_COLORS[0]);
+          setBlocks(data.blocks || []);
+        }
+      } catch (e) {
+        console.error("Failed to load template:", e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [id, isNew]);
+
+  const updateBlock = useCallback((blockId: string, updates: Partial<Block>) => {
+    setBlocks(prev => prev.map(b => b.id === blockId ? { ...b, ...updates } : b));
+  }, []);
+
+  const removeBlock = useCallback((blockId: string) => {
+    setBlocks(prev => prev.filter(b => b.id !== blockId));
+  }, []);
+
+  const moveBlock = useCallback((blockId: string, dir: "up" | "down") => {
+    setBlocks(prev => {
+      const idx = prev.findIndex(b => b.id === blockId);
+      if (idx < 0) return prev;
+      const next = [...prev];
+      const swap = dir === "up" ? idx - 1 : idx + 1;
+      if (swap < 0 || swap >= next.length) return prev;
+      [next[idx], next[swap]] = [next[swap], next[idx]];
+      return next;
+    });
+  }, []);
+
+  const duplicateBlock = useCallback((blockId: string) => {
+    setBlocks(prev => {
+      const idx = prev.findIndex(b => b.id === blockId);
+      if (idx < 0) return prev;
+      const copy = { ...prev[idx], id: uid() };
+      const next = [...prev];
+      next.splice(idx + 1, 0, copy);
+      return next;
+    });
+  }, []);
+
+  const addBlock = useCallback((type: BlockType) => {
+    setBlocks(prev => [...prev, defaultBlock(type)]);
+    setShowCatalogue(false);
+  }, []);
+
+  const handleSave = async () => {
+    if (!title.trim()) return;
+    setSaving(true);
+    try {
+      const payload = {
+        title: title.trim(),
+        themeColor,
+        blocks,
+        therapistId: profile?.id,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (isNew) {
+        await addDoc(collection(db, "exercise_templates"), { ...payload, createdAt: serverTimestamp() });
+      } else if (id) {
+        await updateDoc(doc(db, "exercise_templates", id), payload);
+      }
+      navigate("/therapist/templates");
+    } catch (e) {
+      console.error("Save failed:", e);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <motion.div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+      </div>
+    );
+  }
+
+  return (
+    <PageTransition className="min-h-screen bg-background pb-32">
+      {/* Header */}
+      <div className="rounded-b-[2rem] relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}CC)` }}>
+        <HeaderOrbs />
+        <div className="max-w-3xl mx-auto px-6 pt-12 pb-8 relative z-10">
+          <div className="flex items-center justify-between mb-5">
+            <motion.button onClick={() => navigate("/therapist/templates")} className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-4 py-2.5 rounded-2xl text-sm font-bold text-white" whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }}>
+              <ArrowLeft size={16} /> Zurück
+            </motion.button>
+            <motion.button onClick={handleSave} disabled={saving || !title.trim()} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-40" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              {saving ? <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <Save size={16} />}
+              {saving ? "Speichern…" : "Speichern"}
+            </motion.button>
+          </div>
+
+          <input
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="Übungstitel eingeben…"
+            className="w-full text-3xl font-black text-white bg-transparent placeholder-white/50 focus:outline-none mb-3 tracking-tight"
+          />
+          <p className="text-white/60 text-sm font-medium">{blocks.length} {blocks.length === 1 ? "Modul" : "Module"} · {isNew ? "Neue Vorlage" : "Bearbeiten"}</p>
+
+          {/* Theme Color Picker */}
+          <div className="flex items-center gap-3 mt-5">
+            <Palette size={16} className="text-white/60" />
+            <div className="flex gap-2">
+              {THEME_COLORS.map(c => (
+                <button key={c} onClick={() => setThemeColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${themeColor === c ? "border-white scale-125 shadow-lg" : "border-white/30 hover:scale-110"}`}
+                  style={{ backgroundColor: c }} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Blocks */}
+      <div className="max-w-3xl mx-auto px-6 py-6 space-y-5">
+        <AnimatePresence mode="popLayout">
+          {blocks.map((block, idx) => (
+            <BlockForm
+              key={block.id}
+              block={block}
+              onChange={updates => updateBlock(block.id, updates)}
+              onRemove={() => removeBlock(block.id)}
+              onMove={dir => moveBlock(block.id, dir)}
+              onDuplicate={() => duplicateBlock(block.id)}
+              isFirst={idx === 0}
+              isLast={idx === blocks.length - 1}
+            />
+          ))}
+        </AnimatePresence>
+
+        {/* Add Block Button */}
+        <motion.button
+          onClick={() => setShowCatalogue(true)}
+          className="w-full border-2 border-dashed border-border rounded-[1.75rem] py-8 flex flex-col items-center gap-2 hover:border-primary/40 hover:bg-primary/5 transition-all group"
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+        >
+          <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary/20 transition-colors">
+            <Plus size={24} className="text-primary" />
+          </div>
+          <span className="text-sm font-bold text-muted-foreground group-hover:text-primary transition-colors">Modul hinzufügen</span>
+        </motion.button>
+      </div>
+
+      {/* Sticky Save Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border px-6 py-4 z-40">
+        <div className="max-w-3xl mx-auto flex items-center justify-between">
+          <div>
+            <p className="text-sm font-bold text-foreground">{title || "Ohne Titel"}</p>
+            <p className="text-xs text-muted-foreground">{blocks.length} Module</p>
+          </div>
+          <motion.button onClick={handleSave} disabled={saving || !title.trim()}
+            className="px-8 py-3 rounded-2xl bg-primary text-primary-foreground font-black disabled:opacity-40 flex items-center gap-2 shadow-lg shadow-primary/20"
+            whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+            {saving ? <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <Save size={16} />}
+            Speichern
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Block Catalogue Modal */}
+      <AnimatePresence>
+        {showCatalogue && (
+          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowCatalogue(false)}>
+            <motion.div
+              className="bg-card rounded-t-3xl sm:rounded-3xl border border-border w-full sm:max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl"
+              initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 100 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-card/95 backdrop-blur-xl z-10">
+                <h2 className="text-lg font-black text-foreground">Modul hinzufügen</h2>
+                <button onClick={() => setShowCatalogue(false)} className="p-2 rounded-xl hover:bg-secondary"><X size={20} className="text-muted-foreground" /></button>
+              </div>
+              <div className="p-6 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {CATALOGUE.map(cat => {
+                  const Icon = cat.icon;
+                  return (
+                    <motion.button
+                      key={cat.type}
+                      onClick={() => addBlock(cat.type)}
+                      className="bg-secondary rounded-2xl border border-border p-4 text-left hover:border-primary/30 transition-all group"
+                      whileHover={{ scale: 1.03, y: -2 }}
+                      whileTap={{ scale: 0.97 }}
+                    >
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3 text-white" style={{ backgroundColor: cat.accent }}>
+                        <Icon size={18} />
+                      </div>
+                      <p className="text-sm font-bold text-foreground">{cat.label}</p>
+                      <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{cat.desc}</p>
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </PageTransition>
+  );
+}
