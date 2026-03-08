@@ -49,6 +49,7 @@
     "firebase": "^12.9.0",
     "i18n-js": "^4.5.2",
     "lodash": "^4.17.23",
+    "lucide-react": "^0.575.0",
     "lucide-react-native": "^0.575.0",
     "moti": "^0.30.0",
     "motion": "^12.35.0",
