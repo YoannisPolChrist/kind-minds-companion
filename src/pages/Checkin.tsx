@@ -136,7 +136,7 @@ export default function Checkin() {
         mood: activeEmotion.score,
         emotionId: activeEmotion.id,
         energy,
-        tags,
+        tags: [],
         note: note.trim(),
         createdAt: new Date().toISOString(),
       });
