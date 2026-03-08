@@ -13,6 +13,9 @@ import { Toast } from "../../components/ui/Toast";
 import { ConfirmModal } from "../../components/ui/ConfirmModal";
 import { Badge } from "../../components/ui/Badge";
 import { SkeletonCard } from "../../components/ui/Skeleton";
+import { getRandomHeaderImage } from "../../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 export default function ClientNotes() {
   const { id } = useParams<{ id: string }>();
