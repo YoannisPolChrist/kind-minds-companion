@@ -8,6 +8,7 @@ import {
   CheckCircle2, Heart, BookOpen, Clock, Wind, Image as ImageIcon,
   Film, Lock, Unlock, Download, Radar, BarChart3,
   PieChart as PieChartIcon, LineChart as LineChartIcon,
+  Gauge, Target, Table2, SlidersHorizontal,
 } from "lucide-react";
 import { generateExercisePdf } from "../utils/generateExercisePdf";
 import { motion, AnimatePresence } from "motion/react";
