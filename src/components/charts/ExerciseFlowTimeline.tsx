@@ -10,7 +10,8 @@ import { motion } from "motion/react";
 type BlockType =
   | "reflection" | "scale" | "choice" | "checklist" | "homework"
   | "gratitude" | "info" | "timer" | "breathing" | "media" | "video"
-  | "spider_chart" | "bar_chart" | "pie_chart" | "line_chart";
+  | "spider_chart" | "bar_chart" | "pie_chart" | "line_chart"
+  | "progress_bar" | "mood_wheel" | "table" | "slider_group";
 
 interface Block { id: string; type: BlockType; [key: string]: any; }
 
@@ -30,6 +31,10 @@ const BLOCK_META: Record<BlockType, { color: string; icon: string; short: string
   bar_chart: { color: "#0EA5E9", icon: "📈", short: "Balken" },
   pie_chart: { color: "#8B5CF6", icon: "🥧", short: "Kreis" },
   line_chart: { color: "#10B981", icon: "📉", short: "Linie" },
+  progress_bar: { color: "#06B6D4", icon: "📏", short: "Fortschr." },
+  mood_wheel: { color: "#F472B6", icon: "🎯", short: "Stimmung" },
+  table: { color: "#0D9488", icon: "📋", short: "Tabelle" },
+  slider_group: { color: "#7C3AED", icon: "🎚️", short: "Slider" },
 };
 
 const NODE_R = 22;

@@ -9,6 +9,7 @@ import {
   BookOpen, Clock, Wind, Image as ImageIcon, Film, Radar,
   BarChart3, PieChart as PieChartIcon, LineChart as LineChartIcon,
   Palette, Link as LinkIcon, X, Search,
+  Gauge, Target, Table2, SlidersHorizontal,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
@@ -24,7 +25,8 @@ import * as d3 from "d3";
 type BlockType =
   | "reflection" | "scale" | "choice" | "checklist" | "homework"
   | "gratitude" | "info" | "timer" | "breathing" | "media" | "video"
-  | "spider_chart" | "bar_chart" | "pie_chart" | "line_chart";
+  | "spider_chart" | "bar_chart" | "pie_chart" | "line_chart"
+  | "progress_bar" | "mood_wheel" | "table" | "slider_group";
 
 interface Block {
   id: string;
@@ -38,6 +40,16 @@ interface Block {
   mediaType?: "image" | "video";
   mediaSize?: "small" | "medium" | "large";
   videoUrl?: string;
+  // Progress bar
+  progressLabel?: string;
+  progressMax?: number;
+  // Mood wheel
+  moodOptions?: string[];
+  // Table
+  tableColumns?: string[];
+  tableRows?: number;
+  // Slider group
+  sliders?: { label: string; min: number; max: number; step: number }[];
 }
 
 const CATALOGUE: {
@@ -59,6 +71,10 @@ const CATALOGUE: {
   { type: "bar_chart", label: "Balkendiagramm", icon: BarChart3, desc: "Wertevergleich", accent: "#0EA5E9", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
   { type: "pie_chart", label: "Kreisdiagramm", icon: PieChartIcon, desc: "Verteilung", accent: "#8B5CF6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
   { type: "line_chart", label: "Liniendiagramm", icon: LineChartIcon, desc: "Entwicklung", accent: "#10B981", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "progress_bar", label: "Fortschrittsbalken", icon: Gauge, desc: "Ziel-Tracking 0–100%", accent: "#06B6D4", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "mood_wheel", label: "Stimmungsrad", icon: Target, desc: "Emotionen visuell erfassen", accent: "#F472B6", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "table", label: "Tabelle", icon: Table2, desc: "Strukturierte Daten", accent: "#0D9488", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
+  { type: "slider_group", label: "Slider-Bereich", icon: SlidersHorizontal, desc: "Parallele Bewertungen", accent: "#7C3AED", bg: "hsl(var(--secondary))", text: "hsl(var(--foreground))", border: "hsl(var(--border))" },
 ];
 
 const CHART_PALETTE = ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B", "#14B8A6", "#64748B", "#EC4899", "#3B82F6"];
@@ -69,7 +85,7 @@ const BLOCK_CATEGORIES: { label: string; types: BlockType[] }[] = [
   { label: "📝 Interaktion", types: ["reflection", "scale", "choice", "checklist", "homework", "gratitude"] },
   { label: "📖 Inhalt", types: ["info", "media", "video"] },
   { label: "⏱ Zeit & Achtsamkeit", types: ["timer", "breathing"] },
-  { label: "📊 Visualisierung", types: ["spider_chart", "bar_chart", "pie_chart", "line_chart"] },
+  { label: "📊 Visualisierung", types: ["spider_chart", "bar_chart", "pie_chart", "line_chart", "progress_bar", "mood_wheel", "table", "slider_group"] },
 ];
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
@@ -81,6 +97,10 @@ function defaultBlock(type: BlockType): Block {
   if (["choice", "checklist"].includes(type)) b.options = ["", ""];
   if (["spider_chart", "bar_chart", "pie_chart", "line_chart"].includes(type)) b.options = ["::", "::"];
   if (type === "scale") { b.minLabel = "Gar nicht"; b.maxLabel = "Sehr stark"; }
+  if (type === "progress_bar") { b.progressLabel = "Fortschritt"; b.progressMax = 100; }
+  if (type === "mood_wheel") { b.moodOptions = ["Freude", "Trauer", "Wut", "Angst", "Ekel", "Überraschung"]; }
+  if (type === "table") { b.tableColumns = ["Situation", "Gedanke", "Gefühl"]; b.tableRows = 3; }
+  if (type === "slider_group") { b.sliders = [{ label: "Energie", min: 0, max: 10, step: 1 }, { label: "Motivation", min: 0, max: 10, step: 1 }, { label: "Schlaf", min: 0, max: 10, step: 1 }]; }
   return b as Block;
 }
 
@@ -581,6 +601,206 @@ function BlockForm({ block, onChange, onRemove, onMove, onDuplicate, isFirst, is
         {/* CHART BLOCKS with live previews */}
         {(["spider_chart", "bar_chart", "pie_chart", "line_chart"] as const).includes(block.type as any) && (
           <ChartOptionEditor block={block} onChange={onChange} chartType={block.type as any} />
+        )}
+
+        {/* PROGRESS BAR */}
+        {block.type === "progress_bar" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Frage / Ziel</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Wie weit bist du mit deinem Ziel?"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Label</label>
+                <input value={block.progressLabel || ""} onChange={e => onChange({ progressLabel: e.target.value })} placeholder="Fortschritt"
+                  className="w-full bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+              <div>
+                <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block mb-1">Maximum</label>
+                <input value={block.progressMax || 100} onChange={e => onChange({ progressMax: parseInt(e.target.value) || 100 })} type="number"
+                  className="w-full bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+              </div>
+            </div>
+            {/* Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-foreground">{block.progressLabel || "Fortschritt"}</span>
+                <span className="text-xs font-extrabold" style={{ color: cat.accent }}>0 / {block.progressMax || 100}</span>
+              </div>
+              <div className="h-4 bg-muted rounded-full overflow-hidden">
+                <motion.div className="h-full rounded-full" style={{ backgroundColor: cat.accent, width: "35%" }} initial={{ width: 0 }} animate={{ width: "35%" }} transition={{ duration: 0.8 }} />
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* MOOD WHEEL */}
+        {block.type === "mood_wheel" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Frage an den Klienten</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Wie fühlst du dich gerade?"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Emotionen</label>
+            <AnimatePresence>
+              {(block.moodOptions || []).map((opt, i) => (
+                <motion.div key={`mood-${i}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-2 mb-2">
+                  <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
+                  <input value={opt} onChange={e => {
+                    const opts = [...(block.moodOptions || [])]; opts[i] = e.target.value; onChange({ moodOptions: opts });
+                  }} placeholder={`Emotion ${i + 1}...`}
+                    className="flex-1 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+                  {(block.moodOptions?.length || 0) > 3 && (
+                    <button onClick={() => onChange({ moodOptions: (block.moodOptions || []).filter((_, idx) => idx !== i) })} className="text-destructive font-bold text-lg">×</button>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <button onClick={() => onChange({ moodOptions: [...(block.moodOptions || []), ""] })}
+              className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40" style={{ color: cat.accent }}>
+              + Emotion hinzufügen
+            </button>
+            {/* Preview – Wheel */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+              <svg width={200} height={200} className="mx-auto block">
+                {(block.moodOptions || []).map((opt, i, arr) => {
+                  const angle = (i / arr.length) * Math.PI * 2 - Math.PI / 2;
+                  const nextAngle = ((i + 1) / arr.length) * Math.PI * 2 - Math.PI / 2;
+                  const R = 80, cx = 100, cy = 100;
+                  const x1 = cx + Math.cos(angle) * R, y1 = cy + Math.sin(angle) * R;
+                  const x2 = cx + Math.cos(nextAngle) * R, y2 = cy + Math.sin(nextAngle) * R;
+                  const large = arr.length <= 2 ? 1 : 0;
+                  const lx = cx + Math.cos((angle + nextAngle) / 2) * (R * 0.6);
+                  const ly = cy + Math.sin((angle + nextAngle) / 2) * (R * 0.6);
+                  return (
+                    <g key={i}>
+                      <path d={`M${cx},${cy} L${x1},${y1} A${R},${R} 0 ${large} 1 ${x2},${y2} Z`}
+                        fill={CHART_PALETTE[i % CHART_PALETTE.length]} opacity={0.7} stroke="#fff" strokeWidth={2} />
+                      <text x={lx} y={ly + 3} textAnchor="middle" fontSize={9} fontWeight="700" fill="#fff">{(opt || "?").slice(0, 5)}</text>
+                    </g>
+                  );
+                })}
+              </svg>
+            </div>
+          </>
+        )}
+
+        {/* TABLE */}
+        {block.type === "table" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Titel / Anweisung</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Wochenplan für Aktivitäten"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Spalten</label>
+            <AnimatePresence>
+              {(block.tableColumns || []).map((col, i) => (
+                <motion.div key={`col-${i}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-2 mb-2">
+                  <span className="text-xs font-bold text-muted-foreground w-6 text-center">{i + 1}.</span>
+                  <input value={col} onChange={e => {
+                    const cols = [...(block.tableColumns || [])]; cols[i] = e.target.value; onChange({ tableColumns: cols });
+                  }} placeholder={`Spalte ${i + 1}...`}
+                    className="flex-1 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+                  {(block.tableColumns?.length || 0) > 2 && (
+                    <button onClick={() => onChange({ tableColumns: (block.tableColumns || []).filter((_, idx) => idx !== i) })} className="text-destructive font-bold text-lg">×</button>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <button onClick={() => onChange({ tableColumns: [...(block.tableColumns || []), ""] })}
+              className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40" style={{ color: cat.accent }}>
+              + Spalte hinzufügen
+            </button>
+            <div className="flex items-center gap-3 mt-2">
+              <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Zeilen</label>
+              <div className="flex gap-2">
+                {[2, 3, 5, 7].map(n => (
+                  <button key={n} onClick={() => onChange({ tableRows: n })}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${block.tableRows === n ? "text-white shadow-md" : "bg-secondary text-muted-foreground border border-border"}`}
+                    style={block.tableRows === n ? { backgroundColor: cat.accent } : {}}>
+                    {n}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2 overflow-x-auto">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    {(block.tableColumns || []).map((col, i) => (
+                      <th key={i} className="text-left px-3 py-2 font-extrabold text-foreground border-b-2" style={{ borderColor: cat.accent + "40" }}>{col || `Spalte ${i + 1}`}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {Array.from({ length: block.tableRows || 3 }).map((_, r) => (
+                    <tr key={r}>
+                      {(block.tableColumns || []).map((_, c) => (
+                        <td key={c} className="px-3 py-2 border-b border-border text-muted-foreground">—</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
+        {/* SLIDER GROUP */}
+        {block.type === "slider_group" && (
+          <>
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Frage / Anweisung</label>
+            <input value={block.content} onChange={e => onChange({ content: e.target.value })} placeholder="z.B. Wie bewertest du diese Bereiche heute?"
+              className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider block">Slider definieren</label>
+            <AnimatePresence>
+              {(block.sliders || []).map((slider, i) => (
+                <motion.div key={`slider-${i}`} initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }} className="flex items-center gap-2 mb-2">
+                  <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length] }} />
+                  <input value={slider.label} onChange={e => {
+                    const sl = [...(block.sliders || [])]; sl[i] = { ...sl[i], label: e.target.value }; onChange({ sliders: sl });
+                  }} placeholder={`Bereich ${i + 1}...`}
+                    className="flex-[2] bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <input value={slider.min} onChange={e => {
+                    const sl = [...(block.sliders || [])]; sl[i] = { ...sl[i], min: parseInt(e.target.value) || 0 }; onChange({ sliders: sl });
+                  }} type="number" placeholder="Min"
+                    className="w-16 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-ring" />
+                  <input value={slider.max} onChange={e => {
+                    const sl = [...(block.sliders || [])]; sl[i] = { ...sl[i], max: parseInt(e.target.value) || 10 }; onChange({ sliders: sl });
+                  }} type="number" placeholder="Max"
+                    className="w-16 bg-secondary rounded-xl border border-border p-3 text-foreground text-sm font-medium text-center focus:outline-none focus:ring-2 focus:ring-ring" />
+                  {(block.sliders?.length || 0) > 1 && (
+                    <button onClick={() => onChange({ sliders: (block.sliders || []).filter((_, idx) => idx !== i) })} className="text-destructive font-bold text-lg">×</button>
+                  )}
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            <button onClick={() => onChange({ sliders: [...(block.sliders || []), { label: "", min: 0, max: 10, step: 1 }] })}
+              className="w-full border-2 border-dashed border-border rounded-2xl py-3 text-center font-bold text-sm hover:border-primary/40" style={{ color: cat.accent }}>
+              + Slider hinzufügen
+            </button>
+            {/* Preview */}
+            <div className="rounded-2xl border border-border bg-secondary/50 p-4 mt-2">
+              <p className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-wider mb-3 text-center">Vorschau</p>
+              {(block.sliders || []).map((slider, i) => (
+                <div key={i} className="mb-3">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs font-bold text-foreground">{slider.label || `Bereich ${i + 1}`}</span>
+                    <span className="text-xs font-extrabold" style={{ color: CHART_PALETTE[i % CHART_PALETTE.length] }}>{slider.min}</span>
+                  </div>
+                  <div className="h-3 bg-muted rounded-full overflow-hidden relative">
+                    <div className="h-full rounded-full" style={{ backgroundColor: CHART_PALETTE[i % CHART_PALETTE.length], width: "40%", opacity: 0.8 }} />
+                  </div>
+                  <div className="flex justify-between mt-0.5">
+                    <span className="text-[10px] text-muted-foreground">{slider.min}</span>
+                    <span className="text-[10px] text-muted-foreground">{slider.max}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </div>
     </motion.div>
