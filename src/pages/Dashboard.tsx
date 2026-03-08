@@ -363,7 +363,7 @@ export default function Dashboard() {
             className="bg-pink-50 border border-pink-100 rounded-3xl p-5"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "timing", duration: 400, delay: 0.1 }}
+            transition={{ duration: 0.4, delay: 0.1 }}
           >
             <div className="flex items-center gap-4 mb-3">
               <div className="w-11 h-11 rounded-full bg-pink-100 flex items-center justify-center shrink-0">
