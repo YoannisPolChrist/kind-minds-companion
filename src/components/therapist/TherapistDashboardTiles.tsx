@@ -102,10 +102,19 @@ export default function TherapistDashboardTiles({
         );
       })}
 
+      {/* Welcome text – top center, over the triangle intersection */}
+      <div className="absolute z-30 top-5 left-1/2 -translate-x-1/2 text-center pointer-events-none select-none">
+        <p className="text-primary-foreground/70 text-xs sm:text-sm font-bold uppercase tracking-widest">Willkommen</p>
+        <h1 className="text-primary-foreground text-lg sm:text-xl font-black drop-shadow-lg leading-tight">
+          {therapistName || "Therapeut"}
+        </h1>
+      </div>
+
+      {/* Settings button – bottom right */}
       <motion.button
         type="button"
         onClick={onOpenSettings}
-        className="absolute z-30 top-6 left-1/2 -translate-x-1/2 p-3 rounded-2xl bg-primary-foreground/15 hover:bg-primary-foreground/25 border border-primary-foreground/25 text-primary-foreground backdrop-blur-sm transition-colors"
+        className="absolute z-30 bottom-6 right-6 p-3 rounded-2xl bg-primary-foreground/15 hover:bg-primary-foreground/25 border border-primary-foreground/25 text-primary-foreground backdrop-blur-sm transition-colors"
         whileHover={{ scale: 1.06, y: -1 }}
         whileTap={{ scale: 0.96 }}
         aria-label="Einstellungen öffnen"
