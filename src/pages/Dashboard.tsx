@@ -193,13 +193,15 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [checkins, setCheckins] = useState<Checkin[]>([]);
-  const [checkedInToday, setCheckedInToday] = useState(false);
+  const [checkedInMorning, setCheckedInMorning] = useState(false);
+  const [checkedInEvening, setCheckedInEvening] = useState(false);
   const [loading, setLoading] = useState(true);
   const [bookingUrl, setBookingUrl] = useState<string | null>(null);
   const [nextAppointment, setNextAppointment] = useState<string | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
-  const currentSlot = new Date().getHours() < 12 ? "morning" : "evening";
+  const currentHour = new Date().getHours();
+  const isMorningSlot = currentHour < 12;
 
   useEffect(() => {
     if (!profile?.id) return;
