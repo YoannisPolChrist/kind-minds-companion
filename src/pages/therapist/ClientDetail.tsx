@@ -193,6 +193,7 @@ export default function TherapistClientDetail() {
   const [savingAppointment, setSavingAppointment] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
   // Stats
   const [exerciseCount, setExerciseCount] = useState(0);
