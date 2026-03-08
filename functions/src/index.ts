@@ -336,6 +336,14 @@ export const onNotificationCreated = onDocumentCreated(
             html = checkinReminderTemplate();
             subject = "🌅 Dein täglicher Check-in wartet auf dich";
             break;
+          case "appointment_saved":
+            html = appointmentSavedTemplate(body || "Nächster Termin wurde eingetragen");
+            subject = "📅 Neuer Termin eingetragen";
+            break;
+          case "FILE_UPLOAD":
+            html = fileUploadedTemplate(title || "Neue Datei");
+            subject = `📎 Neue Datei: ${title || "Neue Datei"}`;
+            break;
           default:
             html = generalTemplate(
               title || "Neue Benachrichtigung",
