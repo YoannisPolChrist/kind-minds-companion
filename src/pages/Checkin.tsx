@@ -142,9 +142,9 @@ export default function Checkin() {
     }
   };
 
-  const toggleTag = (tag: string) => {
+  const toggleTag = (label: string) => {
     if (alreadyCompleted) return;
-    setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
+    setTags((prev) => (prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label]));
   };
 
   if (loadingCheck) {
