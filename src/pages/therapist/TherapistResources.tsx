@@ -607,35 +607,6 @@ export default function TherapistResources() {
       </div>
 
       <div className="max-w-3xl mx-auto px-6 py-6">
-        {/* Search + Add */}
-        <motion.div
-          className="flex gap-3 mb-4"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.08 }}
-        >
-          <div className="flex-1 flex items-center bg-card rounded-[20px] border border-border px-4 py-3 shadow-sm">
-            <Search size={20} className="text-muted-foreground mr-3 shrink-0" />
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Bibliothek durchsuchen..."
-              className="flex-1 bg-transparent text-foreground font-semibold outline-none placeholder:text-muted-foreground"
-            />
-            {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center ml-2">
-                <X size={14} className="text-muted-foreground" />
-              </button>
-            )}
-          </div>
-          <PressableScale onClick={() => setAddModalOpen(true)}>
-            <div className="h-full flex items-center gap-2 bg-primary text-primary-foreground px-5 rounded-[20px] font-bold shadow-lg whitespace-nowrap">
-              <PlusCircle size={18} />
-              <span className="hidden sm:inline">Hinzufügen</span>
-            </div>
-          </PressableScale>
-        </motion.div>
-
         {/* Filter chips */}
         <motion.div
           className="flex gap-2 mb-6 overflow-x-auto pb-1"
