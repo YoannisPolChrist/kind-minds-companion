@@ -4,11 +4,15 @@ import { collection, query, where, getDocs, addDoc, deleteDoc, doc } from "fireb
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
-  ArrowLeft, Plus, Edit3, Trash2, X, Calendar, Search,
+  ArrowLeft, Plus, Edit3, Trash2, X, Search,
   Lock, BookOpen, ChevronDown, Save,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard, PressableScale } from "../../components/motion";
+import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale } from "../../components/motion";
+import { Toast } from "../../components/ui/Toast";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { Badge } from "../../components/ui/Badge";
+import { SkeletonCard } from "../../components/ui/Skeleton";
 
 export default function ClientNotes() {
   const { id } = useParams<{ id: string }>();
@@ -20,14 +24,12 @@ export default function ClientNotes() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "session" | "journal">("all");
 
-  // New note modal
   const [showModal, setShowModal] = useState(false);
   const [noteTitle, setNoteTitle] = useState("");
   const [noteContent, setNoteContent] = useState("");
   const [saving, setSaving] = useState(false);
-
-  // Delete
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
   useEffect(() => {
     if (!id) return;
@@ -83,8 +85,10 @@ export default function ClientNotes() {
       setShowModal(false);
       setNoteTitle("");
       setNoteContent("");
+      setToast({ visible: true, message: "Notiz gespeichert!", type: "success" });
     } catch (e) {
       console.error("Error saving note:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Notiz konnte nicht gespeichert werden.", type: "error" });
     } finally {
       setSaving(false);
     }
@@ -95,16 +99,28 @@ export default function ClientNotes() {
     try {
       await deleteDoc(doc(db, "users", id, "notes", deleteTarget.id));
       setNotes((prev) => prev.filter((n) => n.id !== deleteTarget.id));
+      setToast({ visible: true, message: "Notiz gelöscht", type: "success" });
       setDeleteTarget(null);
     } catch (e) {
       console.error("Error deleting note:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Notiz konnte nicht gelöscht werden.", type: "error" });
+      setDeleteTarget(null);
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-primary-dark to-primary rounded-b-[2rem] relative overflow-hidden">
+          <HeaderOrbs />
+          <div className="max-w-4xl mx-auto px-6 pt-12 pb-8 relative z-10">
+            <div className="h-6 w-32 bg-white/20 rounded-xl mb-3" />
+            <div className="h-8 w-48 bg-white/15 rounded-2xl" />
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-6 py-6 space-y-4">
+          {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+        </div>
       </div>
     );
   }
@@ -124,18 +140,16 @@ export default function ClientNotes() {
           </div>
           <h1 className="text-2xl font-black tracking-tight">Notizen & Tagebuch</h1>
 
-          {/* Stats */}
           <div className="flex gap-3 mt-3 mb-4">
-            <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-xl text-xs font-bold"><Lock size={12} /> {sessionCount} Session Notes</div>
-            <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1.5 rounded-xl text-xs font-bold"><BookOpen size={12} /> {journalCount} Tagebucheinträge</div>
+            <Badge variant="muted" className="bg-white/15 border-white/25 text-white"><Lock size={10} className="mr-1 inline" /> {sessionCount} Session</Badge>
+            <Badge variant="muted" className="bg-white/15 border-white/25 text-white"><BookOpen size={10} className="mr-1 inline" /> {journalCount} Tagebuch</Badge>
           </div>
 
-          {/* Filter */}
           <div className="flex gap-2 mb-4">
             {(["all", "session", "journal"] as const).map((f) => (
-              <button key={f} onClick={() => setFilter(f)} className={`px-3.5 py-2 rounded-2xl text-sm font-bold transition-colors ${filter === f ? "bg-white text-primary" : "bg-white/15 text-white"}`}>
+              <motion.button key={f} onClick={() => setFilter(f)} className={`px-3.5 py-2 rounded-2xl text-sm font-bold transition-colors ${filter === f ? "bg-white text-primary" : "bg-white/15 text-white"}`} whileTap={{ scale: 0.95 }}>
                 {f === "all" ? "Alle" : f === "session" ? "Session Notes" : "Tagebuch"}
-              </button>
+              </motion.button>
             ))}
           </div>
 
@@ -152,20 +166,26 @@ export default function ClientNotes() {
         {filtered.length === 0 ? (
           <StaggerItem>
             <div className="text-center py-16">
-              <Edit3 size={48} className="text-muted-foreground mx-auto mb-4" />
+              <motion.div animate={{ y: [0, -6, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
+                <Edit3 size={48} className="text-muted-foreground mx-auto mb-4" />
+              </motion.div>
               <h2 className="text-xl font-black text-foreground mb-2">Keine Notizen</h2>
               <p className="text-muted-foreground">Erstelle eine Session Note oder warte auf Tagebucheinträge.</p>
             </div>
           </StaggerItem>
         ) : (
-          filtered.map((note) => {
+          filtered.map((note, idx) => {
             const session = isSession(note);
             const expanded = expandedId === note.id;
-            const accentColor = session ? "hsl(var(--primary))" : "#16A34A";
 
             return (
               <StaggerItem key={note.id}>
-                <div className="bg-card rounded-3xl border border-border p-5 shadow-sm">
+                <motion.div
+                  className="bg-card rounded-3xl border border-border p-5 shadow-sm"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.03 }}
+                >
                   <button onClick={() => setExpandedId(expanded ? null : note.id)} className="w-full text-left">
                     <div className="flex items-start justify-between">
                       <div className="flex-1 pr-3">
@@ -174,9 +194,9 @@ export default function ClientNotes() {
                           <span className="text-xs font-bold text-muted-foreground">
                             {new Date(note.createdAt?.seconds ? note.createdAt.seconds * 1000 : note.createdAt || Date.now()).toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })}
                           </span>
-                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${session ? "bg-primary/10 text-primary" : "bg-success/10 text-success"}`}>
+                          <Badge variant={session ? "default" : "success"}>
                             {session ? "Session Note" : "Tagebuch"}
-                          </span>
+                          </Badge>
                         </div>
                       </div>
                       <motion.div animate={{ rotate: expanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -186,7 +206,7 @@ export default function ClientNotes() {
                   </button>
                   <AnimatePresence>
                     {expanded && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
+                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ type: "spring", damping: 25, stiffness: 200 }} className="overflow-hidden">
                         <div className="mt-4 pt-4 border-t border-border">
                           <p className="text-foreground leading-relaxed whitespace-pre-wrap">{note.content || "Kein Inhalt."}</p>
                           {session && (
@@ -202,7 +222,7 @@ export default function ClientNotes() {
                       </motion.div>
                     )}
                   </AnimatePresence>
-                </div>
+                </motion.div>
               </StaggerItem>
             );
           })
@@ -213,7 +233,7 @@ export default function ClientNotes() {
       {/* New Note Modal */}
       <AnimatePresence>
         {showModal && (
-          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card rounded-3xl border border-border w-full max-w-lg shadow-2xl" initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }} transition={{ type: "spring", damping: 20, stiffness: 150 }}>
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h2 className="text-lg font-black text-foreground">Neue Session Note</h2>
@@ -230,7 +250,7 @@ export default function ClientNotes() {
                 </div>
               </div>
               <div className="p-6 pt-0">
-                <motion.button onClick={handleSaveNote} disabled={saving || !noteContent.trim()} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                <motion.button onClick={handleSaveNote} disabled={saving || !noteContent.trim()} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-primary/20" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                   {saving ? <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <><Save size={18} /> Speichern</>}
                 </motion.button>
               </div>
@@ -239,22 +259,18 @@ export default function ClientNotes() {
         )}
       </AnimatePresence>
 
-      {/* Delete */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="bg-card rounded-3xl border border-border w-full max-w-sm p-6 shadow-2xl text-center" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
-              <p className="text-4xl mb-3">🗑️</p>
-              <h3 className="text-lg font-black text-foreground mb-2">Notiz löschen?</h3>
-              <p className="text-sm text-muted-foreground mb-6">Diese Aktion kann nicht rückgängig gemacht werden.</p>
-              <div className="flex gap-3">
-                <motion.button onClick={() => setDeleteTarget(null)} className="flex-1 py-3 rounded-2xl bg-secondary text-foreground font-bold" whileTap={{ scale: 0.97 }}>Abbrechen</motion.button>
-                <motion.button onClick={handleDelete} className="flex-1 py-3 rounded-2xl bg-destructive text-destructive-foreground font-bold" whileTap={{ scale: 0.97 }}>Löschen</motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        visible={!!deleteTarget}
+        title="Notiz löschen?"
+        message="Diese Aktion kann nicht rückgängig gemacht werden."
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmText="Löschen"
+        isDestructive
+      />
+
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }

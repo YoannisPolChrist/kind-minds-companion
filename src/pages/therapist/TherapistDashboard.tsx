@@ -12,6 +12,9 @@ import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs,
   TiltCard, PressableScale,
 } from "../../components/motion";
+import { Toast, BannerToast } from "../../components/ui/Toast";
+import { SkeletonCard, SkeletonMetrics } from "../../components/ui/Skeleton";
+import { Badge } from "../../components/ui/Badge";
 
 interface Client {
   id: string;
@@ -39,6 +42,9 @@ export default function TherapistDashboard() {
   const [exerciseCount, setExerciseCount] = useState(0);
   const [checkinCount, setCheckinCount] = useState(0);
 
+  // Feedback
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
+
   useEffect(() => {
     if (!profile?.id) return;
     (async () => {
@@ -51,7 +57,6 @@ export default function TherapistDashboard() {
           .filter((c) => !c.isArchived);
         setClients(rawClients);
 
-        // Fetch aggregate stats
         const [exSnap, ciSnap] = await Promise.all([
           getDocs(query(collection(db, "exercises"), where("therapistId", "==", profile.id))),
           getDocs(query(collection(db, "checkins"), where("uid", "in", rawClients.map((c) => c.id).slice(0, 10) || ["__none__"]))),
@@ -80,17 +85,9 @@ export default function TherapistDashboard() {
     if (!newFirstName.trim() || !newLastName.trim()) return;
     setAdding(true);
     try {
-      // For web we use the ClientService pattern from the Expo app
-      // This creates a Firebase Auth user + Firestore profile
-      const { createUserWithEmailAndPassword } = await import("firebase/auth");
       const { doc, setDoc } = await import("firebase/firestore");
-      const { auth } = await import("../../lib/firebase");
 
       const tempEmail = newEmail.trim() || `${newFirstName.toLowerCase()}.${newLastName.toLowerCase()}@therapie-app.de`;
-      const tempPassword = Math.random().toString(36).slice(-10) + "Aa1!";
-
-      // We need a secondary auth instance to not log out the therapist
-      // For simplicity, we'll add the user doc directly
       const newId = crypto.randomUUID();
       await setDoc(doc(db, "users", newId), {
         firstName: newFirstName.trim(),
@@ -109,8 +106,10 @@ export default function TherapistDashboard() {
       setNewFirstName("");
       setNewLastName("");
       setNewEmail("");
+      setToast({ visible: true, message: "Klient angelegt!", subMessage: `${newFirstName.trim()} ${newLastName.trim()} wurde hinzugefügt.`, type: "success" });
     } catch (e) {
       console.error("Error adding client:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Klient konnte nicht angelegt werden.", type: "error" });
     } finally {
       setAdding(false);
     }
@@ -118,12 +117,23 @@ export default function TherapistDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div
-          className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        />
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2.5rem] shadow-xl shadow-primary/15 relative overflow-hidden">
+          <HeaderOrbs />
+          <div className="max-w-5xl mx-auto px-6 pt-12 pb-10 relative z-10">
+            <div className="h-8 w-48 bg-white/20 rounded-2xl mb-2" />
+            <div className="h-4 w-32 bg-white/10 rounded-xl mb-6" />
+            <SkeletonMetrics />
+          </div>
+        </div>
+        <div className="max-w-5xl mx-auto px-6 py-6 space-y-5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[1, 2, 3, 4].map(i => <div key={i} className="bg-card rounded-2xl border border-border p-4 h-16" />)}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+          </div>
+        </div>
       </div>
     );
   }
@@ -145,7 +155,7 @@ export default function TherapistDashboard() {
                 Therapeuten-Dashboard
               </h1>
               <p className="text-white/60 text-sm font-medium mt-1">
-                Hallo {profile?.firstName} — {clients.length} aktive Klienten
+                Hallo {profile?.firstName || "Therapeut"} — {clients.length} aktive Klienten
               </p>
             </div>
             <PressableScale onClick={() => navigate("/settings")}>
@@ -164,10 +174,10 @@ export default function TherapistDashboard() {
             ].map((s, i) => (
               <motion.div
                 key={s.label}
-                className="bg-white/10 rounded-2xl p-4 text-center"
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 + i * 0.06 }}
+                className="bg-white/10 rounded-2xl p-4 text-center backdrop-blur-sm"
+                initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: 0.1 + i * 0.06, type: "spring", damping: 18 }}
               >
                 <s.icon size={18} className="mx-auto mb-1 text-white/70" />
                 <p className="text-2xl font-black text-white">{s.value}</p>
@@ -190,10 +200,7 @@ export default function TherapistDashboard() {
             ].map(({ to, icon: Icon, label, color }) => (
               <PressableScale key={to} onClick={() => navigate(to)}>
                 <div className="bg-card rounded-2xl border border-border p-4 flex items-center gap-3 shadow-sm hover:border-primary/30 transition-colors">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ backgroundColor: `${color}15` }}
-                  >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${color}15` }}>
                     <Icon size={18} style={{ color }} />
                   </div>
                   <span className="font-bold text-sm text-foreground">{label}</span>
@@ -233,6 +240,7 @@ export default function TherapistDashboard() {
           <h2 className="text-lg font-black text-foreground mb-4 flex items-center gap-2">
             <Users size={20} className="text-primary" />
             Meine Klienten
+            <Badge variant="muted">{clients.length}</Badge>
           </h2>
 
           {filtered.length === 0 ? (
@@ -281,7 +289,7 @@ export default function TherapistDashboard() {
       <AnimatePresence>
         {showAddModal && (
           <motion.div
-            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -303,47 +311,24 @@ export default function TherapistDashboard() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Vorname *</label>
-                    <input
-                      value={newFirstName}
-                      onChange={(e) => setNewFirstName(e.target.value)}
-                      placeholder="Max"
-                      className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                    <input value={newFirstName} onChange={(e) => setNewFirstName(e.target.value)} placeholder="Max" className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-ring" />
                   </div>
                   <div>
                     <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Nachname *</label>
-                    <input
-                      value={newLastName}
-                      onChange={(e) => setNewLastName(e.target.value)}
-                      placeholder="Mustermann"
-                      className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-ring"
-                    />
+                    <input value={newLastName} onChange={(e) => setNewLastName(e.target.value)} placeholder="Mustermann" className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-ring" />
                   </div>
                 </div>
                 <div>
                   <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">E-Mail (optional)</label>
-                  <input
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    placeholder="max@beispiel.de"
-                    className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring"
-                  />
+                  <input value={newEmail} onChange={(e) => setNewEmail(e.target.value)} placeholder="max@beispiel.de" className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
                 </div>
               </div>
               <div className="p-6 pt-0">
-                <motion.button
-                  onClick={handleAddClient}
-                  disabled={adding || !newFirstName.trim() || !newLastName.trim()}
-                  className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.97 }}
-                >
+                <motion.button onClick={handleAddClient} disabled={adding || !newFirstName.trim() || !newLastName.trim()} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                   {adding ? (
                     <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
                   ) : (
-                    <>
-                      <Plus size={18} /> Klient anlegen
-                    </>
+                    <><Plus size={18} /> Klient anlegen</>
                   )}
                 </motion.button>
               </div>
@@ -351,6 +336,9 @@ export default function TherapistDashboard() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Toast */}
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }

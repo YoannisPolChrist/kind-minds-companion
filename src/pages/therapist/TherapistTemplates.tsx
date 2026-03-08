@@ -4,12 +4,14 @@ import { collection, query, where, getDocs, deleteDoc, doc, addDoc } from "fireb
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
-  ArrowLeft, Plus, Trash2, Send, Search, X, LayoutTemplate, FileText, Palette,
+  ArrowLeft, Plus, Trash2, Send, Search, X, LayoutTemplate, FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard, PressableScale } from "../../components/motion";
-
-const THEME_COLORS = ["#137386", "#3B82F6", "#8B5CF6", "#EC4899", "#F43F5E", "#F59E0B", "#10B981", "#64748B"];
+import { Toast } from "../../components/ui/Toast";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { SkeletonTemplateGrid } from "../../components/ui/Skeleton";
+import { Badge } from "../../components/ui/Badge";
 
 export default function TherapistTemplates() {
   const { profile } = useAuth();
@@ -26,6 +28,9 @@ export default function TherapistTemplates() {
 
   // Delete
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+
+  // Feedback
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
   useEffect(() => {
     if (!profile?.id) return;
@@ -56,8 +61,11 @@ export default function TherapistTemplates() {
       await deleteDoc(doc(db, "exercise_templates", deleteTarget.id));
       setTemplates((prev) => prev.filter((t) => t.id !== deleteTarget.id));
       setDeleteTarget(null);
+      setToast({ visible: true, message: "Vorlage gelöscht", subMessage: `„${deleteTarget.title}" wurde entfernt.`, type: "success" });
     } catch (e) {
       console.error("Error deleting template:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Vorlage konnte nicht gelöscht werden.", type: "error" });
+      setDeleteTarget(null);
     }
   };
 
@@ -65,6 +73,7 @@ export default function TherapistTemplates() {
     if (!assignTemplate || !selectedClientId) return;
     setAssigning(true);
     try {
+      const client = clients.find(c => c.id === selectedClientId);
       await addDoc(collection(db, "exercises"), {
         clientId: selectedClientId,
         therapistId: profile?.id,
@@ -77,8 +86,10 @@ export default function TherapistTemplates() {
       });
       setAssignTemplate(null);
       setSelectedClientId(null);
+      setToast({ visible: true, message: "Übung zugewiesen!", subMessage: `„${assignTemplate.title}" an ${client?.firstName || "Klient"} zugewiesen.`, type: "success" });
     } catch (e) {
       console.error("Error assigning:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Zuweisung fehlgeschlagen.", type: "error" });
     } finally {
       setAssigning(false);
     }
@@ -86,8 +97,17 @@ export default function TherapistTemplates() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-primary-dark to-primary text-primary-foreground rounded-b-[2rem] relative overflow-hidden">
+          <HeaderOrbs />
+          <div className="max-w-5xl mx-auto px-6 pt-12 pb-8 relative z-10">
+            <div className="h-8 w-40 bg-white/20 rounded-2xl mb-2" />
+            <div className="h-4 w-64 bg-white/10 rounded-xl" />
+          </div>
+        </div>
+        <div className="max-w-5xl mx-auto px-6 py-6">
+          <SkeletonTemplateGrid />
+        </div>
       </div>
     );
   }
@@ -105,7 +125,10 @@ export default function TherapistTemplates() {
               <Plus size={16} /> Neue Vorlage
             </motion.button>
           </div>
-          <h1 className="text-3xl font-black tracking-tight">Übungsvorlagen</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-black tracking-tight">Übungsvorlagen</h1>
+            <Badge variant="muted" className="bg-white/15 border-white/25 text-white">{templates.length}</Badge>
+          </div>
           <p className="text-white/70 text-sm font-medium mt-1">Erstelle und verwalte interaktive Vorlagen für deine Klienten.</p>
 
           <div className="mt-6 relative">
@@ -124,11 +147,16 @@ export default function TherapistTemplates() {
         {filtered.length === 0 ? (
           <StaggerItem>
             <div className="bg-card rounded-3xl border border-border p-12 text-center">
-              <LayoutTemplate size={48} className="text-muted-foreground mx-auto mb-4" />
+              <motion.div
+                animate={{ y: [0, -8, 0], rotate: [0, 3, -3, 0] }}
+                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <LayoutTemplate size={48} className="text-muted-foreground mx-auto mb-4" />
+              </motion.div>
               <h2 className="text-xl font-black text-foreground mb-2">{search ? "Keine Treffer" : "Noch keine Vorlagen"}</h2>
               <p className="text-muted-foreground text-sm mb-6">Erstelle deine erste Übungsvorlage um loszulegen.</p>
               {!search && (
-                <motion.button onClick={() => navigate("/therapist/template/new")} className="bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-bold inline-flex items-center gap-2" whileHover={{ scale: 1.03 }}>
+                <motion.button onClick={() => navigate("/therapist/template/new")} className="bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-bold inline-flex items-center gap-2 shadow-lg shadow-primary/20" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
                   <Plus size={18} /> Erste Vorlage erstellen
                 </motion.button>
               )}
@@ -146,10 +174,10 @@ export default function TherapistTemplates() {
                         <LayoutTemplate size={24} style={{ color }} />
                       </div>
                       <h3 className="text-xl font-black text-foreground tracking-tight mb-2">{tpl.title}</h3>
-                      <div className="flex items-center gap-2 bg-secondary px-3 py-1.5 rounded-xl w-fit">
-                        <FileText size={14} className="text-muted-foreground" />
-                        <span className="text-sm font-bold text-muted-foreground">{tpl.blocks?.length || 0} Module</span>
-                      </div>
+                      <Badge variant="muted">
+                        <FileText size={12} className="mr-1 inline" />
+                        {tpl.blocks?.length || 0} Module
+                      </Badge>
                     </div>
 
                     <div className="flex gap-3 pt-5 border-t border-border">
@@ -161,10 +189,9 @@ export default function TherapistTemplates() {
                       </motion.button>
                     </div>
 
-                    {/* Action buttons */}
                     <div className="flex gap-2 mt-3">
                       <PressableScale onClick={() => setDeleteTarget(tpl)}>
-                        <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
                           <Trash2 size={16} className="text-destructive" />
                         </div>
                       </PressableScale>
@@ -181,10 +208,13 @@ export default function TherapistTemplates() {
       {/* Assign Modal */}
       <AnimatePresence>
         {assignTemplate && (
-          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card rounded-3xl border border-border w-full max-w-lg shadow-2xl" initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }} transition={{ type: "spring", damping: 20, stiffness: 150 }}>
               <div className="flex items-center justify-between p-6 border-b border-border">
-                <h2 className="text-lg font-black text-foreground">Klient auswählen</h2>
+                <div>
+                  <h2 className="text-lg font-black text-foreground">Klient auswählen</h2>
+                  <p className="text-xs text-muted-foreground font-medium mt-0.5">„{assignTemplate.title}" zuweisen</p>
+                </div>
                 <button onClick={() => setAssignTemplate(null)} className="p-2 rounded-xl hover:bg-secondary"><X size={20} className="text-muted-foreground" /></button>
               </div>
               <div className="p-6 space-y-3 max-h-96 overflow-y-auto">
@@ -193,11 +223,18 @@ export default function TherapistTemplates() {
                 ) : (
                   clients.map((c: any) => (
                     <PressableScale key={c.id} onClick={() => setSelectedClientId(c.id)}>
-                      <div className={`bg-secondary rounded-2xl border p-4 flex items-center gap-3 ${selectedClientId === c.id ? "border-primary ring-2 ring-primary/20" : "border-border"}`}>
+                      <div className={`bg-secondary rounded-2xl border p-4 flex items-center gap-3 transition-all ${selectedClientId === c.id ? "border-primary ring-2 ring-primary/20" : "border-border"}`}>
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-black text-primary">
                           {c.firstName?.charAt(0)}{c.lastName?.charAt(0)}
                         </div>
-                        <span className="font-bold text-foreground">{c.firstName} {c.lastName}</span>
+                        <span className="font-bold text-foreground flex-1">{c.firstName} {c.lastName}</span>
+                        {selectedClientId === c.id && (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 12 }}>
+                            <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                              <span className="text-white text-xs">✓</span>
+                            </div>
+                          </motion.div>
+                        )}
                       </div>
                     </PressableScale>
                   ))
@@ -205,7 +242,7 @@ export default function TherapistTemplates() {
               </div>
               {selectedClientId && (
                 <div className="p-6 pt-0">
-                  <motion.button onClick={handleAssign} disabled={assigning} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                  <motion.button onClick={handleAssign} disabled={assigning} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-primary/20" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                     {assigning ? <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <><Send size={18} /> Zuweisen</>}
                   </motion.button>
                 </div>
@@ -215,22 +252,20 @@ export default function TherapistTemplates() {
         )}
       </AnimatePresence>
 
-      {/* Delete */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="bg-card rounded-3xl border border-border w-full max-w-sm p-6 shadow-2xl text-center" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}>
-              <p className="text-4xl mb-3">🗑️</p>
-              <h3 className="text-lg font-black text-foreground mb-2">Vorlage löschen?</h3>
-              <p className="text-sm text-muted-foreground mb-6">„{deleteTarget.title}" wird gelöscht.</p>
-              <div className="flex gap-3">
-                <motion.button onClick={() => setDeleteTarget(null)} className="flex-1 py-3 rounded-2xl bg-secondary text-foreground font-bold" whileTap={{ scale: 0.97 }}>Abbrechen</motion.button>
-                <motion.button onClick={handleDelete} className="flex-1 py-3 rounded-2xl bg-destructive text-destructive-foreground font-bold" whileTap={{ scale: 0.97 }}>Löschen</motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Delete Confirmation */}
+      <ConfirmModal
+        visible={!!deleteTarget}
+        title="Vorlage löschen?"
+        message={`„${deleteTarget?.title || ""}" wird unwiderruflich gelöscht. Bereits zugewiesene Übungen bleiben erhalten.`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmText="Löschen"
+        cancelText="Abbrechen"
+        isDestructive
+      />
+
+      {/* Toast */}
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }

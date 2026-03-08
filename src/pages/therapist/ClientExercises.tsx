@@ -5,12 +5,16 @@ import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
 import {
   ArrowLeft, Plus, Trash2, CheckCircle, BookOpen, Activity,
-  Clock, Send, LayoutTemplate, X,
+  Send, LayoutTemplate, X,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard, PressableScale,
+  PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale,
 } from "../../components/motion";
+import { Toast } from "../../components/ui/Toast";
+import { ConfirmModal } from "../../components/ui/ConfirmModal";
+import { Badge } from "../../components/ui/Badge";
+import { SkeletonCard } from "../../components/ui/Skeleton";
 
 export default function ClientExercises() {
   const { id } = useParams<{ id: string }>();
@@ -21,13 +25,11 @@ export default function ClientExercises() {
   const [templates, setTemplates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Assignment modal
   const [showAssign, setShowAssign] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [assigning, setAssigning] = useState(false);
-
-  // Delete modal
   const [deleteTarget, setDeleteTarget] = useState<any>(null);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
   useEffect(() => {
     if (!id || !profile?.id) return;
@@ -63,13 +65,14 @@ export default function ClientExercises() {
         completed: false,
         createdAt: serverTimestamp(),
       });
-      // Refresh
       const exSnap = await getDocs(query(collection(db, "exercises"), where("clientId", "==", id)));
       setExercises(exSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setShowAssign(false);
       setSelectedTemplate(null);
+      setToast({ visible: true, message: "Übung zugewiesen!", subMessage: `„${selectedTemplate.title}" wurde zugewiesen.`, type: "success" });
     } catch (e) {
       console.error("Error assigning exercise:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Zuweisung fehlgeschlagen.", type: "error" });
     } finally {
       setAssigning(false);
     }
@@ -80,9 +83,12 @@ export default function ClientExercises() {
     try {
       await deleteDoc(doc(db, "exercises", deleteTarget.id));
       setExercises((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+      setToast({ visible: true, message: "Übung gelöscht", type: "success" });
       setDeleteTarget(null);
     } catch (e) {
       console.error("Error deleting exercise:", e);
+      setToast({ visible: true, message: "Fehler", subMessage: "Übung konnte nicht gelöscht werden.", type: "error" });
+      setDeleteTarget(null);
     }
   };
 
@@ -91,8 +97,17 @@ export default function ClientExercises() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <motion.div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
+      <div className="min-h-screen bg-background">
+        <div className="bg-gradient-to-br from-primary-dark to-primary rounded-b-[2rem] relative overflow-hidden">
+          <HeaderOrbs />
+          <div className="max-w-4xl mx-auto px-6 pt-12 pb-8 relative z-10">
+            <div className="h-6 w-32 bg-white/20 rounded-xl mb-3" />
+            <div className="h-8 w-56 bg-white/15 rounded-2xl" />
+          </div>
+        </div>
+        <div className="max-w-4xl mx-auto px-6 py-6 space-y-4">
+          {[1, 2, 3].map(i => <SkeletonCard key={i} />)}
+        </div>
       </div>
     );
   }
@@ -114,8 +129,8 @@ export default function ClientExercises() {
             {client?.firstName} {client?.lastName} — Übungen
           </h1>
           <div className="flex gap-3 mt-3">
-            <div className="bg-white/15 px-3 py-1.5 rounded-xl text-xs font-bold">{open.length} offen</div>
-            <div className="bg-white/15 px-3 py-1.5 rounded-xl text-xs font-bold">{completed.length} erledigt</div>
+            <Badge variant="muted" className="bg-white/15 border-white/25 text-white">{open.length} offen</Badge>
+            <Badge variant="success" className="bg-white/15 border-white/25 text-white">{completed.length} erledigt</Badge>
           </div>
         </div>
       </div>
@@ -135,21 +150,27 @@ export default function ClientExercises() {
           <>
             {open.length > 0 && (
               <StaggerItem>
-                <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Offene Übungen</h3>
+                <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                  Offene Übungen <Badge variant="warning">{open.length}</Badge>
+                </h3>
                 <div className="space-y-3">
-                  {open.map((ex) => (
-                    <div key={ex.id} className="bg-card rounded-2xl border border-border p-5 shadow-sm flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center shrink-0">
-                        <Activity size={18} className="text-orange-500" />
+                  {open.map((ex, i) => (
+                    <motion.div
+                      key={ex.id}
+                      className="bg-card rounded-2xl border border-border p-5 shadow-sm flex items-center gap-4"
+                      initial={{ opacity: 0, x: -16 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.05, type: "spring", damping: 20 }}
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-[#F97316]/10 flex items-center justify-center shrink-0">
+                        <Activity size={18} className="text-[#F97316]" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-bold text-foreground truncate">{ex.title}</p>
                         <div className="flex gap-2 mt-1">
-                          <span className="text-[11px] font-bold bg-orange-50 text-orange-600 px-2 py-0.5 rounded-lg">Offen</span>
+                          <Badge variant="warning">Offen</Badge>
                           {ex.recurrence && ex.recurrence !== "none" && (
-                            <span className="text-[11px] font-bold bg-sky-50 text-sky-600 px-2 py-0.5 rounded-lg">
-                              {ex.recurrence === "daily" ? "Täglich" : "Wöchentlich"}
-                            </span>
+                            <Badge variant="default">{ex.recurrence === "daily" ? "Täglich" : "Wöchentlich"}</Badge>
                           )}
                         </div>
                       </div>
@@ -158,7 +179,7 @@ export default function ClientExercises() {
                           <Trash2 size={16} className="text-destructive" />
                         </div>
                       </PressableScale>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </StaggerItem>
@@ -166,18 +187,23 @@ export default function ClientExercises() {
 
             {completed.length > 0 && (
               <StaggerItem>
-                <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3">Abgeschlossen</h3>
+                <h3 className="text-xs font-black text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
+                  Abgeschlossen <Badge variant="success">{completed.length}</Badge>
+                </h3>
                 <div className="space-y-3">
-                  {completed.map((ex) => (
-                    <div
+                  {completed.map((ex, i) => (
+                    <motion.div
                       key={ex.id}
                       className="bg-card rounded-2xl border border-border p-4 shadow-sm flex items-center gap-3 cursor-pointer hover:border-primary/30 transition-colors"
                       onClick={() => navigate(`/exercise/${ex.id}`)}
+                      initial={{ opacity: 0, x: -12 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.04 }}
                     >
                       <CheckCircle size={18} className="text-success shrink-0" />
                       <span className="font-semibold text-foreground truncate flex-1">{ex.title}</span>
                       <span className="text-xs text-muted-foreground">Antworten einsehen →</span>
-                    </div>
+                    </motion.div>
                   ))}
                 </div>
               </StaggerItem>
@@ -190,7 +216,7 @@ export default function ClientExercises() {
       {/* Assign Modal */}
       <AnimatePresence>
         {showAssign && (
-          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+          <motion.div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <motion.div className="bg-card rounded-3xl border border-border w-full max-w-lg max-h-[85vh] overflow-y-auto shadow-2xl" initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }} transition={{ type: "spring", damping: 20, stiffness: 150 }}>
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <h2 className="text-lg font-black text-foreground">Vorlage auswählen</h2>
@@ -216,7 +242,11 @@ export default function ClientExercises() {
                           <p className="font-bold text-foreground truncate">{tpl.title}</p>
                           <p className="text-xs text-muted-foreground">{tpl.blocks?.length || 0} Module</p>
                         </div>
-                        {selectedTemplate?.id === tpl.id && <CheckCircle size={20} className="text-primary shrink-0" />}
+                        {selectedTemplate?.id === tpl.id && (
+                          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: "spring", damping: 12 }}>
+                            <CheckCircle size={20} className="text-primary" />
+                          </motion.div>
+                        )}
                       </div>
                     </PressableScale>
                   ))
@@ -224,7 +254,7 @@ export default function ClientExercises() {
               </div>
               {selectedTemplate && (
                 <div className="p-6 pt-0">
-                  <motion.button onClick={handleAssign} disabled={assigning} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
+                  <motion.button onClick={handleAssign} disabled={assigning} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-primary/20" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                     {assigning ? <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <><Send size={18} /> Zuweisen</>}
                   </motion.button>
                 </div>
@@ -235,21 +265,17 @@ export default function ClientExercises() {
       </AnimatePresence>
 
       {/* Delete Confirmation */}
-      <AnimatePresence>
-        {deleteTarget && (
-          <motion.div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="bg-card rounded-3xl border border-border w-full max-w-sm p-6 shadow-2xl text-center" initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }} transition={{ type: "spring", damping: 20, stiffness: 150 }}>
-              <p className="text-4xl mb-3">🗑️</p>
-              <h3 className="text-lg font-black text-foreground mb-2">Übung löschen?</h3>
-              <p className="text-sm text-muted-foreground mb-6">„{deleteTarget.title}" wird entfernt.</p>
-              <div className="flex gap-3">
-                <motion.button onClick={() => setDeleteTarget(null)} className="flex-1 py-3 rounded-2xl bg-secondary text-foreground font-bold" whileTap={{ scale: 0.97 }}>Abbrechen</motion.button>
-                <motion.button onClick={handleDelete} className="flex-1 py-3 rounded-2xl bg-destructive text-destructive-foreground font-bold" whileTap={{ scale: 0.97 }}>Löschen</motion.button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <ConfirmModal
+        visible={!!deleteTarget}
+        title="Übung löschen?"
+        message={`„${deleteTarget?.title || ""}" wird entfernt. Der Klient kann die Übung nicht mehr sehen.`}
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+        confirmText="Löschen"
+        isDestructive
+      />
+
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }

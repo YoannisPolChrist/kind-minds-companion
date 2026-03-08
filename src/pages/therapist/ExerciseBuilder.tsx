@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale,
 } from "../../components/motion";
+import { Toast } from "../../components/ui/Toast";
 
 // ─── Block Types ──────────────────────────────────────────────────────────────
 
@@ -357,6 +358,7 @@ export default function ExerciseBuilderPage() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [showCatalogue, setShowCatalogue] = useState(false);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
   // Load existing template
   useEffect(() => {
@@ -431,9 +433,11 @@ export default function ExerciseBuilderPage() {
       } else if (id) {
         await updateDoc(doc(db, "exercise_templates", id), payload);
       }
-      navigate("/therapist/templates");
+      setToast({ visible: true, message: isNew ? "Vorlage erstellt!" : "Vorlage gespeichert!", type: "success" });
+      setTimeout(() => navigate("/therapist/templates"), 1200);
     } catch (e) {
       console.error("Save failed:", e);
+      setToast({ visible: true, message: "Fehler beim Speichern", subMessage: "Bitte versuche es erneut.", type: "error" });
     } finally {
       setSaving(false);
     }
@@ -570,6 +574,8 @@ export default function ExerciseBuilderPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }
