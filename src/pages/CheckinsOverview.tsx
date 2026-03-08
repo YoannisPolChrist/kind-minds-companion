@@ -331,7 +331,7 @@ export default function CheckinsOverview() {
                             d={(() => {
                               const pts = chartData.map((ci, i) => ({
                                 x: i * 60,
-                                y: 120 - (ci.mood / 10) * 110,
+                                y: 120 - (normalizeMoodTo100(ci.mood) / 100) * 110,
                               }));
                               // Smooth cubic bezier
                               let d = `M ${pts[0].x} ${pts[0].y}`;
