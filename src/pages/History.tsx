@@ -6,6 +6,9 @@ import { useAuth } from "../hooks/useAuth";
 import { ArrowLeft, CheckCircle, Calendar, Lock } from "lucide-react";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../components/motion";
+import { getRandomHeaderImage } from "../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 interface HistoryItem {
   id: string;

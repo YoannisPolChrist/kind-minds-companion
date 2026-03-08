@@ -8,8 +8,11 @@ import {
   Link as LinkIcon, Image as ImageIcon, Film,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { PageTransition, PressableScale } from "../components/motion";
+import { PageTransition, PressableScale, HeaderOrbs } from "../components/motion";
 import { SkeletonCard } from "../components/ui/Skeleton";
+import { getRandomHeaderImage } from "../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 interface Resource {
   id: string;

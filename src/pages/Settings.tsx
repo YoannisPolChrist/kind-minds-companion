@@ -6,6 +6,9 @@ import { auth } from "../lib/firebase";
 import { useState } from "react";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, PressableScale } from "../components/motion";
+import { getRandomHeaderImage } from "../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 export default function Settings() {
   const { profile, signOut } = useAuth();
