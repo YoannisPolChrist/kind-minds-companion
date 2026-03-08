@@ -260,7 +260,7 @@ export default function CheckinsOverview() {
                     </div>
                     <div className="flex items-end gap-1.5 h-28">
                       {chartData.map((ci, i) => {
-                        const emotion = getEmotion(ci.mood);
+                        const emotion = getEmotion(ci.mood, (ci as any).emotionId);
                         const heightPct = (ci.mood / 10) * 100;
                         return (
                           <div key={ci.id} className="flex-1 flex flex-col items-center gap-1">
