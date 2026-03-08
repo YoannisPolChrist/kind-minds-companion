@@ -85,7 +85,7 @@ const BLOCK_CATEGORIES: { label: string; types: BlockType[] }[] = [
   { label: "📝 Interaktion", types: ["reflection", "scale", "choice", "checklist", "homework", "gratitude"] },
   { label: "📖 Inhalt", types: ["info", "media", "video"] },
   { label: "⏱ Zeit & Achtsamkeit", types: ["timer", "breathing"] },
-  { label: "📊 Visualisierung", types: ["spider_chart", "bar_chart", "pie_chart", "line_chart"] },
+  { label: "📊 Visualisierung", types: ["spider_chart", "bar_chart", "pie_chart", "line_chart", "progress_bar", "mood_wheel", "table", "slider_group"] },
 ];
 
 function uid() { return Math.random().toString(36).substring(2, 9); }
