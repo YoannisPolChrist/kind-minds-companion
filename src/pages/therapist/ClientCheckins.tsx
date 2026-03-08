@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../../components/motion";
+import { getRandomHeaderImage } from "../../constants/headerImages";
+
+const headerImg = getRandomHeaderImage();
 
 const MOOD_EMOJIS: Record<number, string> = {
   10: "🤩", 9: "🔥", 8: "😊", 7: "🙂", 6: "😌",
