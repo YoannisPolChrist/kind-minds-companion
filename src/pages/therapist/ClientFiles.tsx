@@ -438,5 +438,6 @@ export default function ClientFiles() {
 
       <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
+    </div>
   );
 }
