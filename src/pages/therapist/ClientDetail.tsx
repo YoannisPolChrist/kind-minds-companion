@@ -194,6 +194,8 @@ export default function TherapistClientDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
+  const [clientLang, setClientLang] = useState<string>("de");
+  const [savingLang, setSavingLang] = useState(false);
 
   // Stats
   const [exerciseCount, setExerciseCount] = useState(0);
