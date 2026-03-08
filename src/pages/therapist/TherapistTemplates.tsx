@@ -152,26 +152,27 @@ export default function TherapistTemplates() {
               return (
                 <motion.div
                   key={tpl.id}
-                  className="bg-card rounded-xl border border-border p-5 relative group hover:border-foreground/15 transition-colors"
+                  className="bg-card rounded-xl border border-border relative group hover:border-foreground/15 transition-colors overflow-hidden"
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <button onClick={() => setDeleteTarget(tpl)} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-lg bg-destructive/8 border border-destructive/15 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/15">
+                  <button onClick={() => setDeleteTarget(tpl)} className="absolute top-3 right-3 z-10 w-8 h-8 rounded-lg bg-destructive/8 border border-destructive/15 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/15">
                     <Trash2 size={14} className="text-destructive" />
                   </button>
 
-                  <div className="mb-4 pr-10">
-                    {tpl.coverImage ? (
-                      <div className="-mx-5 -mt-5 mb-4 h-40 overflow-hidden border-b border-border bg-secondary relative">
-                        <img src={tpl.coverImage} alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-md opacity-35" aria-hidden="true" loading="lazy" />
-                        <img src={tpl.coverImage} alt={`Titelbild von ${tpl.title}`} className="relative z-10 w-full h-full object-contain" loading="lazy" />
-                      </div>
-                    ) : (
-                      <div className="-mx-5 -mt-5 mb-4 h-40 border-b border-border bg-secondary flex items-center justify-center">
-                        <LayoutTemplate size={24} className="text-muted-foreground" />
-                      </div>
-                    )}
+                  {/* Cover image area */}
+                  {tpl.coverImage ? (
+                    <div className="h-44 w-full bg-secondary relative">
+                      <img src={tpl.coverImage} alt={`Titelbild von ${tpl.title}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+                    </div>
+                  ) : (
+                    <div className="h-44 w-full bg-secondary flex items-center justify-center">
+                      <LayoutTemplate size={28} className="text-muted-foreground" />
+                    </div>
+                  )}
+
+                  <div className="p-5">
                     <div className="w-10 h-10 rounded-lg flex items-center justify-center mb-3" style={{ backgroundColor: `${color}15`, border: `1px solid ${color}30` }}>
                       <LayoutTemplate size={18} style={{ color }} />
                     </div>
@@ -179,15 +180,15 @@ export default function TherapistTemplates() {
                     <span className="text-xs text-muted-foreground font-medium">
                       <FileText size={11} className="inline mr-1" />{tpl.blocks?.length || 0} Module
                     </span>
-                  </div>
 
-                  <div className="flex gap-2 pt-4 border-t border-border">
-                    <button onClick={() => navigate(`/therapist/template/${tpl.id}`)} className="flex-1 bg-secondary border border-border py-2.5 rounded-lg text-foreground font-bold text-center text-sm hover:bg-muted transition-colors">
-                      Bearbeiten
-                    </button>
-                    <button onClick={() => { setAssignTemplate(tpl); setSelectedClientId(null); }} className="flex-1 py-2.5 rounded-lg text-primary-foreground font-bold flex items-center justify-center gap-1.5 text-sm bg-primary hover:opacity-90 transition-opacity">
-                      <Send size={13} /> Zuweisen
-                    </button>
+                    <div className="flex gap-2 pt-4 mt-4 border-t border-border">
+                      <button onClick={() => navigate(`/therapist/template/${tpl.id}`)} className="flex-1 bg-secondary border border-border py-2.5 rounded-lg text-foreground font-bold text-center text-sm hover:bg-muted transition-colors">
+                        Bearbeiten
+                      </button>
+                      <button onClick={() => { setAssignTemplate(tpl); setSelectedClientId(null); }} className="flex-1 py-2.5 rounded-lg text-primary-foreground font-bold flex items-center justify-center gap-1.5 text-sm bg-primary hover:opacity-90 transition-opacity">
+                        <Send size={13} /> Zuweisen
+                      </button>
+                    </div>
                   </div>
                 </motion.div>
               );
