@@ -318,34 +318,34 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
     <div className="flex flex-col items-center py-6">
       {block.content && <p className="text-muted-foreground text-center mb-4 text-sm">{block.content}</p>}
       {currentPhase && (
-        <p className="text-xl font-bold mb-3 text-primary animate-fade-in">
+        <motion.p
+          className="text-xl font-bold mb-3 text-primary"
+          key={currentPhase}
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: "spring", damping: 16 }}
+        >
           {currentPhase}
-        </p>
+        </motion.p>
       )}
       {isBreathing && !running && timeLeft === totalSecs && (
         <p className="text-xs text-muted-foreground mb-3">4-4-4 Atemrhythmus</p>
       )}
-      <div
-        className={`w-44 h-44 rounded-full flex flex-col items-center justify-center mb-6 transition-all duration-500 ${
-          running ? "animate-pulse-glow" : ""
-        }`}
-        style={{
-          backgroundColor: running ? (isBreathing ? "#14B8A6" : "hsl(var(--primary))") : "hsl(var(--secondary))",
-          border: running ? "none" : "10px solid hsl(var(--border))",
-        }}
-      >
+      <BreathingCircle running={running} isBreathing={isBreathing}>
         <span className={`text-4xl font-extrabold ${running ? "text-white" : "text-foreground"}`}>
           {mins}:{secs}
         </span>
         {running && <span className="text-xs text-white/60 mt-1">läuft...</span>}
-      </div>
-      <button
+      </BreathingCircle>
+      <motion.button
         onClick={toggle}
-        className="px-12 py-3.5 rounded-full text-white font-extrabold text-base transition-all hover:scale-105 active:scale-95"
+        className="px-12 py-3.5 rounded-full text-white font-extrabold text-base"
         style={{ backgroundColor: running ? "hsl(var(--destructive))" : (isBreathing ? "#14B8A6" : "hsl(var(--primary))") }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
       >
         {running ? "⏸ Stop" : "▶ Starten"}
-      </button>
+      </motion.button>
     </div>
   );
 }
