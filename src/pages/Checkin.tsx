@@ -203,8 +203,8 @@ export default function Checkin() {
         }}
         transition={{ duration: 0.5 }}
       >
-        <img src={checkinHeaderImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50 pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/30 to-transparent pointer-events-none" />
+        <img src={checkinHeaderImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent pointer-events-none" />
         <HeaderOrbs />
         <div className="max-w-xl mx-auto relative z-10">
           <motion.button

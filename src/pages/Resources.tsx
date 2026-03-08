@@ -274,8 +274,8 @@ export default function Resources() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.05 }}
       >
-        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-50" />
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/60 to-primary/50" />
+        <img src={headerImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-dark/30 to-primary/25" />
         <HeaderOrbs />
         <div className="max-w-2xl mx-auto px-6 pt-14 pb-6 flex items-center justify-between relative z-10">
           <button
