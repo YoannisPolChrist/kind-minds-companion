@@ -10,6 +10,12 @@ import {
   SuccessAnimation, FloatingEmoji,
 } from "../components/motion";
 
+const HEADER_IMAGES = [
+  "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
+  "/images/HomeUi4.webp", "/images/HomeUi5.webp", "/images/HomeUi6.webp",
+];
+const checkinHeaderImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
+
 const EMOTION_PRESETS = [
   { id: "awesome", score: 10, emoji: "🤩", color: "#8B5CF6", label: "Großartig" },
   { id: "ecstatic", score: 10, emoji: "🎉", color: "#A855F7", label: "Ekstatisch" },
@@ -182,6 +188,8 @@ export default function Checkin() {
         }}
         transition={{ duration: 0.5 }}
       >
+        <img src={checkinHeaderImg} alt="" className="absolute inset-0 w-full h-full object-cover opacity-15 pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/30 to-transparent pointer-events-none" />
         <HeaderOrbs />
         <div className="max-w-xl mx-auto relative z-10">
           <motion.button
