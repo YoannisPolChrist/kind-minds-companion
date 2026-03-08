@@ -5,7 +5,8 @@ import { db } from "../lib/firebase";
 import { useAuth } from "../hooks/useAuth";
 import { ArrowLeft, BookOpen, CheckCircle } from "lucide-react";
 import { motion } from "motion/react";
-import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard, GlowCard } from "../components/motion";
+import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../components/motion";
+import { GlowCard } from "../components/motion/GlowCard";
 
 const HEADER_IMAGES = [
   "/images/HomeUi1.webp",

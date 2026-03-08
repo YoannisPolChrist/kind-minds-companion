@@ -11,8 +11,10 @@ import {
 import { motion } from "motion/react";
 import {
   PageTransition, StaggerContainer, StaggerItem,
-  TiltCard, PressableScale, CountUp, GlowCard,
+  TiltCard, PressableScale,
 } from "../components/motion";
+import { CountUp } from "../components/motion/CountUp";
+import { GlowCard } from "../components/motion/GlowCard";
 import { SkeletonCard, SkeletonMetrics } from "../components/ui/Skeleton";
 
 // ─── Background Images ───────────────────────────────────────────────────────

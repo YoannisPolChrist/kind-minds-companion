@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { onAuthStateChanged, signOut as fbSignOut, User } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "../lib/firebase";
@@ -21,58 +21,26 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isActive = true;
-
-    const unsub = onAuthStateChanged(auth, (firebaseUser) => {
-      if (!isActive) return;
-
+    const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
-      setLoading(false);
-
-      if (!firebaseUser) {
-        setProfile(null);
-        return;
-      }
-
-      void (async () => {
+      if (firebaseUser) {
         try {
           const snap = await getDoc(doc(db, "users", firebaseUser.uid));
-          if (!isActive) return;
           if (snap.exists()) {
             setProfile({ id: snap.id, ...snap.data() } as UserProfile);
-          } else {
-            setProfile({
-              id: firebaseUser.uid,
-              email: firebaseUser.email || "",
-              role: "client",
-            });
           }
         } catch (e) {
-          if (isActive) {
-            console.error("Error fetching profile:", e);
-            setProfile({
-              id: firebaseUser.uid,
-              email: firebaseUser.email || "",
-              role: "client",
-            });
-          }
+          console.error("Error fetching profile:", e);
         }
-      })();
+      } else {
+        setProfile(null);
+      }
+      setLoading(false);
     });
-
-    const safetyTimer = window.setTimeout(() => {
-      if (isActive) setLoading(false);
-    }, 5000);
-
-    return () => {
-      isActive = false;
-      window.clearTimeout(safetyTimer);
-      unsub();
-    };
+    return unsub;
   }, []);
 
   const signOut = () => fbSignOut(auth);
 
   return { user, profile, loading, signOut };
 }
-
