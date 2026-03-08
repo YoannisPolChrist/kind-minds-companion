@@ -120,6 +120,10 @@ export default function Checkin() {
       setError("Bitte wähle eine Stimmung aus.");
       return;
     }
+    if (!note.trim()) {
+      setError("Bitte schreibe noch eine kurze Notiz dazu.");
+      return;
+    }
     if (!profile?.id) return;
     setSaving(true);
     setError("");
