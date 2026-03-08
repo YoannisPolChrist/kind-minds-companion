@@ -365,6 +365,7 @@ export const onNotificationCreated = onDocumentCreated(
       const lastActivePlatform = userData?.lastActivePlatform || "web";
       const pushToken = userData?.pushToken;
       const email = userData?.email;
+      const lang: Lang = (userData?.language as Lang) || "de";
 
       // Push notification for active app users with valid Expo token.
       if (lastActivePlatform === "app" && pushToken && Expo.isExpoPushToken(pushToken)) {
@@ -372,8 +373,8 @@ export const onNotificationCreated = onDocumentCreated(
         const messages = [{
           to: pushToken,
           sound: "default" as const,
-          title: title || "Neue Benachrichtigung",
-          body: body || "Du hast eine neue Benachrichtigung in der App.",
+          title: title || tr("newNotification", lang),
+          body: body || tr("notificationReceived", lang),
           data: { type, withSome: "data" },
         }];
 
@@ -385,39 +386,39 @@ export const onNotificationCreated = onDocumentCreated(
         delivered = true;
         deliveryChannel = "push";
       } else if (email) {
-        // Email fallback for web users / users without push token.
-        console.log(`Sending email notification to user ${userId} (${email}), type: ${type}`);
+        console.log(`Sending email notification to user ${userId} (${email}), type: ${type}, lang: ${lang}`);
 
         let html: string;
         let subject: string;
 
         switch (type) {
           case "exercise_assigned":
-            html = exerciseAssignedTemplate(exerciseTitle || title || "Neue Übung");
-            subject = `📋 Neue Übung: ${exerciseTitle || title || "Neue Übung"}`;
+            html = exerciseAssignedTemplate(exerciseTitle || title || "Exercise", lang);
+            subject = `📋 ${tr("exerciseTitle", lang).replace(" ✨", "")}: ${exerciseTitle || title}`;
             break;
           case "resource_shared":
-            html = resourceSharedTemplate(resourceTitle || title || "Neue Ressource", resourceType || "link");
-            subject = `📎 Neue Ressource: ${resourceTitle || title || "Neue Ressource"}`;
+            html = resourceSharedTemplate(resourceTitle || title || "Resource", resourceType || "link", lang);
+            subject = `📎 ${tr("resourceTitle", lang)}: ${resourceTitle || title}`;
             break;
           case "checkin_reminder":
-            html = checkinReminderTemplate();
-            subject = "🌅 Dein täglicher Check-in wartet auf dich";
+            html = checkinReminderTemplate(lang);
+            subject = `🌅 ${tr("checkinTitle", lang).replace(" 🌅", "")}`;
             break;
           case "appointment_saved":
-            html = appointmentSavedTemplate(body || "Nächster Termin wurde eingetragen");
-            subject = "📅 Neuer Termin eingetragen";
+            html = appointmentSavedTemplate(body || "", lang);
+            subject = `📅 ${tr("appointmentTitle", lang).replace(" 📅", "")}`;
             break;
           case "FILE_UPLOAD":
-            html = fileUploadedTemplate(title || "Neue Datei");
-            subject = `📎 Neue Datei: ${title || "Neue Datei"}`;
+            html = fileUploadedTemplate(title || "File", lang);
+            subject = `📎 ${tr("fileTitle", lang).replace(" 📎", "")}: ${title}`;
             break;
           default:
             html = generalTemplate(
-              title || "Neue Benachrichtigung",
-              body || "Du hast eine neue Benachrichtigung erhalten."
+              title || tr("newNotification", lang),
+              body || tr("notificationReceived", lang),
+              lang
             );
-            subject = title || "Neue Benachrichtigung von deiner Therapie-App";
+            subject = title || tr("newNotification", lang);
         }
 
         const resendData = await resend.emails.send({
