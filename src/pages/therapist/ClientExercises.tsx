@@ -55,7 +55,7 @@ export default function ClientExercises() {
     if (!selectedTemplate || !id) return;
     setAssigning(true);
     try {
-      await addDoc(collection(db, "exercises"), {
+      const docRef = await addDoc(collection(db, "exercises"), {
         clientId: id,
         therapistId: profile?.id,
         title: selectedTemplate.title,
@@ -65,11 +65,23 @@ export default function ClientExercises() {
         completed: false,
         createdAt: serverTimestamp(),
       });
+
+      // Send email notification to client
+      await addDoc(collection(db, "notifications"), {
+        userId: id,
+        type: "exercise_assigned",
+        title: "Neue Übung zugewiesen",
+        body: `Dir wurde eine neue Übung zugewiesen: "${selectedTemplate.title}"`,
+        exerciseTitle: selectedTemplate.title,
+        status: "pending",
+        createdAt: new Date().toISOString(),
+      });
+
       const exSnap = await getDocs(query(collection(db, "exercises"), where("clientId", "==", id)));
       setExercises(exSnap.docs.map((d) => ({ id: d.id, ...d.data() })));
       setShowAssign(false);
       setSelectedTemplate(null);
-      setToast({ visible: true, message: "Übung zugewiesen!", subMessage: `„${selectedTemplate.title}" wurde zugewiesen.`, type: "success" });
+      setToast({ visible: true, message: "Übung zugewiesen!", subMessage: `„${selectedTemplate.title}" – Klient wird per E-Mail benachrichtigt.`, type: "success" });
     } catch (e) {
       console.error("Error assigning exercise:", e);
       setToast({ visible: true, message: "Fehler", subMessage: "Zuweisung fehlgeschlagen.", type: "error" });

@@ -485,6 +485,8 @@ export default function TherapistClientDetail() {
 
         <div className="h-8" />
       </StaggerContainer>
+
+      <Toast visible={toast.visible} message={toast.message} subMessage={toast.subMessage} type={toast.type} onDone={() => setToast(prev => ({ ...prev, visible: false }))} />
     </PageTransition>
   );
 }
