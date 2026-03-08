@@ -653,7 +653,7 @@ export default function Exercise() {
         </div>
 
         <div className="h-8" />
-      </div>
-    </div>
+      </StaggerContainer>
+    </PageTransition>
   );
 }
