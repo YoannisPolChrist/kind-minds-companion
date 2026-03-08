@@ -72,6 +72,7 @@ export default function App() {
       <Route path="/therapist/client/:id/notes" element={<ProtectedRoute><ClientNotes /></ProtectedRoute>} />
       <Route path="/therapist/client/:id/files" element={<ProtectedRoute><ClientFiles /></ProtectedRoute>} />
       <Route path="/therapist/templates" element={<ProtectedRoute><TherapistTemplates /></ProtectedRoute>} />
+      <Route path="/therapist/resources" element={<ProtectedRoute><TherapistResources /></ProtectedRoute>} />
       <Route path="/therapist/template/:id" element={<ProtectedRoute><ExerciseBuilderPage /></ProtectedRoute>} />
 
       <Route path="*" element={<NotFound />} />

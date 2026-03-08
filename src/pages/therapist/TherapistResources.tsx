@@ -539,18 +539,20 @@ export default function TherapistResources() {
       {/* Toast */}
       {toast && (
         <BannerToast
+          visible={true}
           message={toast.message}
           type={toast.type}
-          onDismiss={() => setToast(null)}
+          onDone={() => setToast(null)}
         />
       )}
 
       {/* Confirm Modal */}
       {confirmModal && (
         <ConfirmModal
+          visible={true}
           title={confirmModal.title}
           message={confirmModal.message}
-          confirmLabel="Löschen"
+          confirmText="Löschen"
           isDestructive
           onConfirm={confirmModal.onConfirm}
           onCancel={() => setConfirmModal(null)}
