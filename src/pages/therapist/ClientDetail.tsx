@@ -244,6 +244,40 @@ export default function TherapistClientDetail() {
     }
   };
 
+  const handleDeleteClient = async () => {
+    if (!id) return;
+    setDeleting(true);
+    try {
+      // Cascading delete: remove all related data first
+      const collections = ["exercises", "checkins", "client_notes", "client_files", "client_resources"];
+      const fieldMap: Record<string, string> = {
+        exercises: "clientId",
+        checkins: "uid",
+        client_notes: "clientId",
+        client_files: "clientId",
+        client_resources: "clientId",
+      };
+
+      for (const col of collections) {
+        try {
+          const field = fieldMap[col] || "clientId";
+          const snap = await getDocs(query(collection(db, col), where(field, "==", id)));
+          const deletePromises = snap.docs.map((d) => deleteDoc(doc(db, col, d.id)));
+          await Promise.all(deletePromises);
+        } catch (e) {
+          console.warn(`Could not delete from ${col}:`, e);
+        }
+      }
+
+      // Finally delete the user profile
+      await deleteDoc(doc(db, "users", id));
+      navigate("/therapist");
+    } catch (e) {
+      console.error("Error deleting client:", e);
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
