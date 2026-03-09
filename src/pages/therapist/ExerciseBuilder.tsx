@@ -971,6 +971,8 @@ export default function ExerciseBuilderPage() {
   const [showCatalogue, setShowCatalogue] = useState(false);
   const [toast, setToast] = useState<{ visible: boolean; message: string; subMessage?: string; type: "success" | "error" }>({ visible: false, message: "", type: "success" });
 
+  const headerImg = useMemo(() => getRandomHeaderImage(), []);
+
   useEffect(() => {
     if (isNew || !id) return;
     (async () => {
