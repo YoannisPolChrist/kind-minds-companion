@@ -1,29 +1,40 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Outlet } from "react-router-dom";
+import { lazy, Suspense } from "react";
 import type { User } from "firebase/auth";
 import { useAuth } from "./hooks/useAuth";
+
+// Eagerly loaded (needed on first paint / auth check)
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Checkin from "./pages/Checkin";
-import CheckinsOverview from "./pages/CheckinsOverview";
-import ExercisesOverview from "./pages/ExercisesOverview";
-import Exercise from "./pages/Exercise";
-import Settings from "./pages/Settings";
-import Notes from "./pages/Notes";
-import Resources from "./pages/Resources";
-import History from "./pages/History";
 import NotFound from "./pages/NotFound";
 
-// Therapist pages
-import TherapistDashboard from "./pages/therapist/TherapistDashboard";
-import ClientDetail from "./pages/therapist/ClientDetail";
-import ClientExercises from "./pages/therapist/ClientExercises";
-import ClientCheckins from "./pages/therapist/ClientCheckins";
-import ClientNotes from "./pages/therapist/ClientNotes";
-import ClientFiles from "./pages/therapist/ClientFiles";
-import TherapistTemplates from "./pages/therapist/TherapistTemplates";
-import TherapistResources from "./pages/therapist/TherapistResources";
-import TherapistClients from "./pages/therapist/TherapistClients";
-import ExerciseBuilderPage from "./pages/therapist/ExerciseBuilder";
+// Lazily loaded — only fetched when the route is visited
+const Dashboard         = lazy(() => import("./pages/Dashboard"));
+const Checkin           = lazy(() => import("./pages/Checkin"));
+const CheckinsOverview  = lazy(() => import("./pages/CheckinsOverview"));
+const ExercisesOverview = lazy(() => import("./pages/ExercisesOverview"));
+const Exercise          = lazy(() => import("./pages/Exercise"));
+const Settings          = lazy(() => import("./pages/Settings"));
+const Notes             = lazy(() => import("./pages/Notes"));
+const Resources         = lazy(() => import("./pages/Resources"));
+const History           = lazy(() => import("./pages/History"));
+
+// Therapist pages — lazily loaded
+const TherapistDashboard = lazy(() => import("./pages/therapist/TherapistDashboard"));
+const ClientDetail       = lazy(() => import("./pages/therapist/ClientDetail"));
+const ClientExercises    = lazy(() => import("./pages/therapist/ClientExercises"));
+const ClientCheckins     = lazy(() => import("./pages/therapist/ClientCheckins"));
+const ClientNotes        = lazy(() => import("./pages/therapist/ClientNotes"));
+const ClientFiles        = lazy(() => import("./pages/therapist/ClientFiles"));
+const TherapistTemplates = lazy(() => import("./pages/therapist/TherapistTemplates"));
+const TherapistResources = lazy(() => import("./pages/therapist/TherapistResources"));
+const TherapistClients   = lazy(() => import("./pages/therapist/TherapistClients"));
+const ExerciseBuilderPage = lazy(() => import("./pages/therapist/ExerciseBuilder"));
+
+const PageSpinner = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+  </div>
+);
 
 function ProtectedRoute({
   children,
@@ -34,13 +45,7 @@ function ProtectedRoute({
   user: User | null;
   loading: boolean;
 }) {
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (loading) return <PageSpinner />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -53,36 +58,38 @@ export default function App() {
   );
 
   return (
-    <Routes>
-      <Route path="/login" element={!loading && user ? <Navigate to="/" replace /> : <Login />} />
+    <Suspense fallback={<PageSpinner />}>
+      <Routes>
+        <Route path="/login" element={!loading && user ? <Navigate to="/" replace /> : <Login />} />
 
-      {/* Main dashboard - role based */}
-      <Route path="/" element={withAuth(isTherapist ? <TherapistDashboard /> : <Dashboard />)} />
+        {/* Main dashboard - role based */}
+        <Route path="/" element={withAuth(isTherapist ? <TherapistDashboard /> : <Dashboard />)} />
 
-      {/* Client pages */}
-      <Route path="/checkin" element={withAuth(<Checkin />)} />
-      <Route path="/checkins" element={withAuth(<CheckinsOverview />)} />
-      <Route path="/exercises" element={withAuth(<ExercisesOverview />)} />
-      <Route path="/exercise/:id" element={withAuth(<Exercise />)} />
-      <Route path="/notes" element={withAuth(<Notes />)} />
-      <Route path="/resources" element={withAuth(<Resources />)} />
-      <Route path="/history" element={withAuth(<History />)} />
-      <Route path="/settings" element={withAuth(<Settings />)} />
+        {/* Client pages */}
+        <Route path="/checkin"    element={withAuth(<Checkin />)} />
+        <Route path="/checkins"   element={withAuth(<CheckinsOverview />)} />
+        <Route path="/exercises"  element={withAuth(<ExercisesOverview />)} />
+        <Route path="/exercise/:id" element={withAuth(<Exercise />)} />
+        <Route path="/notes"      element={withAuth(<Notes />)} />
+        <Route path="/resources"  element={withAuth(<Resources />)} />
+        <Route path="/history"    element={withAuth(<History />)} />
+        <Route path="/settings"   element={withAuth(<Settings />)} />
 
-      {/* Therapist pages */}
-      <Route path="/therapist" element={withAuth(<TherapistDashboard />)} />
-      <Route path="/therapist/clients" element={withAuth(<TherapistClients />)} />
-      <Route path="/therapist/client/:id" element={withAuth(<ClientDetail />)} />
-      <Route path="/therapist/client/:id/exercises" element={withAuth(<ClientExercises />)} />
-      <Route path="/therapist/client/:id/checkins" element={withAuth(<ClientCheckins />)} />
-      <Route path="/therapist/client/:id/notes" element={withAuth(<ClientNotes />)} />
-      <Route path="/therapist/client/:id/files" element={withAuth(<ClientFiles />)} />
-      <Route path="/therapist/templates" element={withAuth(<TherapistTemplates />)} />
-      <Route path="/therapist/resources" element={withAuth(<TherapistResources />)} />
-      <Route path="/therapist/template/:id" element={withAuth(<ExerciseBuilderPage />)} />
+        {/* Therapist pages */}
+        <Route path="/therapist"                         element={withAuth(<TherapistDashboard />)} />
+        <Route path="/therapist/clients"                 element={withAuth(<TherapistClients />)} />
+        <Route path="/therapist/client/:id"              element={withAuth(<ClientDetail />)} />
+        <Route path="/therapist/client/:id/exercises"    element={withAuth(<ClientExercises />)} />
+        <Route path="/therapist/client/:id/checkins"     element={withAuth(<ClientCheckins />)} />
+        <Route path="/therapist/client/:id/notes"        element={withAuth(<ClientNotes />)} />
+        <Route path="/therapist/client/:id/files"        element={withAuth(<ClientFiles />)} />
+        <Route path="/therapist/templates"               element={withAuth(<TherapistTemplates />)} />
+        <Route path="/therapist/resources"               element={withAuth(<TherapistResources />)} />
+        <Route path="/therapist/template/:id"            element={withAuth(<ExerciseBuilderPage />)} />
 
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
   );
 }
 
