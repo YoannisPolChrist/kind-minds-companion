@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { collection, query, where, getDocs, deleteDoc, doc, addDoc } from "firebase/firestore";
 import { db } from "../../lib/firebase";
 import { useAuth } from "../../hooks/useAuth";
-import { ArrowLeft, Plus, Search, X, LayoutTemplate } from "lucide-react";
+import { ArrowLeft, Plus, Search, X, LayoutTemplate, Send } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageTransition, PressableScale } from "../../components/motion";
 import TherapistHeroHeader from "../../components/therapist/TherapistHeroHeader";
