@@ -30,8 +30,6 @@ export default function TemplateCard({
       whileHover={{ y: -3, boxShadow: `0 18px 50px ${accentShadow}` }}
       transition={{ type: "spring", stiffness: 320, damping: 26 }}
     >
-      {/* Accent bar */}
-      <div className="h-1.5" style={{ backgroundColor: accent }} />
 
       <button
         onClick={onDelete}

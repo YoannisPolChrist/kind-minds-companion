@@ -42,6 +42,12 @@ const DESKTOP_POSITIONS: React.CSSProperties[] = [
   { top: "24%", left: "31%", transform: "translate(-50%, -50%)" },
 ];
 
+const MOBILE_POSITIONS: React.CSSProperties[] = [
+  { top: "26%", left: "74%", transform: "translate(-50%, -50%)" },
+  { top: "78%", left: "50%", transform: "translate(-50%, -50%)" },
+  { top: "26%", left: "26%", transform: "translate(-50%, -50%)" },
+];
+
 export default function TherapistDashboardTiles({
   onNavigate,
   onOpenSettings,
