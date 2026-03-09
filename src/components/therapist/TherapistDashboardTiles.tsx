@@ -65,7 +65,7 @@ export default function TherapistDashboardTiles({
       className="relative w-full h-screen min-h-[32rem] overflow-hidden"
     >
       {/* ── Desktop: Triangle slices ─────────────────────── */}
-      <div className="hidden sm:block absolute inset-0">
+      <div className="absolute inset-0">
         {SLICES.map((slice, i) => {
           const isHovered = hovered === i;
           const otherHovered = hovered !== null && hovered !== i;
