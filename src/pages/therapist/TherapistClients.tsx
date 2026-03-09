@@ -9,9 +9,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { PageTransition, PressableScale } from "../../components/motion";
+import TherapistHeroHeader from "../../components/therapist/TherapistHeroHeader";
 import { Toast } from "../../components/ui/Toast";
 import { Badge } from "../../components/ui/Badge";
-
 interface Client {
   id: string;
   firstName?: string;
@@ -106,42 +106,61 @@ export default function TherapistClients() {
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="border-b border-border bg-card px-6 py-8">
-          <div className="max-w-5xl mx-auto">
-            <div className="h-8 w-48 bg-muted rounded-lg mb-2 animate-pulse" />
-            <div className="h-4 w-64 bg-muted rounded-lg animate-pulse" />
-          </div>
-        </div>
+        <TherapistHeroHeader maxWidthClassName="max-w-5xl">
+          <div className="h-6 w-32 bg-primary-foreground/20 rounded-xl mb-3" />
+          <div className="h-9 w-56 bg-primary-foreground/15 rounded-2xl" />
+          <div className="h-4 w-72 bg-primary-foreground/10 rounded-xl mt-3" />
+        </TherapistHeroHeader>
+
         <div className="max-w-5xl mx-auto px-6 py-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {[1, 2, 3].map(i => <div key={i} className="bg-card rounded-xl border border-border h-20 animate-pulse" />)}
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="bg-card rounded-xl border border-border h-20 animate-pulse" />
+          ))}
         </div>
       </div>
     );
   }
-
   return (
     <PageTransition className="min-h-screen bg-background">
-      {/* Minimal Header */}
-      <div className="border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-6 py-6">
-          <motion.button onClick={() => navigate("/")} className="text-muted-foreground hover:text-foreground text-sm font-bold mb-5 inline-flex items-center gap-1 transition-colors" whileHover={{ x: -3 }}>
-            <ArrowLeft size={16} /> Dashboard
-          </motion.button>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-black text-foreground tracking-tight">Klienten</h1>
-                <Badge variant="muted">{clients.length}</Badge>
-              </div>
-              <p className="text-muted-foreground text-sm">{clients.length} aktive Klienten</p>
-            </div>
-            <motion.button onClick={() => { resetForm(); setShowAddModal(true); }} className="bg-foreground text-background px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 text-sm" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-              <Plus size={16} /> Hinzufügen
-            </motion.button>
-          </div>
-        </div>
-      </div>
+      <TherapistHeroHeader maxWidthClassName="max-w-5xl">
+        <motion.button
+          onClick={() => navigate("/therapist")}
+          className="inline-flex items-center gap-2 bg-primary-foreground/15 hover:bg-primary-foreground/25 px-4 py-2.5 rounded-2xl transition-colors text-sm font-bold mb-6"
+          whileHover={{ x: -3 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <ArrowLeft size={16} /> Dashboard
+        </motion.button>
 
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <h1 className="text-2xl font-black tracking-tight">Klienten</h1>
+              <Badge
+                variant="muted"
+                className="bg-primary-foreground/15 border-primary-foreground/25 text-primary-foreground"
+              >
+                {clients.length}
+              </Badge>
+            </div>
+            <p className="text-primary-foreground/70 text-sm font-semibold">
+              {clients.length} aktive Klienten
+            </p>
+          </div>
+
+          <motion.button
+            onClick={() => {
+              resetForm();
+              setShowAddModal(true);
+            }}
+            className="bg-primary-foreground/20 hover:bg-primary-foreground/30 px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 text-sm transition-colors"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Plus size={16} /> Hinzufügen
+          </motion.button>
+        </div>
+      </TherapistHeroHeader>
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-5">
         {/* Search */}
         <div className="relative">
