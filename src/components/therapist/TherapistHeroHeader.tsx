@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { HeaderOrbs } from "../motion";
 import { getRandomHeaderImage } from "../../constants/headerImages";
 
@@ -6,7 +6,7 @@ export default function TherapistHeroHeader({
   children,
   maxWidthClassName = "max-w-5xl",
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   maxWidthClassName?: string;
 }) {
   const headerImg = useMemo(() => getRandomHeaderImage(), []);
