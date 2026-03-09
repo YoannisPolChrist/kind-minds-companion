@@ -36,6 +36,12 @@ const CLIP_PATHS = [
   "polygon(50% 50%, 0% 75%, 0% 0%, 50% 0%)",
 ];
 
+const DESKTOP_POSITIONS: React.CSSProperties[] = [
+  { top: "24%", left: "69%", transform: "translate(-50%, -50%)" },
+  { top: "79%", left: "50%", transform: "translate(-50%, -50%)" },
+  { top: "24%", left: "31%", transform: "translate(-50%, -50%)" },
+];
+
 export default function TherapistDashboardTiles({
   onNavigate,
   onOpenSettings,
@@ -48,69 +54,130 @@ export default function TherapistDashboardTiles({
   const [hovered, setHovered] = useState<number | null>(null);
 
   return (
-    <section aria-label="Hauptnavigation Therapeut" className="relative w-full h-screen min-h-[32rem] overflow-hidden">
-      {SLICES.map((slice, i) => {
-        const isHovered = hovered === i;
-        const otherHovered = hovered !== null && hovered !== i;
+    <section
+      aria-label="Hauptnavigation Therapeut"
+      className="relative w-full h-screen min-h-[32rem] overflow-hidden"
+    >
+      {/* ── Desktop: Triangle slices ─────────────────────── */}
+      <div className="hidden sm:block absolute inset-0">
+        {SLICES.map((slice, i) => {
+          const isHovered = hovered === i;
+          const otherHovered = hovered !== null && hovered !== i;
 
-        return (
+          return (
+            <motion.button
+              key={slice.path}
+              onClick={() => onNavigate(slice.path)}
+              onMouseEnter={() => setHovered(i)}
+              onMouseLeave={() => setHovered(null)}
+              className="absolute inset-0 w-full h-full cursor-pointer overflow-hidden focus:outline-none"
+              style={{ clipPath: CLIP_PATHS[i] }}
+              animate={{ opacity: otherHovered ? 0.58 : 1, scale: isHovered ? 1.02 : 1 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+            >
+              <motion.img
+                src={slice.image}
+                alt={slice.label}
+                className="absolute inset-0 w-full h-full object-cover object-center"
+                animate={{ scale: isHovered ? 1.1 : 1.03 }}
+                transition={{ duration: 0.55, ease: "easeOut" }}
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/90 via-primary-dark/45 to-primary-dark/15" />
+
+              <div
+                className="absolute z-10 flex flex-col items-center text-center pointer-events-none"
+                style={DESKTOP_POSITIONS[i]}
+              >
+                <motion.h2
+                  className="text-primary-foreground text-3xl lg:text-4xl font-black leading-tight drop-shadow-lg"
+                  animate={{ y: isHovered ? -4 : 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {slice.label}
+                </motion.h2>
+                <motion.p
+                  className="text-primary-foreground/85 text-sm font-semibold mt-1 max-w-[13rem] drop-shadow"
+                  animate={{ opacity: isHovered ? 1 : 0.8 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {slice.description}
+                </motion.p>
+                <motion.span
+                  className="inline-flex items-center gap-1.5 mt-3 text-primary-foreground font-bold text-sm"
+                  animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 8 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  Öffnen <ArrowRight size={14} />
+                </motion.span>
+              </div>
+            </motion.button>
+          );
+        })}
+
+        {/* SVG dividers */}
+        <svg
+          className="absolute inset-0 w-full h-full pointer-events-none z-20 text-primary-foreground/30"
+          viewBox="0 0 100 100"
+          preserveAspectRatio="none"
+        >
+          <line x1="50" y1="50" x2="50" y2="0" stroke="currentColor" strokeWidth="0.14" />
+          <line x1="50" y1="50" x2="100" y2="75" stroke="currentColor" strokeWidth="0.14" />
+          <line x1="50" y1="50" x2="0" y2="75" stroke="currentColor" strokeWidth="0.14" />
+        </svg>
+      </div>
+
+      {/* ── Mobile: Vertical stack ────────────────────────── */}
+      <div className="sm:hidden absolute inset-0 flex flex-col">
+        {SLICES.map((slice, i) => (
           <motion.button
             key={slice.path}
             onClick={() => onNavigate(slice.path)}
-            onMouseEnter={() => setHovered(i)}
-            onMouseLeave={() => setHovered(null)}
-            className="absolute inset-0 w-full h-full cursor-pointer overflow-hidden focus:outline-none"
-            style={{ clipPath: CLIP_PATHS[i] }}
-            animate={{ opacity: otherHovered ? 0.58 : 1, scale: isHovered ? 1.02 : 1 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
+            className="relative flex-1 w-full overflow-hidden focus:outline-none"
+            whileTap={{ scale: 0.99, opacity: 0.9 }}
+            transition={{ duration: 0.15 }}
           >
-            <motion.img
+            <img
               src={slice.image}
               alt={slice.label}
               className="absolute inset-0 w-full h-full object-cover object-center"
-              animate={{ scale: isHovered ? 1.1 : 1.03 }}
-              transition={{ duration: 0.55, ease: "easeOut" }}
-              loading="lazy"
+              loading={i === 0 ? "eager" : "lazy"}
             />
+            {/* Strong left-gradient for text legibility */}
+            <div className="absolute inset-0 bg-gradient-to-r from-primary-dark/88 via-primary-dark/55 to-primary-dark/20" />
+            {/* Bottom shadow so rows feel separated */}
+            <div className="absolute inset-x-0 bottom-0 h-px bg-primary-foreground/15" />
 
-            <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/90 via-primary-dark/45 to-primary-dark/15" />
-
-            <div className="absolute z-10 flex flex-col items-center text-center pointer-events-none" style={getLabelPosition(i)}>
-              <motion.h2
-                className="text-primary-foreground text-2xl sm:text-3xl lg:text-4xl font-black leading-tight drop-shadow-lg"
-                animate={{ y: isHovered ? -4 : 0 }}
-                transition={{ duration: 0.25 }}
-              >
-                {slice.label}
-              </motion.h2>
-              <motion.p
-                className="text-primary-foreground/85 text-xs sm:text-sm font-medium mt-1 max-w-[12rem]"
-                animate={{ opacity: isHovered ? 1 : 0.8 }}
-                transition={{ duration: 0.25 }}
-              >
-                {slice.description}
-              </motion.p>
-              <motion.span
-                className="inline-flex items-center gap-1.5 mt-3 text-primary-foreground font-bold text-sm"
-                animate={{ opacity: isHovered ? 1 : 0, y: isHovered ? 0 : 8 }}
-                transition={{ duration: 0.25 }}
-              >
-                Öffnen <ArrowRight size={14} />
-              </motion.span>
+            <div className="relative z-10 flex items-center justify-between h-full px-6">
+              <div className="text-left">
+                <h2 className="text-primary-foreground text-2xl font-black leading-tight drop-shadow-lg">
+                  {slice.label}
+                </h2>
+                <p className="text-primary-foreground/80 text-sm font-semibold mt-0.5 drop-shadow">
+                  {slice.description}
+                </p>
+              </div>
+              <div className="w-9 h-9 rounded-xl bg-primary-foreground/15 border border-primary-foreground/25 backdrop-blur-sm flex items-center justify-center shrink-0">
+                <ArrowRight size={16} className="text-primary-foreground" />
+              </div>
             </div>
           </motion.button>
-        );
-      })}
-
-      {/* Welcome text – top center, over the triangle intersection */}
-      <div className="absolute z-30 top-5 left-1/2 -translate-x-1/2 text-center pointer-events-none select-none">
-        <p className="text-primary-foreground/70 text-xs sm:text-sm font-bold uppercase tracking-widest">Willkommen</p>
-        <h1 className="text-primary-foreground text-lg sm:text-xl font-black drop-shadow-lg leading-tight">
-          {therapistName || "Therapeut"}
-        </h1>
+        ))}
       </div>
 
-      {/* Settings button – bottom right */}
+      {/* ── Welcome glass card ────────────────────────────── */}
+      <div className="absolute z-30 top-6 left-1/2 -translate-x-1/2 pointer-events-none select-none text-center whitespace-nowrap">
+        <div className="px-6 py-3.5 rounded-2xl bg-primary-foreground/12 backdrop-blur-xl border border-primary-foreground/25 shadow-xl">
+          <p className="text-primary-foreground/75 text-[11px] font-bold uppercase tracking-[0.15em] mb-0.5">
+            Willkommen
+          </p>
+          <h1 className="text-primary-foreground text-2xl sm:text-3xl lg:text-4xl font-black leading-tight drop-shadow-lg">
+            {therapistName || "Therapeut"}
+          </h1>
+        </div>
+      </div>
+
+      {/* ── Settings button ───────────────────────────────── */}
       <motion.button
         type="button"
         onClick={onOpenSettings}
@@ -121,26 +188,6 @@ export default function TherapistDashboardTiles({
       >
         <Settings size={20} />
       </motion.button>
-
-      <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 text-primary-foreground/30" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <line x1="50" y1="50" x2="50" y2="0" stroke="currentColor" strokeWidth="0.14" />
-        <line x1="50" y1="50" x2="100" y2="75" stroke="currentColor" strokeWidth="0.14" />
-        <line x1="50" y1="50" x2="0" y2="75" stroke="currentColor" strokeWidth="0.14" />
-      </svg>
     </section>
   );
 }
-
-function getLabelPosition(index: number): React.CSSProperties {
-  switch (index) {
-    case 0:
-      return { top: "24%", left: "69%", transform: "translate(-50%, -50%)" };
-    case 1:
-      return { top: "79%", left: "50%", transform: "translate(-50%, -50%)" };
-    case 2:
-      return { top: "24%", left: "31%", transform: "translate(-50%, -50%)" };
-    default:
-      return {};
-  }
-}
-
