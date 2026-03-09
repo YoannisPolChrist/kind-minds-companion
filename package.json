@@ -22,6 +22,7 @@
     "@types/react": "~19.1.10",
     "@types/react-dom": "^19.2.3",
     "@types/react-native": "^0.72.8",
+    "@types/react-router-dom": "^5.3.3",
     "@vitejs/plugin-react-swc": "^4.2.3",
     "autoprefixer": "^10.4.27",
     "babel-preset-expo": "^54.0.10",
