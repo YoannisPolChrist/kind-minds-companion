@@ -92,7 +92,7 @@ export default function TherapistDashboardTiles({
               <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/90 via-primary-dark/45 to-primary-dark/15" />
 
               <div
-                className="absolute z-10 flex flex-col items-center text-center pointer-events-none"
+                className="hidden sm:flex absolute z-10 flex-col items-center text-center pointer-events-none"
                 style={DESKTOP_POSITIONS[i]}
               >
                 <motion.h2
@@ -116,6 +116,18 @@ export default function TherapistDashboardTiles({
                 >
                   Öffnen <ArrowRight size={14} />
                 </motion.span>
+              </div>
+
+              <div
+                className="sm:hidden absolute z-10 flex flex-col items-center text-center pointer-events-none"
+                style={MOBILE_POSITIONS[i]}
+              >
+                <h2 className="text-primary-foreground text-2xl font-black leading-tight drop-shadow-lg">
+                  {slice.label}
+                </h2>
+                <p className="text-primary-foreground/85 text-xs font-semibold mt-1 max-w-[10.5rem] drop-shadow">
+                  {slice.description}
+                </p>
               </div>
             </motion.button>
           );
