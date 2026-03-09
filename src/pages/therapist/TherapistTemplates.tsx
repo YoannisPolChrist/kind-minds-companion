@@ -187,6 +187,9 @@ export default function TherapistTemplates() {
               />
             ))}
           </div>
+        )}
+      </div>
+
       {/* Assign Modal */}
       <AnimatePresence>
         {assignTemplate && (
