@@ -42,6 +42,12 @@ const DESKTOP_POSITIONS: React.CSSProperties[] = [
   { top: "24%", left: "31%", transform: "translate(-50%, -50%)" },
 ];
 
+const MOBILE_POSITIONS: React.CSSProperties[] = [
+  { top: "26%", left: "74%", transform: "translate(-50%, -50%)" },
+  { top: "78%", left: "50%", transform: "translate(-50%, -50%)" },
+  { top: "26%", left: "26%", transform: "translate(-50%, -50%)" },
+];
+
 export default function TherapistDashboardTiles({
   onNavigate,
   onOpenSettings,
@@ -59,7 +65,7 @@ export default function TherapistDashboardTiles({
       className="relative w-full h-screen min-h-[32rem] overflow-hidden"
     >
       {/* ── Desktop: Triangle slices ─────────────────────── */}
-      <div className="hidden sm:block absolute inset-0">
+      <div className="absolute inset-0">
         {SLICES.map((slice, i) => {
           const isHovered = hovered === i;
           const otherHovered = hovered !== null && hovered !== i;
@@ -73,6 +79,7 @@ export default function TherapistDashboardTiles({
               className="absolute inset-0 w-full h-full cursor-pointer overflow-hidden focus:outline-none"
               style={{ clipPath: CLIP_PATHS[i] }}
               animate={{ opacity: otherHovered ? 0.58 : 1, scale: isHovered ? 1.02 : 1 }}
+              whileTap={{ scale: 0.99 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
             >
               <motion.img
@@ -86,7 +93,7 @@ export default function TherapistDashboardTiles({
               <div className="absolute inset-0 bg-gradient-to-t from-primary-dark/90 via-primary-dark/45 to-primary-dark/15" />
 
               <div
-                className="absolute z-10 flex flex-col items-center text-center pointer-events-none"
+                className="hidden sm:flex absolute z-10 flex-col items-center text-center pointer-events-none"
                 style={DESKTOP_POSITIONS[i]}
               >
                 <motion.h2
@@ -111,6 +118,18 @@ export default function TherapistDashboardTiles({
                   Öffnen <ArrowRight size={14} />
                 </motion.span>
               </div>
+
+              <div
+                className="sm:hidden absolute z-10 flex flex-col items-center text-center pointer-events-none"
+                style={MOBILE_POSITIONS[i]}
+              >
+                <h2 className="text-primary-foreground text-2xl font-black leading-tight drop-shadow-lg">
+                  {slice.label}
+                </h2>
+                <p className="text-primary-foreground/85 text-xs font-semibold mt-1 max-w-[10.5rem] drop-shadow">
+                  {slice.description}
+                </p>
+              </div>
             </motion.button>
           );
         })}
@@ -127,43 +146,6 @@ export default function TherapistDashboardTiles({
         </svg>
       </div>
 
-      {/* ── Mobile: Vertical stack ────────────────────────── */}
-      <div className="sm:hidden absolute inset-0 flex flex-col">
-        {SLICES.map((slice, i) => (
-          <motion.button
-            key={slice.path}
-            onClick={() => onNavigate(slice.path)}
-            className="relative flex-1 w-full overflow-hidden focus:outline-none"
-            whileTap={{ scale: 0.99, opacity: 0.9 }}
-            transition={{ duration: 0.15 }}
-          >
-            <img
-              src={slice.image}
-              alt={slice.label}
-              className="absolute inset-0 w-full h-full object-cover object-center"
-              loading={i === 0 ? "eager" : "lazy"}
-            />
-            {/* Strong left-gradient for text legibility */}
-            <div className="absolute inset-0 bg-gradient-to-r from-primary-dark/88 via-primary-dark/55 to-primary-dark/20" />
-            {/* Bottom shadow so rows feel separated */}
-            <div className="absolute inset-x-0 bottom-0 h-px bg-primary-foreground/15" />
-
-            <div className="relative z-10 flex items-center justify-between h-full px-6">
-              <div className="text-left">
-                <h2 className="text-primary-foreground text-2xl font-black leading-tight drop-shadow-lg">
-                  {slice.label}
-                </h2>
-                <p className="text-primary-foreground/80 text-sm font-semibold mt-0.5 drop-shadow">
-                  {slice.description}
-                </p>
-              </div>
-              <div className="w-9 h-9 rounded-xl bg-primary-foreground/15 border border-primary-foreground/25 backdrop-blur-sm flex items-center justify-center shrink-0">
-                <ArrowRight size={16} className="text-primary-foreground" />
-              </div>
-            </div>
-          </motion.button>
-        ))}
-      </div>
 
       {/* ── Welcome glass card ────────────────────────────── */}
       <div className="absolute z-30 top-6 left-1/2 -translate-x-1/2 pointer-events-none select-none text-center whitespace-nowrap">

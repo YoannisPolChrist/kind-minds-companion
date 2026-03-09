@@ -30,8 +30,6 @@ export default function TemplateCard({
       whileHover={{ y: -3, boxShadow: `0 18px 50px ${accentShadow}` }}
       transition={{ type: "spring", stiffness: 320, damping: 26 }}
     >
-      {/* Accent bar */}
-      <div className="h-1.5" style={{ backgroundColor: accent }} />
 
       <button
         onClick={onDelete}
@@ -43,14 +41,14 @@ export default function TemplateCard({
 
       {/* Cover */}
       {tpl?.coverImage ? (
-        <div className="relative h-40 w-full overflow-hidden">
+        <div className="relative h-40 w-full overflow-hidden bg-muted">
           <img
             src={tpl.coverImage}
             alt={`Titelbild von ${tpl.title}`}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 will-change-transform group-hover:scale-[1.02]"
             loading="lazy"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-card/95 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-card/10 to-transparent" />
         </div>
       ) : (
         <div

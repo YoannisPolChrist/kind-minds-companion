@@ -146,7 +146,7 @@ export default function TherapistTemplates() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Vorlagen durchsuchen…"
-            className="w-full pl-11 pr-10 py-3 rounded-2xl bg-primary-foreground/12 border border-primary-foreground/25 text-primary-foreground font-semibold placeholder-primary-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary-foreground/25 text-sm"
+            className="w-full pl-11 pr-10 py-3 rounded-2xl bg-card/80 border border-primary-foreground/25 text-foreground font-semibold placeholder:text-muted-foreground/70 focus:outline-none focus:ring-2 focus:ring-primary-foreground/30 backdrop-blur-xl text-sm caret-foreground"
           />
           {search && (
             <button
