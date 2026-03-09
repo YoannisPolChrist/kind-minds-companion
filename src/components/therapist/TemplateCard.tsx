@@ -51,7 +51,6 @@ export default function TemplateCard({
           <div className="absolute inset-0 bg-gradient-to-t from-card/70 via-card/10 to-transparent" />
         </div>
       ) : (
-      ) : (
         <div
           className="h-40 w-full flex items-center justify-center"
           style={{ backgroundColor: accentSofter }}
