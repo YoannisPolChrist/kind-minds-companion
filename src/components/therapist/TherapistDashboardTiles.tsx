@@ -79,6 +79,7 @@ export default function TherapistDashboardTiles({
               className="absolute inset-0 w-full h-full cursor-pointer overflow-hidden focus:outline-none"
               style={{ clipPath: CLIP_PATHS[i] }}
               animate={{ opacity: otherHovered ? 0.58 : 1, scale: isHovered ? 1.02 : 1 }}
+              whileTap={{ scale: 0.99 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
             >
               <motion.img

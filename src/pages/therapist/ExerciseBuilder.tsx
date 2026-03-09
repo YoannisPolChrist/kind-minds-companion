@@ -1055,30 +1055,72 @@ export default function ExerciseBuilderPage() {
   return (
     <PageTransition className="min-h-screen bg-background pb-32">
       {/* Header */}
-      <div className="rounded-b-[2rem] relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${themeColor}, ${themeColor}CC)` }}>
+      <div className="rounded-b-[2rem] relative overflow-hidden">
+        <img
+          src={headerImg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover opacity-80"
+          loading="lazy"
+        />
+        <div
+          className="absolute inset-0"
+          style={{ background: `linear-gradient(135deg, ${themeColor}B3, ${themeColor}4D)` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-dark/30 to-primary-dark/80" />
+
         <HeaderOrbs />
         <div className="max-w-3xl mx-auto px-6 pt-12 pb-8 relative z-10">
           <div className="flex items-center justify-between mb-5">
-            <motion.button onClick={() => navigate("/therapist/templates")} className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-4 py-2.5 rounded-2xl text-sm font-bold text-white" whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }}>
+            <motion.button
+              onClick={() => navigate("/therapist/templates")}
+              className="flex items-center gap-2 bg-primary-foreground/15 hover:bg-primary-foreground/25 px-4 py-2.5 rounded-2xl text-sm font-bold text-primary-foreground"
+              whileHover={{ x: -3 }}
+              whileTap={{ scale: 0.95 }}
+            >
               <ArrowLeft size={16} /> Zurück
             </motion.button>
-            <motion.button onClick={handleSave} disabled={saving || !title.trim()} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-5 py-2.5 rounded-2xl text-sm font-bold text-white disabled:opacity-40" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              {saving ? <motion.span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <Save size={16} />}
+
+            <motion.button
+              onClick={handleSave}
+              disabled={saving || !title.trim()}
+              className="flex items-center gap-2 bg-primary-foreground/20 hover:bg-primary-foreground/30 px-5 py-2.5 rounded-2xl text-sm font-bold text-primary-foreground disabled:opacity-40"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              {saving ? (
+                <motion.span
+                  className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full inline-block"
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                />
+              ) : (
+                <Save size={16} />
+              )}
               {saving ? "Speichern…" : "Speichern"}
             </motion.button>
           </div>
 
-          <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Übungstitel eingeben…"
-            className="w-full text-3xl font-black text-white bg-transparent placeholder-white/50 focus:outline-none mb-3 tracking-tight" />
-          <p className="text-white/60 text-sm font-medium">{blocks.length} {blocks.length === 1 ? "Modul" : "Module"} · {isNew ? "Neue Vorlage" : "Bearbeiten"}</p>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Übungstitel eingeben…"
+            className="w-full text-3xl font-black text-primary-foreground bg-transparent placeholder:text-primary-foreground/55 focus:outline-none mb-3 tracking-tight"
+          />
+          <p className="text-primary-foreground/70 text-sm font-medium">
+            {blocks.length} {blocks.length === 1 ? "Modul" : "Module"} · {isNew ? "Neue Vorlage" : "Bearbeiten"}
+          </p>
 
           <div className="flex items-center gap-3 mt-5">
-            <Palette size={16} className="text-white/60" />
+            <Palette size={16} className="text-primary-foreground/70" />
             <div className="flex gap-2">
-              {THEME_COLORS.map(c => (
-                <button key={c} onClick={() => setThemeColor(c)}
-                  className={`w-7 h-7 rounded-full border-2 transition-all ${themeColor === c ? "border-white scale-125 shadow-lg" : "border-white/30 hover:scale-110"}`}
-                  style={{ backgroundColor: c }} />
+              {THEME_COLORS.map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setThemeColor(c)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${themeColor === c ? "border-primary-foreground scale-125 shadow-lg" : "border-primary-foreground/30 hover:scale-110"}`}
+                  style={{ backgroundColor: c }}
+                  aria-label="Theme-Farbe auswählen"
+                />
               ))}
             </div>
           </div>
