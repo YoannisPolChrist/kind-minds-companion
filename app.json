@@ -1,0 +1,61 @@
+{
+  "expo": {
+    "name": "TherapyClientApp",
+    "slug": "TherapyClientApp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "therapie.prozess.optimierung",
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.READ_CALENDAR",
+        "android.permission.WRITE_CALENDAR",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Die App benötigt Zugriff auf deinen Kalender, um Therapie-Erinnerungen einzutragen."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Die App benötigt Zugriff auf deine Fotos für Medien-Uploads in Übungen.",
+          "cameraPermission": "Die App benötigt Zugriff auf die Kamera für Medien-Uploads."
+        }
+      ],
+      "expo-notifications",
+      "./modules/expo-mindful-tracking/app.plugin.js"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "5e4f2bb0-ee84-4751-bfb1-a149335020e5"
+      }
+    }
+  }
+}

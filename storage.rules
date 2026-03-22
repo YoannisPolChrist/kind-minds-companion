@@ -1,0 +1,50 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function requesterProfile() {
+      return get(/databases/(default)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function requesterProfileExists() {
+      return isAuthenticated() &&
+        exists(/databases/(default)/documents/users/$(request.auth.uid));
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAssignedTherapistForClient(clientId) {
+      return requesterProfileExists() &&
+        requesterProfile().role == 'therapist' &&
+        exists(/databases/(default)/documents/users/$(clientId)) &&
+        get(/databases/(default)/documents/users/$(clientId)).data.therapistId == request.auth.uid;
+    }
+
+    match /profile_pictures/{userId}/{fileName} {
+      allow read, write: if isOwner(userId) || isAssignedTherapistForClient(userId);
+    }
+
+    match /client_notes/{clientId}/{fileName} {
+      allow read, write: if isOwner(clientId) || isAssignedTherapistForClient(clientId);
+    }
+
+    match /client_resources/{clientId}/{fileName} {
+      allow read, write: if isOwner(clientId) || isAssignedTherapistForClient(clientId);
+    }
+
+    match /exercises/{allPaths=**} {
+      allow read: if isAuthenticated();
+      allow write: if requesterProfileExists() && requesterProfile().role == 'therapist';
+    }
+
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

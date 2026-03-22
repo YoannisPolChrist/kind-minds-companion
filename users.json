@@ -1,0 +1,31 @@
+{"users": [
+{
+  "localId": "PmSpZ1SHWFRLCnORc4k2mlBKuXy2",
+  "email": "ps.johanneschrist@gmail.com",
+  "emailVerified": true,
+  "passwordHash": "Hclxjl/NVBHNpFvx2OE8PqV8QR0OBW3iapap7/HeEQYlXLhLY+q5CengW9NozSPJNapepk8MF/JLZhh9OeLPWw==",
+  "salt": "YyJu1fgvnNRV1A==",
+  "lastSignedInAt": "1772677897259",
+  "createdAt": "1772002803297",
+  "providerUserInfo": []
+},
+{
+  "localId": "w2l3gsGY0wNnkPJb0z8lB4nUNOQ2",
+  "email": "christ.holomotion@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "KzzTYwQE1cKxqq0aBnkUYfgn6dmbZtDdbV02OrN1pL1sn6MEQkd/xS4t1KbRsiB5NI7DzDb44nQuF98iyvTGMg==",
+  "salt": "o3whNM7hz31ikQ==",
+  "lastSignedInAt": "1772568011802",
+  "createdAt": "1772568011802",
+  "providerUserInfo": []
+},
+{
+  "localId": "zXdSXTGSTIToh7h1wrvkfqBBW5k2",
+  "email": "gs.johanneschrist@gmail.com",
+  "emailVerified": false,
+  "passwordHash": "s29qbiNSbbe5VOScnk27ameAHz/Q92Xtf+q6TiWyLs1RbyRDr1H/RRoRAtVCorjvKnP8nHwDgjBFYyaV5Ew91Q==",
+  "salt": "tVYg/bnFBuOD9w==",
+  "lastSignedInAt": "1772684417384",
+  "createdAt": "1772684417384",
+  "providerUserInfo": []
+}]}
