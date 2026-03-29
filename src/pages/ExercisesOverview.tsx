@@ -65,7 +65,18 @@ type FilterTab = "all" | "open" | "completed";
 
 
 
-function ExerciseCardPremium({ exercise, index, onClick }: { exercise: Exercise; index: number; onClick: () => void }) {
+function ExerciseCardPremium({
+  exercise,
+  index,
+  onClick,
+  locale,
+}: {
+  exercise: Exercise;
+  index: number;
+  onClick: () => void;
+  locale?: string;
+}) {
+  const displayLocale = locale || "de";
 
   const color = exercise.themeColor || "hsl(var(--primary))";
 
@@ -173,7 +184,11 @@ function ExerciseCardPremium({ exercise, index, onClick }: { exercise: Exercise;
 
                   <CheckCircle size={12} className="text-emerald-500" />
 
-                  Erledigt am {new Date(exercise.lastCompletedAt).toLocaleDateString(locale, { day: "2-digit", month: "short" })}
+                  Erledigt am{" "}
+                  {new Date(exercise.lastCompletedAt).toLocaleDateString(displayLocale, {
+                    day: "2-digit",
+                    month: "short",
+                  })}
 
                 </p>
 
@@ -675,6 +690,8 @@ export default function ExercisesOverview() {
                   index={idx}
 
                   onClick={() => navigate(`/exercise/${ex.id}`)}
+
+                  locale={locale}
 
                 />
 
