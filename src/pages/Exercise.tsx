@@ -17,6 +17,7 @@ import {
   SuccessAnimation, BreathingCircle,
 } from "../components/motion";
 import { BannerToast } from "../components/ui/Toast";
+import { assetPath } from "../utils/assetPath";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -57,9 +58,9 @@ interface ExerciseData {
 type Answers = Record<string, string>;
 
 const HEADER_IMAGES = [
-  "/images/HomeUi1.webp", "/images/HomeUi2.webp", "/images/HomeUi3.webp",
-  "/images/HomeUi4.webp", "/images/HomeUi5.webp", "/images/HomeUi6.webp",
-];
+  "images/HomeUi1.webp", "images/HomeUi2.webp", "images/HomeUi3.webp",
+  "images/HomeUi4.webp", "images/HomeUi5.webp", "images/HomeUi6.webp",
+].map((path) => assetPath(path));
 const headerImg = HEADER_IMAGES[Math.floor(Math.random() * HEADER_IMAGES.length)];
 
 const CHART_PALETTE = ["#137386", "#10B981", "#8B5CF6", "#F59E0B", "#EC4899", "#3B82F6", "#14B8A6", "#F97316"];
@@ -947,6 +948,15 @@ export default function Exercise() {
                 <CheckCircle size={22} className="text-success" />
                 <span className="text-success font-black text-lg">Bereits abgeschlossen</span>
               </div>
+              <motion.button
+                onClick={handleDownloadPdf}
+                className="w-full py-4 rounded-2xl border-2 border-border bg-card text-foreground font-black text-lg flex items-center justify-center gap-2 shadow-sm"
+                whileHover={{ scale: 1.02, y: -2 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <Download size={18} />
+                PDF herunterladen
+              </motion.button>
               <motion.button
                 onClick={handleRedo}
                 className="w-full py-4 rounded-2xl bg-card border-2 border-primary text-primary font-black text-lg flex items-center justify-center gap-2 hover:bg-primary/5 transition-colors"

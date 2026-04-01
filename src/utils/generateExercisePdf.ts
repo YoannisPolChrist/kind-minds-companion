@@ -47,27 +47,45 @@ interface PdfPalette {
 
 const FALLBACK_THEME = "#137386";
 
-const BLOCK_META: Record<string, { label: string; desc: string; icon: string }> = {
-  reflection: { label: "Reflektion", desc: "Freie Texteingabe", icon: "✍" },
-  text: { label: "Reflektion", desc: "Freie Texteingabe", icon: "✍" },
-  scale: { label: "Skala 1-10", desc: "Numerische Bewertung", icon: "◉" },
-  choice: { label: "Auswahl", desc: "Einzelauswahl", icon: "○" },
-  checklist: { label: "Checkliste", desc: "Mehrfachauswahl", icon: "✓" },
-  homework: { label: "ABC-Protokoll", desc: "Verhaltens-Tagebuch", icon: "ABC" },
-  gratitude: { label: "Dankbarkeit", desc: "Dankbarkeits-Journal", icon: "♥" },
-  info: { label: "Information", desc: "Psychoedukation", icon: "i" },
-  media: { label: "Foto / Video", desc: "Medien", icon: "▣" },
-  video: { label: "Web-Video", desc: "Link", icon: "▶" },
-  timer: { label: "Timer", desc: "Countdown", icon: "⏱" },
-  breathing: { label: "Atemübung", desc: "4-4-4 Rhythmus", icon: "◌" },
-  spider_chart: { label: "Netzdiagramm", desc: "Profilanalyse", icon: "◎" },
-  bar_chart: { label: "Balkendiagramm", desc: "Wertevergleich", icon: "▤" },
-  pie_chart: { label: "Kreisdiagramm", desc: "Verteilung", icon: "◔" },
-  line_chart: { label: "Liniendiagramm", desc: "Entwicklung", icon: "⌁" },
-  progress_bar: { label: "Fortschritt", desc: "Ziel-Tracking", icon: "▰" },
-  mood_wheel: { label: "Stimmungsrad", desc: "Emotionen", icon: "☺" },
-  table: { label: "Tabelle", desc: "Strukturierte Daten", icon: "▥" },
-  slider_group: { label: "Slider-Bereich", desc: "Parallele Bewertungen", icon: "↔" },
+interface BlockMeta {
+  label: string;
+  desc: string;
+  icon: string;
+  accent: string;
+}
+
+interface BlockAccentTokens {
+  accent: string;
+  accentDeep: string;
+  accentLift: string;
+  accentSoft: string;
+  accentSoftStrong: string;
+  accentBorder: string;
+  accentLine: string;
+  accentGlow: string;
+}
+
+const BLOCK_META: Record<string, BlockMeta> = {
+  reflection: { label: "Reflektion", desc: "Freie Texteingabe", icon: "✍", accent: "#3B82F6" },
+  text: { label: "Reflektion", desc: "Freie Texteingabe", icon: "✍", accent: "#3B82F6" },
+  scale: { label: "Skala 1-10", desc: "Numerische Bewertung", icon: "◉", accent: "#F59E0B" },
+  choice: { label: "Auswahl", desc: "Einzelauswahl", icon: "○", accent: "#6366F1" },
+  checklist: { label: "Checkliste", desc: "Mehrfachauswahl", icon: "✓", accent: "#10B981" },
+  homework: { label: "ABC-Protokoll", desc: "Verhaltens-Tagebuch", icon: "ABC", accent: "#C09D59" },
+  gratitude: { label: "Dankbarkeit", desc: "Dankbarkeits-Journal", icon: "♥", accent: "#EC4899" },
+  info: { label: "Information", desc: "Psychoedukation", icon: "i", accent: "#14B8A6" },
+  media: { label: "Foto / Video", desc: "Medien", icon: "▣", accent: "#F43F5E" },
+  video: { label: "Web-Video", desc: "Link", icon: "▶", accent: "#E11D48" },
+  timer: { label: "Timer", desc: "Countdown", icon: "⏱", accent: "#8B5CF6" },
+  breathing: { label: "Atemübung", desc: "4-4-4 Rhythmus", icon: "◌", accent: "#137386" },
+  spider_chart: { label: "Netzdiagramm", desc: "Profilanalyse", icon: "◎", accent: "#F97316" },
+  bar_chart: { label: "Balkendiagramm", desc: "Wertevergleich", icon: "▤", accent: "#0EA5E9" },
+  pie_chart: { label: "Kreisdiagramm", desc: "Verteilung", icon: "◔", accent: "#8B5CF6" },
+  line_chart: { label: "Liniendiagramm", desc: "Entwicklung", icon: "⌁", accent: "#10B981" },
+  progress_bar: { label: "Fortschritt", desc: "Ziel-Tracking", icon: "▰", accent: "#06B6D4" },
+  mood_wheel: { label: "Stimmungsrad", desc: "Emotionen", icon: "☺", accent: "#F472B6" },
+  table: { label: "Tabelle", desc: "Strukturierte Daten", icon: "▥", accent: "#0D9488" },
+  slider_group: { label: "Slider-Bereich", desc: "Parallele Bewertungen", icon: "↔", accent: "#7C3AED" },
 };
 
 function getMeta(type: string) {
@@ -151,6 +169,20 @@ function createPalette(themeColor?: string): PdfPalette {
   };
 }
 
+function createBlockAccentTokens(color?: string): BlockAccentTokens {
+  const palette = createPalette(color);
+  return {
+    accent: palette.theme,
+    accentDeep: palette.themeDeep,
+    accentLift: palette.themeLift,
+    accentSoft: palette.themeSoft,
+    accentSoftStrong: palette.themeSoftStrong,
+    accentBorder: palette.themeBorder,
+    accentLine: palette.themeLine,
+    accentGlow: palette.themeGlow,
+  };
+}
+
 function renderSelectedOption(option: string, isSelected: boolean): string {
   return `
     <div class="option-card${isSelected ? " selected" : ""}">
@@ -178,6 +210,17 @@ function renderBlockHtml(
   answers?: Record<string, string>,
 ): string {
   const meta = getMeta(block.type);
+  const accentTokens = createBlockAccentTokens(meta.accent || palette.theme);
+  const blockStyle = [
+    `--block-accent:${accentTokens.accent}`,
+    `--block-accent-deep:${accentTokens.accentDeep}`,
+    `--block-accent-lift:${accentTokens.accentLift}`,
+    `--block-accent-soft:${accentTokens.accentSoft}`,
+    `--block-accent-soft-strong:${accentTokens.accentSoftStrong}`,
+    `--block-accent-border:${accentTokens.accentBorder}`,
+    `--block-accent-line:${accentTokens.accentLine}`,
+    `--block-accent-glow:${accentTokens.accentGlow}`,
+  ].join(";");
   const answer = answers?.[block.id] || "";
 
   let body = "";
@@ -353,7 +396,7 @@ function renderBlockHtml(
   }
 
   return `
-    <section class="block-card">
+    <section class="block-card" style="${blockStyle}">
       <div class="block-header">
         <div class="block-icon">${meta.icon}</div>
         <div class="block-meta">
@@ -486,9 +529,9 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     position: relative;
     overflow: hidden;
     background: rgba(255,255,255,0.94);
-    border: 1px solid var(--theme-border);
+    border: 1px solid var(--block-accent-border, var(--theme-border));
     border-radius: 26px;
-    box-shadow: 0 18px 48px -24px var(--theme-glow);
+    box-shadow: 0 18px 48px -24px var(--block-accent-glow, var(--theme-glow));
     page-break-inside: avoid;
   }
 
@@ -496,7 +539,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     content: "";
     display: block;
     height: 4px;
-    background: linear-gradient(90deg, var(--theme) 0%, var(--theme-lift) 100%);
+    background: linear-gradient(90deg, var(--block-accent, var(--theme)) 0%, var(--block-accent-lift, var(--theme-lift)) 100%);
   }
 
   .block-header {
@@ -504,7 +547,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     align-items: center;
     gap: 14px;
     padding: 18px 22px 16px;
-    background: linear-gradient(180deg, var(--theme-soft-strong) 0%, rgba(255,255,255,0.96) 100%);
+    background: linear-gradient(180deg, var(--block-accent-soft-strong, var(--theme-soft-strong)) 0%, rgba(255,255,255,0.96) 100%);
     border-bottom: 1px solid rgba(15, 23, 42, 0.06);
   }
 
@@ -515,12 +558,12 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, var(--theme) 0%, var(--theme-deep) 100%);
+    background: linear-gradient(135deg, var(--block-accent, var(--theme)) 0%, var(--block-accent-deep, var(--theme-deep)) 100%);
     color: #ffffff;
     font-size: 18px;
     font-weight: 800;
     line-height: 1;
-    box-shadow: 0 12px 26px -18px var(--theme-glow);
+    box-shadow: 0 12px 26px -18px var(--block-accent-glow, var(--theme-glow));
     flex-shrink: 0;
   }
 
@@ -552,9 +595,9 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: var(--theme-soft-strong);
-    border: 1px solid var(--theme-border);
-    color: var(--theme-deep);
+    background: var(--block-accent-soft-strong, var(--theme-soft-strong));
+    border: 1px solid var(--block-accent-border, var(--theme-border));
+    color: var(--block-accent-deep, var(--theme-deep));
     font-size: 12px;
     font-weight: 900;
   }
@@ -576,7 +619,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
   .highlight-card,
   .info-box {
     background: linear-gradient(180deg, var(--surface-strong) 0%, rgba(255,255,255,0.92) 100%);
-    border: 1px solid var(--theme-border);
+    border: 1px solid var(--block-accent-border, var(--theme-border));
     border-radius: 20px;
     padding: 16px 18px;
   }
@@ -585,7 +628,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
   .subheading {
     font-size: 11px;
     font-weight: 800;
-    color: var(--theme-deep);
+    color: var(--block-accent-deep, var(--theme-deep));
     text-transform: uppercase;
     letter-spacing: 0.08em;
   }
@@ -605,7 +648,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
 
   .write-line {
     height: 30px;
-    border-bottom: 1.5px dashed var(--theme-line);
+    border-bottom: 1.5px dashed var(--block-accent-line, var(--theme-line));
   }
 
   .write-line + .write-line {
@@ -618,7 +661,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
 
   .answer-box {
     background: var(--surface);
-    border: 1px solid var(--theme-border);
+    border: 1px solid var(--block-accent-border, var(--theme-border));
     border-radius: 16px;
     padding: 14px 16px;
     font-size: 14px;
@@ -634,7 +677,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
 
   .answer-label {
     margin-top: 10px;
-    color: var(--theme-deep);
+    color: var(--block-accent-deep, var(--theme-deep));
     font-size: 13px;
     font-weight: 800;
     text-align: center;
@@ -647,7 +690,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
   }
 
   .gratitude-card {
-    background: linear-gradient(180deg, var(--theme-soft-strong) 0%, rgba(255,255,255,0.96) 100%);
+    background: linear-gradient(180deg, var(--block-accent-soft-strong, var(--theme-soft-strong)) 0%, rgba(255,255,255,0.96) 100%);
   }
 
   .scale-labels {
@@ -682,10 +725,10 @@ export function generateExercisePdf(exercise: PdfExercise): void {
   }
 
   .scale-circle.selected {
-    background: linear-gradient(135deg, var(--theme) 0%, var(--theme-deep) 100%);
+    background: linear-gradient(135deg, var(--block-accent, var(--theme)) 0%, var(--block-accent-deep, var(--theme-deep)) 100%);
     border-color: transparent;
     color: #ffffff;
-    box-shadow: 0 12px 24px -16px var(--theme-glow);
+    box-shadow: 0 12px 24px -16px var(--block-accent-glow, var(--theme-glow));
   }
 
   .options {
@@ -709,7 +752,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
 
   .option-card.selected {
     background: linear-gradient(180deg, var(--surface-strong) 0%, rgba(255,255,255,0.96) 100%);
-    border-color: var(--theme-border);
+    border-color: var(--block-accent-border, var(--theme-border));
     color: #0f172a;
     font-weight: 700;
   }
@@ -739,7 +782,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
 
   .option-indicator.selected,
   .check-indicator.selected {
-    background: linear-gradient(135deg, var(--theme) 0%, var(--theme-deep) 100%);
+    background: linear-gradient(135deg, var(--block-accent, var(--theme)) 0%, var(--block-accent-deep, var(--theme-deep)) 100%);
     border-color: transparent;
   }
 
@@ -754,7 +797,7 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     font-size: 18px;
     line-height: 1.2;
     font-weight: 900;
-    color: var(--theme-deep);
+    color: var(--block-accent-deep, var(--theme-deep));
     margin-bottom: 6px;
   }
 
@@ -764,22 +807,22 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     max-height: 280px;
     object-fit: cover;
     border-radius: 18px;
-    border: 1px solid var(--theme-border);
+    border: 1px solid var(--block-accent-border, var(--theme-border));
   }
 
   .media-placeholder {
     padding: 30px;
     text-align: center;
-    color: var(--theme-deep);
+    color: var(--block-accent-deep, var(--theme-deep));
     font-size: 13px;
     font-weight: 800;
     border-radius: 18px;
-    border: 1.5px dashed var(--theme-line);
+    border: 1.5px dashed var(--block-accent-line, var(--theme-line));
     background: var(--surface);
   }
 
   a {
-    color: var(--theme-deep);
+    color: var(--block-accent-deep, var(--theme-deep));
     text-decoration: underline;
     word-break: break-all;
   }
@@ -794,14 +837,14 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     height: 14px;
     border-radius: 999px;
     overflow: hidden;
-    background: var(--theme-soft-strong);
-    border: 1px solid var(--theme-border);
+    background: var(--block-accent-soft-strong, var(--theme-soft-strong));
+    border: 1px solid var(--block-accent-border, var(--theme-border));
   }
 
   .progress-fill {
     height: 100%;
     border-radius: inherit;
-    background: linear-gradient(90deg, var(--theme) 0%, var(--theme-deep) 100%);
+    background: linear-gradient(90deg, var(--block-accent, var(--theme)) 0%, var(--block-accent-deep, var(--theme-deep)) 100%);
   }
 
   .data-table {
@@ -810,17 +853,17 @@ export function generateExercisePdf(exercise: PdfExercise): void {
     border-spacing: 0;
     overflow: hidden;
     border-radius: 18px;
-    border: 1px solid var(--theme-border);
+    border: 1px solid var(--block-accent-border, var(--theme-border));
   }
 
   .data-table th {
     padding: 12px 14px;
     text-align: left;
-    background: var(--theme-soft-strong);
-    color: var(--theme-deep);
+    background: var(--block-accent-soft-strong, var(--theme-soft-strong));
+    color: var(--block-accent-deep, var(--theme-deep));
     font-size: 12px;
     font-weight: 800;
-    border-bottom: 1px solid var(--theme-border);
+    border-bottom: 1px solid var(--block-accent-border, var(--theme-border));
   }
 
   .data-table td {
