@@ -1,12 +1,18 @@
 import { useEffect } from "react";
 import { doc, getDoc, setDoc } from "firebase/firestore/lite";
+import { useLocation } from "react-router-dom";
 import { useAuth } from "./useAuth";
 import {
   createLanguageStore,
+  normalizeLanguage,
   resolveExplicitLanguage,
   type LanguageCode,
 } from "../runtime/languageStore";
 import { db } from "../lib/firebaseDb";
+import {
+  getCompanionLanguageFromPath,
+  resolveCompanionPathForLanguage,
+} from "../runtime/companionPath";
 
 async function fetchRemoteLanguage({
   userId,
@@ -81,29 +87,75 @@ export { LanguageCode };
 
 export function useLanguage() {
   const locale = useWebLanguageStore((state) => state.locale);
+  const loading = useWebLanguageStore((state) => state.loading);
   const setLocaleStore = useWebLanguageStore((state) => state.setLocale);
   const { user } = useAuth();
 
   return {
     locale,
+    loading,
     setLanguage: async (lang: string) => {
-      await setLocaleStore(lang as LanguageCode, user?.uid);
+      const normalized = normalizeLanguage(lang) ?? "de";
+      await setLocaleStore(normalized, user?.uid);
+
+      if (typeof window === "undefined") {
+        return;
+      }
+
+      const redirectTarget = resolveCompanionPathForLanguage(
+        window.location.pathname,
+        normalized,
+        window.location.search,
+        window.location.hash
+      );
+
+      if (redirectTarget && redirectTarget !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+        window.location.replace(redirectTarget);
+      }
     },
   };
 }
 
 export function LanguageSync() {
   const { user, profile, loading } = useAuth();
+  const location = useLocation();
+  const locale = useWebLanguageStore((state) => state.locale);
+  const localeLoading = useWebLanguageStore((state) => state.loading);
 
   useEffect(() => {
     if (!loading) {
+      const pathLocale = getCompanionLanguageFromPath(location.pathname);
+      const profilePreference = profile?.preferences?.language;
       void useWebLanguageStore.getState().initLocale(
         user?.uid,
-        profile?.preferences?.language,
-        profile?.language
+        profilePreference ?? pathLocale,
+        profilePreference ? profile?.language : pathLocale ? null : profile?.language
       );
     }
-  }, [user?.uid, profile?.preferences?.language, profile?.language, loading]);
+  }, [user?.uid, profile?.preferences?.language, profile?.language, loading, location.pathname]);
+
+  useEffect(() => {
+    if (loading || localeLoading || typeof window === "undefined") {
+      return;
+    }
+
+    const pathLocale = getCompanionLanguageFromPath(location.pathname);
+    const normalizedLocale = normalizeLanguage(locale);
+    if (!normalizedLocale || pathLocale === normalizedLocale) {
+      return;
+    }
+
+    const redirectTarget = resolveCompanionPathForLanguage(
+      window.location.pathname,
+      normalizedLocale,
+      window.location.search,
+      window.location.hash
+    );
+
+    if (redirectTarget && redirectTarget !== `${window.location.pathname}${window.location.search}${window.location.hash}`) {
+      window.location.replace(redirectTarget);
+    }
+  }, [locale, localeLoading, loading, location.pathname, location.search, location.hash]);
 
   return null;
 }

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
 export type LanguageCode = "de" | "en" | "es" | "fr" | "it";
+export type LanguagePreferenceSource = "auto" | "manual";
 
 export interface StorageAdapter {
   getItem(key: string): Promise<string | null> | string | null;
@@ -38,6 +39,39 @@ const DEFAULT_AVAILABLE_LOCALES: { code: LanguageCode; label: string }[] = [
 ];
 
 const LANGUAGE_STORAGE_KEY = "user-language";
+const LANGUAGE_SOURCE_STORAGE_KEY = "user-language-source";
+
+function parseLanguagePreferenceSource(input?: string | null): LanguagePreferenceSource | null {
+  return input === "manual" || input === "auto" ? input : null;
+}
+
+export function readStoredLanguagePreference(): LanguageCode | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return normalizeLanguage(window.localStorage?.getItem(LANGUAGE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function readStoredLanguagePreferenceSource(): LanguagePreferenceSource | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    return parseLanguagePreferenceSource(window.localStorage?.getItem(LANGUAGE_SOURCE_STORAGE_KEY));
+  } catch {
+    return null;
+  }
+}
+
+export function readStoredExplicitLanguagePreference(): LanguageCode | null {
+  return readStoredLanguagePreferenceSource() === "manual" ? readStoredLanguagePreference() : null;
+}
 
 export function normalizeLanguage(input?: string | null): LanguageCode | null {
   if (!input) return null;
@@ -124,28 +158,34 @@ export function createLanguageStore(config?: LanguageStoreConfig) {
   const availableLocales = config?.availableLocales ?? DEFAULT_AVAILABLE_LOCALES;
   const defaultLocale = config?.defaultLocale ?? "de";
 
+  async function persistResolvedLocale(locale: LanguageCode, source: LanguagePreferenceSource) {
+    await storage.setItem(LANGUAGE_STORAGE_KEY, locale);
+    await storage.setItem(LANGUAGE_SOURCE_STORAGE_KEY, source);
+  }
+
   async function resolveLocale(
     userId?: string,
     preferredLanguage?: string | null,
     legacyLanguage?: string | null
-  ) {
+  ): Promise<{ locale: LanguageCode; source: LanguagePreferenceSource }> {
     const fromProfile = resolveExplicitLanguage({ preferredLanguage, legacyLanguage });
-    if (fromProfile) return fromProfile;
+    if (fromProfile) return { locale: fromProfile, source: "manual" };
 
     if (config?.fetchPreferredLanguage) {
       const fromRemote = await config.fetchPreferredLanguage({ userId, preferredLanguage, legacyLanguage });
-      if (fromRemote) return fromRemote;
+      if (fromRemote) return { locale: fromRemote, source: "manual" };
     }
 
     const fromStorage = normalizeLanguage(await storage.getItem(LANGUAGE_STORAGE_KEY));
-    if (fromStorage) return fromStorage;
+    const fromStorageSource = parseLanguagePreferenceSource(await storage.getItem(LANGUAGE_SOURCE_STORAGE_KEY));
+    if (fromStorage) return { locale: fromStorage, source: fromStorageSource ?? "manual" };
 
     const detectedLocale = config?.detectLocale
       ? config.detectLocale()
       : detectRuntimeLanguage();
-    if (detectedLocale) return detectedLocale;
+    if (detectedLocale) return { locale: detectedLocale, source: "auto" };
 
-    return defaultLocale;
+    return { locale: defaultLocale, source: "auto" };
   }
 
   const store = create<LanguageStoreState>((set) => ({
@@ -154,7 +194,7 @@ export function createLanguageStore(config?: LanguageStoreConfig) {
     loading: true,
     setLocale: async (nextLocale, userId) => {
       const normalized = normalizeLanguage(nextLocale) ?? defaultLocale;
-      await storage.setItem(LANGUAGE_STORAGE_KEY, normalized);
+      await persistResolvedLocale(normalized, "manual");
       if (userId && config?.persistPreferredLanguage) {
         await config.persistPreferredLanguage({ userId, locale: normalized });
       }
@@ -164,9 +204,9 @@ export function createLanguageStore(config?: LanguageStoreConfig) {
     initLocale: async (userId, preferredLanguage, legacyLanguage) => {
       set({ loading: true });
       const resolved = await resolveLocale(userId, preferredLanguage, legacyLanguage);
-      await storage.setItem(LANGUAGE_STORAGE_KEY, resolved);
-      config?.onLocaleChange?.(resolved);
-      set({ locale: resolved, loading: false });
+      await persistResolvedLocale(resolved.locale, resolved.source);
+      config?.onLocaleChange?.(resolved.locale);
+      set({ locale: resolved.locale, loading: false });
     },
   }));
 

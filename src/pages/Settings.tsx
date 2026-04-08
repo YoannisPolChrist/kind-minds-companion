@@ -18,8 +18,7 @@ import {
   Cloud,
   Languages,
 } from "lucide-react";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "../lib/firebaseAuth";
+import { db } from "../lib/firebaseDb";
 import { motion } from "motion/react";
 import { PageTransition, StaggerContainer, StaggerItem, PressableScale } from "../components/motion";
 import { BannerToast } from "../components/ui/Toast";
@@ -28,6 +27,7 @@ import { buildCalendarLinks } from "../../modules/scheduling/calendarLinks";
 import type { ProviderConnectionSummary, AppointmentDetails } from "../../modules/scheduling";
 import { getRandomHeaderImage } from "../constants/headerImages";
 import { useLanguage } from "../hooks/useLanguage";
+import { queueAuthEmailRequest } from "../../modules/auth/requestAuthEmail";
 
 const LANGUAGE_OPTIONS = [
   { code: "de", label: "DE" },
@@ -83,7 +83,14 @@ export default function Settings() {
   const handlePasswordReset = async () => {
     if (!profile?.email) return;
     try {
-      await sendPasswordResetEmail(auth, profile.email);
+      await queueAuthEmailRequest(db, {
+        email: profile.email,
+        type: "PASSWORD_RESET",
+        language: locale,
+        userId: profile.id,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+      });
       setResetSent(true);
       setResetError("");
     } catch (error) {
@@ -279,7 +286,7 @@ export default function Settings() {
               <div className="flex-1">
                 <p className="font-black text-foreground">Sprache</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Beim ersten Start wird die Geraete- oder Browsersprache uebernommen. Hier kannst du sie jederzeit dauerhaft fuer dein Konto aendern.
+                  Beim ersten Start wird die Geräte- oder Browsersprache übernommen. Hier kannst du sie jederzeit dauerhaft für dein Konto ändern.
                 </p>
               </div>
             </div>
@@ -291,7 +298,12 @@ export default function Settings() {
                   <button
                     key={option.code}
                     type="button"
-                    onClick={() => void setLanguage(option.code)}
+                    onClick={() => {
+                      void (async () => {
+                        await setLanguage(option.code);
+                        setToast({ message: `Sprache auf ${option.label} umgestellt`, type: "success" });
+                      })();
+                    }}
                     className={`rounded-2xl border px-4 py-3 text-sm font-bold transition-all ${
                       active
                         ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
