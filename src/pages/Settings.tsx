@@ -27,6 +27,7 @@ import { buildCalendarLinks } from "../../modules/scheduling/calendarLinks";
 import type { ProviderConnectionSummary, AppointmentDetails } from "../../modules/scheduling";
 import { getRandomHeaderImage } from "../constants/headerImages";
 import { useLanguage } from "../hooks/useLanguage";
+import { translate } from "../lib/webLocale";
 import { queueAuthEmailRequest } from "../../modules/auth/requestAuthEmail";
 
 const LANGUAGE_OPTIONS = [
@@ -61,6 +62,372 @@ export default function Settings() {
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null);
   const [calendarBusy, setCalendarBusy] = useState<"connect" | "disconnect" | "sync" | null>(null);
   const [googleSummary, setGoogleSummary] = useState<ProviderConnectionSummary | undefined>(profile?.calendarConnectionSummary?.google);
+  const isTherapist = profile?.role === "therapist";
+  const isGoogleConnected = googleSummary?.status === "connected";
+
+  const copy = useMemo(() => ({
+    back: translate(locale, { de: "Zurück", en: "Back", es: "Volver", fr: "Retour", it: "Indietro" }),
+    workspaceSettings: translate(locale, {
+      de: "Workspace Einstellungen",
+      en: "Workspace settings",
+      es: "Configuracion del espacio",
+      fr: "Parametres de l'espace",
+      it: "Impostazioni workspace",
+    }),
+    accountCalendarConnections: translate(locale, {
+      de: "Konto, Kalender und Verbindungen",
+      en: "Account, calendar and connections",
+      es: "Cuenta, calendario y conexiones",
+      fr: "Compte, calendrier et connexions",
+      it: "Account, calendario e connessioni",
+    }),
+    role: translate(locale, { de: "Rolle", en: "Role", es: "Rol", fr: "Role", it: "Ruolo" }),
+    therapist: translate(locale, { de: "Therapeut", en: "Therapist", es: "Terapeuta", fr: "Therapeute", it: "Terapeuta" }),
+    client: translate(locale, { de: "Klient", en: "Client", es: "Cliente", fr: "Client", it: "Cliente" }),
+    calendar: translate(locale, { de: "Kalender", en: "Calendar", es: "Calendario", fr: "Calendrier", it: "Calendario" }),
+    googleConnected: translate(locale, {
+      de: "Google verbunden",
+      en: "Google connected",
+      es: "Google conectado",
+      fr: "Google connecte",
+      it: "Google connesso",
+    }),
+    stillOpen: translate(locale, {
+      de: "Noch offen",
+      en: "Still open",
+      es: "Todavia pendiente",
+      fr: "Encore ouvert",
+      it: "Ancora aperto",
+    }),
+    language: translate(locale, { de: "Sprache", en: "Language", es: "Idioma", fr: "Langue", it: "Lingua" }),
+    languageBody: translate(locale, {
+      de: "Beim ersten Start wird die Geraete- oder Browsersprache uebernommen. Hier kannst du sie jederzeit dauerhaft fuer dein Konto aendern.",
+      en: "On first launch, the device or browser language is used automatically. Here you can change it permanently for your account at any time.",
+      es: "En el primer inicio se usa automaticamente el idioma del dispositivo o del navegador. Aqui puedes cambiarlo de forma permanente para tu cuenta en cualquier momento.",
+      fr: "Au premier lancement, la langue de l'appareil ou du navigateur est utilisee automatiquement. Ici, tu peux la modifier durablement pour ton compte a tout moment.",
+      it: "Al primo avvio viene usata automaticamente la lingua del dispositivo o del browser. Qui puoi cambiarla in modo permanente per il tuo account in qualsiasi momento.",
+    }),
+    connectCalendarTitle: translate(locale, {
+      de: "Kalender verbinden",
+      en: "Connect calendar",
+      es: "Conectar calendario",
+      fr: "Connecter le calendrier",
+      it: "Collega calendario",
+    }),
+    connectCalendarBody: translate(locale, {
+      de: "Google kann direkt verbunden werden. Apple laeuft auf dem Web als klarer ICS-Fallback und auf iPhone/iPad weiter ueber den Geraetekalender.",
+      en: "Google can be connected directly. On the web, Apple works as a clear ICS fallback and on iPhone/iPad it still uses the device calendar.",
+      es: "Google se puede conectar directamente. En la web, Apple funciona como una alternativa ICS clara y en iPhone/iPad sigue usando el calendario del dispositivo.",
+      fr: "Google peut etre connecte directement. Sur le web, Apple fonctionne comme solution ICS claire et sur iPhone/iPad continue via le calendrier de l'appareil.",
+      it: "Google puo essere collegato direttamente. Sul web Apple funziona come fallback ICS chiaro e su iPhone/iPad continua tramite il calendario del dispositivo.",
+    }),
+    googleCalendar: translate(locale, {
+      de: "Google Kalender",
+      en: "Google Calendar",
+      es: "Google Calendar",
+      fr: "Google Agenda",
+      it: "Google Calendar",
+    }),
+    googleConnectHint: translate(locale, {
+      de: "Verbinde dein Google-Konto fuer direkten Termin-Sync.",
+      en: "Connect your Google account for direct appointment sync.",
+      es: "Conecta tu cuenta de Google para sincronizar citas directamente.",
+      fr: "Connecte ton compte Google pour synchroniser les rendez-vous directement.",
+      it: "Collega il tuo account Google per sincronizzare direttamente gli appuntamenti.",
+    }),
+    connected: translate(locale, { de: "Verbunden", en: "Connected", es: "Conectado", fr: "Connecte", it: "Connesso" }),
+    disconnected: translate(locale, {
+      de: "Nicht verbunden",
+      en: "Not connected",
+      es: "No conectado",
+      fr: "Non connecte",
+      it: "Non connesso",
+    }),
+    lastSync: translate(locale, {
+      de: "Letzter Sync",
+      en: "Last sync",
+      es: "Ultima sincronizacion",
+      fr: "Derniere synchro",
+      it: "Ultima sincronizzazione",
+    }),
+    syncAppointment: translate(locale, {
+      de: "Termin synchronisieren",
+      en: "Sync appointment",
+      es: "Sincronizar cita",
+      fr: "Synchroniser le rendez-vous",
+      it: "Sincronizza appuntamento",
+    }),
+    disconnect: translate(locale, { de: "Trennen", en: "Disconnect", es: "Desconectar", fr: "Deconnecter", it: "Disconnetti" }),
+    connectGoogle: translate(locale, {
+      de: "Google verbinden",
+      en: "Connect Google",
+      es: "Conectar Google",
+      fr: "Connecter Google",
+      it: "Collega Google",
+    }),
+    openManualGoogle: translate(locale, {
+      de: "Manuell in Google oeffnen",
+      en: "Open manually in Google",
+      es: "Abrir manualmente en Google",
+      fr: "Ouvrir manuellement dans Google",
+      it: "Apri manualmente in Google",
+    }),
+    appleCalendar: translate(locale, {
+      de: "Apple Kalender / ICS",
+      en: "Apple Calendar / ICS",
+      es: "Apple Calendar / ICS",
+      fr: "Calendrier Apple / ICS",
+      it: "Calendario Apple / ICS",
+    }),
+    appleBody: translate(locale, {
+      de: "Auf dem Web liefern wir einen klaren ICS-Export. In der nativen App bleibt der Abgleich ueber den Geraetekalender moeglich.",
+      en: "On the web we provide a clear ICS export. In the native app, syncing through the device calendar remains available.",
+      es: "En la web ofrecemos una exportacion ICS clara. En la app nativa sigue siendo posible sincronizar con el calendario del dispositivo.",
+      fr: "Sur le web, nous proposons un export ICS clair. Dans l'application native, la synchronisation via le calendrier de l'appareil reste disponible.",
+      it: "Sul web forniamo una chiara esportazione ICS. Nell'app nativa resta disponibile la sincronizzazione tramite il calendario del dispositivo.",
+    }),
+    hybrid: translate(locale, { de: "Hybrid", en: "Hybrid", es: "Hibrido", fr: "Hybride", it: "Ibrido" }),
+    downloadIcs: translate(locale, {
+      de: "ICS herunterladen",
+      en: "Download ICS",
+      es: "Descargar ICS",
+      fr: "Telecharger ICS",
+      it: "Scarica ICS",
+    }),
+    noAppointmentIcs: translate(locale, {
+      de: "Sobald ein naechster Termin vorhanden ist, kannst du ihn hier als ICS laden.",
+      en: "As soon as a next appointment exists, you can download it here as an ICS file.",
+      es: "En cuanto haya una proxima cita, podras descargarla aqui como archivo ICS.",
+      fr: "Des qu'un prochain rendez-vous existe, tu peux le telecharger ici en fichier ICS.",
+      it: "Non appena e disponibile un prossimo appuntamento, potrai scaricarlo qui come file ICS.",
+    }),
+    nextAppointment: translate(locale, {
+      de: "Naechster Termin",
+      en: "Next appointment",
+      es: "Proxima cita",
+      fr: "Prochain rendez-vous",
+      it: "Prossimo appuntamento",
+    }),
+    noAppointment: translate(locale, {
+      de: "Noch kein Termin eingetragen",
+      en: "No appointment entered yet",
+      es: "Todavia no hay ninguna cita registrada",
+      fr: "Aucun rendez-vous enregistre pour le moment",
+      it: "Nessun appuntamento inserito finora",
+    }),
+    resetPassword: translate(locale, {
+      de: "Passwort zuruecksetzen",
+      en: "Reset password",
+      es: "Restablecer contrasena",
+      fr: "Reinitialiser le mot de passe",
+      it: "Reimposta password",
+    }),
+    resetPasswordDesc: translate(locale, {
+      de: "Passwort-Reset E-Mail anfordern",
+      en: "Request password reset email",
+      es: "Solicitar correo de restablecimiento de contrasena",
+      fr: "Demander un e-mail de reinitialisation du mot de passe",
+      it: "Richiedi e-mail di reimpostazione password",
+    }),
+    resetSent: translate(locale, {
+      de: "Ein Link zum Zuruecksetzen wurde an",
+      en: "A reset link was sent to",
+      es: "Se envio un enlace de restablecimiento a",
+      fr: "Un lien de reinitialisation a ete envoye a",
+      it: "Un link di reimpostazione e stato inviato a",
+    }),
+    resetError: translate(locale, {
+      de: "Konnte E-Mail nicht senden.",
+      en: "Could not send email.",
+      es: "No se pudo enviar el correo.",
+      fr: "Impossible d'envoyer l'e-mail.",
+      it: "Impossibile inviare l'e-mail.",
+    }),
+    signOut: translate(locale, { de: "Abmelden", en: "Sign out", es: "Cerrar sesion", fr: "Se deconnecter", it: "Disconnetti" }),
+    googleConnectedToast: translate(locale, {
+      de: "Google Kalender verbunden",
+      en: "Google Calendar connected",
+      es: "Google Calendar conectado",
+      fr: "Google Agenda connecte",
+      it: "Google Calendar connesso",
+    }),
+    googleConfigMissingToast: translate(locale, {
+      de: "Google Kalender ist noch nicht konfiguriert",
+      en: "Google Calendar is not configured yet",
+      es: "Google Calendar todavia no esta configurado",
+      fr: "Google Agenda n'est pas encore configure",
+      it: "Google Calendar non e ancora configurato",
+    }),
+    googleFailedToast: translate(locale, {
+      de: "Google Kalender Verbindung fehlgeschlagen",
+      en: "Google Calendar connection failed",
+      es: "La conexion con Google Calendar fallo",
+      fr: "La connexion Google Agenda a echoue",
+      it: "Connessione Google Calendar non riuscita",
+    }),
+    googleStartFailed: translate(locale, {
+      de: "Google Kalender konnte nicht gestartet werden.",
+      en: "Google Calendar could not be started.",
+      es: "No se pudo iniciar Google Calendar.",
+      fr: "Impossible de lancer Google Agenda.",
+      it: "Impossibile avviare Google Calendar.",
+    }),
+    googleDisconnectedToast: translate(locale, {
+      de: "Google Kalender getrennt",
+      en: "Google Calendar disconnected",
+      es: "Google Calendar desconectado",
+      fr: "Google Agenda deconnecte",
+      it: "Google Calendar disconnesso",
+    }),
+    disconnectFailed: translate(locale, {
+      de: "Trennen fehlgeschlagen.",
+      en: "Disconnect failed.",
+      es: "La desconexion fallo.",
+      fr: "La deconnexion a echoue.",
+      it: "Disconnessione non riuscita.",
+    }),
+    noAppointmentToSync: translate(locale, {
+      de: "Kein Termin zum Synchronisieren vorhanden",
+      en: "No appointment available to sync",
+      es: "No hay ninguna cita para sincronizar",
+      fr: "Aucun rendez-vous a synchroniser",
+      it: "Nessun appuntamento disponibile da sincronizzare",
+    }),
+    syncedToast: translate(locale, {
+      de: "Termin in Google Kalender synchronisiert",
+      en: "Appointment synced to Google Calendar",
+      es: "Cita sincronizada con Google Calendar",
+      fr: "Rendez-vous synchronise avec Google Agenda",
+      it: "Appuntamento sincronizzato con Google Calendar",
+    }),
+    syncFailed: translate(locale, {
+      de: "Termin-Sync fehlgeschlagen.",
+      en: "Appointment sync failed.",
+      es: "La sincronizacion de la cita fallo.",
+      fr: "La synchronisation du rendez-vous a echoue.",
+      it: "Sincronizzazione appuntamento non riuscita.",
+    }),
+    appointmentTitle: translate(locale, {
+      de: "Therapietermin",
+      en: "Therapy appointment",
+      es: "Cita de terapia",
+      fr: "Rendez-vous therapeutique",
+      it: "Appuntamento terapeutico",
+    }),
+    appointmentDescriptionTherapist: translate(locale, {
+      de: "Termin aus der Therapie-App.",
+      en: "Appointment from the therapy app.",
+      es: "Cita de la app de terapia.",
+      fr: "Rendez-vous provenant de l'application de therapie.",
+      it: "Appuntamento dall'app di terapia.",
+    }),
+    appointmentDescriptionClient: translate(locale, {
+      de: "Dein naechster Termin aus der Therapie-App.",
+      en: "Your next appointment from the therapy app.",
+      es: "Tu proxima cita desde la app de terapia.",
+      fr: "Ton prochain rendez-vous depuis l'application de therapie.",
+      it: "Il tuo prossimo appuntamento dall'app di terapia.",
+    }),
+    navTherapistClients: translate(locale, {
+      de: "Alle Klienten",
+      en: "All clients",
+      es: "Todos los clientes",
+      fr: "Tous les clients",
+      it: "Tutti i clienti",
+    }),
+    navTherapistClientsDesc: translate(locale, {
+      de: "Klienten verwalten und Uebersicht behalten",
+      en: "Manage clients and keep the overview",
+      es: "Gestiona clientes y manten la vision general",
+      fr: "Gerer les clients et garder la vue d'ensemble",
+      it: "Gestisci i clienti e mantieni la panoramica",
+    }),
+    navTemplates: translate(locale, {
+      de: "Vorlagen",
+      en: "Templates",
+      es: "Plantillas",
+      fr: "Modeles",
+      it: "Modelli",
+    }),
+    navTemplatesDesc: translate(locale, {
+      de: "Uebungsvorlagen erstellen und verwalten",
+      en: "Create and manage exercise templates",
+      es: "Crear y gestionar plantillas de ejercicios",
+      fr: "Creer et gerer des modeles d'exercices",
+      it: "Crea e gestisci modelli di esercizi",
+    }),
+    navLibrary: translate(locale, {
+      de: "Bibliothek",
+      en: "Library",
+      es: "Biblioteca",
+      fr: "Bibliotheque",
+      it: "Libreria",
+    }),
+    navLibraryDesc: translate(locale, {
+      de: "Ressourcen und Materialien",
+      en: "Resources and materials",
+      es: "Recursos y materiales",
+      fr: "Ressources et materiaux",
+      it: "Risorse e materiali",
+    }),
+    navJournal: translate(locale, {
+      de: "Mein Tagebuch",
+      en: "My journal",
+      es: "Mi diario",
+      fr: "Mon journal",
+      it: "Il mio diario",
+    }),
+    navJournalDesc: translate(locale, {
+      de: "Check-in Verlauf und Statistiken",
+      en: "Check-in history and statistics",
+      es: "Historial de check-ins y estadisticas",
+      fr: "Historique des check-ins et statistiques",
+      it: "Storico check-in e statistiche",
+    }),
+    navExercises: translate(locale, {
+      de: "Alle Uebungen",
+      en: "All exercises",
+      es: "Todos los ejercicios",
+      fr: "Tous les exercices",
+      it: "Tutti gli esercizi",
+    }),
+    navExercisesDesc: translate(locale, {
+      de: "Uebersicht aller zugewiesenen Uebungen",
+      en: "Overview of all assigned exercises",
+      es: "Vista general de todos los ejercicios asignados",
+      fr: "Vue d'ensemble de tous les exercices assignes",
+      it: "Panoramica di tutti gli esercizi assegnati",
+    }),
+    navNotes: translate(locale, {
+      de: "Therapie-Tagebuch",
+      en: "Therapy journal",
+      es: "Diario terapeutico",
+      fr: "Journal therapeutique",
+      it: "Diario terapeutico",
+    }),
+    navNotesDesc: translate(locale, {
+      de: "Eigene Notizen und Gedanken",
+      en: "Your own notes and thoughts",
+      es: "Tus propias notas y pensamientos",
+      fr: "Tes notes et pensees personnelles",
+      it: "Le tue note e i tuoi pensieri",
+    }),
+    navResourcesDesc: translate(locale, {
+      de: "Dokumente und Links vom Therapeuten",
+      en: "Documents and links from your therapist",
+      es: "Documentos y enlaces del terapeuta",
+      fr: "Documents et liens du therapeute",
+      it: "Documenti e link dal terapeuta",
+    }),
+    navHistory: translate(locale, { de: "Verlauf", en: "History", es: "Historial", fr: "Historique", it: "Storico" }),
+    navHistoryDesc: translate(locale, {
+      de: "Alle erledigten Aktivitaeten",
+      en: "All completed activities",
+      es: "Todas las actividades completadas",
+      fr: "Toutes les activites terminees",
+      it: "Tutte le attivita completate",
+    }),
+  }), [locale]);
 
   useEffect(() => {
     setGoogleSummary(profile?.calendarConnectionSummary?.google);
@@ -72,13 +439,13 @@ export default function Settings() {
     if (!calendarState) return;
 
     if (calendarState === "google-connected") {
-      setToast({ message: "Google Kalender verbunden", type: "success" });
+      setToast({ message: copy.googleConnectedToast, type: "success" });
     } else if (calendarState === "google-config-missing") {
-      setToast({ message: "Google Kalender ist noch nicht konfiguriert", type: "error" });
+      setToast({ message: copy.googleConfigMissingToast, type: "error" });
     } else {
-      setToast({ message: "Google Kalender Verbindung fehlgeschlagen", type: "error" });
+      setToast({ message: copy.googleFailedToast, type: "error" });
     }
-  }, [location.search]);
+  }, [location.search, copy.googleConnectedToast, copy.googleConfigMissingToast, copy.googleFailedToast]);
 
   const handlePasswordReset = async () => {
     if (!profile?.email) return;
@@ -94,7 +461,7 @@ export default function Settings() {
       setResetSent(true);
       setResetError("");
     } catch (error) {
-      setResetError("Konnte E-Mail nicht senden.");
+      setResetError(copy.resetError);
       console.error(error);
     }
   };
@@ -110,7 +477,7 @@ export default function Settings() {
       await startGoogleCalendarConnect();
     } catch (error) {
       console.error(error);
-      setToast({ message: error instanceof Error ? error.message : "Google Kalender konnte nicht gestartet werden.", type: "error" });
+      setToast({ message: error instanceof Error ? error.message : copy.googleStartFailed, type: "error" });
       setCalendarBusy(null);
     }
   };
@@ -120,10 +487,10 @@ export default function Settings() {
       setCalendarBusy("disconnect");
       await disconnectGoogleCalendar();
       setGoogleSummary({ provider: "google", status: "disconnected" });
-      setToast({ message: "Google Kalender getrennt", type: "success" });
+      setToast({ message: copy.googleDisconnectedToast, type: "success" });
     } catch (error) {
       console.error(error);
-      setToast({ message: error instanceof Error ? error.message : "Trennen fehlgeschlagen.", type: "error" });
+      setToast({ message: error instanceof Error ? error.message : copy.disconnectFailed, type: "error" });
     } finally {
       setCalendarBusy(null);
     }
@@ -136,24 +503,21 @@ export default function Settings() {
 
     return {
       id: `next-appointment-${profile.id}`,
-      title: profile.role === "therapist" ? "Therapietermin" : "Therapietermin",
+      title: copy.appointmentTitle,
       description: profile.role === "therapist"
-        ? "Termin aus der Therapie-App."
-        : "Dein nächster Termin aus der Therapie-App.",
+        ? copy.appointmentDescriptionTherapist
+        : copy.appointmentDescriptionClient,
       startDate,
       endDate: new Date(startDate.getTime() + 45 * 60000),
     };
-  }, [profile?.id, profile?.nextAppointment, profile?.role]);
+  }, [profile?.id, profile?.nextAppointment, profile?.role, copy.appointmentTitle, copy.appointmentDescriptionTherapist, copy.appointmentDescriptionClient]);
 
   const calendarLinks = useMemo(() => (appointmentDetails ? buildCalendarLinks(appointmentDetails) : []), [appointmentDetails]);
   const googleManualLink = calendarLinks.find((link) => link.provider === "google");
   const appleFallbackLink = calendarLinks.find((link) => link.provider === "icloud");
-  const isTherapist = profile?.role === "therapist";
-  const isGoogleConnected = googleSummary?.status === "connected";
-
   const handleGoogleSync = async () => {
     if (!appointmentDetails) {
-      setToast({ message: "Kein Termin zum Synchronisieren vorhanden", type: "info" });
+      setToast({ message: copy.noAppointmentToSync, type: "info" });
       return;
     }
 
@@ -174,10 +538,10 @@ export default function Settings() {
         connectedAt: current?.connectedAt,
         lastSyncedAt: payload?.lastSyncedAt || new Date().toISOString(),
       }));
-      setToast({ message: "Termin in Google Kalender synchronisiert", type: "success" });
+      setToast({ message: copy.syncedToast, type: "success" });
     } catch (error) {
       console.error(error);
-      setToast({ message: error instanceof Error ? error.message : "Termin-Sync fehlgeschlagen.", type: "error" });
+      setToast({ message: error instanceof Error ? error.message : copy.syncFailed, type: "error" });
     } finally {
       setCalendarBusy(null);
     }
@@ -185,16 +549,16 @@ export default function Settings() {
 
   const navItems = isTherapist
     ? [
-        { path: "/therapist/clients", icon: BarChart3, label: "Alle Klienten", desc: "Klienten verwalten und Übersicht behalten" },
-        { path: "/therapist/templates", icon: BookOpen, label: "Vorlagen", desc: "Übungsvorlagen erstellen und verwalten" },
-        { path: "/therapist/resources", icon: FileText, label: "Bibliothek", desc: "Ressourcen und Materialien" },
+        { path: "/therapist/clients", icon: BarChart3, label: copy.navTherapistClients, desc: copy.navTherapistClientsDesc },
+        { path: "/therapist/templates", icon: BookOpen, label: copy.navTemplates, desc: copy.navTemplatesDesc },
+        { path: "/therapist/resources", icon: FileText, label: copy.navLibrary, desc: copy.navLibraryDesc },
       ]
     : [
-        { path: "/checkins", icon: BarChart3, label: "Mein Tagebuch", desc: "Check-in Verlauf und Statistiken" },
-        { path: "/exercises", icon: BookOpen, label: "Alle Übungen", desc: "Übersicht aller zugewiesenen Übungen" },
-        { path: "/notes", icon: Edit3, label: "Therapie-Tagebuch", desc: "Eigene Notizen und Gedanken" },
-        { path: "/resources", icon: FileText, label: "Bibliothek", desc: "Dokumente und Links vom Therapeuten" },
-        { path: "/history", icon: History, label: "Verlauf", desc: "Alle erledigten Aktivitäten" },
+        { path: "/checkins", icon: BarChart3, label: copy.navJournal, desc: copy.navJournalDesc },
+        { path: "/exercises", icon: BookOpen, label: copy.navExercises, desc: copy.navExercisesDesc },
+        { path: "/notes", icon: Edit3, label: copy.navNotes, desc: copy.navNotesDesc },
+        { path: "/resources", icon: FileText, label: copy.navLibrary, desc: copy.navResourcesDesc },
+        { path: "/history", icon: History, label: copy.navHistory, desc: copy.navHistoryDesc },
       ];
 
   return (
@@ -226,30 +590,30 @@ export default function Settings() {
             whileHover={{ x: -3 }}
             whileTap={{ scale: 0.95 }}
           >
-            <ArrowLeft size={16} /> Zurück
+            <ArrowLeft size={16} /> {copy.back}
           </motion.button>
 
           <div className="mt-5 grid gap-5 xl:grid-cols-[1.2fr_0.8fr] xl:items-end">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.24em] text-white/65">
-                Workspace Einstellungen
+                {copy.workspaceSettings}
               </p>
               <h1 className="mt-3 text-2xl font-black tracking-tight">
-                Konto, Kalender und Verbindungen
+                {copy.accountCalendarConnections}
               </h1>
             </div>
 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/60">Rolle</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/60">{copy.role}</p>
                 <p className="mt-2 text-lg font-black text-white">
-                  {isTherapist ? "Therapeut" : "Klient"}
+                  {isTherapist ? copy.therapist : copy.client}
                 </p>
               </div>
               <div className="rounded-[1.5rem] border border-white/10 bg-white/10 p-4 backdrop-blur-sm">
-                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/60">Kalender</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.22em] text-white/60">{copy.calendar}</p>
                 <p className="mt-2 text-lg font-black text-white">
-                  {isGoogleConnected ? "Google verbunden" : "Noch offen"}
+                  {isGoogleConnected ? copy.googleConnected : copy.stillOpen}
                 </p>
               </div>
             </div>
@@ -271,7 +635,9 @@ export default function Settings() {
               <div>
                 <p className="font-bold text-foreground text-lg">{profile?.firstName} {profile?.lastName}</p>
                 <p className="text-sm text-muted-foreground">{profile?.email}</p>
-                <p className="text-xs text-muted-foreground mt-0.5 capitalize">{profile?.role || "Klient"}</p>
+                <p className="text-xs text-muted-foreground mt-0.5 capitalize">
+                  {profile?.role === "therapist" ? copy.therapist : copy.client}
+                </p>
               </div>
             </div>
           </div>
@@ -284,9 +650,9 @@ export default function Settings() {
                 <Languages size={22} className="text-primary" />
               </div>
               <div className="flex-1">
-                <p className="font-black text-foreground">Sprache</p>
+                <p className="font-black text-foreground">{copy.language}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Beim ersten Start wird die Geräte- oder Browsersprache übernommen. Hier kannst du sie jederzeit dauerhaft für dein Konto ändern.
+                  {copy.languageBody}
                 </p>
               </div>
             </div>
@@ -298,12 +664,7 @@ export default function Settings() {
                   <button
                     key={option.code}
                     type="button"
-                    onClick={() => {
-                      void (async () => {
-                        await setLanguage(option.code);
-                        setToast({ message: `Sprache auf ${option.label} umgestellt`, type: "success" });
-                      })();
-                    }}
+                    onClick={() => void setLanguage(option.code)}
                     className={`rounded-2xl border px-4 py-3 text-sm font-bold transition-all ${
                       active
                         ? "border-primary bg-primary text-primary-foreground shadow-lg shadow-primary/20"
@@ -325,9 +686,9 @@ export default function Settings() {
                 <Calendar size={22} className="text-primary" />
               </div>
               <div className="flex-1">
-                <p className="font-black text-foreground">Kalender verbinden</p>
+                <p className="font-black text-foreground">{copy.connectCalendarTitle}</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Google kann direkt verbunden werden. Apple läuft auf dem Web als klarer ICS-Fallback und auf iPhone/iPad weiter über den Gerätekalender.
+                  {copy.connectCalendarBody}
                 </p>
               </div>
             </div>
@@ -337,16 +698,16 @@ export default function Settings() {
                 <div>
                   <div className="flex items-center gap-2">
                     <Cloud size={16} className="text-primary" />
-                    <p className="font-bold text-foreground">Google Kalender</p>
+                    <p className="font-bold text-foreground">{copy.googleCalendar}</p>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {isGoogleConnected
-      ? `${googleSummary?.email || "Verbunden"}${googleSummary?.lastSyncedAt ? ` · Letzter Sync ${formatDateTime(googleSummary.lastSyncedAt, locale)}` : ""}`
-                      : "Verbinde dein Google-Konto für direkten Termin-Sync."}
+      ? `${googleSummary?.email || copy.connected}${googleSummary?.lastSyncedAt ? ` · ${copy.lastSync} ${formatDateTime(googleSummary.lastSyncedAt, locale)}` : ""}`
+                      : copy.googleConnectHint}
                   </p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-black ${isGoogleConnected ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"}`}>
-                  {isGoogleConnected ? "Verbunden" : "Nicht verbunden"}
+                  {isGoogleConnected ? copy.connected : copy.disconnected}
                 </span>
               </div>
 
@@ -360,7 +721,7 @@ export default function Settings() {
                       className="inline-flex items-center gap-2 rounded-2xl bg-primary text-primary-foreground px-4 py-3 text-sm font-bold disabled:opacity-50"
                     >
                       <RefreshCw size={16} className={calendarBusy === "sync" ? "animate-spin" : ""} />
-                      Termin synchronisieren
+                      {copy.syncAppointment}
                     </button>
                     <button
                       type="button"
@@ -369,7 +730,7 @@ export default function Settings() {
                       className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground disabled:opacity-50"
                     >
                       <Unplug size={16} />
-                      Trennen
+                      {copy.disconnect}
                     </button>
                   </>
                 ) : (
@@ -380,7 +741,7 @@ export default function Settings() {
                     className="inline-flex items-center gap-2 rounded-2xl bg-primary text-primary-foreground px-4 py-3 text-sm font-bold disabled:opacity-50"
                   >
                     <Cloud size={16} className={calendarBusy === "connect" ? "animate-pulse" : ""} />
-                    Google verbinden
+                    {copy.connectGoogle}
                   </button>
                 )}
 
@@ -392,7 +753,7 @@ export default function Settings() {
                     className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground"
                   >
                     <ExternalLink size={16} />
-                    Manuell in Google öffnen
+                    {copy.openManualGoogle}
                   </a>
                 )}
               </div>
@@ -403,14 +764,14 @@ export default function Settings() {
                 <div>
                   <div className="flex items-center gap-2">
                     <Calendar size={16} className="text-accent" />
-                    <p className="font-bold text-foreground">Apple Kalender / ICS</p>
+                    <p className="font-bold text-foreground">{copy.appleCalendar}</p>
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Auf dem Web liefern wir einen klaren ICS-Export. In der nativen App bleibt der Abgleich über den Gerätekalender möglich.
+                    {copy.appleBody}
                   </p>
                 </div>
                 <span className="px-3 py-1 rounded-full text-xs font-black bg-muted text-muted-foreground">
-                  Hybrid
+                  {copy.hybrid}
                 </span>
               </div>
 
@@ -421,16 +782,16 @@ export default function Settings() {
                   className="inline-flex items-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground"
                 >
                   <ExternalLink size={16} />
-                  ICS herunterladen
+                  {copy.downloadIcs}
                 </a>
               ) : (
-                <p className="text-sm text-muted-foreground">Sobald ein nächster Termin vorhanden ist, kannst du ihn hier als ICS laden.</p>
+                <p className="text-sm text-muted-foreground">{copy.noAppointmentIcs}</p>
               )}
             </div>
 
             <div className="rounded-2xl border border-border bg-background px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Nächster Termin</p>
-                <p className="text-sm font-bold text-foreground mt-1">{formatDateTime(profile?.nextAppointment, locale) || "Noch kein Termin eingetragen"}</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">{copy.nextAppointment}</p>
+                <p className="text-sm font-bold text-foreground mt-1">{formatDateTime(profile?.nextAppointment, locale) || copy.noAppointment}</p>
             </div>
           </div>
         </StaggerItem>
@@ -457,8 +818,8 @@ export default function Settings() {
               <div className="flex items-center gap-4 px-6 py-4 hover:bg-secondary/50 transition-colors text-left w-full">
                 <Key size={20} className="text-primary shrink-0" />
                 <div>
-                  <p className="font-bold text-foreground">Passwort zurücksetzen</p>
-                  <p className="text-xs text-muted-foreground">Passwort-Reset E-Mail anfordern</p>
+                  <p className="font-bold text-foreground">{copy.resetPassword}</p>
+                  <p className="text-xs text-muted-foreground">{copy.resetPasswordDesc}</p>
                 </div>
               </div>
             </div>
@@ -471,7 +832,7 @@ export default function Settings() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
-            Ein Link zum Zurücksetzen wurde an {profile?.email} gesendet.
+            {copy.resetSent} {profile?.email} gesendet.
           </motion.div>
         )}
         {resetError && (
@@ -493,7 +854,7 @@ export default function Settings() {
             whileTap={{ scale: 0.97 }}
           >
             <LogOut size={20} />
-            Abmelden
+            {copy.signOut}
           </motion.button>
         </StaggerItem>
       </StaggerContainer>
