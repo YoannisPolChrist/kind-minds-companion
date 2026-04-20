@@ -5,6 +5,7 @@ import { dbLite } from "../lib/firebaseDbLite";
 import { getFirestoreClient, getFirestoreDb } from "../lib/firebaseDb";
 import { useAuth } from "../hooks/useAuth";
 import { useLanguage } from "../hooks/useLanguage";
+import { translate } from "../lib/webLocale";
 import {
   ArrowLeft, Plus, Edit3, Trash2, X, Calendar, Search,
   Lock, Unlock, ChevronDown, Save,
@@ -220,6 +221,74 @@ export default function Notes() {
   const activeEditorEmotion =
     emotionChoices.find((emotion) => emotion.score === editEmotionScore) ||
     emotionChoices[emotionChoices.length - 1];
+  const text = useMemo(() => ({
+    back: translate(locale, { de: "Zurück", en: "Back", es: "Volver", fr: "Retour", it: "Indietro" }),
+    newNote: translate(locale, { de: "Neue Notiz", en: "New note", es: "Nueva nota", fr: "Nouvelle note", it: "Nuova nota" }),
+    journal: translate(locale, { de: "Therapie-Tagebuch", en: "Therapy journal", es: "Diario terapéutico", fr: "Journal thérapeutique", it: "Diario terapeutico" }),
+    entryOne: translate(locale, { de: "Eintrag", en: "entry", es: "entrada", fr: "entrée", it: "voce" }),
+    entryMany: translate(locale, { de: "Einträge", en: "entries", es: "entradas", fr: "entrées", it: "voci" }),
+    searchPlaceholder: translate(locale, { de: "Tagebuch durchsuchen...", en: "Search journal...", es: "Buscar en el diario...", fr: "Rechercher dans le journal...", it: "Cerca nel diario..." }),
+    noResults: translate(locale, { de: "Keine Treffer", en: "No results", es: "Sin resultados", fr: "Aucun résultat", it: "Nessun risultato" }),
+    noEntries: translate(locale, { de: "Noch keine Einträge", en: "No entries yet", es: "Aún no hay entradas", fr: "Aucune entrée pour l'instant", it: "Ancora nessuna voce" }),
+    tryAnotherSearch: translate(locale, { de: "Versuche einen anderen Suchbegriff.", en: "Try a different search term.", es: "Prueba con otro término de búsqueda.", fr: "Essaie un autre terme de recherche.", it: "Prova un altro termine di ricerca." }),
+    firstEntryHint: translate(locale, { de: "Erstelle deinen ersten Eintrag mit dem + Button.", en: "Create your first entry with the + button.", es: "Crea tu primera entrada con el botón +.", fr: "Crée ta première entrée avec le bouton +.", it: "Crea la tua prima voce con il pulsante +." }),
+    journalEntry: translate(locale, { de: "Tagebucheintrag", en: "Journal entry", es: "Entrada del diario", fr: "Entrée du journal", it: "Voce del diario" }),
+    therapistNote: translate(locale, { de: "Therapeuten-Notiz", en: "Therapist note", es: "Nota del terapeuta", fr: "Note du thérapeute", it: "Nota del terapeuta" }),
+    fromTherapist: translate(locale, { de: "Vom Therapeut", en: "From therapist", es: "Del terapeuta", fr: "Du thérapeute", it: "Dal terapeuta" }),
+    noContent: translate(locale, { de: "Kein Inhalt.", en: "No content.", es: "Sin contenido.", fr: "Aucun contenu.", it: "Nessun contenuto." }),
+    edit: translate(locale, { de: "Bearbeiten", en: "Edit", es: "Editar", fr: "Modifier", it: "Modifica" }),
+    delete: translate(locale, { de: "Löschen", en: "Delete", es: "Eliminar", fr: "Supprimer", it: "Elimina" }),
+    editEntry: translate(locale, { de: "Eintrag bearbeiten", en: "Edit entry", es: "Editar entrada", fr: "Modifier l'entrée", it: "Modifica voce" }),
+    newJournalEntry: translate(locale, { de: "Neuer Tagebucheintrag", en: "New journal entry", es: "Nueva entrada del diario", fr: "Nouvelle entrée du journal", it: "Nuova voce del diario" }),
+    save: translate(locale, { de: "Speichern", en: "Save", es: "Guardar", fr: "Enregistrer", it: "Salva" }),
+    cancel: translate(locale, { de: "Abbrechen", en: "Cancel", es: "Cancelar", fr: "Annuler", it: "Annulla" }),
+    deleteEntryQuestion: translate(locale, { de: "Eintrag löschen?", en: "Delete entry?", es: "¿Eliminar entrada?", fr: "Supprimer l'entrée ?", it: "Eliminare la voce?" }),
+    entryUpdated: translate(locale, { de: "Eintrag aktualisiert", en: "Entry updated", es: "Entrada actualizada", fr: "Entrée mise à jour", it: "Voce aggiornata" }),
+    entryCreated: translate(locale, { de: "Eintrag angelegt", en: "Entry created", es: "Entrada creada", fr: "Entrée créée", it: "Voce creata" }),
+    saveFailed: translate(locale, { de: "Speichern fehlgeschlagen", en: "Saving failed", es: "Error al guardar", fr: "Echec de l'enregistrement", it: "Salvataggio non riuscito" }),
+    entryDeleted: translate(locale, { de: "Eintrag gelöscht", en: "Entry deleted", es: "Entrada eliminada", fr: "Entree supprimee", it: "Voce eliminata" }),
+    deleteFailed: translate(locale, { de: "Löschen fehlgeschlagen", en: "Delete failed", es: "Error al eliminar", fr: "Echec de la suppression", it: "Eliminazione non riuscita" }),
+    editorIntro: translate(locale, {
+      de: "Halte Gedanken, Gefühle und das Teilen mit deinem Therapeuten klar an einem Ort fest.",
+      en: "Keep thoughts, feelings, and sharing with your therapist clearly in one place.",
+      es: "Mantén tus pensamientos, emociones y el contenido compartido con tu terapeuta claramente en un solo lugar.",
+      fr: "Rassemble clairement au même endroit tes pensées, tes émotions et ce que tu partages avec ton thérapeute.",
+      it: "Tieni pensieri, emozioni e condivisione con il tuo terapeuta ben raccolti in un unico posto.",
+    }),
+    activeMood: translate(locale, { de: "Aktive Stimmung", en: "Active mood", es: "Estado de ánimo activo", fr: "Humeur active", it: "Umore attivo" }),
+    shared: translate(locale, { de: "Geteilt", en: "Shared", es: "Compartido", fr: "Partagé", it: "Condiviso" }),
+    private: translate(locale, { de: "Privat", en: "Private", es: "Privado", fr: "Privé", it: "Privato" }),
+    titleOptional: translate(locale, { de: "Titel (optional)", en: "Title (optional)", es: "Título (opcional)", fr: "Titre (optionnel)", it: "Titolo (facoltativo)" }),
+    noteTitlePlaceholder: translate(locale, { de: "Titel der Notiz...", en: "Note title...", es: "Título de la nota...", fr: "Titre de la note...", it: "Titolo della nota..." }),
+    content: translate(locale, { de: "Inhalt", en: "Content", es: "Contenido", fr: "Contenu", it: "Contenuto" }),
+    small: translate(locale, { de: "Klein", en: "Small", es: "Pequeño", fr: "Petit", it: "Piccolo" }),
+    smallerTextHint: translate(locale, { de: "kleinere Schrift", en: "smaller text", es: "texto más pequeño", fr: "texte plus petit", it: "testo più piccolo" }),
+    highlight: translate(locale, { de: "Marker", en: "Highlight", es: "Marcador", fr: "Surlignage", it: "Evidenzia" }),
+    accent: translate(locale, { de: "Akzent", en: "Accent", es: "Acento", fr: "Accent", it: "Accento" }),
+    accentHint: translate(locale, { de: "farbig hervorheben", en: "highlight with color", es: "resaltar con color", fr: "mettre en valeur en couleur", it: "evidenziare con colore" }),
+    clear: translate(locale, { de: "Klar", en: "Clear", es: "Limpiar", fr: "Effacer", it: "Pulisci" }),
+    clearFormatting: translate(locale, { de: "Formatierung entfernen", en: "Remove formatting", es: "Quitar formato", fr: "Supprimer la mise en forme", it: "Rimuovi formattazione" }),
+    yourThoughts: translate(locale, { de: "Deine Gedanken...", en: "Your thoughts...", es: "Tus pensamientos...", fr: "Tes pensées...", it: "I tuoi pensieri..." }),
+    formattingHint: translate(locale, {
+      de: "Formatierungen funktionieren direkt im Editor, inklusive Tastenkürzeln für fett, kursiv, unterstrichen, Überschrift und Marker.",
+      en: "Formatting works directly in the editor, including keyboard shortcuts for bold, italic, underline, heading, and highlight.",
+      es: "El formato funciona directamente en el editor, incluidos atajos para negrita, cursiva, subrayado, encabezado y resaltado.",
+      fr: "La mise en forme fonctionne directement dans l'éditeur, y compris les raccourcis pour gras, italique, souligné, titre et surlignage.",
+      it: "La formattazione funziona direttamente nell'editor, incluse le scorciatoie per grassetto, corsivo, sottolineato, titolo ed evidenziazione.",
+    }),
+    emotion: translate(locale, { de: "Emotion", en: "Emotion", es: "Emoción", fr: "Émotion", it: "Emozione" }),
+    active: translate(locale, { de: "Aktiv", en: "Active", es: "Activa", fr: "Active", it: "Attiva" }),
+    shareWithTherapist: translate(locale, { de: "Mit Therapeut teilen", en: "Share with therapist", es: "Compartir con el terapeuta", fr: "Partager avec le thérapeute", it: "Condividi con il terapeuta" }),
+    therapistCanReadNote: translate(locale, { de: "Dein Therapeut kann diese Notiz lesen.", en: "Your therapist can read this note.", es: "Tu terapeuta puede leer esta nota.", fr: "Ton thérapeute peut lire cette note.", it: "Il tuo terapeuta può leggere questa nota." }),
+    visibleOnlyToYou: translate(locale, { de: "Nur für dich sichtbar.", en: "Visible only to you.", es: "Visible solo para ti.", fr: "Visible uniquement pour toi.", it: "Visibile solo per te." }),
+    deleteEntryBody: translate(locale, {
+      de: "wird unwiderruflich gelöscht.",
+      en: "will be permanently deleted.",
+      es: "se eliminara de forma permanente.",
+      fr: "sera supprimee definitivement.",
+      it: "sara eliminata definitivamente.",
+    }),
+  }), [locale]);
 
   const syncEditorContent = useCallback((persist = true) => {
     if (!editorRef.current) return "<p></p>";
@@ -397,7 +466,7 @@ export default function Notes() {
           emotionScore: editEmotionScore,
           updatedAt: now,
         } : n));
-        setToast({ message: "Eintrag aktualisiert", type: "success" });
+        setToast({ message: text.entryUpdated, type: "success" });
       } else {
         const payload = {
           clientId: profile.id,
@@ -412,12 +481,12 @@ export default function Notes() {
         };
         const docRef = await firestore.addDoc(firestore.collection(dbFull, "client_notes"), payload);
         setNotes((prev) => [{ id: docRef.id, ...payload, title: payload.title || undefined }, ...prev]);
-        setToast({ message: "Eintrag angelegt", type: "success" });
+        setToast({ message: text.entryCreated, type: "success" });
       }
       setEditing(false);
     } catch (e) {
       console.error("Error saving note:", e);
-      setToast({ message: "Speichern fehlgeschlagen", type: "error" });
+      setToast({ message: text.saveFailed, type: "error" });
     } finally {
       setSaving(false);
     }
@@ -430,10 +499,10 @@ export default function Notes() {
       await firestore.deleteDoc(firestore.doc(dbFull, "client_notes", deleteTarget.id));
       setNotes((prev) => prev.filter((n) => n.id !== deleteTarget.id));
       setDeleteTarget(null);
-      setToast({ message: "Eintrag gelöscht", type: "success" });
+      setToast({ message: text.entryDeleted, type: "success" });
     } catch (e) {
       console.error("Error deleting note:", e);
-      setToast({ message: "Löschen fehlgeschlagen", type: "error" });
+      setToast({ message: text.deleteFailed, type: "error" });
     }
   };
 
@@ -468,14 +537,14 @@ export default function Notes() {
         <div className="max-w-5xl mx-auto px-5 pt-12 pb-8 relative z-10">
           <div className="flex items-center justify-between mb-5">
             <motion.button onClick={() => navigate("/")} className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-4 py-2.5 rounded-2xl transition-colors text-sm font-bold" whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }}>
-              <ArrowLeft size={16} /> Zurück
+              <ArrowLeft size={16} /> {text.back}
             </motion.button>
             <motion.button onClick={() => openEditor()} className="flex items-center gap-2 bg-white/20 hover:bg-white/30 px-4 py-2.5 rounded-2xl transition-colors text-sm font-bold" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Plus size={16} /> Neue Notiz
+              <Plus size={16} /> {text.newNote}
             </motion.button>
           </div>
-          <h1 className="text-2xl font-black tracking-tight">Therapie-Tagebuch</h1>
-          <p className="text-white/60 text-sm font-semibold mt-1">{notes.length} {notes.length === 1 ? "Eintrag" : "Einträge"}</p>
+          <h1 className="text-2xl font-black tracking-tight">{text.journal}</h1>
+          <p className="text-white/60 text-sm font-semibold mt-1">{notes.length} {notes.length === 1 ? text.entryOne : text.entryMany}</p>
         </div>
       </div>
 
@@ -483,7 +552,7 @@ export default function Notes() {
         <StaggerItem>
           <div className="relative">
             <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder="Tagebuch durchsuchen..." className="w-full pl-11 pr-4 py-3.5 bg-card rounded-2xl border border-border text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
+            <input type="text" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} placeholder={text.searchPlaceholder} className="w-full pl-11 pr-4 py-3.5 bg-card rounded-2xl border border-border text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring" />
           </div>
         </StaggerItem>
 
@@ -493,8 +562,8 @@ export default function Notes() {
               <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2.5, repeat: Infinity }}>
                 <Edit3 size={48} className="text-muted-foreground mx-auto mb-4" />
               </motion.div>
-              <h2 className="text-xl font-black text-foreground mb-2">{searchTerm ? "Keine Treffer" : "Noch keine Einträge"}</h2>
-              <p className="text-muted-foreground">{searchTerm ? "Versuche einen anderen Suchbegriff." : "Erstelle deinen ersten Eintrag mit dem + Button."}</p>
+              <h2 className="text-xl font-black text-foreground mb-2">{searchTerm ? text.noResults : text.noEntries}</h2>
+              <p className="text-muted-foreground">{searchTerm ? text.tryAnotherSearch : text.firstEntryHint}</p>
             </div>
           </StaggerItem>
         ) : (
@@ -517,14 +586,14 @@ export default function Notes() {
                       <button onClick={() => setExpandedId(isExpanded ? null : note.id)} className="w-full text-left">
                         <div className="flex items-start justify-between">
                           <div className="flex-1 pr-3">
-                            <h3 className="font-black text-foreground text-lg leading-tight">{note.title || (isMine ? "Tagebucheintrag" : "Therapeuten-Notiz")}</h3>
+                            <h3 className="font-black text-foreground text-lg leading-tight">{note.title || (isMine ? text.journalEntry : text.therapistNote)}</h3>
                             <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                               <span className="text-xs font-bold text-muted-foreground">{formatTime(note)}</span>
                               <span className="text-[10px] font-extrabold bg-primary/10 text-primary px-2 py-0.5 rounded-md flex items-center gap-1">
                                 <span>{emotion.emoji}</span>
                                 <span>{getEmotionLabel(emotion, locale)}</span>
                               </span>
-                              {!isMine && <span className="text-[10px] font-extrabold bg-accent/15 text-accent px-2 py-0.5 rounded-md">Vom Therapeut</span>}
+                              {!isMine && <span className="text-[10px] font-extrabold bg-accent/15 text-accent px-2 py-0.5 rounded-md">{text.fromTherapist}</span>}
                             </div>
                           </div>
                           <motion.div animate={{ rotate: isExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
@@ -538,18 +607,18 @@ export default function Notes() {
                             <div className="mt-4 pt-4 border-t border-border">
                               <div
                                 className="text-foreground leading-relaxed break-words [&_blockquote]:border-l-4 [&_blockquote]:border-primary/25 [&_blockquote]:pl-4 [&_blockquote]:italic [&_h2]:text-xl [&_h2]:font-black [&_h2]:mt-4 [&_h2]:mb-2 [&_h3]:text-lg [&_h3]:font-black [&_h3]:mt-4 [&_h3]:mb-2 [&_li]:ml-5 [&_li]:list-disc [&_ol>li]:list-decimal [&_p]:mb-3 [&_small]:text-xs [&_strong]:font-black [&_u]:underline"
-                                dangerouslySetInnerHTML={{ __html: normalizeEditorContent(note.content || "Kein Inhalt.") }}
+                                dangerouslySetInnerHTML={{ __html: normalizeEditorContent(note.content || text.noContent) }}
                               />
                               {isMine && (
                                 <div className="flex gap-2 mt-4">
                                   <PressableScale onClick={() => openEditor(note)}>
                                     <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary/10 text-primary font-bold text-sm">
-                                      <Edit3 size={14} /> Bearbeiten
+                                      <Edit3 size={14} /> {text.edit}
                                     </div>
                                   </PressableScale>
                                   <PressableScale onClick={() => setDeleteTarget(note)}>
                                     <div className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-destructive/10 text-destructive font-bold text-sm">
-                                      <Trash2 size={14} /> Löschen
+                                      <Trash2 size={14} /> {text.delete}
                                     </div>
                                   </PressableScale>
                                 </div>
@@ -574,8 +643,8 @@ export default function Notes() {
             <motion.div data-tour-id="notes-editor" className="bg-card rounded-[2rem] border border-border w-full max-w-4xl max-h-[92vh] overflow-y-auto shadow-2xl" initial={{ opacity: 0, scale: 0.9, y: 30 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 30 }} transition={{ type: "spring", damping: 20, stiffness: 150 }} onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between p-6 border-b border-border">
                 <div>
-                  <h2 className="text-lg font-black text-foreground">{editNote ? "Eintrag bearbeiten" : "Neuer Tagebucheintrag"}</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Halte Gedanken, Gefühle und das Teilen mit deinem Therapeuten klar an einem Ort fest.</p>
+                  <h2 className="text-lg font-black text-foreground">{editNote ? text.editEntry : text.newJournalEntry}</h2>
+                  <p className="text-sm text-muted-foreground mt-1">{text.editorIntro}</p>
                 </div>
                 <button onClick={() => setEditing(false)} className="p-2 rounded-xl hover:bg-secondary transition-colors"><X size={20} className="text-muted-foreground" /></button>
               </div>
@@ -585,7 +654,7 @@ export default function Notes() {
                   <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full opacity-20" style={{ backgroundColor: activeEditorEmotion.color }} />
                   <div className="relative flex items-start justify-between gap-4">
                     <div>
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Aktive Stimmung</p>
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">{text.activeMood}</p>
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl border" style={{ backgroundColor: `${activeEditorEmotion.color}18`, borderColor: `${activeEditorEmotion.color}28` }}>
                           {activeEditorEmotion.emoji}
@@ -597,7 +666,7 @@ export default function Notes() {
                       </div>
                     </div>
                     <div className={`px-3 py-2 rounded-2xl border text-sm font-bold ${editShared ? "bg-primary/10 text-primary border-primary/15" : "bg-secondary text-muted-foreground border-border"}`}>
-                      {editShared ? "Geteilt" : "Privat"}
+                      {editShared ? text.shared : text.private}
                     </div>
                   </div>
                 </div>
@@ -605,11 +674,11 @@ export default function Notes() {
                 <div className="grid grid-cols-1 lg:grid-cols-[1.75fr_0.95fr] gap-5">
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Titel (optional)</label>
-                      <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder="Titel der Notiz..." className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-ring" />
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{text.titleOptional}</label>
+                      <input value={editTitle} onChange={(e) => setEditTitle(e.target.value)} placeholder={text.noteTitlePlaceholder} className="w-full bg-secondary rounded-2xl border border-border p-3.5 text-foreground font-bold focus:outline-none focus:ring-2 focus:ring-ring" />
                     </div>
                     <div>
-                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Inhalt</label>
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{text.content}</label>
                       <div className="rounded-[1.6rem] border border-border bg-secondary overflow-hidden">
                         <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-3 bg-background/70">
                           {[
@@ -618,10 +687,10 @@ export default function Notes() {
                             { key: "underline", label: "U", active: editorFormats.underline, action: () => runEditorCommand("underline"), hint: "Strg/Cmd + U" },
                             { key: "heading", label: "H2", active: editorFormats.heading, action: () => runEditorCommand("formatBlock", "h2"), hint: "Strg/Cmd + Alt + 2" },
                             { key: "text", label: "Text", active: !editorFormats.heading, action: () => runEditorCommand("formatBlock", "p"), hint: "Strg/Cmd + Alt + 0" },
-                            { key: "small", label: "Klein", active: false, action: () => wrapSelectionWithTag("small"), hint: "kleinere Schrift" },
-                            { key: "highlight", label: "Marker", active: false, action: () => runEditorCommand("hiliteColor", "#FEF08A"), hint: "Strg/Cmd + Shift + H" },
-                            { key: "accent", label: "Akzent", active: false, action: () => runEditorCommand("foreColor", "#0F766E"), hint: "farbig hervorheben" },
-                            { key: "clear", label: "Klar", active: false, action: () => runEditorCommand("removeFormat"), hint: "Formatierung entfernen" },
+                            { key: "small", label: text.small, active: false, action: () => wrapSelectionWithTag("small"), hint: text.smallerTextHint },
+                            { key: "highlight", label: text.highlight, active: false, action: () => runEditorCommand("hiliteColor", "#FEF08A"), hint: "Strg/Cmd + Shift + H" },
+                            { key: "accent", label: text.accent, active: false, action: () => runEditorCommand("foreColor", "#0F766E"), hint: text.accentHint },
+                            { key: "clear", label: text.clear, active: false, action: () => runEditorCommand("removeFormat"), hint: text.clearFormatting },
                           ].map((button) => (
                             <button
                               key={button.key}
@@ -643,7 +712,7 @@ export default function Notes() {
                         <div className="relative">
                           {editorTextEmpty && (
                             <p className="pointer-events-none absolute left-4 top-4 text-sm text-muted-foreground">
-                              Deine Gedanken...
+                              {text.yourThoughts}
                             </p>
                           )}
                           <div
@@ -662,14 +731,14 @@ export default function Notes() {
                         </div>
                       </div>
                       <p className="mt-2 text-xs text-muted-foreground">
-                        Formatierungen funktionieren direkt im Editor, inklusive Tastenkürzeln für fett, kursiv, unterstrichen, Überschrift und Marker.
+                        {text.formattingHint}
                       </p>
                     </div>
                   </div>
 
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Emotion</label>
+                      <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{text.emotion}</label>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2.5">
                         {emotionChoices.map((emotion) => {
                           const active = editEmotionScore === emotion.score;
@@ -695,7 +764,7 @@ export default function Notes() {
                                     <p className="text-xs font-semibold" style={{ color: emotion.color }}>{emotion.score}/10</p>
                                   </div>
                                 </div>
-                                {active ? <div className="px-2 py-1 rounded-xl text-[11px] font-black" style={{ backgroundColor: `${emotion.color}18`, color: emotion.color }}>Aktiv</div> : null}
+                                {active ? <div className="px-2 py-1 rounded-xl text-[11px] font-black" style={{ backgroundColor: `${emotion.color}18`, color: emotion.color }}>{text.active}</div> : null}
                               </div>
                             </button>
                           );
@@ -706,8 +775,8 @@ export default function Notes() {
                     <div className="rounded-[1.6rem] border border-border bg-secondary/70 p-4">
                       <div className="flex items-center justify-between gap-4">
                         <div>
-                          <p className="font-bold text-foreground text-sm">Mit Therapeut teilen</p>
-                          <p className="text-xs text-muted-foreground mt-1">{editShared ? "Dein Therapeut kann diese Notiz lesen." : "Nur für dich sichtbar."}</p>
+                          <p className="font-bold text-foreground text-sm">{text.shareWithTherapist}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{editShared ? text.therapistCanReadNote : text.visibleOnlyToYou}</p>
                         </div>
                         <motion.button onClick={() => setEditShared(!editShared)} className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${editShared ? "bg-primary/15 border-2 border-primary" : "bg-muted border border-border"}`} whileTap={{ scale: 0.9 }}>
                           {editShared ? <Unlock size={18} className="text-primary" /> : <Lock size={18} className="text-muted-foreground" />}
@@ -720,7 +789,7 @@ export default function Notes() {
 
               <div className="p-6 pt-0">
                 <motion.button onClick={handleSave} disabled={saving || editorTextEmpty} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg disabled:opacity-40 flex items-center justify-center gap-2" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-                  {saving ? <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <><Save size={18} /> Speichern</>}
+                  {saving ? <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} /> : <><Save size={18} /> {text.save}</>}
                 </motion.button>
               </div>
             </motion.div>
@@ -735,11 +804,11 @@ export default function Notes() {
               <motion.div className="w-16 h-16 rounded-3xl bg-destructive/10 border border-destructive/15 mx-auto mb-4 flex items-center justify-center" initial={{ scale: 0 }} animate={{ scale: [0, 1.12, 1] }} transition={{ delay: 0.1 }}>
                 <Trash2 size={28} className="text-destructive" />
               </motion.div>
-              <h3 className="text-lg font-black text-foreground mb-2">Eintrag löschen?</h3>
-              <p className="text-sm text-muted-foreground mb-6">„{deleteTarget.title || "Tagebucheintrag"}" wird unwiderruflich gelöscht.</p>
+              <h3 className="text-lg font-black text-foreground mb-2">{text.deleteEntryQuestion}</h3>
+              <p className="text-sm text-muted-foreground mb-6">„{deleteTarget.title || text.journalEntry}" {text.deleteEntryBody}</p>
               <div className="flex gap-3">
-                <motion.button onClick={() => setDeleteTarget(null)} className="flex-1 py-3 rounded-2xl bg-secondary text-foreground font-bold" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Abbrechen</motion.button>
-                <motion.button onClick={handleDelete} className="flex-1 py-3 rounded-2xl bg-destructive text-destructive-foreground font-bold" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>Löschen</motion.button>
+                <motion.button onClick={() => setDeleteTarget(null)} className="flex-1 py-3 rounded-2xl bg-secondary text-foreground font-bold" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>{text.cancel}</motion.button>
+                <motion.button onClick={handleDelete} className="flex-1 py-3 rounded-2xl bg-destructive text-destructive-foreground font-bold" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>{text.delete}</motion.button>
               </div>
             </motion.div>
           </motion.div>

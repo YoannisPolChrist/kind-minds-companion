@@ -2,21 +2,29 @@ import { Link } from "react-router-dom";
 import { LayoutDashboard, LogOut } from "lucide-react";
 import type { UserProfile } from "../../hooks/useAuth";
 import {
-  clientQuickActions,
   getInitials,
   getRoleLabel,
+  getClientQuickActions,
   type ShellNavItem,
   type ShellQuickAction,
 } from "./shellConfig";
+import { useLanguage } from "../../hooks/useLanguage";
+import { translate } from "../../lib/webLocale";
 
 export function ShellBrand({ to, collapsed = false }: { to: string; collapsed?: boolean }) {
+  const { locale } = useLanguage();
+  const text = {
+    workspace: translate(locale, { de: "Workspace", en: "Workspace", es: "Espacio", fr: "Workspace", it: "Workspace" }),
+    workspaceLabel: translate(locale, { de: "Kind Minds Workspace", en: "Kind Minds workspace", es: "Espacio de Kind Minds", fr: "Workspace Kind Minds", it: "Workspace Kind Minds" }),
+  };
+
   return (
     <Link
       to={to}
       className={`rounded-[1.75rem] border border-border bg-background shadow-sm transition-colors hover:border-foreground/10 ${
         collapsed ? "flex items-center justify-center p-3" : "px-4 py-4"
       }`}
-      aria-label={collapsed ? "Kind Minds Workspace" : undefined}
+      aria-label={collapsed ? text.workspaceLabel : undefined}
     >
       {collapsed ? (
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
@@ -29,7 +37,7 @@ export function ShellBrand({ to, collapsed = false }: { to: string; collapsed?: 
           </div>
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-muted-foreground">Kind Minds</p>
-            <h2 className="text-lg font-black tracking-tight text-foreground">Workspace</h2>
+            <h2 className="text-lg font-black tracking-tight text-foreground">{text.workspace}</h2>
           </div>
         </div>
       )}
@@ -115,6 +123,22 @@ export function ShellProfileCard({
   collapsed?: boolean;
   onSignOut?: () => void;
 }) {
+  const { locale } = useLanguage();
+  const signOutLabel = translate(locale, {
+    de: "Abmelden",
+    en: "Sign out",
+    es: "Cerrar sesión",
+    fr: "Se déconnecter",
+    it: "Disconnetti",
+  });
+  const brandLabel = translate(locale, {
+    de: "Kind Minds",
+    en: "Kind Minds",
+    es: "Kind Minds",
+    fr: "Kind Minds",
+    it: "Kind Minds",
+  });
+
   if (collapsed) {
     return (
       <div className="flex w-full min-w-0 flex-col items-center gap-3 rounded-[1.75rem] border border-border bg-background p-3 shadow-sm">
@@ -122,17 +146,17 @@ export function ShellProfileCard({
           {getInitials(profile)}
         </div>
         <span
-          title={profile?.firstName || "Kind Minds"}
+          title={profile?.firstName || brandLabel}
           className="block w-full truncate text-center text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground"
         >
-          {profile?.firstName || "Kind Minds"}
+          {profile?.firstName || brandLabel}
         </span>
         {onSignOut && (
           <button
             type="button"
             onClick={onSignOut}
             className="inline-flex items-center justify-center rounded-full border border-border bg-card p-2 text-muted-foreground transition-colors hover:bg-secondary"
-            aria-label="Abmelden"
+            aria-label={signOutLabel}
           >
             <LogOut size={16} />
           </button>
@@ -153,11 +177,11 @@ export function ShellProfileCard({
         </div>
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-black text-foreground">
-            {profile?.firstName || "Kind Minds"}
+            {profile?.firstName || brandLabel}
             {profile?.lastName ? ` ${profile.lastName}` : ""}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {profile?.email || getRoleLabel(profile)}
+            {profile?.email || getRoleLabel(profile, locale)}
           </p>
         </div>
       </div>
@@ -169,7 +193,7 @@ export function ShellProfileCard({
           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card px-4 py-3 text-sm font-bold text-foreground transition-colors hover:bg-secondary"
         >
           <LogOut size={16} />
-          Abmelden
+          {signOutLabel}
         </button>
       )}
     </div>
@@ -181,6 +205,9 @@ export function ShellQuickActionStrip({
 }: {
   pathname: string;
 }) {
+  const { locale } = useLanguage();
+  const clientQuickActions = getClientQuickActions(locale);
+
   return (
     <div className="border-t border-border/80 bg-background/95 px-4 py-3 md:hidden">
       <div className="mx-auto flex max-w-[1600px] gap-2 overflow-x-auto">

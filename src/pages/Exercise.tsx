@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../lib/firebaseDb";
 import { useAuth } from "../hooks/useAuth";
+import { useLanguage } from "../hooks/useLanguage";
+import { translate } from "../lib/webLocale";
 import {
   ArrowLeft, CheckCircle, Edit3, Activity, CircleDot, ListChecks,
   CheckCircle2, Heart, BookOpen, Clock, Wind, Image as ImageIcon,
@@ -68,43 +70,149 @@ const InteractiveChartBlock = lazy(() => import("../components/exercise/Interact
 
 // ─── Block Catalogue ──────────────────────────────────────────────────────────
 
-const BLOCK_META: Record<string, { label: string; desc: string; accent: string; icon: typeof Edit3 }> = {
-  reflection: { label: "Reflektion", desc: "Freie Texteingabe", accent: "#3B82F6", icon: Edit3 },
-  text: { label: "Reflektion", desc: "Freie Texteingabe", accent: "#3B82F6", icon: Edit3 },
-  scale: { label: "Skala 1–10", desc: "Numerische Bewertung", accent: "#F59E0B", icon: Activity },
-  choice: { label: "Auswahl", desc: "Einzelauswahl", accent: "#6366F1", icon: CircleDot },
-  checklist: { label: "Checkliste", desc: "Mehrfachauswahl", accent: "#10B981", icon: ListChecks },
-  homework: { label: "ABC-Protokoll", desc: "Verhaltens-Tagebuch", accent: "#C09D59", icon: CheckCircle2 },
-  gratitude: { label: "Dankbarkeit", desc: "Dankbarkeits-Journal", accent: "#EC4899", icon: Heart },
-  info: { label: "Info-Text", desc: "Psychoedukation", accent: "#14B8A6", icon: BookOpen },
-  media: { label: "Foto / Video", desc: "Medien-Upload", accent: "#F43F5E", icon: ImageIcon },
-  video: { label: "Web-Video", desc: "YouTube / Vimeo Link", accent: "#E11D48", icon: Film },
-  timer: { label: "Timer", desc: "Countdown Start", accent: "#8B5CF6", icon: Clock },
-  breathing: { label: "Atemübung", desc: "4-4-4 Rhythmus", accent: "#137386", icon: Wind },
-  spider_chart: { label: "Netzdiagramm", desc: "Profilanalyse", accent: "#F97316", icon: Radar },
-  bar_chart: { label: "Balkendiagramm", desc: "Wertevergleich", accent: "#0EA5E9", icon: BarChart3 },
-  pie_chart: { label: "Kreisdiagramm", desc: "Verteilung", accent: "#8B5CF6", icon: PieChartIcon },
-  line_chart: { label: "Liniendiagramm", desc: "Entwicklung", accent: "#10B981", icon: LineChartIcon },
-  progress_bar: { label: "Fortschrittsbalken", desc: "Ziel-Tracking", accent: "#06B6D4", icon: Gauge },
-  mood_wheel: { label: "Stimmungsrad", desc: "Emotionen erfassen", accent: "#F472B6", icon: Target },
-  table: { label: "Tabelle", desc: "Strukturierte Daten", accent: "#0D9488", icon: Table2 },
-  slider_group: { label: "Slider-Bereich", desc: "Parallele Bewertungen", accent: "#7C3AED", icon: SlidersHorizontal },
-};
+function getModuleLabel(locale: string, count: number) {
+  return translate(locale, {
+    de: count === 1 ? "Modul" : "Module",
+    en: count === 1 ? "module" : "modules",
+    es: count === 1 ? "módulo" : "módulos",
+    fr: count === 1 ? "module" : "modules",
+    it: count === 1 ? "modulo" : "moduli",
+  });
+}
 
-function getMeta(type: string) {
-  return BLOCK_META[type] || BLOCK_META.reflection;
+function getExerciseText(locale: string) {
+  return {
+    reflectionLabel: translate(locale, { de: "Deine Reflexion", en: "Your reflection", es: "Tu reflexión", fr: "Ta réflexion", it: "La tua riflessione" }),
+    reflectionPlaceholder: translate(locale, {
+      de: "Schreibe deine Gedanken hier auf...",
+      en: "Write your thoughts here...",
+      es: "Escribe aquí tus pensamientos...",
+      fr: "Écris tes pensées ici...",
+      it: "Scrivi qui i tuoi pensieri...",
+    }),
+    scaleMin: translate(locale, { de: "Gar nicht", en: "Not at all", es: "Para nada", fr: "Pas du tout", it: "Per niente" }),
+    scaleMax: translate(locale, { de: "Sehr stark", en: "Very strongly", es: "Muy fuerte", fr: "Très fortement", it: "Molto intensamente" }),
+    selected: translate(locale, { de: "Gewählt", en: "Selected", es: "Seleccionado", fr: "Sélectionné", it: "Selezionato" }),
+    checklistDone: translate(locale, { de: "erledigt", en: "done", es: "hecho", fr: "termine", it: "completato" }),
+    abcTitle: translate(locale, { de: "ABC-Protokoll", en: "ABC log", es: "Registro ABC", fr: "Journal ABC", it: "Registro ABC" }),
+    gratitudePrompt: translate(locale, { de: "Ich bin dankbar für...", en: "I am grateful for...", es: "Estoy agradecido por...", fr: "Je suis reconnaissant pour...", it: "Sono grato per..." }),
+    writeHere: translate(locale, { de: "Schreibe hier...", en: "Write here...", es: "Escribe aquí...", fr: "Écris ici...", it: "Scrivi qui..." }),
+    inhale: translate(locale, { de: "Einatmen", en: "Inhale", es: "Inhala", fr: "Inspire", it: "Inspira" }),
+    hold: translate(locale, { de: "Halten", en: "Hold", es: "Mantener", fr: "Retiens", it: "Trattieni" }),
+    exhale: translate(locale, { de: "Ausatmen", en: "Exhale", es: "Exhala", fr: "Expire", it: "Espira" }),
+    breathingRhythm: translate(locale, { de: "4-4-4 Atemrhythmus", en: "4-4-4 breathing rhythm", es: "Ritmo de respiración 4-4-4", fr: "Rythme respiratoire 4-4-4", it: "Ritmo respiratorio 4-4-4" }),
+    running: translate(locale, { de: "läuft...", en: "running...", es: "en marcha...", fr: "en cours...", it: "in corso..." }),
+    stop: translate(locale, { de: "Stop", en: "Stop", es: "Detener", fr: "Arrêter", it: "Ferma" }),
+    start: translate(locale, { de: "Starten", en: "Start", es: "Iniciar", fr: "Démarrer", it: "Avvia" }),
+    information: translate(locale, { de: "Information", en: "Information", es: "Información", fr: "Information", it: "Informazione" }),
+    embeddedVideo: translate(locale, { de: "Video", en: "Video", es: "Video", fr: "Video", it: "Video" }),
+    progress: translate(locale, { de: "Fortschritt", en: "Progress", es: "Progreso", fr: "Progression", it: "Progresso" }),
+    defaultMoodOptions: [
+      translate(locale, { de: "Freude", en: "Joy", es: "Alegría", fr: "Joie", it: "Gioia" }),
+      translate(locale, { de: "Trauer", en: "Sadness", es: "Tristeza", fr: "Tristesse", it: "Tristezza" }),
+      translate(locale, { de: "Wut", en: "Anger", es: "Rabia", fr: "Colère", it: "Rabbia" }),
+      translate(locale, { de: "Angst", en: "Fear", es: "Miedo", fr: "Peur", it: "Paura" }),
+      translate(locale, { de: "Ekel", en: "Disgust", es: "Asco", fr: "Dégoût", it: "Disgusto" }),
+      translate(locale, { de: "Überraschung", en: "Surprise", es: "Sorpresa", fr: "Surprise", it: "Sorpresa" }),
+    ],
+    defaultTableColumns: [
+      translate(locale, { de: "Spalte 1", en: "Column 1", es: "Columna 1", fr: "Colonne 1", it: "Colonna 1" }),
+      translate(locale, { de: "Spalte 2", en: "Column 2", es: "Columna 2", fr: "Colonne 2", it: "Colonna 2" }),
+    ],
+    defaultSliderLabel: translate(locale, { de: "Energie", en: "Energy", es: "Energia", fr: "Energie", it: "Energia" }),
+    chartLoading: translate(locale, { de: "Diagramm wird geladen...", en: "Loading chart...", es: "Cargando gráfico...", fr: "Chargement du graphique...", it: "Caricamento del grafico..." }),
+    progressSummary: (answered: number, total: number) =>
+      translate(locale, {
+        de: `${answered} von ${total} ${getModuleLabel(locale, total)} bearbeitet`,
+        en: `${answered} of ${total} ${getModuleLabel(locale, total)} completed`,
+        es: `${answered} de ${total} ${getModuleLabel(locale, total)} completados`,
+        fr: `${answered} sur ${total} ${getModuleLabel(locale, total)} terminés`,
+        it: `${answered} su ${total} ${getModuleLabel(locale, total)} completati`,
+      }),
+    exerciseNotFound: translate(locale, { de: "Übung nicht gefunden", en: "Exercise not found", es: "Ejercicio no encontrado", fr: "Exercice introuvable", it: "Esercizio non trovato" }),
+    exerciseLoadFailed: translate(locale, { de: "Diese Übung konnte nicht geladen werden.", en: "This exercise could not be loaded.", es: "No se pudo cargar este ejercicio.", fr: "Cet exercice n'a pas pu être chargé.", it: "Impossibile caricare questo esercizio." }),
+    back: translate(locale, { de: "Zurück", en: "Back", es: "Volver", fr: "Retour", it: "Indietro" }),
+    exerciseSaved: translate(locale, { de: "Übung gespeichert", en: "Exercise saved", es: "Ejercicio guardado", fr: "Exercice enregistré", it: "Esercizio salvato" }),
+    successTitle: translate(locale, { de: "Super!", en: "Great!", es: "Genial!", fr: "Super !", it: "Fantastico!" }),
+    successBody: translate(locale, { de: "Du hast die Übung erfolgreich abgeschlossen.", en: "You completed the exercise successfully.", es: "Has completado el ejercicio con éxito.", fr: "Tu as terminé l'exercice avec succès.", it: "Hai completato l'esercizio con successo." }),
+    createPdf: translate(locale, { de: "PDF erstellen", en: "Create PDF", es: "Crear PDF", fr: "Créer un PDF", it: "Crea PDF" }),
+    backToDashboard: translate(locale, { de: "Zurück zum Dashboard", en: "Back to dashboard", es: "Volver al panel", fr: "Retour au tableau de bord", it: "Torna alla dashboard" }),
+    alreadyCompleted: translate(locale, { de: "Bereits abgeschlossen", en: "Already completed", es: "Ya completado", fr: "Déjà terminé", it: "Già completato" }),
+    daily: translate(locale, { de: "Täglich", en: "Daily", es: "Diario", fr: "Quotidien", it: "Giornaliero" }),
+    weekly: translate(locale, { de: "Wöchentlich", en: "Weekly", es: "Semanal", fr: "Hebdomadaire", it: "Settimanale" }),
+    shareAnswers: translate(locale, { de: "Antworten teilen", en: "Share answers", es: "Compartir respuestas", fr: "Partager les réponses", it: "Condividi risposte" }),
+    sharedHint: translate(locale, { de: "Dein Therapeut kann deine geschriebenen Texte lesen.", en: "Your therapist can read your written responses.", es: "Tu terapeuta puede leer tus respuestas escritas.", fr: "Ton thérapeute peut lire tes réponses écrites.", it: "Il tuo terapeuta può leggere le tue risposte scritte." }),
+    privateHint: translate(locale, { de: "Deine Antworten bleiben privat.", en: "Your answers stay private.", es: "Tus respuestas permanecen privadas.", fr: "Tes réponses restent privées.", it: "Le tue risposte restano private." }),
+    downloadPdf: translate(locale, { de: "PDF herunterladen", en: "Download PDF", es: "Descargar PDF", fr: "Télécharger le PDF", it: "Scarica PDF" }),
+    editAgain: translate(locale, { de: "Erneut bearbeiten", en: "Edit again", es: "Editar de nuevo", fr: "Modifier à nouveau", it: "Modifica di nuovo" }),
+    saving: translate(locale, { de: "Speichern...", en: "Saving...", es: "Guardando...", fr: "Enregistrement...", it: "Salvataggio..." }),
+    completeAgain: translate(locale, { de: "Erneut abschließen", en: "Complete again", es: "Completar de nuevo", fr: "Terminer à nouveau", it: "Completa di nuovo" }),
+    completeExercise: translate(locale, { de: "Übung abschließen", en: "Complete exercise", es: "Completar ejercicio", fr: "Terminer l'exercice", it: "Completa esercizio" }),
+  };
+}
+
+function getAbcFields(locale: string) {
+  return [
+    {
+      key: "A",
+      label: translate(locale, { de: "A - Auslöser", en: "A - Trigger", es: "A - Desencadenante", fr: "A - Déclencheur", it: "A - Attivatore" }),
+      hint: translate(locale, { de: "Was ist passiert? (Situation, Ort, Zeit)", en: "What happened? (situation, place, time)", es: "¿Qué pasó? (situación, lugar, hora)", fr: "Que s'est-il passé ? (situation, lieu, moment)", it: "Che cosa è successo? (situazione, luogo, momento)" }),
+    },
+    {
+      key: "B",
+      label: translate(locale, { de: "B - Bewertung", en: "B - Interpretation", es: "B - Interpretación", fr: "B - Interprétation", it: "B - Interpretazione" }),
+      hint: translate(locale, { de: "Was habe ich gedacht / bewertet?", en: "What did I think or interpret?", es: "¿Qué pensé o interpreté?", fr: "Qu'ai-je pensé ou interprété ?", it: "Che cosa ho pensato o interpretato?" }),
+    },
+    {
+      key: "C",
+      label: translate(locale, { de: "C - Konsequenz", en: "C - Consequence", es: "C - Consecuencia", fr: "C - Consequence", it: "C - Conseguenza" }),
+      hint: translate(locale, { de: "Was habe ich gefühlt / getan? (0-10)", en: "What did I feel or do? (0-10)", es: "¿Qué sentí o hice? (0-10)", fr: "Qu'ai-je ressenti ou fait ? (0-10)", it: "Che cosa ho provato o fatto? (0-10)" }),
+    },
+  ];
+}
+
+function getBlockMeta(locale: string): Record<string, { label: string; desc: string; accent: string; icon: typeof Edit3 }> {
+  return {
+    reflection: { label: translate(locale, { de: "Reflexion", en: "Reflection", es: "Reflexión", fr: "Réflexion", it: "Riflessione" }), desc: translate(locale, { de: "Freie Texteingabe", en: "Free text input", es: "Texto libre", fr: "Texte libre", it: "Testo libero" }), accent: "#3B82F6", icon: Edit3 },
+    text: { label: translate(locale, { de: "Reflexion", en: "Reflection", es: "Reflexión", fr: "Réflexion", it: "Riflessione" }), desc: translate(locale, { de: "Freie Texteingabe", en: "Free text input", es: "Texto libre", fr: "Texte libre", it: "Testo libero" }), accent: "#3B82F6", icon: Edit3 },
+    scale: { label: translate(locale, { de: "Skala 1-10", en: "Scale 1-10", es: "Escala 1-10", fr: "Échelle 1-10", it: "Scala 1-10" }), desc: translate(locale, { de: "Numerische Bewertung", en: "Numeric rating", es: "Valoración numérica", fr: "Évaluation numérique", it: "Valutazione numerica" }), accent: "#F59E0B", icon: Activity },
+    choice: { label: translate(locale, { de: "Auswahl", en: "Choice", es: "Selección", fr: "Choix", it: "Scelta" }), desc: translate(locale, { de: "Einzelauswahl", en: "Single choice", es: "Selección única", fr: "Choix unique", it: "Scelta singola" }), accent: "#6366F1", icon: CircleDot },
+    checklist: { label: translate(locale, { de: "Checkliste", en: "Checklist", es: "Lista de verificación", fr: "Liste de contrôle", it: "Checklist" }), desc: translate(locale, { de: "Mehrfachauswahl", en: "Multiple choice", es: "Selección múltiple", fr: "Choix multiples", it: "Scelta multipla" }), accent: "#10B981", icon: ListChecks },
+    homework: { label: translate(locale, { de: "ABC-Protokoll", en: "ABC log", es: "Registro ABC", fr: "Journal ABC", it: "Registro ABC" }), desc: translate(locale, { de: "Verhaltens-Tagebuch", en: "Behavior journal", es: "Diario conductual", fr: "Journal comportemental", it: "Diario comportamentale" }), accent: "#C09D59", icon: CheckCircle2 },
+    gratitude: { label: translate(locale, { de: "Dankbarkeit", en: "Gratitude", es: "Gratitud", fr: "Gratitude", it: "Gratitudine" }), desc: translate(locale, { de: "Dankbarkeits-Journal", en: "Gratitude journal", es: "Diario de gratitud", fr: "Journal de gratitude", it: "Diario della gratitudine" }), accent: "#EC4899", icon: Heart },
+    info: { label: translate(locale, { de: "Info-Text", en: "Info text", es: "Texto informativo", fr: "Texte informatif", it: "Testo informativo" }), desc: translate(locale, { de: "Psychoedukation", en: "Psychoeducation", es: "Psicoeducación", fr: "Psychoéducation", it: "Psicoeducazione" }), accent: "#14B8A6", icon: BookOpen },
+    media: { label: translate(locale, { de: "Foto / Video", en: "Photo / video", es: "Foto / video", fr: "Photo / video", it: "Foto / video" }), desc: translate(locale, { de: "Medien-Upload", en: "Media upload", es: "Carga de medios", fr: "Televersement media", it: "Caricamento media" }), accent: "#F43F5E", icon: ImageIcon },
+    video: { label: translate(locale, { de: "Web-Video", en: "Web video", es: "Video web", fr: "Video web", it: "Video web" }), desc: translate(locale, { de: "YouTube / Vimeo Link", en: "YouTube / Vimeo link", es: "Enlace de YouTube / Vimeo", fr: "Lien YouTube / Vimeo", it: "Link YouTube / Vimeo" }), accent: "#E11D48", icon: Film },
+    timer: { label: translate(locale, { de: "Timer", en: "Timer", es: "Temporizador", fr: "Minuteur", it: "Timer" }), desc: translate(locale, { de: "Countdown Start", en: "Countdown start", es: "Inicio de cuenta atrás", fr: "Démarrer le compte à rebours", it: "Avvio conto alla rovescia" }), accent: "#8B5CF6", icon: Clock },
+    breathing: { label: translate(locale, { de: "Atemübung", en: "Breathing exercise", es: "Ejercicio de respiración", fr: "Exercice de respiration", it: "Esercizio di respirazione" }), desc: translate(locale, { de: "4-4-4 Rhythmus", en: "4-4-4 rhythm", es: "Ritmo 4-4-4", fr: "Rythme 4-4-4", it: "Ritmo 4-4-4" }), accent: "#137386", icon: Wind },
+    spider_chart: { label: translate(locale, { de: "Netzdiagramm", en: "Radar chart", es: "Gráfico radial", fr: "Diagramme radar", it: "Grafico radar" }), desc: translate(locale, { de: "Profilanalyse", en: "Profile analysis", es: "Análisis de perfil", fr: "Analyse de profil", it: "Analisi del profilo" }), accent: "#F97316", icon: Radar },
+    bar_chart: { label: translate(locale, { de: "Balkendiagramm", en: "Bar chart", es: "Gráfico de barras", fr: "Diagramme en barres", it: "Grafico a barre" }), desc: translate(locale, { de: "Wertevergleich", en: "Compare values", es: "Comparar valores", fr: "Comparer les valeurs", it: "Confronto valori" }), accent: "#0EA5E9", icon: BarChart3 },
+    pie_chart: { label: translate(locale, { de: "Kreisdiagramm", en: "Pie chart", es: "Gráfico circular", fr: "Diagramme circulaire", it: "Grafico a torta" }), desc: translate(locale, { de: "Verteilung", en: "Distribution", es: "Distribución", fr: "Répartition", it: "Distribuzione" }), accent: "#8B5CF6", icon: PieChartIcon },
+    line_chart: { label: translate(locale, { de: "Liniendiagramm", en: "Line chart", es: "Gráfico lineal", fr: "Graphique linéaire", it: "Grafico lineare" }), desc: translate(locale, { de: "Entwicklung", en: "Progression", es: "Evolución", fr: "Évolution", it: "Andamento" }), accent: "#10B981", icon: LineChartIcon },
+    progress_bar: { label: translate(locale, { de: "Fortschrittsbalken", en: "Progress bar", es: "Barra de progreso", fr: "Barre de progression", it: "Barra di avanzamento" }), desc: translate(locale, { de: "Ziel-Tracking", en: "Goal tracking", es: "Seguimiento del objetivo", fr: "Suivi d'objectif", it: "Monitoraggio obiettivo" }), accent: "#06B6D4", icon: Gauge },
+    mood_wheel: { label: translate(locale, { de: "Stimmungsrad", en: "Mood wheel", es: "Rueda emocional", fr: "Roue des émotions", it: "Ruota delle emozioni" }), desc: translate(locale, { de: "Emotionen erfassen", en: "Capture emotions", es: "Registrar emociones", fr: "Identifier les émotions", it: "Rileva emozioni" }), accent: "#F472B6", icon: Target },
+    table: { label: translate(locale, { de: "Tabelle", en: "Table", es: "Tabla", fr: "Tableau", it: "Tabella" }), desc: translate(locale, { de: "Strukturierte Daten", en: "Structured data", es: "Datos estructurados", fr: "Données structurées", it: "Dati strutturati" }), accent: "#0D9488", icon: Table2 },
+    slider_group: { label: translate(locale, { de: "Slider-Bereich", en: "Slider group", es: "Grupo de controles", fr: "Groupe de curseurs", it: "Gruppo di slider" }), desc: translate(locale, { de: "Parallele Bewertungen", en: "Parallel ratings", es: "Valoraciones paralelas", fr: "Evaluations paralleles", it: "Valutazioni parallele" }), accent: "#7C3AED", icon: SlidersHorizontal },
+  };
+}
+
+function getMeta(type: string, locale: string) {
+  const blockMeta = getBlockMeta(locale);
+  return blockMeta[type] || blockMeta.reflection;
 }
 
 // ─── Block Components ─────────────────────────────────────────────────────────
 
 function ReflectionBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
   return (
     <div>
       {block.content && <p className="text-foreground font-medium mb-4 leading-relaxed">{block.content}</p>}
       {block.type !== "info" && (
         <div>
-          <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">Deine Reflektion</label>
-          <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder="Schreibe deine Gedanken hier auf..." rows={5} disabled={disabled}
+          <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{text.reflectionLabel}</label>
+          <textarea value={value} onChange={(e) => onChange(e.target.value)} placeholder={text.reflectionPlaceholder} rows={5} disabled={disabled}
             className="w-full bg-secondary rounded-2xl border border-border p-4 text-foreground font-medium resize-none focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60" />
         </div>
       )}
@@ -113,13 +221,15 @@ function ReflectionBlock({ block, value, onChange, disabled }: { block: Exercise
 }
 
 function ScaleBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
-  const meta = getMeta("scale");
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const meta = getMeta("scale", locale);
   return (
     <div>
       {block.content && <p className="text-foreground font-semibold mb-4 text-center leading-relaxed">{block.content}</p>}
       <div className="flex justify-between text-xs font-semibold mb-3 px-1 text-muted-foreground">
-        <span>{block.minLabel || "Gar nicht"}</span>
-        <span>{block.maxLabel || "Sehr stark"}</span>
+        <span>{block.minLabel || text.scaleMin}</span>
+        <span>{block.maxLabel || text.scaleMax}</span>
       </div>
       <div className="flex flex-wrap justify-between gap-2">
         {Array.from({ length: 10 }, (_, i) => i + 1).map((num) => {
@@ -134,13 +244,14 @@ function ScaleBlock({ block, value, onChange, disabled }: { block: ExerciseBlock
           );
         })}
       </div>
-      {value && <p className="text-center text-sm font-bold mt-3" style={{ color: meta.accent }}>Gewählt: {value} / 10</p>}
+      {value && <p className="text-center text-sm font-bold mt-3" style={{ color: meta.accent }}>{text.selected}: {value} / 10</p>}
     </div>
   );
 }
 
 function ChoiceBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
-  const meta = getMeta("choice");
+  const { locale } = useLanguage();
+  const meta = getMeta("choice", locale);
   return (
     <div>
       {block.content && <p className="text-foreground font-semibold mb-4 leading-relaxed">{block.content}</p>}
@@ -166,7 +277,9 @@ function ChoiceBlock({ block, value, onChange, disabled }: { block: ExerciseBloc
 }
 
 function ChecklistBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
-  const meta = getMeta("checklist");
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const meta = getMeta("checklist", locale);
   let checked: string[] = [];
   try { checked = JSON.parse(value || "[]"); } catch {}
   const toggle = (opt: string) => {
@@ -194,24 +307,21 @@ function ChecklistBlock({ block, value, onChange, disabled }: { block: ExerciseB
           );
         })}
       </div>
-      {checked.length > 0 && <p className="text-sm font-bold mt-3" style={{ color: meta.accent }}>{checked.length}/{block.options?.length} erledigt</p>}
+      {checked.length > 0 && <p className="text-sm font-bold mt-3" style={{ color: meta.accent }}>{checked.length}/{block.options?.length} {text.checklistDone}</p>}
     </div>
   );
 }
 
-const ABC_FIELDS = [
-  { key: "A", label: "A – Auslöser", hint: "Was ist passiert? (Situation, Ort, Zeit)" },
-  { key: "B", label: "B – Bewertung", hint: "Was habe ich gedacht / bewertet?" },
-  { key: "C", label: "C – Konsequenz", hint: "Was habe ich gefühlt / getan? (0–10)" },
-];
-
 function HomeworkBlock({ block, answers, onAnswerChange, disabled }: { block: ExerciseBlock; answers: Answers; onAnswerChange: (k: string, v: string) => void; disabled?: boolean }) {
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const abcFields = useMemo(() => getAbcFields(locale), [locale]);
   return (
     <div>
       {block.content && <p className="text-foreground font-medium mb-4 leading-relaxed">{block.content}</p>}
       <div className="rounded-2xl p-4 bg-secondary border border-border">
-        <p className="text-sm font-extrabold text-foreground mb-3">📝 ABC-Protokoll</p>
-        {ABC_FIELDS.map((field) => (
+        <p className="text-sm font-extrabold text-foreground mb-3">📝 {text.abcTitle}</p>
+        {abcFields.map((field) => (
           <div key={field.key} className="mb-3">
             <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{field.label}</label>
             <textarea placeholder={field.hint} value={answers[`${block.id}_${field.key}`] || ""} onChange={(e) => onAnswerChange(`${block.id}_${field.key}`, e.target.value)} rows={3} disabled={disabled}
@@ -224,7 +334,9 @@ function HomeworkBlock({ block, answers, onAnswerChange, disabled }: { block: Ex
 }
 
 function GratitudeBlock({ block, answers, onAnswerChange, disabled }: { block: ExerciseBlock; answers: Answers; onAnswerChange: (k: string, v: string) => void; disabled?: boolean }) {
-  const meta = getMeta("gratitude");
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const meta = getMeta("gratitude", locale);
   return (
     <div>
       {block.content && <p className="text-foreground font-medium mb-4 leading-relaxed">{block.content}</p>}
@@ -238,8 +350,8 @@ function GratitudeBlock({ block, answers, onAnswerChange, disabled }: { block: E
       </div>
       {[1, 2, 3].map((n) => (
         <div key={n} className="mb-3">
-          <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{n}. Ich bin dankbar für...</label>
-          <input placeholder="Schreibe hier..." value={answers[`${block.id}_${n}`] || ""} onChange={(e) => onAnswerChange(`${block.id}_${n}`, e.target.value)} disabled={disabled}
+          <label className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider mb-2 block">{n}. {text.gratitudePrompt}</label>
+          <input placeholder={text.writeHere} value={answers[`${block.id}_${n}`] || ""} onChange={(e) => onAnswerChange(`${block.id}_${n}`, e.target.value)} disabled={disabled}
             className="w-full bg-secondary rounded-2xl border border-border p-3 text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60" />
         </div>
       ))}
@@ -248,12 +360,14 @@ function GratitudeBlock({ block, answers, onAnswerChange, disabled }: { block: E
 }
 
 function TimerBlock({ block }: { block: ExerciseBlock }) {
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
   const isBreathing = block.type === "breathing";
   const totalSecs = block.duration || 60;
   const [timeLeft, setTimeLeft] = useState(totalSecs);
   const [running, setRunning] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const breathPhases = ["Einatmen", "Halten", "Ausatmen", "Halten"];
+  const breathPhases = [text.inhale, text.hold, text.exhale, text.hold];
   const phaseDuration = 4;
   const elapsed = totalSecs - timeLeft;
   const currentPhase = isBreathing && running ? breathPhases[Math.floor(elapsed / phaseDuration) % 4] : null;
@@ -284,25 +398,27 @@ function TimerBlock({ block }: { block: ExerciseBlock }) {
           {currentPhase}
         </motion.p>
       )}
-      {isBreathing && !running && timeLeft === totalSecs && <p className="text-xs text-muted-foreground mb-3">4-4-4 Atemrhythmus</p>}
+      {isBreathing && !running && timeLeft === totalSecs && <p className="text-xs text-muted-foreground mb-3">{text.breathingRhythm}</p>}
       <BreathingCircle running={running} isBreathing={isBreathing}>
         <span className={`text-4xl font-extrabold ${running ? "text-white" : "text-foreground"}`}>{mins}:{secs}</span>
-        {running && <span className="text-xs text-white/60 mt-1">läuft...</span>}
+        {running && <span className="text-xs text-white/60 mt-1">{text.running}</span>}
       </BreathingCircle>
       <motion.button onClick={toggle} className="px-12 py-3.5 rounded-full text-white font-extrabold text-base"
         style={{ backgroundColor: running ? "hsl(var(--destructive))" : (isBreathing ? "#14B8A6" : "hsl(var(--primary))") }}
         whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-        {running ? "⏸ Stop" : "▶ Starten"}
+        {running ? `⏸ ${text.stop}` : `▶ ${text.start}`}
       </motion.button>
     </div>
   );
 }
 
 function InfoBlock({ block }: { block: ExerciseBlock }) {
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
   return (
     <div className="bg-primary/5 rounded-2xl p-5 border border-primary/10">
       {block.content && <p className="text-foreground font-medium leading-relaxed">{block.content}</p>}
-      {!block.content && <p className="text-muted-foreground text-sm italic">ℹ️ Information</p>}
+      {!block.content && <p className="text-muted-foreground text-sm italic">ℹ️ {text.information}</p>}
     </div>
   );
 }
@@ -325,6 +441,8 @@ function MediaBlock({ block }: { block: ExerciseBlock }) {
 }
 
 function VideoBlock({ block }: { block: ExerciseBlock }) {
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
   const url = block.videoUrl || block.content;
   if (!url) return null;
   const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
@@ -333,7 +451,7 @@ function VideoBlock({ block }: { block: ExerciseBlock }) {
     <div>
       {block.content && block.content !== block.videoUrl && <p className="text-foreground font-medium mb-3 leading-relaxed">{block.content}</p>}
       <div className="w-full h-56 rounded-2xl overflow-hidden border border-border bg-muted">
-        <iframe src={embedUrl} className="w-full h-full" allowFullScreen title="Video" />
+        <iframe src={embedUrl} className="w-full h-full" allowFullScreen title={text.embeddedVideo} />
       </div>
     </div>
   );
@@ -344,7 +462,9 @@ function VideoBlock({ block }: { block: ExerciseBlock }) {
 // ─── Progress Bar Block ────────────────────────────────────────────────────────
 
 function ProgressBarBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
-  const meta = getMeta("progress_bar");
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const meta = getMeta("progress_bar", locale);
   const max = block.progressMax || 100;
   const current = parseInt(value || "0");
   const pct = Math.min(Math.round((current / max) * 100), 100);
@@ -396,7 +516,7 @@ function ProgressBarBlock({ block, value, onChange, disabled }: { block: Exercis
 
       {/* Linear bar */}
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-bold text-foreground">{block.progressLabel || "Fortschritt"}</span>
+        <span className="text-sm font-bold text-foreground">{block.progressLabel || text.progress}</span>
         <motion.span className="text-sm font-extrabold" style={{ color: meta.accent }}
           key={current} initial={{ scale: 1.3 }} animate={{ scale: 1 }}>
           {current} / {max}
@@ -425,7 +545,9 @@ function ProgressBarBlock({ block, value, onChange, disabled }: { block: Exercis
 // ─── Mood Wheel Block ──────────────────────────────────────────────────────────
 
 function MoodWheelBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
-  const emotions = block.moodOptions || ["Freude", "Trauer", "Wut", "Angst", "Ekel", "Überraschung"];
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const emotions = block.moodOptions || text.defaultMoodOptions;
   const PALETTE = ["#F97316", "#0EA5E9", "#EF4444", "#8B5CF6", "#10B981", "#F59E0B", "#EC4899", "#14B8A6", "#3B82F6", "#64748B"];
   const EMOJIS = ["😊", "😢", "😤", "😰", "🤢", "😲", "🥰", "😌", "🤔", "😴"];
 
@@ -517,9 +639,11 @@ function MoodWheelBlock({ block, value, onChange, disabled }: { block: ExerciseB
 // ─── Table Block ───────────────────────────────────────────────────────────────
 
 function TableBlock({ block, answers, onAnswerChange, disabled }: { block: ExerciseBlock; answers: Answers; onAnswerChange: (k: string, v: string) => void; disabled?: boolean }) {
-  const columns = block.tableColumns || ["Spalte 1", "Spalte 2"];
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const columns = block.tableColumns || text.defaultTableColumns;
   const rows = block.tableRows || 3;
-  const meta = getMeta("table");
+  const meta = getMeta("table", locale);
 
   return (
     <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring", damping: 20 }}>
@@ -571,7 +695,9 @@ function TableBlock({ block, answers, onAnswerChange, disabled }: { block: Exerc
 // ─── Slider Group Block ────────────────────────────────────────────────────────
 
 function SliderGroupBlock({ block, value, onChange, disabled }: { block: ExerciseBlock; value: string; onChange: (v: string) => void; disabled?: boolean }) {
-  const sliders = block.sliders || [{ label: "Energie", min: 0, max: 10, step: 1 }];
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const sliders = block.sliders || [{ label: text.defaultSliderLabel, min: 0, max: 10, step: 1 }];
   const PALETTE = ["#F97316", "#0EA5E9", "#10B981", "#8B5CF6", "#F43F5E", "#F59E0B", "#14B8A6", "#7C3AED", "#EC4899", "#3B82F6"];
   const EMOJIS = ["⚡", "🌊", "🌿", "💜", "🔥", "☀️", "🧘", "✨", "💗", "🎯"];
   let values: Record<string, number> = {};
@@ -650,6 +776,8 @@ function SliderGroupBlock({ block, value, onChange, disabled }: { block: Exercis
 function BlockRenderer({ block, answers, onAnswerChange, disabled }: {
   block: ExerciseBlock; answers: Answers; onAnswerChange: (k: string, v: string) => void; disabled?: boolean;
 }) {
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
   const value = answers[block.id] || "";
   const onChange = (v: string) => onAnswerChange(block.id, v);
 
@@ -674,7 +802,7 @@ function BlockRenderer({ block, answers, onAnswerChange, disabled }: {
         <Suspense
           fallback={
             <div className="rounded-3xl border border-border bg-card p-6 text-sm font-semibold text-muted-foreground">
-              Diagramm wird geladen...
+              {text.chartLoading}
             </div>
           }
         >
@@ -692,12 +820,15 @@ function BlockRenderer({ block, answers, onAnswerChange, disabled }: {
 // ─── Progress Bar ─────────────────────────────────────────────────────────────
 
 function ProgressIndicator({ blocks, answers }: { blocks: ExerciseBlock[]; answers: Answers }) {
+  const { locale } = useLanguage();
+  const text = useMemo(() => getExerciseText(locale), [locale]);
+  const abcFields = useMemo(() => getAbcFields(locale), [locale]);
   const answered = blocks.filter(b => {
     if (["info", "media", "video", "timer", "breathing"].includes(b.type)) return true;
     const val = answers[b.id];
     if (val && val.trim()) return true;
     // Check sub-keys for homework/gratitude
-    if (b.type === "homework") return ABC_FIELDS.some(f => answers[`${b.id}_${f.key}`]?.trim());
+    if (b.type === "homework") return abcFields.some(f => answers[`${b.id}_${f.key}`]?.trim());
     if (b.type === "gratitude") return [1, 2, 3].some(n => answers[`${b.id}_${n}`]?.trim());
     return false;
   }).length;
@@ -706,13 +837,13 @@ function ProgressIndicator({ blocks, answers }: { blocks: ExerciseBlock[]; answe
   return (
     <div className="bg-card rounded-2xl border border-border p-4 shadow-sm">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Fortschritt</span>
+        <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{text.progress}</span>
         <span className="text-sm font-extrabold text-primary">{pct}%</span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">
         <motion.div className="h-full bg-primary rounded-full" initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, ease: "easeOut" }} />
       </div>
-      <p className="text-[11px] text-muted-foreground font-medium mt-1.5">{answered} von {blocks.length} Modulen bearbeitet</p>
+      <p className="text-[11px] text-muted-foreground font-medium mt-1.5">{text.progressSummary(answered, blocks.length)}</p>
     </div>
   );
 }
@@ -722,6 +853,7 @@ function ProgressIndicator({ blocks, answers }: { blocks: ExerciseBlock[]; answe
 export default function Exercise() {
   const { id } = useParams<{ id: string }>();
   const { profile } = useAuth();
+  const { locale } = useLanguage();
   const navigate = useNavigate();
   const [exercise, setExercise] = useState<ExerciseData | null>(null);
   const [answers, setAnswers] = useState<Answers>({});
@@ -730,6 +862,7 @@ export default function Exercise() {
   const [saved, setSaved] = useState(false);
   const [sharedAnswers, setSharedAnswers] = useState(true);
   const [showToast, setShowToast] = useState(false);
+  const text = useMemo(() => getExerciseText(locale), [locale]);
 
   useEffect(() => {
     if (!id) return;
@@ -807,9 +940,9 @@ export default function Exercise() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="text-center animate-fade-in">
           <p className="text-5xl mb-4">🔒</p>
-          <h2 className="text-xl font-extrabold text-foreground mb-2">Übung nicht gefunden</h2>
-          <p className="text-muted-foreground text-sm mb-6">Diese Übung konnte nicht geladen werden.</p>
-          <button onClick={() => navigate("/")} className="bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-bold hover:opacity-90 transition-opacity">Zurück</button>
+          <h2 className="text-xl font-extrabold text-foreground mb-2">{text.exerciseNotFound}</h2>
+          <p className="text-muted-foreground text-sm mb-6">{text.exerciseLoadFailed}</p>
+          <button onClick={() => navigate("/")} className="bg-primary text-primary-foreground px-8 py-3 rounded-2xl font-bold hover:opacity-90 transition-opacity">{text.back}</button>
         </div>
       </div>
     );
@@ -818,7 +951,7 @@ export default function Exercise() {
   const toast = (
     <BannerToast
       visible={showToast}
-      message="Übung gespeichert"
+      message={text.exerciseSaved}
       type="success"
       onDone={() => setShowToast(false)}
     />
@@ -830,13 +963,13 @@ export default function Exercise() {
         {toast}
         <div className="min-h-screen bg-background flex items-center justify-center px-4 relative overflow-hidden">
           <SuccessAnimation emoji="🎉">
-            <h2 className="text-3xl font-black text-foreground mb-3">Super! 🎉</h2>
-            <p className="text-muted-foreground font-medium mb-10">Du hast die Übung erfolgreich abgeschlossen.</p>
+            <h2 className="text-3xl font-black text-foreground mb-3">{text.successTitle} 🎉</h2>
+            <p className="text-muted-foreground font-medium mb-10">{text.successBody}</p>
             <motion.button onClick={handleDownloadPdf} className="w-full py-4 rounded-2xl border border-border bg-card text-foreground font-black text-lg inline-flex items-center justify-center gap-2 shadow-sm mb-3" whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.97 }}>
-              <Download size={18} /> PDF erstellen
+              <Download size={18} /> {text.createPdf}
             </motion.button>
             <motion.button onClick={() => navigate("/")} className="w-full py-4 rounded-2xl bg-primary text-primary-foreground font-black text-lg shadow-lg shadow-primary/20" whileHover={{ scale: 1.02, y: -2 }} whileTap={{ scale: 0.97 }}>
-              Zurück zum Dashboard
+              {text.backToDashboard}
             </motion.button>
           </SuccessAnimation>
         </div>
@@ -860,15 +993,15 @@ export default function Exercise() {
           <motion.button onClick={() => navigate(-1)}
             className="text-white/80 hover:text-white font-bold text-sm bg-white/20 px-4 py-2 rounded-xl mb-5 inline-flex items-center gap-1 hover:bg-white/30 transition-all"
             whileHover={{ x: -3 }} whileTap={{ scale: 0.95 }}>
-            <ArrowLeft size={16} /> Zurück
+            <ArrowLeft size={16} /> {text.back}
           </motion.button>
           <h1 className="text-white text-2xl font-black tracking-tight">{exercise.title}</h1>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <p className="text-white/60 text-sm font-medium">
-              {exercise.blocks?.length || 0} Module
-              {exercise.completed && " · ✅ Bereits abgeschlossen"}
-              {exercise.recurrence === "daily" && " · 🔁 Täglich"}
-              {exercise.recurrence === "weekly" && " · 🔁 Wöchentlich"}
+              {(exercise.blocks?.length || 0)} {getModuleLabel(locale, exercise.blocks?.length || 0)}
+              {exercise.completed && ` · ✅ ${text.alreadyCompleted}`}
+              {exercise.recurrence === "daily" && ` · 🔁 ${text.daily}`}
+              {exercise.recurrence === "weekly" && ` · 🔁 ${text.weekly}`}
             </p>
             <motion.button onClick={handleDownloadPdf}
               className="flex items-center gap-1.5 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-xl text-xs font-bold text-white transition-colors"
@@ -888,7 +1021,7 @@ export default function Exercise() {
         )}
 
         {(exercise.blocks || []).map((block, idx) => {
-          const meta = getMeta(block.type);
+          const meta = getMeta(block.type, locale);
           const Icon = meta.icon;
           return (
             <StaggerItem key={block.id}>
@@ -928,8 +1061,8 @@ export default function Exercise() {
           <div className="bg-card rounded-3xl border border-border p-5 shadow-sm animate-slide-up">
             <div className="flex items-center justify-between">
               <div className="flex-1 pr-4">
-                <p className="font-bold text-foreground">Antworten teilen</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{sharedAnswers ? "Dein Therapeut kann deine geschriebenen Texte lesen." : "Deine Antworten bleiben privat."}</p>
+                <p className="font-bold text-foreground">{text.shareAnswers}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{sharedAnswers ? text.sharedHint : text.privateHint}</p>
               </div>
               <button onClick={() => setSharedAnswers(!sharedAnswers)}
                 className={`w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 ${sharedAnswers ? "bg-primary/15 border-2 border-primary" : "bg-secondary border border-border"}`}>
@@ -946,7 +1079,7 @@ export default function Exercise() {
               {/* Already completed state with redo option */}
               <div className="bg-success/10 border border-success/20 rounded-2xl py-4 flex items-center justify-center gap-2">
                 <CheckCircle size={22} className="text-success" />
-                <span className="text-success font-black text-lg">Bereits abgeschlossen</span>
+                <span className="text-success font-black text-lg">{text.alreadyCompleted}</span>
               </div>
               <motion.button
                 onClick={handleDownloadPdf}
@@ -955,7 +1088,7 @@ export default function Exercise() {
                 whileTap={{ scale: 0.97 }}
               >
                 <Download size={18} />
-                PDF herunterladen
+                {text.downloadPdf}
               </motion.button>
               <motion.button
                 onClick={handleRedo}
@@ -964,7 +1097,7 @@ export default function Exercise() {
                 whileTap={{ scale: 0.97 }}
               >
                 <Edit3 size={20} />
-                Erneut bearbeiten
+                {text.editAgain}
               </motion.button>
             </>
           ) : (
@@ -975,9 +1108,9 @@ export default function Exercise() {
               {saving ? (
                 <span className="inline-flex items-center gap-2">
                   <motion.span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full inline-block" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} />
-                  Speichern...
+                  {text.saving}
                 </span>
-              ) : isRedoing ? "Erneut abschließen ✓" : "Übung abschließen ✓"}
+              ) : isRedoing ? `${text.completeAgain} ✓` : `${text.completeExercise} ✓`}
             </motion.button>
           )}
         </div>

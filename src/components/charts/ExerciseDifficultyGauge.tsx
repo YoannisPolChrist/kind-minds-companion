@@ -6,6 +6,8 @@
 import { useMemo } from "react";
 import * as d3 from "d3";
 import { motion } from "motion/react";
+import { useLanguage } from "../../hooks/useLanguage";
+import { translate } from "../../lib/webLocale";
 
 type BlockType =
   | "reflection" | "scale" | "choice" | "checklist" | "homework"
@@ -44,13 +46,51 @@ function needlePoint(ratio: number) {
   return { x: Math.cos(angle) * (INNER_R - 6), y: Math.sin(angle) * (INNER_R - 6) };
 }
 
-function getLevelInfo(ratio: number) {
-  if (ratio < 0.33) return { label: "Zugänglich", emoji: "🟢", color: "#10B981", sub: "Geeignet für alle Klienten" };
-  if (ratio < 0.66) return { label: "Anspruchsvoll", emoji: "🟡", color: "#F59E0B", sub: "Erfahrung empfehlenswert" };
-  return { label: "Intensiv", emoji: "🔴", color: "#EF4444", sub: "Für fortgeschrittene Klienten" };
+function getLevelInfo(ratio: number, locale: string) {
+  if (ratio < 0.33) {
+    return {
+      label: translate(locale, { de: "Zugänglich", en: "Accessible", es: "Accesible", fr: "Accessible", it: "Accessibile" }),
+      emoji: "🟢",
+      color: "#10B981",
+      sub: translate(locale, {
+        de: "Geeignet für alle Klienten",
+        en: "Suitable for all clients",
+        es: "Adecuado para todos los clientes",
+        fr: "Adapté à tous les clients",
+        it: "Adatto a tutti i clienti",
+      }),
+    };
+  }
+  if (ratio < 0.66) {
+    return {
+      label: translate(locale, { de: "Anspruchsvoll", en: "Challenging", es: "Desafiante", fr: "Exigeant", it: "Impegnativo" }),
+      emoji: "🟡",
+      color: "#F59E0B",
+      sub: translate(locale, {
+        de: "Erfahrung empfehlenswert",
+        en: "Experience recommended",
+        es: "Se recomienda experiencia",
+        fr: "Expérience recommandée",
+        it: "Esperienza consigliata",
+      }),
+    };
+  }
+  return {
+    label: translate(locale, { de: "Intensiv", en: "Intensive", es: "Intenso", fr: "Intensif", it: "Intensivo" }),
+    emoji: "🔴",
+    color: "#EF4444",
+    sub: translate(locale, {
+      de: "Für fortgeschrittene Klienten",
+      en: "For advanced clients",
+      es: "Para clientes avanzados",
+      fr: "Pour les clients avancés",
+      it: "Per clienti avanzati",
+    }),
+  };
 }
 
 export default function ExerciseDifficultyGauge({ blocks }: { blocks: Block[] }) {
+  const { locale } = useLanguage();
   const { ratio } = useMemo(() => {
     if (blocks.length === 0) return { ratio: 0 };
     const raw = blocks.reduce((sum, b) => sum + (COMPLEXITY_WEIGHT[b.type] ?? 1), 0);
@@ -58,7 +98,7 @@ export default function ExerciseDifficultyGauge({ blocks }: { blocks: Block[] })
     return { ratio: normalized };
   }, [blocks]);
 
-  const level = getLevelInfo(ratio);
+  const level = getLevelInfo(ratio, locale);
   const needle = needlePoint(ratio);
 
   return (
@@ -70,8 +110,12 @@ export default function ExerciseDifficultyGauge({ blocks }: { blocks: Block[] })
     >
       <div className="flex justify-between items-center w-full mb-1">
         <div>
-          <p className="text-xs font-extrabold text-foreground">Kognitive Belastung</p>
-          <p className="text-[10px] text-muted-foreground font-medium">Komplexitäts-Einschätzung</p>
+          <p className="text-xs font-extrabold text-foreground">
+            {translate(locale, { de: "Kognitive Belastung", en: "Cognitive load", es: "Carga cognitiva", fr: "Charge cognitive", it: "Carico cognitivo" })}
+          </p>
+          <p className="text-[10px] text-muted-foreground font-medium">
+            {translate(locale, { de: "Komplexitäts-Einschätzung", en: "Complexity estimate", es: "Estimación de complejidad", fr: "Estimation de complexité", it: "Stima della complessità" })}
+          </p>
         </div>
         <div className="px-2.5 py-1 rounded-[20px] border" style={{ backgroundColor: level.color + "18", borderColor: level.color + "44" }}>
           <span className="text-[11px] font-bold" style={{ color: level.color }}>{level.emoji} {level.label}</span>
@@ -112,7 +156,9 @@ export default function ExerciseDifficultyGauge({ blocks }: { blocks: Block[] })
       </svg>
 
       <p className="text-[10px] text-muted-foreground -mt-1.5 text-center font-medium">
-        {blocks.length === 0 ? "Noch keine Blöcke" : level.sub}
+        {blocks.length === 0
+          ? translate(locale, { de: "Noch keine Blöcke", en: "No blocks yet", es: "Todavía no hay bloques", fr: "Pas encore de blocs", it: "Nessun blocco ancora" })
+          : level.sub}
       </p>
 
       {blocks.length > 0 && (

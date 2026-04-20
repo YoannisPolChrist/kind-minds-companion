@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { collection, query, where, getDocs } from "firebase/firestore/lite";
 import { dbLite } from "../lib/firebaseDbLite";
 import { useAuth } from "../hooks/useAuth";
+import { useLanguage } from "../hooks/useLanguage";
+import { translate } from "../lib/webLocale";
 import {
   ArrowLeft, FileText, ExternalLink, Download, Eye, X,
   Link as LinkIcon, Image as ImageIcon, Film,
@@ -28,16 +30,28 @@ interface Resource {
 
 // ─── Type config ─────────────────────────────────────────────────────────────
 
-const TYPE_CONFIG: Record<string, { label: string; icon: typeof FileText; bg: string; text: string; btnColor: string }> = {
-  document: { label: "Geteiltes Dokument", icon: FileText, bg: "bg-indigo-50", text: "text-indigo-600", btnColor: "hsl(var(--primary))" },
-  pdf:      { label: "PDF Dokument",       icon: FileText, bg: "bg-red-50",    text: "text-red-600",    btnColor: "#DC2626" },
-  video:    { label: "Video",              icon: Film,     bg: "bg-purple-50", text: "text-purple-600", btnColor: "#C09D59" },
-  image:    { label: "Bild",               icon: ImageIcon,bg: "bg-pink-50",   text: "text-pink-600",   btnColor: "#DB2777" },
-  link:     { label: "Web Link",           icon: LinkIcon, bg: "bg-blue-50",   text: "text-blue-600",   btnColor: "hsl(var(--primary))" },
+const TYPE_CONFIG: Record<string, { icon: typeof FileText; bg: string; text: string; btnColor: string }> = {
+  document: { icon: FileText, bg: "bg-indigo-50", text: "text-indigo-600", btnColor: "hsl(var(--primary))" },
+  pdf:      { icon: FileText, bg: "bg-red-50", text: "text-red-600", btnColor: "#DC2626" },
+  video:    { icon: Film, bg: "bg-purple-50", text: "text-purple-600", btnColor: "#C09D59" },
+  image:    { icon: ImageIcon, bg: "bg-pink-50", text: "text-pink-600", btnColor: "#DB2777" },
+  link:     { icon: LinkIcon, bg: "bg-blue-50", text: "text-blue-600", btnColor: "hsl(var(--primary))" },
 };
 
-function getTypeConfig(type: string) {
-  return TYPE_CONFIG[type] || TYPE_CONFIG.link;
+function getTypeConfig(type: string, locale: string) {
+  const config = TYPE_CONFIG[type] || TYPE_CONFIG.link;
+  const label =
+    type === "document"
+      ? translate(locale, { de: "Geteiltes Dokument", en: "Shared document", es: "Documento compartido", fr: "Document partagé", it: "Documento condiviso" })
+      : type === "pdf"
+        ? translate(locale, { de: "PDF Dokument", en: "PDF document", es: "Documento PDF", fr: "Document PDF", it: "Documento PDF" })
+        : type === "video"
+          ? translate(locale, { de: "Video", en: "Video", es: "Vídeo", fr: "Vidéo", it: "Video" })
+          : type === "image"
+            ? translate(locale, { de: "Bild", en: "Image", es: "Imagen", fr: "Image", it: "Immagine" })
+            : translate(locale, { de: "Web Link", en: "Web link", es: "Enlace web", fr: "Lien web", it: "Link web" });
+
+  return { ...config, label };
 }
 
 // ─── Resource Card ───────────────────────────────────────────────────────────
@@ -46,12 +60,14 @@ function ResourceCard({
   resource,
   index,
   onPreview,
+  locale,
 }: {
   resource: Resource;
   index: number;
   onPreview: (r: Resource) => void;
+  locale: string;
 }) {
-  const cfg = getTypeConfig(resource.type);
+  const cfg = getTypeConfig(resource.type, locale);
   const TypeIcon = cfg.icon;
 
   return (
@@ -91,9 +107,11 @@ function ResourceCard({
         >
           <Eye size={18} />
           <span>
-            {resource.type === "video" ? "Video ansehen" :
-             resource.type === "image" ? "Bild ansehen" :
-             "Details & Vorschau"}
+            {resource.type === "video"
+              ? translate(locale, { de: "Video ansehen", en: "Watch video", es: "Ver vídeo", fr: "Voir la vidéo", it: "Guarda il video" })
+              : resource.type === "image"
+                ? translate(locale, { de: "Bild ansehen", en: "View image", es: "Ver imagen", fr: "Voir l'image", it: "Guarda l'immagine" })
+                : translate(locale, { de: "Details & Vorschau", en: "Details & preview", es: "Detalles y vista previa", fr: "Détails et aperçu", it: "Dettagli e anteprima" })}
           </span>
         </div>
       </PressableScale>
@@ -106,11 +124,13 @@ function ResourceCard({
 function PreviewModal({
   resource,
   onClose,
+  locale,
 }: {
   resource: Resource;
   onClose: () => void;
+  locale: string;
 }) {
-  const cfg = getTypeConfig(resource.type);
+  const cfg = getTypeConfig(resource.type, locale);
 
   const openExternal = () => {
     let url = resource.url;
@@ -187,7 +207,9 @@ function PreviewModal({
               >
                 {resource.type !== "link" && <Download size={20} />}
                 <span className="text-base">
-                  {resource.type === "link" ? "Im Browser öffnen" : "Speichern / Herunterladen"}
+                  {resource.type === "link"
+                    ? translate(locale, { de: "Im Browser öffnen", en: "Open in browser", es: "Abrir en el navegador", fr: "Ouvrir dans le navigateur", it: "Apri nel browser" })
+                    : translate(locale, { de: "Speichern / Herunterladen", en: "Save / download", es: "Guardar / descargar", fr: "Enregistrer / télécharger", it: "Salva / scarica" })}
                 </span>
               </div>
             </PressableScale>
@@ -219,6 +241,7 @@ function PreviewModal({
 
 export default function Resources() {
   const { profile } = useAuth();
+  const { locale } = useLanguage();
   const navigate = useNavigate();
   const [resources, setResources] = useState<Resource[]>([]);
   const [loading, setLoading] = useState(true);
@@ -265,6 +288,19 @@ export default function Resources() {
     fetchResources();
   }, [fetchResources]);
 
+  const text = {
+    back: translate(locale, { de: "Zurück", en: "Back", es: "Volver", fr: "Retour", it: "Indietro" }),
+    library: translate(locale, { de: "Bibliothek", en: "Library", es: "Biblioteca", fr: "Bibliothèque", it: "Libreria" }),
+    noResources: translate(locale, { de: "Keine Ressourcen", en: "No resources", es: "Sin recursos", fr: "Aucune ressource", it: "Nessuna risorsa" }),
+    noResourcesBody: translate(locale, {
+      de: "Dein Therapeut hat noch keine Dokumente hinterlegt.",
+      en: "Your therapist has not shared any documents yet.",
+      es: "Tu terapeuta todavía no ha compartido documentos.",
+      fr: "Ton thérapeute n'a pas encore partagé de documents.",
+      it: "Il tuo terapeuta non ha ancora condiviso documenti.",
+    }),
+  };
+
   return (
     <PageTransition className="min-h-screen bg-background">
       {/* Header */}
@@ -286,11 +322,11 @@ export default function Resources() {
             whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft size={16} />
-            Zurück
+            {text.back}
           </motion.button>
 
           <div className="max-w-3xl">
-            <h1 className="text-2xl font-black tracking-tight text-white">Bibliothek</h1>
+            <h1 className="text-2xl font-black tracking-tight text-white">{text.library}</h1>
           </div>
         </div>
       </motion.div>
@@ -311,9 +347,9 @@ export default function Resources() {
             <div className="w-16 h-16 rounded-3xl bg-secondary border border-border mx-auto mb-4 flex items-center justify-center">
               <FileText size={28} className="text-muted-foreground" />
             </div>
-            <h2 className="text-lg font-bold text-foreground mb-1">Keine Ressourcen</h2>
+            <h2 className="text-lg font-bold text-foreground mb-1">{text.noResources}</h2>
             <p className="text-muted-foreground leading-5">
-              Dein Therapeut hat noch keine Dokumente hinterlegt.
+              {text.noResourcesBody}
             </p>
           </motion.div>
         ) : (
@@ -323,6 +359,7 @@ export default function Resources() {
                 key={res.id}
                 resource={res}
                 index={idx}
+                locale={locale}
                 onPreview={setSelectedResource}
               />
             ))}
@@ -336,6 +373,7 @@ export default function Resources() {
       {selectedResource && (
         <PreviewModal
           resource={selectedResource}
+          locale={locale}
           onClose={() => setSelectedResource(null)}
         />
       )}

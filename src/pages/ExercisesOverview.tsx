@@ -8,6 +8,7 @@ import { dbLite } from "../lib/firebaseDbLite";
 
 import { useAuth } from "../hooks/useAuth";
 import { useLanguage } from "../hooks/useLanguage";
+import { translate } from "../lib/webLocale";
 
 import {
 
@@ -70,11 +71,21 @@ function ExerciseCardPremium({
   index,
   onClick,
   locale,
+  text,
 }: {
   exercise: Exercise;
   index: number;
   onClick: () => void;
   locale?: string;
+  text: {
+    doneOn: string;
+    moduleOne: string;
+    moduleMany: string;
+    daily: string;
+    weekly: string;
+    reviewAgain: string;
+    startNow: string;
+  };
 }) {
   const displayLocale = locale || "de";
 
@@ -184,7 +195,7 @@ function ExerciseCardPremium({
 
                   <CheckCircle size={12} className="text-emerald-500" />
 
-                  Erledigt am{" "}
+                  {text.doneOn}{" "}
                   {new Date(exercise.lastCompletedAt).toLocaleDateString(displayLocale, {
                     day: "2-digit",
                     month: "short",
@@ -206,7 +217,7 @@ function ExerciseCardPremium({
 
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-secondary border border-border text-muted-foreground">
 
-              <Layers size={12} /> {blockCount} {blockCount === 1 ? "Modul" : "Module"}
+              <Layers size={12} /> {blockCount} {blockCount === 1 ? text.moduleOne : text.moduleMany}
 
             </span>
 
@@ -226,7 +237,7 @@ function ExerciseCardPremium({
 
               >
 
-                <Calendar size={12} /> {exercise.recurrence === "daily" ? "Täglich" : "Wöchentlich"}
+                <Calendar size={12} /> {exercise.recurrence === "daily" ? text.daily : text.weekly}
 
               </span>
 
@@ -242,7 +253,7 @@ function ExerciseCardPremium({
 
             <span className="text-sm font-extrabold tracking-tight" style={{ color }}>
 
-              {isCompleted ? "Nochmal ansehen" : "Jetzt starten"}
+              {isCompleted ? text.reviewAgain : text.startNow}
 
             </span>
 
@@ -435,13 +446,58 @@ export default function ExercisesOverview() {
 
 
 
+  const text = useMemo(() => ({
+    doneOn: translate(locale, { de: "Erledigt am", en: "Done on", es: "Completado el", fr: "Terminé le", it: "Completato il" }),
+    moduleOne: translate(locale, { de: "Modul", en: "Module", es: "Modulo", fr: "Module", it: "Modulo" }),
+    moduleMany: translate(locale, { de: "Module", en: "Modules", es: "Modulos", fr: "Modules", it: "Moduli" }),
+    daily: translate(locale, { de: "Täglich", en: "Daily", es: "Diario", fr: "Quotidien", it: "Quotidiano" }),
+    weekly: translate(locale, { de: "Wöchentlich", en: "Weekly", es: "Semanal", fr: "Hebdomadaire", it: "Settimanale" }),
+    reviewAgain: translate(locale, { de: "Nochmal ansehen", en: "Review again", es: "Ver de nuevo", fr: "Revoir", it: "Rivedi" }),
+    startNow: translate(locale, { de: "Jetzt starten", en: "Start now", es: "Empezar ahora", fr: "Commencer", it: "Inizia ora" }),
+    all: translate(locale, { de: "Alle", en: "All", es: "Todos", fr: "Tous", it: "Tutti" }),
+    open: translate(locale, { de: "Offen", en: "Open", es: "Abiertos", fr: "Ouverts", it: "Aperti" }),
+    completed: translate(locale, { de: "Erledigt", en: "Done", es: "Completados", fr: "Terminés", it: "Completati" }),
+    back: translate(locale, { de: "Zurück", en: "Back", es: "Volver", fr: "Retour", it: "Indietro" }),
+    myExercises: translate(locale, { de: "Meine Übungen", en: "My exercises", es: "Mis ejercicios", fr: "Mes exercices", it: "I miei esercizi" }),
+    exerciseOne: translate(locale, { de: "Übung", en: "exercise", es: "ejercicio", fr: "exercice", it: "esercizio" }),
+    exerciseMany: translate(locale, { de: "Übungen", en: "exercises", es: "ejercicios", fr: "exercices", it: "esercizi" }),
+    openLower: translate(locale, { de: "offen", en: "open", es: "abiertos", fr: "ouverts", it: "aperti" }),
+    doneLower: translate(locale, { de: "erledigt", en: "done", es: "completados", fr: "terminés", it: "completati" }),
+    searchPlaceholder: translate(locale, { de: "Aufgabe suchen...", en: "Search exercise...", es: "Buscar ejercicio...", fr: "Rechercher un exercice...", it: "Cerca esercizio..." }),
+    noResults: translate(locale, { de: "Keine Treffer", en: "No results", es: "Sin resultados", fr: "Aucun résultat", it: "Nessun risultato" }),
+    allDone: translate(locale, { de: "Alles erledigt!", en: "Everything done!", es: "Todo completado", fr: "Tout est terminé", it: "Tutto completato" }),
+    nothingDoneYet: translate(locale, { de: "Noch nichts erledigt", en: "Nothing done yet", es: "Nada completado todavía", fr: "Rien de terminé pour l'instant", it: "Ancora niente di completato" }),
+    noExercises: translate(locale, { de: "Keine Übungen", en: "No exercises", es: "Sin ejercicios", fr: "Aucun exercice", it: "Nessun esercizio" }),
+    noSearchMatch: translate(locale, {
+      de: `Keine Übung mit "${search}" gefunden.`,
+      en: `No exercise found for "${search}".`,
+      es: `No se encontró ningún ejercicio para "${search}".`,
+      fr: `Aucun exercice trouvé pour "${search}".`,
+      it: `Nessun esercizio trovato per "${search}".`,
+    }),
+    allDoneBody: translate(locale, {
+      de: "Super gemacht! Du hast alle Aufgaben abgeschlossen.",
+      en: "Great work. You completed all exercises.",
+      es: "Muy bien. Has completado todos los ejercicios.",
+      fr: "Bravo. Tu as terminé tous les exercices.",
+      it: "Ottimo lavoro. Hai completato tutti gli esercizi.",
+    }),
+    emptyBody: translate(locale, {
+      de: "Sobald dein Therapeut dir Übungen zuweist, erscheinen sie hier.",
+      en: "As soon as your therapist assigns exercises, they will appear here.",
+      es: "En cuanto tu terapeuta te asigne ejercicios, aparecerán aquí.",
+      fr: "Dès que ton thérapeute t'attribue des exercices, ils apparaîtront ici.",
+      it: "Non appena il tuo terapeuta ti assegna degli esercizi, appariranno qui.",
+    }),
+  }), [locale, search]);
+
   const tabs: { key: FilterTab; label: string; icon: any; count: number; tone: string; bg: string; border: string }[] = [
 
-    { key: "all", label: "Alle", icon: BookOpen, count: exercises.length, tone: "text-primary", bg: "bg-primary/10", border: "border-primary/15" },
+    { key: "all", label: text.all, icon: BookOpen, count: exercises.length, tone: "text-primary", bg: "bg-primary/10", border: "border-primary/15" },
 
-    { key: "open", label: "Offen", icon: Target, count: open.length, tone: "text-accent", bg: "bg-accent/10", border: "border-accent/15" },
+    { key: "open", label: text.open, icon: Target, count: open.length, tone: "text-accent", bg: "bg-accent/10", border: "border-accent/15" },
 
-    { key: "completed", label: "Erledigt", icon: CheckCircle, count: completed.length, tone: "text-success", bg: "bg-success/10", border: "border-success/15" },
+    { key: "completed", label: text.completed, icon: CheckCircle, count: completed.length, tone: "text-success", bg: "bg-success/10", border: "border-success/15" },
 
   ];
 
@@ -475,7 +531,7 @@ export default function ExercisesOverview() {
 
           >
 
-            <ArrowLeft size={16} /> Zurück
+            <ArrowLeft size={16} /> {text.back}
 
           </motion.button>
 
@@ -495,13 +551,13 @@ export default function ExercisesOverview() {
 
             </motion.div>
 
-            <h1 className="text-2xl font-black tracking-tight">Meine Übungen</h1>
+            <h1 className="text-2xl font-black tracking-tight">{text.myExercises}</h1>
 
           </div>
 
           <p className="text-white/60 text-sm font-semibold">
 
-            {exercises.length} Übungen | {completed.length} erledigt | {open.length} offen
+            {exercises.length} {exercises.length === 1 ? text.exerciseOne : text.exerciseMany} | {completed.length} {text.doneLower} | {open.length} {text.openLower}
 
           </p>
 
@@ -583,7 +639,7 @@ export default function ExercisesOverview() {
 
             onChange={(e) => setSearch(e.target.value)}
 
-            placeholder="Aufgabe suchen..."
+            placeholder={text.searchPlaceholder}
 
             className="w-full pl-11 pr-10 py-3.5 bg-card rounded-2xl border border-border text-foreground font-medium focus:outline-none focus:ring-2 focus:ring-ring"
 
@@ -655,7 +711,7 @@ export default function ExercisesOverview() {
 
               <h2 className="text-xl font-black text-foreground mb-2">
 
-                {search ? "Keine Treffer" : activeTab === "open" ? "Alles erledigt!" : activeTab === "completed" ? "Noch nichts erledigt" : "Keine Übungen"}
+                {search ? text.noResults : activeTab === "open" ? text.allDone : activeTab === "completed" ? text.nothingDoneYet : text.noExercises}
 
               </h2>
 
@@ -663,13 +719,13 @@ export default function ExercisesOverview() {
 
                 {search
 
-                ? `Keine Übung mit "${search}" gefunden.`
+                ? text.noSearchMatch
 
                   : activeTab === "open"
 
-                  ? "Super gemacht! Du hast alle Aufgaben abgeschlossen."
+                  ? text.allDoneBody
 
-                  : "Sobald dein Therapeut dir Übungen zuweist, erscheinen sie hier."}
+                  : text.emptyBody}
 
               </p>
 
@@ -692,6 +748,8 @@ export default function ExercisesOverview() {
                   onClick={() => navigate(`/exercise/${ex.id}`)}
 
                   locale={locale}
+
+                  text={text}
 
                 />
 

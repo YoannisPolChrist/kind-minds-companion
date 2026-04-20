@@ -6,6 +6,7 @@ import { motion } from "motion/react";
 import { dbLite } from "../lib/firebaseDbLite";
 import { useAuth } from "../hooks/useAuth";
 import { useLanguage } from "../hooks/useLanguage";
+import { translate } from "../lib/webLocale";
 import { PageTransition, StaggerContainer, StaggerItem, HeaderOrbs, TiltCard } from "../components/motion";
 import { getRandomHeaderImage } from "../constants/headerImages";
 
@@ -115,6 +116,31 @@ export default function History() {
   const completedExercises = useMemo(() => items.filter((item) => item.type === "exercise").length, [items]);
   const checkinCount = useMemo(() => items.filter((item) => item.type === "checkin").length, [items]);
   const latestEntry = items[0];
+  const text = {
+    back: translate(locale, { de: "Zurück", en: "Back", es: "Volver", fr: "Retour", it: "Indietro" }),
+    history: translate(locale, { de: "Verlauf", en: "History", es: "Historial", fr: "Historique", it: "Storico" }),
+    summary: translate(locale, { de: "Zusammenfassung", en: "Summary", es: "Resumen", fr: "Résumé", it: "Riepilogo" }),
+    total: translate(locale, { de: "Gesamt", en: "Total", es: "Total", fr: "Total", it: "Totale" }),
+    completedExercises: translate(locale, { de: "Erledigte Übungen", en: "Completed exercises", es: "Ejercicios completados", fr: "Exercices terminés", it: "Esercizi completati" }),
+    latestEntry: translate(locale, { de: "Letzter Eintrag", en: "Latest entry", es: "Última entrada", fr: "Dernière entrée", it: "Ultima voce" }),
+    checkin: translate(locale, { de: "Check-in", en: "Check-in", es: "Check-in", fr: "Check-in", it: "Check-in" }),
+    exercise: translate(locale, { de: "Übung", en: "Exercise", es: "Ejercicio", fr: "Exercice", it: "Esercizio" }),
+    latestEmpty: translate(locale, {
+      de: "Sobald du Check-ins oder erledigte Übungen hast, erscheint hier dein letzter Eintrag.",
+      en: "As soon as you have check-ins or completed exercises, your latest entry will appear here.",
+      es: "En cuanto tengas check-ins o ejercicios completados, tu última entrada aparecerá aquí.",
+      fr: "Dès que tu auras des check-ins ou des exercices terminés, ta dernière entrée apparaîtra ici.",
+      it: "Non appena avrai check-in o esercizi completati, qui apparirà la tua ultima voce.",
+    }),
+    emptyTitle: translate(locale, { de: "Noch kein Verlauf vorhanden", en: "No history yet", es: "Todavía no hay historial", fr: "Pas encore d'historique", it: "Ancora nessuno storico" }),
+    emptyBody: translate(locale, {
+      de: "Hier erscheint bald deine Übersicht aus Check-ins und erledigten Übungen.",
+      en: "Your overview of check-ins and completed exercises will appear here soon.",
+      es: "Aquí aparecerá pronto tu resumen de check-ins y ejercicios completados.",
+      fr: "Ton aperçu des check-ins et exercices terminés apparaîtra bientôt ici.",
+      it: "Qui apparirà presto la panoramica dei tuoi check-in e degli esercizi completati.",
+    }),
+  };
 
   if (loading) {
     return (
@@ -143,11 +169,11 @@ export default function History() {
             whileTap={{ scale: 0.95 }}
           >
             <ArrowLeft size={16} />
-            Zurück
+            {text.back}
           </motion.button>
 
           <div className="max-w-3xl">
-            <h1 className="text-2xl font-black tracking-tight">Verlauf</h1>
+            <h1 className="text-2xl font-black tracking-tight">{text.history}</h1>
           </div>
         </div>
       </div>
@@ -155,12 +181,12 @@ export default function History() {
       <div className="mx-auto grid w-full max-w-6xl gap-6 px-5 py-6 xl:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
           <div className="rounded-[1.75rem] border border-border bg-card p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">Zusammenfassung</p>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">{text.summary}</p>
             <div className="mt-4 grid gap-3">
               {[
-                { label: "Gesamt", value: items.length, icon: Calendar },
+                { label: text.total, value: items.length, icon: Calendar },
                 { label: "Check-ins", value: checkinCount, icon: NotebookPen },
-                { label: "Erledigte Übungen", value: completedExercises, icon: BookOpen },
+                { label: text.completedExercises, value: completedExercises, icon: BookOpen },
               ].map((entry) => {
                 const Icon = entry.icon;
 
@@ -180,11 +206,11 @@ export default function History() {
           </div>
 
           <div className="rounded-[1.75rem] border border-border bg-card p-5 shadow-sm">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">Letzter Eintrag</p>
+            <p className="text-xs font-bold uppercase tracking-[0.22em] text-muted-foreground">{text.latestEntry}</p>
             {latestEntry ? (
               <div className="mt-4 rounded-2xl bg-secondary/60 p-4">
                 <p className="text-sm font-black text-foreground">
-                  {latestEntry.type === "checkin" ? "Check-in" : latestEntry.title || "Übung"}
+                  {latestEntry.type === "checkin" ? text.checkin : latestEntry.title || text.exercise}
                 </p>
                 <p className="mt-1 text-sm text-muted-foreground">
                   {new Date(latestEntry.date).toLocaleString(locale, {
@@ -198,7 +224,7 @@ export default function History() {
               </div>
             ) : (
               <p className="mt-4 text-sm leading-6 text-muted-foreground">
-                Sobald du Check-ins oder erledigte Übungen hast, erscheint hier dein letzter Eintrag.
+                {text.latestEmpty}
               </p>
             )}
           </div>
@@ -210,9 +236,9 @@ export default function History() {
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-secondary text-muted-foreground">
                 <Calendar size={28} />
               </div>
-              <h2 className="mt-5 text-2xl font-black text-foreground">Noch kein Verlauf vorhanden</h2>
+              <h2 className="mt-5 text-2xl font-black text-foreground">{text.emptyTitle}</h2>
               <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-muted-foreground">
-                Hier erscheint bald deine Übersicht aus Check-ins und erledigten Übungen.
+                {text.emptyBody}
               </p>
             </div>
           ) : (

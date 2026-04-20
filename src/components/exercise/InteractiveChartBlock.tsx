@@ -4,6 +4,8 @@ import { ResponsiveLine } from "@nivo/line";
 import type { SliceData, PointTooltipProps } from "@nivo/line";
 import { ResponsivePie } from "@nivo/pie";
 import { ResponsiveRadar } from "@nivo/radar";
+import { useLanguage } from "../../hooks/useLanguage";
+import { translate } from "../../lib/webLocale";
 
 type ExerciseBlock = {
   id: string;
@@ -30,13 +32,19 @@ type ChartEntry = {
   color: string;
 };
 
-function parseOptions(options: string[] = []): ChartEntry[] {
+function parseOptions(options: string[] = [], locale: string): ChartEntry[] {
   return options
     .map((option, index) => {
       const [rawLabel = "", rawValue = "", rawColor = ""] = option.split(":");
       return {
         id: `${rawLabel || "entry"}-${index}`,
-        label: rawLabel || `Punkt ${index + 1}`,
+        label: rawLabel || translate(locale, {
+          de: `Punkt ${index + 1}`,
+          en: `Point ${index + 1}`,
+          es: `Punto ${index + 1}`,
+          fr: `Point ${index + 1}`,
+          it: `Punto ${index + 1}`,
+        }),
         value: Number.parseFloat(rawValue || "0") || 0,
         color: rawColor || CHART_PALETTE[index % CHART_PALETTE.length],
       };
@@ -97,13 +105,20 @@ export default function InteractiveChartBlock({
   onChange: (next: string) => void;
   disabled?: boolean;
 }) {
-  const data = useMemo(() => parseOptions(block.options), [block.options]);
+  const { locale } = useLanguage();
+  const data = useMemo(() => parseOptions(block.options, locale), [block.options, locale]);
   const maxValue = useMemo(() => Math.max(...data.map((entry) => entry.value), 1), [data]);
 
   if (!data.length) {
     return (
       <div className="rounded-3xl border border-dashed border-border bg-card p-6 text-sm font-medium text-muted-foreground">
-        Für dieses Diagramm sind noch keine Daten hinterlegt.
+        {translate(locale, {
+          de: "Für dieses Diagramm sind noch keine Daten hinterlegt.",
+          en: "No data has been configured for this chart yet.",
+          es: "Todavía no hay datos configurados para este gráfico.",
+          fr: "Aucune donnée n'est encore configurée pour ce graphique.",
+          it: "Non ci sono ancora dati configurati per questo grafico.",
+        })}
       </div>
     );
   }

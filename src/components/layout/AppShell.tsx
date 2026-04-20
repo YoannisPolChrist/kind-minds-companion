@@ -1,7 +1,13 @@
 import { useState, type ReactNode } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { UserProfile } from "../../hooks/useAuth";
-import { clientBottomNav, clientNavItems, getRoleLabel, therapistNavItems } from "./shellConfig";
+import { useLanguage } from "../../hooks/useLanguage";
+import {
+  getClientBottomNav,
+  getClientNavItems,
+  getRoleLabel,
+  getTherapistNavItems,
+} from "./shellConfig";
 import {
   ShellBottomNav,
   ShellLink,
@@ -21,12 +27,22 @@ export default function AppShell({
 }) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { locale } = useLanguage();
   const pathname = location.pathname;
   const role = profile?.role === "therapist" ? "therapist" : "client";
-  const navItems = role === "therapist" ? therapistNavItems : clientNavItems;
+  const navItems = role === "therapist" ? getTherapistNavItems(locale) : getClientNavItems(locale);
+  const clientBottomNav = getClientBottomNav(locale);
   const activeItem = navItems.find((item) => item.matches(pathname)) || navItems[0];
   const isTherapistLanding =
     role === "therapist" && (pathname === "/" || pathname === "/therapist");
+  const text = {
+    expandNavigation: locale === "fr" ? "Déplier la navigation" : locale === "en" ? "Expand navigation" : locale === "es" ? "Expandir navegación" : locale === "it" ? "Espandi navigazione" : "Navigation ausklappen",
+    collapseNavigation: locale === "fr" ? "Replier la navigation" : locale === "en" ? "Collapse navigation" : locale === "es" ? "Contraer navegación" : locale === "it" ? "Comprimi navigazione" : "Navigation einklappen",
+    navigation: locale === "fr" ? "Navigation" : locale === "en" ? "Navigation" : locale === "es" ? "Navegación" : locale === "it" ? "Navigazione" : "Navigation",
+    workspace: locale === "fr" ? "Workspace" : locale === "en" ? "Workspace" : locale === "es" ? "Espacio" : locale === "it" ? "Workspace" : "Workspace",
+    signOut: locale === "fr" ? "Se déconnecter" : locale === "en" ? "Sign out" : locale === "es" ? "Cerrar sesión" : locale === "it" ? "Disconnetti" : "Abmelden",
+    account: locale === "fr" ? "Compte" : locale === "en" ? "Account" : locale === "es" ? "Cuenta" : locale === "it" ? "Account" : "Konto",
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -51,10 +67,10 @@ export default function AppShell({
               className={`mb-5 inline-flex items-center justify-center rounded-2xl border border-border bg-card text-muted-foreground transition-colors hover:bg-secondary ${sidebarCollapsed ? "w-12 p-3" : "w-full gap-2 px-4 py-3 text-sm font-bold"}`}
               aria-pressed={!sidebarCollapsed}
               aria-expanded={!sidebarCollapsed}
-              aria-label={sidebarCollapsed ? "Navigation ausklappen" : "Navigation einklappen"}
+              aria-label={sidebarCollapsed ? text.expandNavigation : text.collapseNavigation}
             >
               {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-              {!sidebarCollapsed && <span>Navigation</span>}
+              {!sidebarCollapsed && <span>{text.navigation}</span>}
             </button>
 
             <nav className="w-full space-y-2">
@@ -98,16 +114,16 @@ export default function AppShell({
                   className="hidden rounded-2xl border border-border bg-card p-2 text-muted-foreground transition-colors hover:bg-secondary lg:inline-flex"
                   aria-pressed={!sidebarCollapsed}
                   aria-expanded={!sidebarCollapsed}
-                  aria-label={sidebarCollapsed ? "Navigation ausklappen" : "Navigation einklappen"}
+                  aria-label={sidebarCollapsed ? text.expandNavigation : text.collapseNavigation}
                 >
                   {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
                 </button>
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                    {getRoleLabel(profile)}
+                    {getRoleLabel(profile, locale)}
                   </p>
                   <h1 className="truncate text-xl font-black tracking-tight text-foreground">
-                    {activeItem?.label || "Workspace"}
+                    {activeItem?.label || text.workspace}
                   </h1>
                 </div>
               </div>
@@ -125,8 +141,8 @@ export default function AppShell({
                   <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-foreground text-[10px] font-black text-background">
                     !
                   </span>
-                  <span className="hidden sm:inline">Abmelden</span>
-                  <span className="sm:hidden">Konto</span>
+                  <span className="hidden sm:inline">{text.signOut}</span>
+                  <span className="sm:hidden">{text.account}</span>
                 </button>
               </div>
             </div>

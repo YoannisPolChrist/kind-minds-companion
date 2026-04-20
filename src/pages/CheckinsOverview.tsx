@@ -4,6 +4,7 @@ import { collection, query, where, getDocs } from "firebase/firestore/lite";
 import { dbLite } from "../lib/firebaseDbLite";
 import { useAuth } from "../hooks/useAuth";
 import { useLanguage } from "../hooks/useLanguage";
+import { translate } from "../lib/webLocale";
 import {
   ArrowLeft,
   Calendar,
@@ -187,6 +188,46 @@ export default function CheckinsOverview() {
     ? getEmotion(chartData[chartData.length - 1]?.mood, (chartData[chartData.length - 1] as any)?.emotionId)
     : EMOTION_PRESETS[16];
   const averageEnergyColor = analytics?.avgEnergy != null ? getEnergyColor(analytics.avgEnergy) : null;
+  const text = useMemo(() => ({
+    back: translate(locale, { de: "Zurück", en: "Back", es: "Volver", fr: "Retour", it: "Indietro" }),
+    myJournal: translate(locale, { de: "Mein Tagebuch", en: "My journal", es: "Mi diario", fr: "Mon journal", it: "Il mio diario" }),
+    entryOne: translate(locale, { de: "Eintrag", en: "entry", es: "entrada", fr: "entrée", it: "voce" }),
+    entryMany: translate(locale, { de: "Einträge", en: "entries", es: "entradas", fr: "entrées", it: "voci" }),
+    week: translate(locale, { de: "Woche", en: "Week", es: "Semana", fr: "Semaine", it: "Settimana" }),
+    month: translate(locale, { de: "Monat", en: "Month", es: "Mes", fr: "Mois", it: "Mese" }),
+    total: translate(locale, { de: "Gesamt", en: "All", es: "Total", fr: "Total", it: "Totale" }),
+    noEntries: translate(locale, { de: "Noch keine Einträge", en: "No entries yet", es: "Aún no hay entradas", fr: "Aucune entrée pour l'instant", it: "Ancora nessuna voce" }),
+    firstCheckin: translate(locale, {
+      de: "Dein erstes Check-in erscheint hier nach dem Ausfüllen.",
+      en: "Your first check-in will appear here after you complete it.",
+      es: "Tu primer check-in aparecerá aquí cuando lo completes.",
+      fr: "Ton premier check-in apparaîtra ici après l'avoir rempli.",
+      it: "Il tuo primo check-in apparirà qui dopo averlo completato.",
+    }),
+    startCheckin: translate(locale, { de: "Jetzt Check-in starten", en: "Start check-in now", es: "Iniciar check-in ahora", fr: "Commencer le check-in", it: "Avvia il check-in ora" }),
+    noEntriesRange: translate(locale, { de: "Keine Einträge im gewählten Zeitraum", en: "No entries in the selected period", es: "No hay entradas en el período seleccionado", fr: "Aucune entrée pour la période choisie", it: "Nessuna voce nel periodo selezionato" }),
+    rangeHint: translate(locale, {
+      de: "Wechsel auf Woche, Monat oder Gesamt, um andere Tagebuch-Einträge und Trends anzusehen.",
+      en: "Switch to week, month, or all to view other journal entries and trends.",
+      es: "Cambia a semana, mes o total para ver otras entradas y tendencias.",
+      fr: "Passe à semaine, mois ou total pour voir d'autres entrées et tendances.",
+      it: "Passa a settimana, mese o totale per vedere altre voci e tendenze.",
+    }),
+    loggedMoodOnly: translate(locale, { de: "Nur Stimmung protokolliert.", en: "Only mood logged.", es: "Solo se registró el estado de ánimo.", fr: "Humeur uniquement enregistrée.", it: "È stato registrato solo l'umore." }),
+    average: translate(locale, { de: "Durchschnitt", en: "Average", es: "Promedio", fr: "Moyenne", it: "Media" }),
+    minimum: translate(locale, { de: "Minimum", en: "Minimum", es: "Mínimo", fr: "Minimum", it: "Minimo" }),
+    maximum: translate(locale, { de: "Maximum", en: "Maximum", es: "Máximo", fr: "Maximum", it: "Massimo" }),
+    trend: translate(locale, { de: "Trend", en: "Trend", es: "Tendencia", fr: "Tendance", it: "Tendenza" }),
+    positive: translate(locale, { de: "↑ Positiv", en: "↑ Positive", es: "↑ Positiva", fr: "↑ Positive", it: "↑ Positivo" }),
+    declining: translate(locale, { de: "↓ Sinkend", en: "↓ Declining", es: "↓ A la baja", fr: "↓ En baisse", it: "↓ In calo" }),
+    stable: translate(locale, { de: "→ Stabil", en: "→ Stable", es: "→ Estable", fr: "→ Stable", it: "→ Stabile" }),
+    moodTrend: translate(locale, { de: "Stimmungsverlauf", en: "Mood trend", es: "Evolución del ánimo", fr: "Évolution de l'humeur", it: "Andamento dell'umore" }),
+    lowPoint: translate(locale, { de: "Tiefpunkt", en: "Low point", es: "Punto más bajo", fr: "Point bas", it: "Punto più basso" }),
+    highPoint: translate(locale, { de: "Hochstwert", en: "High point", es: "Punto más alto", fr: "Point haut", it: "Punto più alto" }),
+    topEmotions: translate(locale, { de: "Häufigste Emotionen", en: "Most frequent emotions", es: "Emociones más frecuentes", fr: "Émotions les plus fréquentes", it: "Emozioni più frequenti" }),
+    topActivities: translate(locale, { de: "Häufigste Aktivitäten", en: "Most frequent activities", es: "Actividades más frecuentes", fr: "Activités les plus fréquentes", it: "Attività più frequenti" }),
+    energy: translate(locale, { de: "Energie", en: "Energy", es: "Energía", fr: "Énergie", it: "Energia" }),
+  }), [locale]);
 
   if (loading) {
     return (
@@ -210,12 +251,12 @@ export default function CheckinsOverview() {
               className="flex items-center gap-2 bg-white/15 hover:bg-white/25 px-4 py-2.5 rounded-2xl transition-colors text-sm font-bold"
             >
               <ArrowLeft size={16} />
-              Zurück
+              {text.back}
             </Link>
           </div>
-          <h1 className="text-2xl font-black tracking-tight">Mein Tagebuch</h1>
+          <h1 className="text-2xl font-black tracking-tight">{text.myJournal}</h1>
           <p className="text-white/60 text-sm font-semibold mt-1">
-            {checkins.length} {checkins.length === 1 ? "Eintrag" : "Einträge"} insgesamt
+            {checkins.length} {checkins.length === 1 ? text.entryOne : text.entryMany} {text.total.toLowerCase()}
           </p>
         </div>
       </div>
@@ -223,9 +264,9 @@ export default function CheckinsOverview() {
       <div className="max-w-6xl mx-auto px-5 py-6 space-y-6">
         <div className="flex flex-wrap gap-2">
           {[
-            { key: "week", label: "Woche" },
-            { key: "month", label: "Monat" },
-            { key: "all", label: "Gesamt" },
+            { key: "week", label: text.week },
+            { key: "month", label: text.month },
+            { key: "all", label: text.total },
           ].map((range) => {
             const active = activeRange === range.key;
             return (
@@ -250,15 +291,15 @@ export default function CheckinsOverview() {
             <div className="w-24 h-24 rounded-full bg-card border-2 border-border flex items-center justify-center mb-6">
               <Activity size={40} className="text-muted-foreground" />
             </div>
-            <h2 className="text-2xl font-black text-foreground mb-3">Noch keine Einträge</h2>
+            <h2 className="text-2xl font-black text-foreground mb-3">{text.noEntries}</h2>
             <p className="text-muted-foreground text-center max-w-xs">
-              Dein erstes Check-in erscheint hier nach dem Ausfüllen.
+              {text.firstCheckin}
             </p>
             <Link
               to="/checkin"
               className="mt-6 bg-primary text-primary-foreground px-6 py-3 rounded-2xl font-bold hover:opacity-90 transition-opacity"
             >
-              Jetzt Check-in starten
+              {text.startCheckin}
             </Link>
           </div>
         ) : filteredCheckins.length === 0 ? (
@@ -266,9 +307,9 @@ export default function CheckinsOverview() {
             <div className="w-16 h-16 rounded-2xl bg-secondary border border-border flex items-center justify-center mx-auto mb-4">
               <Calendar size={28} className="text-muted-foreground" />
             </div>
-            <h2 className="text-xl font-black text-foreground mb-2">Keine Einträge im gewählten Zeitraum</h2>
+            <h2 className="text-xl font-black text-foreground mb-2">{text.noEntriesRange}</h2>
             <p className="text-muted-foreground max-w-md mx-auto">
-              Wechsel auf Woche, Monat oder Gesamt, um andere Tagebuch-Einträge und Trends anzusehen.
+              {text.rangeHint}
             </p>
           </div>
         ) : (
@@ -354,7 +395,7 @@ export default function CheckinsOverview() {
                           )}
 
                           {!ci.note?.trim() && !ci.tags?.length && ci.duration == null && (
-                            <p className="mt-2 text-sm italic text-muted-foreground">Nur Stimmung protokolliert.</p>
+                            <p className="mt-2 text-sm italic text-muted-foreground">{text.loggedMoodOnly}</p>
                           )}
                         </div>
                       );
@@ -370,26 +411,26 @@ export default function CheckinsOverview() {
                 {/* Top Stats Row */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 animate-slide-up">
                   <StatCard
-                    label="Durchschnitt"
+                    label={text.average}
                     value={analytics.avg.toFixed(0)}
                     suffix="/100"
                     icon={<Star size={16} className="text-amber-500" />}
                   />
                   <StatCard
-                    label="Minimum"
+                    label={text.minimum}
                     value={String(analytics.min)}
                     suffix="/100"
                     icon={<TrendingDown size={16} className="text-destructive" />}
                   />
                   <StatCard
-                    label="Maximum"
+                    label={text.maximum}
                     value={String(analytics.max)}
                     suffix="/100"
                     icon={<TrendingUp size={16} className="text-success" />}
                   />
                   <StatCard
-                    label="Trend"
-                    value={analytics.trend === "up" ? "↑ Positiv" : analytics.trend === "down" ? "↓ Sinkend" : "→ Stabil"}
+                    label={text.trend}
+                    value={analytics.trend === "up" ? text.positive : analytics.trend === "down" ? text.declining : text.stable}
                     icon={
                       analytics.trend === "up" ? (
                         <TrendingUp size={16} className="text-success" />
@@ -419,7 +460,7 @@ export default function CheckinsOverview() {
                       <div className="flex items-start justify-between gap-4 mb-6">
                         <div>
                           <h3 className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-1">
-                            Stimmungsverlauf
+                            {text.moodTrend}
                           </h3>
                           <div className="flex items-baseline gap-2">
                             <span className="text-4xl font-black text-foreground tracking-tight">
@@ -533,9 +574,9 @@ export default function CheckinsOverview() {
 
                       <div className="grid grid-cols-3 gap-2 mt-5">
                         {[
-                          { label: "Tiefpunkt", value: analytics.min, color: "#E11D48", backgroundColor: "rgba(225,29,72,0.08)" },
-                          { label: "Durchschnitt", value: analytics.avg.toFixed(0), color: "#0369A1", backgroundColor: "rgba(3,105,161,0.08)" },
-                          { label: "Hochstwert", value: analytics.max, color: "#047857", backgroundColor: "rgba(4,120,87,0.08)" },
+                          { label: text.lowPoint, value: analytics.min, color: "#E11D48", backgroundColor: "rgba(225,29,72,0.08)" },
+                          { label: text.average, value: analytics.avg.toFixed(0), color: "#0369A1", backgroundColor: "rgba(3,105,161,0.08)" },
+                          { label: text.highPoint, value: analytics.max, color: "#047857", backgroundColor: "rgba(4,120,87,0.08)" },
                         ].map((s) => (
                           <div
                             key={s.label}
@@ -557,7 +598,7 @@ export default function CheckinsOverview() {
                 {/* Top Emotions */}
                 {analytics.topEmotions.length > 0 && (
                   <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-                    <h3 className="text-sm font-black text-foreground mb-4">Häufigste Emotionen</h3>
+                    <h3 className="text-sm font-black text-foreground mb-4">{text.topEmotions}</h3>
                     <div className="space-y-3">
                       {analytics.topEmotions.map((item, idx) => {
                         const pct = Math.round((item.count / analytics.total) * 100);
@@ -597,7 +638,7 @@ export default function CheckinsOverview() {
                 {/* Top Tags */}
                 {analytics.topTags.length > 0 && (
                   <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
-                    <h3 className="text-sm font-black text-foreground mb-4">Häufigste Aktivitäten</h3>
+                    <h3 className="text-sm font-black text-foreground mb-4">{text.topActivities}</h3>
                     <div className="space-y-2.5">
                       {analytics.topTags.map(([tag, count], idx) => (
                         <div
@@ -633,7 +674,7 @@ export default function CheckinsOverview() {
                     <div className="flex items-center gap-3">
                       <Zap size={20} style={{ color: averageEnergyColor || undefined }} />
                       <div>
-                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Energie</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">{text.energy}</p>
                         <p className="text-2xl font-black" style={{ color: averageEnergyColor || undefined }}>
                           {analytics.avgEnergy.toFixed(0)}
                           <span className="text-sm font-semibold text-muted-foreground">/100</span>

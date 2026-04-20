@@ -25,6 +25,7 @@ import { PageTransition, PressableScale } from "../components/motion";
 import { SkeletonCard, SkeletonMetrics } from "../components/ui/Skeleton";
 import TriangulumBackdrop from "../components/ui/TriangulumBackdrop";
 import { getRandomHeaderImage } from "../constants/headerImages";
+import { assetPath } from "../utils/assetPath";
 
 interface Exercise {
   id: string;
@@ -315,11 +316,11 @@ export default function Dashboard() {
     progress: translate(locale, { de: "Fortschritt", en: "Progress", es: "Progreso", fr: "Progres", it: "Progresso" }),
     journal: translate(locale, { de: "Zum Tagebuch", en: "Open journal", es: "Abrir diario", fr: "Ouvrir le journal", it: "Apri diario" }),
     exercises: translate(locale, { de: "Aufgaben", en: "Exercises", es: "Ejercicios", fr: "Exercices", it: "Esercizi" }),
-    dailyCheckin: translate(locale, { de: "Taeglicher Check-in", en: "Daily check-in", es: "Check-in diario", fr: "Check-in quotidien", it: "Check-in quotidiano" }),
+    dailyCheckin: translate(locale, { de: "Täglicher Check-in", en: "Daily check-in", es: "Check-in diario", fr: "Check-in quotidien", it: "Check-in quotidiano" }),
     slotDone: translate(locale, { de: "ist erledigt", en: "is done", es: "esta hecho", fr: "est termine", it: "e completato" }),
     slotWaiting: translate(locale, { de: "wartet auf dich", en: "is waiting for you", es: "te espera", fr: "t'attend", it: "ti aspetta" }),
     checkinSavedBody: translate(locale, {
-      de: "Dein Check-in ist gespeichert. Im Tagebuch kannst du Verlauf und Notizen weiterfuehren.",
+      de: "Dein Check-in ist gespeichert. Im Tagebuch kannst du Verlauf und Notizen weiterführen.",
       en: "Your check-in is saved. You can continue with notes and your timeline in the journal.",
       es: "Tu check-in ya esta guardado. Puedes seguir con notas e historial en el diario.",
       fr: "Ton check-in est enregistre. Tu peux poursuivre avec notes et historique dans le journal.",
@@ -336,12 +337,12 @@ export default function Dashboard() {
     historyAvailable: translate(locale, { de: "Verlauf vorhanden", en: "History available", es: "Historial disponible", fr: "Historique disponible", it: "Storico disponibile" }),
     historyEmpty: translate(locale, { de: "Noch keine Historie", en: "No history yet", es: "Sin historial aun", fr: "Pas encore d'historique", it: "Nessuno storico ancora" }),
     appointments: translate(locale, { de: "Termine und Kalender", en: "Appointments and calendar", es: "Citas y calendario", fr: "Rendez-vous et calendrier", it: "Appuntamenti e calendario" }),
-    nextAppointment: translate(locale, { de: "Naechster Termin", en: "Next appointment", es: "Proxima cita", fr: "Prochain rendez-vous", it: "Prossimo appuntamento" }),
+    nextAppointment: translate(locale, { de: "Nächster Termin", en: "Next appointment", es: "Proxima cita", fr: "Prochain rendez-vous", it: "Prossimo appuntamento" }),
     noAppointment: translate(locale, { de: "Noch kein Termin sichtbar", en: "No appointment yet", es: "Aun no hay cita", fr: "Aucun rendez-vous pour l'instant", it: "Nessun appuntamento ancora" }),
     manageAppointment: translate(locale, { de: "Termin verwalten", en: "Manage appointment", es: "Gestionar cita", fr: "Gerer le rendez-vous", it: "Gestisci appuntamento" }),
     connectCalendar: translate(locale, { de: "Kalender verbinden", en: "Connect calendar", es: "Conectar calendario", fr: "Connecter le calendrier", it: "Collega calendario" }),
     appointmentHint: translate(locale, {
-      de: "Wenn noch kein Termin hinterlegt ist, kannst du in den Einstellungen deinen Kalender verbinden oder den naechsten Termin mit deinem Coach abstimmen.",
+      de: "Wenn noch kein Termin hinterlegt ist, kannst du in den Einstellungen deinen Kalender verbinden oder den nächsten Termin mit deinem Coach abstimmen.",
       en: "If no appointment is saved yet, connect your calendar in settings or coordinate the next session with your coach.",
       es: "Si aun no hay una cita guardada, conecta tu calendario en ajustes o coordina la proxima sesion con tu coach.",
       fr: "Si aucun rendez-vous n'est encore enregistre, connecte ton calendrier dans les parametres ou planifie le prochain rendez-vous avec ton coach.",
@@ -349,15 +350,15 @@ export default function Dashboard() {
     }),
     openExercises: translate(locale, { de: "Offene Aufgaben", en: "Open exercises", es: "Ejercicios abiertos", fr: "Exercices ouverts", it: "Esercizi aperti" }),
     openExercisesBody: translate(locale, {
-      de: "Deine naechsten Uebungen fuer heute und die kommenden Tage.",
+      de: "Deine nächsten Übungen für heute und die kommenden Tage.",
       en: "Your next exercises for today and the days ahead.",
       es: "Tus proximos ejercicios para hoy y los siguientes dias.",
       fr: "Tes prochains exercices pour aujourd'hui et les jours a venir.",
       it: "I tuoi prossimi esercizi per oggi e i prossimi giorni.",
     }),
-    myExercises: translate(locale, { de: "Meine Uebungen", en: "My exercises", es: "Mis ejercicios", fr: "Mes exercices", it: "I miei esercizi" }),
+    myExercises: translate(locale, { de: "Meine Übungen", en: "My exercises", es: "Mis ejercicios", fr: "Mes exercices", it: "I miei esercizi" }),
     myExercisesBody: translate(locale, {
-      de: "Offene und erledigte Aufgaben in einer klaren Uebersicht.",
+      de: "Offene und erledigte Aufgaben in einer klaren Übersicht.",
       en: "Open and completed exercises in one clear overview.",
       es: "Ejercicios abiertos y completados en una vista clara.",
       fr: "Exercices ouverts et termines dans une vue claire.",
@@ -373,7 +374,7 @@ export default function Dashboard() {
     }),
     history: translate(locale, { de: "Verlauf", en: "History", es: "Historial", fr: "Historique", it: "Storico" }),
     historyBody: translate(locale, {
-      de: "Check-ins, Trends und bisherige Eintraege ansehen.",
+      de: "Check-ins, Trends und bisherige Einträge ansehen.",
       en: "Review check-ins, trends, and past entries.",
       es: "Revisa check-ins, tendencias y entradas anteriores.",
       fr: "Consulte check-ins, tendances et entrees precedentes.",
@@ -388,6 +389,14 @@ export default function Dashboard() {
       it: "Conserva pensieri, osservazioni e momenti importanti.",
     }),
     noExercises: translate(locale, { de: "Keine Aufgaben vorhanden", en: "No exercises yet", es: "Aun no hay ejercicios", fr: "Pas encore d'exercices", it: "Nessun esercizio ancora" }),
+    currentCheckin: translate(locale, { de: "Check-in", en: "Check-in", es: "Check-in", fr: "Check-in", it: "Check-in" }),
+    noExercisesBody: translate(locale, {
+      de: "Sobald dein Therapeut dir eine Übung zuweist, erscheint sie direkt in deinem Workspace.",
+      en: "As soon as your therapist assigns you an exercise, it will appear directly in your workspace.",
+      es: "En cuanto tu terapeuta te asigne un ejercicio, aparecerá directamente en tu espacio.",
+      fr: "Dès que ton thérapeute t'attribue un exercice, il apparaît directement dans ton espace.",
+      it: "Non appena il tuo terapeuta ti assegna un esercizio, apparirà direttamente nel tuo workspace.",
+    }),
   }), [locale]);
 
   if (loading) {
@@ -435,7 +444,7 @@ export default function Dashboard() {
               <div>
                 <div className="mb-4 flex items-start justify-between gap-4">
                   <img
-                    src="/images/logo-transparent.png"
+                    src={assetPath("images/logo-transparent.png")}
                     alt="Kind Minds"
                     className="h-12 object-contain sm:h-16"
                   />
@@ -480,7 +489,7 @@ export default function Dashboard() {
                     className="inline-flex items-center gap-2 rounded-[1.25rem] bg-primary px-4 py-3 text-sm font-black text-primary-foreground shadow-lg shadow-primary/20"
                   >
                     <HeartPulse size={18} />
-                    {currentSlotCompleted ? text.journal : `${currentSlotLabel} Check-in`}
+                    {currentSlotCompleted ? text.journal : `${currentSlotLabel} ${text.currentCheckin}`}
                   </button>
                   <button
                     type="button"
@@ -664,8 +673,7 @@ export default function Dashboard() {
             </div>
             <p className="text-lg font-black text-foreground">{text.noExercises}</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Sobald dein Therapeut dir eine Übung zuweist, erscheint sie direkt in deinem
-              Workspace.
+              {text.noExercisesBody}
             </p>
           </motion.div>
         )}

@@ -13,6 +13,8 @@ import { motion, AnimatePresence } from "motion/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react";
 import type { UserProfile } from "../../hooks/useAuth";
+import { useLanguage } from "../../hooks/useLanguage";
+import { translate } from "../../lib/webLocale";
 
 type ClientOnboardingStepId =
   | "dashboard-home"
@@ -63,51 +65,125 @@ interface HighlightFrame {
   radius: number;
 }
 
-const STEPS: ClientOnboardingStep[] = [
-  {
-    id: "dashboard-home",
-    route: "/",
-    targetId: "dashboard-home",
-    title: "Willkommen in deiner Startseite",
-    body: "Hier findest du deinen Einstieg in die wichtigsten Bereiche, deine offenen Aufgaben und die nächsten Schritte für heute.",
-  },
-  {
-    id: "dashboard-checkin",
-    route: "/",
-    targetId: "dashboard-checkin",
-    title: "Starte mit dem täglichen Check-in",
-    body: "Mit dem Check-in hältst du kurz fest, wie es dir gerade geht. Das ist der wichtigste Startpunkt für deinen Alltag in der App.",
-  },
-  {
-    id: "checkin-form",
-    route: "/checkin",
-    targetId: "checkin-form",
-    title: "Stimmung, Energie und kurze Notiz",
-    body: "Wähle deine aktuelle Stimmung, passe dein Energielevel an und schreibe ein paar Worte dazu. So entsteht ein hilfreicher Verlauf.",
-  },
-  {
-    id: "notes-editor",
-    route: "/notes",
-    targetId: "notes-editor",
-    title: "Hier schreibst du dein Tagebuch",
-    body: "Im Tagebuch kannst du Gedanken und Gefühle festhalten, formatieren und bei Bedarf auch mit deinem Therapeuten teilen.",
-    beforeShow: "open-notes-editor",
-    requiresReady: true,
-  },
-  {
-    id: "resources-main",
-    route: "/resources",
-    targetId: "resources-main",
-    title: "Hier liegen deine Materialien",
-    body: "In der Bibliothek findest du Dokumente, Links und andere Inhalte, die dich zwischen den Terminen begleiten. Hier tauchen auch neue Materialien deines Therapeuten auf.",
-  },
-  {
-    id: "resources-finish",
-    route: "/resources",
-    title: "Du bist startklar",
-    body: "Das war der kurze Überblick. Als Nächstes helfen dir vor allem dein Check-in, offene Aufgaben auf der Startseite und neue Materialien oder Termine in deinem Bereich.",
-  },
-];
+function getClientOnboardingSteps(locale: string): ClientOnboardingStep[] {
+  return [
+    {
+      id: "dashboard-home",
+      route: "/",
+      targetId: "dashboard-home",
+      title: translate(locale, {
+        de: "Willkommen in deiner Startseite",
+        en: "Welcome to your home screen",
+        es: "Bienvenido a tu pantalla principal",
+        fr: "Bienvenue sur ton écran d'accueil",
+        it: "Benvenuto nella tua schermata iniziale",
+      }),
+      body: translate(locale, {
+        de: "Hier findest du deinen Einstieg in die wichtigsten Bereiche, deine offenen Aufgaben und die nächsten Schritte für heute.",
+        en: "This is your starting point for the most important areas, your open tasks, and today's next steps.",
+        es: "Este es tu punto de partida para las áreas más importantes, tus tareas abiertas y los próximos pasos de hoy.",
+        fr: "Voici ton point de départ vers les zones principales, tes tâches ouvertes et les prochaines étapes du jour.",
+        it: "Questo è il tuo punto di partenza per le aree più importanti, i compiti aperti e i prossimi passi di oggi.",
+      }),
+    },
+    {
+      id: "dashboard-checkin",
+      route: "/",
+      targetId: "dashboard-checkin",
+      title: translate(locale, {
+        de: "Starte mit dem täglichen Check-in",
+        en: "Start with your daily check-in",
+        es: "Empieza con tu check-in diario",
+        fr: "Commence par ton check-in quotidien",
+        it: "Inizia con il tuo check-in quotidiano",
+      }),
+      body: translate(locale, {
+        de: "Mit dem Check-in hältst du kurz fest, wie es dir gerade geht. Das ist der wichtigste Startpunkt für deinen Alltag in der App.",
+        en: "The check-in lets you briefly capture how you are feeling right now. It is the most important starting point for your day in the app.",
+        es: "El check-in te permite registrar brevemente cómo te sientes ahora mismo. Es el punto de partida más importante de tu día en la app.",
+        fr: "Le check-in te permet de noter brièvement comment tu te sens maintenant. C'est le point de départ le plus important de ta journée dans l'application.",
+        it: "Il check-in ti permette di annotare rapidamente come ti senti adesso. È il punto di partenza più importante della tua giornata nell'app.",
+      }),
+    },
+    {
+      id: "checkin-form",
+      route: "/checkin",
+      targetId: "checkin-form",
+      title: translate(locale, {
+        de: "Stimmung, Energie und kurze Notiz",
+        en: "Mood, energy, and a short note",
+        es: "Estado de ánimo, energía y una nota breve",
+        fr: "Humeur, énergie et courte note",
+        it: "Umore, energia e una breve nota",
+      }),
+      body: translate(locale, {
+        de: "Wähle deine aktuelle Stimmung, passe dein Energielevel an und schreibe ein paar Worte dazu. So entsteht ein hilfreicher Verlauf.",
+        en: "Choose your current mood, adjust your energy level, and add a few words. That creates a helpful timeline.",
+        es: "Elige tu estado de ánimo actual, ajusta tu nivel de energía y añade unas palabras. Así se crea un historial útil.",
+        fr: "Choisis ton humeur actuelle, ajuste ton niveau d'énergie et ajoute quelques mots. Cela crée un historique utile.",
+        it: "Scegli il tuo umore attuale, regola il livello di energia e aggiungi qualche parola. Così nasce uno storico utile.",
+      }),
+    },
+    {
+      id: "notes-editor",
+      route: "/notes",
+      targetId: "notes-editor",
+      title: translate(locale, {
+        de: "Hier schreibst du dein Tagebuch",
+        en: "This is where you write your journal",
+        es: "Aquí escribes tu diario",
+        fr: "C'est ici que tu écris ton journal",
+        it: "Qui scrivi il tuo diario",
+      }),
+      body: translate(locale, {
+        de: "Im Tagebuch kannst du Gedanken und Gefühle festhalten, formatieren und bei Bedarf auch mit deinem Therapeuten teilen.",
+        en: "In the journal you can capture thoughts and feelings, format them, and share them with your therapist when needed.",
+        es: "En el diario puedes guardar pensamientos y emociones, darles formato y compartirlos con tu terapeuta cuando lo necesites.",
+        fr: "Dans le journal, tu peux noter tes pensées et tes émotions, les mettre en forme et les partager avec ton thérapeute si besoin.",
+        it: "Nel diario puoi annotare pensieri ed emozioni, formattarli e condividerli con il tuo terapeuta quando serve.",
+      }),
+      beforeShow: "open-notes-editor",
+      requiresReady: true,
+    },
+    {
+      id: "resources-main",
+      route: "/resources",
+      targetId: "resources-main",
+      title: translate(locale, {
+        de: "Hier liegen deine Materialien",
+        en: "This is where your materials live",
+        es: "Aquí están tus materiales",
+        fr: "C'est ici que se trouvent tes ressources",
+        it: "Qui trovi i tuoi materiali",
+      }),
+      body: translate(locale, {
+        de: "In der Bibliothek findest du Dokumente, Links und andere Inhalte, die dich zwischen den Terminen begleiten. Hier tauchen auch neue Materialien deines Therapeuten auf.",
+        en: "In the library you will find documents, links, and other materials that support you between appointments. New materials from your therapist will appear here too.",
+        es: "En la biblioteca encontrarás documentos, enlaces y otros materiales que te acompañan entre citas. Aquí también aparecerán nuevos materiales de tu terapeuta.",
+        fr: "Dans la bibliothèque, tu trouveras des documents, des liens et d'autres contenus pour t'accompagner entre les rendez-vous. Les nouveaux contenus de ton thérapeute apparaîtront aussi ici.",
+        it: "Nella libreria troverai documenti, link e altri materiali che ti accompagnano tra un appuntamento e l'altro. Qui compariranno anche i nuovi contenuti del tuo terapeuta.",
+      }),
+    },
+    {
+      id: "resources-finish",
+      route: "/resources",
+      title: translate(locale, {
+        de: "Du bist startklar",
+        en: "You are ready to go",
+        es: "Ya estás listo",
+        fr: "Tu es prêt",
+        it: "Sei pronto",
+      }),
+      body: translate(locale, {
+        de: "Das war der kurze Überblick. Als Nächstes helfen dir vor allem dein Check-in, offene Aufgaben auf der Startseite und neue Materialien oder Termine in deinem Bereich.",
+        en: "That was the short tour. Next, your check-in, open tasks on the home screen, and new materials or appointments in your area will help most.",
+        es: "Ese fue el recorrido breve. A partir de ahora te ayudarán sobre todo tu check-in, las tareas abiertas en la pantalla principal y los nuevos materiales o citas.",
+        fr: "C'était le tour rapide. Ensuite, ton check-in, les tâches ouvertes sur l'écran d'accueil et les nouveaux contenus ou rendez-vous t'aideront le plus.",
+        it: "Questo era il tour rapido. Da qui in poi ti aiuteranno soprattutto il check-in, i compiti aperti nella schermata iniziale e i nuovi materiali o appuntamenti.",
+      }),
+    },
+  ];
+}
 
 const ClientOnboardingContext = createContext<ClientOnboardingContextValue | null>(null);
 
@@ -119,13 +195,15 @@ export function ClientOnboardingProvider({
 }: ClientOnboardingProviderProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { locale } = useLanguage();
+  const steps = useMemo(() => getClientOnboardingSteps(locale), [locale]);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [completedThisSession, setCompletedThisSession] = useState(false);
   const [readyStepId, setReadyStepId] = useState<ClientOnboardingStepId | null>(null);
   const [isFinishing, setIsFinishing] = useState(false);
   const [completionError, setCompletionError] = useState("");
 
-  const currentStep = STEPS[currentStepIndex] ?? null;
+  const currentStep = steps[currentStepIndex] ?? null;
   const active =
     !loading &&
     !!user &&
@@ -191,22 +269,30 @@ export function ClientOnboardingProvider({
       setCompletedThisSession(true);
     } catch (error) {
       console.error("Error completing client onboarding:", error);
-      setCompletionError("Der Abschluss konnte gerade nicht gespeichert werden. Bitte versuche es erneut.");
+      setCompletionError(
+        translate(locale, {
+          de: "Der Abschluss konnte gerade nicht gespeichert werden. Bitte versuche es erneut.",
+          en: "The completion could not be saved right now. Please try again.",
+          es: "No se pudo guardar la finalización en este momento. Inténtalo de nuevo.",
+          fr: "La finalisation n'a pas pu être enregistrée pour le moment. Veuillez réessayer.",
+          it: "La conclusione non può essere salvata in questo momento. Riprova.",
+        })
+      );
     } finally {
       setIsFinishing(false);
     }
-  }, [profile, user]);
+  }, [locale, profile, user]);
 
   const next = useCallback(async () => {
     if (!currentStep) return;
 
-    if (currentStepIndex >= STEPS.length - 1) {
+    if (currentStepIndex >= steps.length - 1) {
       await finish();
       return;
     }
 
-    setCurrentStepIndex((index) => Math.min(index + 1, STEPS.length - 1));
-  }, [currentStep, currentStepIndex, finish]);
+    setCurrentStepIndex((index) => Math.min(index + 1, steps.length - 1));
+  }, [currentStep, currentStepIndex, finish, steps.length]);
 
   const back = useCallback(() => {
     setCompletionError("");
@@ -219,7 +305,7 @@ export function ClientOnboardingProvider({
       currentStep,
       currentStepId: currentStep?.id ?? null,
       currentStepIndex,
-      totalSteps: STEPS.length,
+      totalSteps: steps.length,
       isFinishing,
       completionError,
       isCurrentStep: (stepId) => active && currentStep?.id === stepId,
@@ -227,7 +313,7 @@ export function ClientOnboardingProvider({
       next,
       back,
     }),
-    [active, completionError, currentStep, currentStepIndex, isFinishing, markReady, next, back]
+    [active, completionError, currentStep, currentStepIndex, isFinishing, markReady, next, back, steps.length]
   );
 
   return (
@@ -266,6 +352,7 @@ function ClientOnboardingOverlay({
     back,
     next,
   } = useClientOnboarding();
+  const { locale } = useLanguage();
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [highlightFrame, setHighlightFrame] = useState<HighlightFrame | null>(null);
   const [viewportSize, setViewportSize] = useState(() => ({
@@ -475,13 +562,33 @@ function ClientOnboardingOverlay({
   if (!active || !currentStep) return null;
 
   const progressPercent = ((currentStepIndex + 1) / totalSteps) * 100;
-  const actionLabel = currentStepIndex === totalSteps - 1 ? "Tour abschliessen" : "Weiter";
+  const actionLabel = currentStepIndex === totalSteps - 1
+    ? translate(locale, { de: "Tour abschließen", en: "Finish tour", es: "Finalizar recorrido", fr: "Terminer la visite", it: "Concludi il tour" })
+    : translate(locale, { de: "Weiter", en: "Next", es: "Continuar", fr: "Continuer", it: "Continua" });
   const statusHint = waitingForRoute
-    ? "Wir wechseln gerade in den nächsten Bereich."
+    ? translate(locale, {
+        de: "Wir wechseln gerade in den nächsten Bereich.",
+        en: "We are switching to the next area.",
+        es: "Estamos cambiando al siguiente apartado.",
+        fr: "Nous passons à la zone suivante.",
+        it: "Stiamo passando all'area successiva.",
+      })
     : waitingForReady
-      ? "Wir öffnen gerade den passenden Bereich für dich."
+      ? translate(locale, {
+          de: "Wir öffnen gerade den passenden Bereich für dich.",
+          en: "We are opening the matching area for you.",
+          es: "Estamos abriendo el área adecuada para ti.",
+          fr: "Nous ouvrons la zone adaptée pour toi.",
+          it: "Stiamo aprendo l'area giusta per te.",
+        })
       : targetMissing
-        ? "Der Hinweis bleibt bewusst zentriert, falls das Element gerade nicht sichtbar ist."
+        ? translate(locale, {
+            de: "Der Hinweis bleibt bewusst zentriert, falls das Element gerade nicht sichtbar ist.",
+            en: "This hint stays centered in case the element is not visible right now.",
+            es: "Este aviso permanece centrado por si el elemento no está visible en este momento.",
+            fr: "L'indication reste centrée au cas où l'élément ne serait pas visible pour le moment.",
+            it: "Questo suggerimento resta centrato nel caso in cui l'elemento non sia visibile in questo momento.",
+          })
         : null;
 
   return (
@@ -530,7 +637,19 @@ function ClientOnboardingOverlay({
             <div className="mb-4 flex items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/55">
-                  Schritt {currentStepIndex + 1} von {totalSteps}
+                  {translate(locale, {
+                    de: "Schritt",
+                    en: "Step",
+                    es: "Paso",
+                    fr: "Étape",
+                    it: "Passo",
+                  })} {currentStepIndex + 1} {translate(locale, {
+                    de: "von",
+                    en: "of",
+                    es: "de",
+                    fr: "sur",
+                    it: "di",
+                  })} {totalSteps}
                 </p>
                 <h2 id="client-onboarding-title" className="mt-2 text-xl font-black leading-tight">
                   {currentStep.title}
@@ -575,7 +694,7 @@ function ClientOnboardingOverlay({
                 className="inline-flex min-w-[120px] items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-35"
               >
                 <ArrowLeft size={16} />
-                Zurück
+                {translate(locale, { de: "Zurück", en: "Back", es: "Atrás", fr: "Retour", it: "Indietro" })}
               </button>
 
               <button
@@ -589,7 +708,7 @@ function ClientOnboardingOverlay({
                 {isFinishing ? (
                   <span className="inline-flex items-center gap-2">
                     <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent" />
-                    Speichert...
+                    {translate(locale, { de: "Speichert...", en: "Saving...", es: "Guardando...", fr: "Enregistrement...", it: "Salvataggio..." })}
                   </span>
                 ) : (
                   <>
