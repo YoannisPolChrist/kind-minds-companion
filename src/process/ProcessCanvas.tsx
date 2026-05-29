@@ -1,8 +1,9 @@
 import { useRef, useState, useMemo, useCallback, useEffect } from "react";
+import { motion } from "motion/react";
 import {
-  Plus, CheckCircle2, Calendar, FileText,
+  Plus, ArrowDown, CheckCircle2, Calendar, FileText,
   BookOpen, ClipboardCheck, MessageCircle, StickyNote, Flag,
-  Link2Off, ZoomIn, ZoomOut, Maximize2, Heart
+  Link2Off, ZoomIn, ZoomOut, Maximize2, Heart, Settings, X
 } from "lucide-react";
 import type { Node, Connection } from "./types";
 
@@ -18,7 +19,12 @@ interface ProcessCanvasProps {
   setConnections: React.Dispatch<React.SetStateAction<Connection[]>>;
   setPanOffset: React.Dispatch<React.SetStateAction<{ x: number; y: number }>>;
   setZoom: React.Dispatch<React.SetStateAction<number>>;
-  setSelectedNodeId: React.Dispatch<React.SetStateAction<string | null>>;
+  setSelectedNodeId: (id: string | null) => void;
+  selectedNodeIds?: string[];
+  setSelectedNodeIds?: React.Dispatch<React.SetStateAction<string[]>>;
+  toggleNodeSelection?: (id: string, multi: boolean) => void;
+  clearSelection?: () => void;
+  onNodeClick?: (node: Node) => void;
   onSave: (silent?: boolean, customNodes?: Node[], customConnections?: Connection[]) => Promise<void>;
   isReadOnly?: boolean;
   client?: any;
@@ -48,6 +54,11 @@ export default function ProcessCanvas({
   setPanOffset,
   setZoom,
   setSelectedNodeId,
+  selectedNodeIds,
+  setSelectedNodeIds,
+  toggleNodeSelection,
+  clearSelection,
+  onNodeClick,
   onSave,
   isReadOnly = false,
   client,
@@ -103,6 +114,50 @@ export default function ProcessCanvas({
   const [resizingNodeId, setResizingNodeId] = useState<string | null>(null);
   const [resizeStartSize, setResizeStartSize] = useState({ w: 0, h: 0 });
   const [resizeStartCoords, setResizeStartCoords] = useState({ x: 0, y: 0 });
+  const [resizeDirection, setResizeDirection] = useState<"e" | "s" | "se" | null>(null);
+
+  // Marquee Selection state
+  const [selectionRect, setSelectionRect] = useState<{ startX: number; startY: number; endX: number; endY: number } | null>(null);
+
+  // Spacebar tracking
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const isSpacePressedRef = useRef(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        const target = e.target as HTMLElement;
+        if (
+          target &&
+          (target.tagName === "INPUT" ||
+            target.tagName === "TEXTAREA" ||
+            target.tagName === "SELECT" ||
+            target.isContentEditable)
+        ) {
+          return;
+        }
+        e.preventDefault();
+        if (!isSpacePressedRef.current) {
+          isSpacePressedRef.current = true;
+          setIsSpacePressed(true);
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        isSpacePressedRef.current = false;
+        setIsSpacePressed(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
 
   // Synchronous refs to prevent React state batching race conditions during rapid trackpad/mouse-wheel zooms
   const latestZoomRef = useRef(zoom);
@@ -121,20 +176,38 @@ export default function ProcessCanvas({
   const wheelTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    const el = canvasRef.current;
+    if (!el) return;
+    
+    // Non-passive wheel listener to strictly prevent browser scrolling/zooming
+    const preventDefaultWheel = (e: WheelEvent) => {
+      e.preventDefault();
+    };
+    
+    el.addEventListener("wheel", preventDefaultWheel, { passive: false });
+
     return () => {
       if (wheelTimeoutRef.current) {
         clearTimeout(wheelTimeoutRef.current);
       }
+      el.removeEventListener("wheel", preventDefaultWheel);
     };
   }, []);
 
+  const [showFilters, setShowFilters] = useState(true);
+
   // Node dimension utilities
   const getNodeDimensions = useCallback((node: Node) => {
-    if (node.type !== "custom_shape") {
-      return { w: 120, h: 120 };
-    }
     if (node.w && node.h) return { w: node.w, h: node.h };
-    return { w: 120, h: 120 };
+    if (node.type === "anamnese") return { w: 280, h: 160 };
+    if (node.type === "exercise") return { w: 240, h: 140 };
+    if (node.type === "task") return { w: 240, h: 140 };
+    if (node.type === "reflection") return { w: 240, h: 150 };
+    if (node.type === "checkin") return { w: 240, h: 150 };
+    if (node.type === "appointment") return { w: 240, h: 140 };
+    if (node.type === "note") return { w: 240, h: 140 };
+    if (node.type === "milestone") return { w: 240, h: 140 };
+    return { w: 160, h: 120 };
   }, []);
 
   const getNodeCenter = useCallback((node: Node) => {
@@ -167,66 +240,48 @@ export default function ProcessCanvas({
     return scale * Math.sqrt(dx * dx + dy * dy) + 6; // added padding
   }, [getNodeDimensions]);
 
-  const getPastelColor = useCallback((color: string | undefined, type: string) => {
-    let baseColor = color || "";
-    if (!baseColor) {
-      if (type === "reflection" || type === "checkin" || type === "milestone") {
+  const getNodeColors = useCallback((node: Node) => {
+    let baseColor = node.color || "";
+    
+    if (!baseColor || baseColor === "default") {
+      if (node.type === "reflection" || node.type === "checkin" || node.type === "milestone") {
         baseColor = "#F43F5E";
-      } else if (type === "anamnese" || type === "exercise") {
+      } else if (node.type === "anamnese" || node.type === "exercise") {
         baseColor = "#8B5CF6";
-      } else if (type === "appointment") {
+      } else if (node.type === "appointment") {
         baseColor = "#10B981";
-      } else if (type === "task") {
+      } else if (node.type === "task") {
         baseColor = "#F59E0B";
-      } else if (type === "note") {
+      } else if (node.type === "note") {
         baseColor = "#3B82F6";
       } else {
         baseColor = "#9CA3AF";
       }
     }
 
-    const c = baseColor.toUpperCase();
-    const isPink = c === "#F43F5E" || c === "#EC4899" || type === "reflection" || type === "checkin" || type === "milestone";
-
-    let bg = "#F9FAFB";
-    let border = "#D1D5DB";
-    let text = "#1A1A1A";
-
-    if (isPink) {
-      bg = "#FFE4E6"; // pastel pink/rose
-      border = "#1A1A1A"; // heavy black
-      text = "#1A1A1A";
-    } else if (c === "#8B5CF6" || c === "#A78BFA" || type === "anamnese" || type === "exercise") {
-      bg = "#F3E8FF"; // pastel purple
-      border = "#C084FC";
-      text = "#5B21B6";
-    } else if (c === "#10B981" || c === "#34D399" || type === "appointment") {
-      bg = "#D1FAE5"; // pastel green
-      border = "#34D399";
-      text = "#065F46";
-    } else if (c === "#F59E0B" || c === "#FBBF24" || type === "task") {
-      bg = "#FEF3C7"; // pastel yellow/amber
-      border = "#FCD34D";
-      text = "#78350F";
-    } else if (c === "#3B82F6" || c === "#60A5FA" || type === "note") {
-      bg = "#EFF6FF"; // pastel blue
-      border = "#93C5FD";
-      text = "#1E40AF";
-    } else {
-      if (c.startsWith("#") && c.length === 7) {
-        bg = c + "1A";
-        border = c;
-        text = c;
-      }
-    }
+    const borderColor = node.borderColor || baseColor;
 
     return {
-      bg,
-      border,
-      text,
-      isHeavyBorder: isPink
+      accent: baseColor,
+      border: borderColor,
     };
   }, []);
+
+  const isNodeIntersecting = useCallback((node: Node, rect: typeof selectionRect) => {
+    if (!rect) return false;
+    const { w, h } = getNodeDimensions(node);
+    const x1 = Math.min(rect.startX, rect.endX);
+    const x2 = Math.max(rect.startX, rect.endX);
+    const y1 = Math.min(rect.startY, rect.endY);
+    const y2 = Math.max(rect.startY, rect.endY);
+    
+    const nx1 = node.x;
+    const nx2 = node.x + w;
+    const ny1 = node.y;
+    const ny2 = node.y + h;
+    
+    return !(nx2 < x1 || nx1 > x2 || ny2 < y1 || ny1 > y2);
+  }, [getNodeDimensions]);
 
   const getIconForNodeType = useCallback((type: string, size = 18) => {
     switch (type) {
@@ -297,74 +352,242 @@ export default function ProcessCanvas({
     };
   }, [panOffset, zoom]);
 
+  const getCanvasCoordsStable = useCallback((clientX: number, clientY: number, panX: number, panY: number, currentZoom: number) => {
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return { x: 0, y: 0 };
+    return {
+      x: (clientX - rect.left - panX) / currentZoom,
+      y: (clientY - rect.top - panY) / currentZoom,
+    };
+  }, []);
+
+  // Keep values in a Ref so window listener is perfectly stable and never needs re-binding
+  const stateRef = useRef({
+    isPanning,
+    panOffset,
+    zoom,
+    panStart,
+    draggedNodeId,
+    dragStartOffset,
+    resizingNodeId,
+    resizeStartSize,
+    resizeStartCoords,
+    resizeDirection,
+    selectionRect,
+    connectingFromId,
+    isReadOnly,
+    nodes,
+    selectedNodeIds,
+  });
+
+  useEffect(() => {
+    stateRef.current = {
+      isPanning,
+      panOffset,
+      zoom,
+      panStart,
+      draggedNodeId,
+      dragStartOffset,
+      resizingNodeId,
+      resizeStartSize,
+      resizeStartCoords,
+      resizeDirection,
+      selectionRect,
+      connectingFromId,
+      isReadOnly,
+      nodes,
+      selectedNodeIds,
+    };
+  });
+
   // Canvas Pointer Pan/Zoom Handlers
   const handleCanvasPointerDown = (e: React.PointerEvent) => {
-    if (e.target === e.currentTarget || (e.target as HTMLElement).id === "dot-grid-bg") {
+    const isTouch = e.pointerType === "touch";
+    const isMiddleClick = e.button === 1;
+    const isRightClick = e.button === 2;
+    const isSpace = isSpacePressedRef.current;
+
+    if (isTouch || isMiddleClick || isRightClick || isSpace) {
       setIsPanning(true);
       setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-      setSelectedNodeId(null);
-      setHoveredConnectionId(null); // Clear connection state on empty background tap
+    } else if (e.button === 0) {
+      // Left click on canvas empty space starts marquee select
+      if (clearSelection) clearSelection();
+      else setSelectedNodeId(null);
       
-      try {
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      } catch (err) {
-        // ignore
-      }
-    }
-  };
-
-  const handleCanvasPointerMove = (e: React.PointerEvent) => {
-    if (isPanning) {
-      setPanOffset({
-        x: e.clientX - panStart.x,
-        y: e.clientY - panStart.y,
+      const coords = getCanvasCoords(e.clientX, e.clientY);
+      setSelectionRect({
+        startX: coords.x,
+        startY: coords.y,
+        endX: coords.x,
+        endY: coords.y,
       });
-    } else if (resizingNodeId && !isReadOnly) {
-      const coords = getCanvasCoords(e.clientX, e.clientY);
-      const deltaX = coords.x - resizeStartCoords.x;
-      const deltaY = coords.y - resizeStartCoords.y;
-      
-      let newW = resizeStartSize.w + deltaX;
-      let newH = resizeStartSize.h + deltaY;
-      
-      newW = Math.round(newW / 10) * 10;
-      newH = Math.round(newH / 10) * 10;
-      
-      newW = Math.max(120, newW);
-      newH = Math.max(80, newH);
-      
-      setNodes(prev => prev.map(n => n.id === resizingNodeId ? { ...n, w: newW, h: newH } : n));
-    } else if (draggedNodeId && !isReadOnly) {
-      const coords = getCanvasCoords(e.clientX, e.clientY);
-      const newX = coords.x - dragStartOffset.x;
-      const newY = coords.y - dragStartOffset.y;
-      setNodes(prev => prev.map(n => n.id === draggedNodeId ? { ...n, x: Math.round(newX / 10) * 10, y: Math.round(newY / 10) * 10 } : n)); // 10px grid snap
-    } else if (connectingFromId && connectingTempCoords && !isReadOnly) {
-      const coords = getCanvasCoords(e.clientX, e.clientY);
-      setConnectingTempCoords(coords);
+    }
+    
+    if (onOpenInlineEditor) {
+      onOpenInlineEditor(null as any);
     }
   };
 
-  const handleCanvasPointerUp = (e?: React.PointerEvent) => {
-    setIsPanning(false);
-    if (!isReadOnly && (draggedNodeId || resizingNodeId)) {
-      void onSave(true);
-    }
-    
-    // Safety release for browser-specific stuck pointer captures
-    if (e && e.currentTarget) {
-      try {
-        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
-      } catch (err) {
-        // ignore
+  // Stable window event listeners for robust dragging/panning/resizing/connecting
+  useEffect(() => {
+    const handleWindowPointerMove = (e: PointerEvent) => {
+      const state = stateRef.current;
+      if (!state.draggedNodeId && !state.isPanning && !state.resizingNodeId && !state.connectingFromId && !state.selectionRect) {
+        return;
       }
-    }
-    
-    setDraggedNodeId(null);
-    setResizingNodeId(null);
-    setConnectingFromId(null);
-    setConnectingTempCoords(null);
-  };
+
+      if (state.isPanning) {
+        setPanOffset({
+          x: e.clientX - state.panStart.x,
+          y: e.clientY - state.panStart.y,
+        });
+      } else if (state.resizingNodeId && !state.isReadOnly) {
+        const coords = getCanvasCoordsStable(e.clientX, e.clientY, state.panOffset.x, state.panOffset.y, state.zoom);
+        const deltaX = coords.x - state.resizeStartCoords.x;
+        const deltaY = coords.y - state.resizeStartCoords.y;
+        
+        let newW = state.resizeStartSize.w;
+        let newH = state.resizeStartSize.h;
+        
+        if (state.resizeDirection === "e" || state.resizeDirection === "se") {
+          newW = state.resizeStartSize.w + deltaX;
+          newW = Math.round(newW / 10) * 10;
+          newW = Math.max(120, newW);
+        }
+        
+        if (state.resizeDirection === "s" || state.resizeDirection === "se") {
+          newH = state.resizeStartSize.h + deltaY;
+          newH = Math.round(newH / 10) * 10;
+          newH = Math.max(80, newH);
+        }
+        
+        setNodes(prev => prev.map(n => n.id === state.resizingNodeId ? { ...n, w: newW, h: newH } : n));
+      } else if (state.selectionRect) {
+        const coords = getCanvasCoordsStable(e.clientX, e.clientY, state.panOffset.x, state.panOffset.y, state.zoom);
+        setSelectionRect(prev => prev ? {
+          ...prev,
+          endX: coords.x,
+          endY: coords.y,
+        } : null);
+      } else if (state.draggedNodeId && !state.isReadOnly) {
+        const coords = getCanvasCoordsStable(e.clientX, e.clientY, state.panOffset.x, state.panOffset.y, state.zoom);
+        const newX = coords.x - state.dragStartOffset.x;
+        const newY = coords.y - state.dragStartOffset.y;
+        
+        setNodes(prev => {
+          const draggedNode = prev.find(n => n.id === state.draggedNodeId);
+          if (!draggedNode) return prev;
+          
+          const snappedX = Math.round(newX / 10) * 10;
+          const snappedY = Math.round(newY / 10) * 10;
+          const dx = snappedX - draggedNode.x;
+          const dy = snappedY - draggedNode.y;
+          
+          if (dx === 0 && dy === 0) return prev;
+          
+          const isMultiDrag = state.selectedNodeIds && state.selectedNodeIds.includes(state.draggedNodeId);
+          return prev.map(n => {
+            if (isMultiDrag ? state.selectedNodeIds!.includes(n.id) : n.id === state.draggedNodeId) {
+              return { ...n, x: n.x + dx, y: n.y + dy };
+            }
+            return n;
+          });
+        });
+      } else if (state.connectingFromId && !state.isReadOnly) {
+        const coords = getCanvasCoordsStable(e.clientX, e.clientY, state.panOffset.x, state.panOffset.y, state.zoom);
+        setConnectingTempCoords(coords);
+      }
+    };
+
+    const handleWindowPointerUp = (e: PointerEvent) => {
+      const state = stateRef.current;
+      setIsPanning(false);
+      
+      if (state.selectionRect) {
+        const rect = state.selectionRect;
+        const x1 = Math.min(rect.startX, rect.endX);
+        const x2 = Math.max(rect.startX, rect.endX);
+        const y1 = Math.min(rect.startY, rect.endY);
+        const y2 = Math.max(rect.startY, rect.endY);
+
+        // Find all intersecting nodes
+        const intersectingNodeIds = state.nodes.filter(node => {
+          const { w, h } = getNodeDimensions(node);
+          const nx1 = node.x;
+          const nx2 = node.x + w;
+          const ny1 = node.y;
+          const ny2 = node.y + h;
+          
+          return !(nx2 < x1 || nx1 > x2 || ny2 < y1 || ny1 > y2);
+        }).map(n => n.id);
+
+        if (setSelectedNodeIds) {
+          setSelectedNodeIds(prev => {
+            if (e.shiftKey) {
+              const next = [...prev];
+              intersectingNodeIds.forEach(id => {
+                if (!next.includes(id)) next.push(id);
+              });
+              return next;
+            } else {
+              return intersectingNodeIds;
+            }
+          });
+          if (intersectingNodeIds.length > 0) {
+            setSelectedNodeId(intersectingNodeIds[0]);
+          } else {
+            setSelectedNodeId(null);
+          }
+        } else if (toggleNodeSelection) {
+          if (e.shiftKey) {
+            intersectingNodeIds.forEach(id => {
+              if (!state.selectedNodeIds || !state.selectedNodeIds.includes(id)) {
+                toggleNodeSelection(id, true);
+              }
+            });
+          } else {
+            if (intersectingNodeIds.length > 0) {
+              setSelectedNodeId(intersectingNodeIds[0]);
+              intersectingNodeIds.slice(1).forEach(id => {
+                toggleNodeSelection(id, true);
+              });
+            } else {
+              setSelectedNodeId(null);
+            }
+          }
+        } else {
+          if (intersectingNodeIds.length > 0) {
+            setSelectedNodeId(intersectingNodeIds[0]);
+          } else {
+            setSelectedNodeId(null);
+          }
+        }
+
+        setSelectionRect(null);
+      }
+
+      if (!state.isReadOnly && (state.draggedNodeId || state.resizingNodeId)) {
+        void onSave(true);
+      }
+      
+      setDraggedNodeId(null);
+      setResizingNodeId(null);
+      setResizeDirection(null);
+      setConnectingFromId(null);
+      setConnectingTempCoords(null);
+    };
+
+    window.addEventListener("pointermove", handleWindowPointerMove, { passive: true });
+    window.addEventListener("pointerup", handleWindowPointerUp);
+    window.addEventListener("pointercancel", handleWindowPointerUp);
+
+    return () => {
+      window.removeEventListener("pointermove", handleWindowPointerMove);
+      window.removeEventListener("pointerup", handleWindowPointerUp);
+      window.removeEventListener("pointercancel", handleWindowPointerUp);
+    };
+  }, [onSave, getCanvasCoordsStable]);
 
   const handleZoom = useCallback((newZoom: number, clientX?: number, clientY?: number) => {
     const rect = canvasRef.current?.getBoundingClientRect();
@@ -449,10 +672,21 @@ export default function ProcessCanvas({
     }
   };
 
+  // Auto-recenter on initial load
+  const hasAutoCenteredRef = useRef(false);
+  useEffect(() => {
+    if (filteredNodes.length > 0 && !hasAutoCenteredRef.current) {
+      hasAutoCenteredRef.current = true;
+      const timer = setTimeout(() => {
+        handleRecenter();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [filteredNodes, handleRecenter]);
+
   const handleCanvasWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     
-    // Set isWheelZooming state and clear previous timeout to bypass transitional lagging
     setIsWheelZooming(true);
     if (wheelTimeoutRef.current) {
       clearTimeout(wheelTimeoutRef.current);
@@ -461,10 +695,10 @@ export default function ProcessCanvas({
       setIsWheelZooming(false);
     }, 150);
 
-    const zoomFactor = 0.05;
     const currentZoom = latestZoomRef.current;
-    let newZoom = currentZoom - e.deltaY * zoomFactor * 0.01;
-    newZoom = Math.max(0.3, Math.min(2.0, newZoom));
+    // Trackpad pinch or scroll deltaY
+    let newZoom = currentZoom * (1 - e.deltaY * 0.005);
+    newZoom = Math.max(0.1, Math.min(3.0, newZoom));
     handleZoom(newZoom, e.clientX, e.clientY);
   };
 
@@ -483,11 +717,6 @@ export default function ProcessCanvas({
         x: center.x,
         y: fromNode.y + h + 5,
       });
-      try {
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      } catch (err) {
-        // ignore
-      }
     }
   };
 
@@ -512,11 +741,12 @@ export default function ProcessCanvas({
   };
 
   // Start resizing
-  const handleStartResize = (e: React.PointerEvent, nodeId: string) => {
+  const handleStartResize = (e: React.PointerEvent, nodeId: string, dir: "e" | "s" | "se") => {
     e.stopPropagation();
     e.preventDefault();
     if (isReadOnly) return;
     setResizingNodeId(nodeId);
+    setResizeDirection(dir);
 
     const node = nodes.find(n => n.id === nodeId);
     if (node) {
@@ -524,18 +754,27 @@ export default function ProcessCanvas({
       setResizeStartSize({ w, h });
       const coords = getCanvasCoords(e.clientX, e.clientY);
       setResizeStartCoords({ x: coords.x, y: coords.y });
-      try {
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      } catch (err) {
-        // ignore
-      }
     }
   };
+
+  const clickStartCoords = useRef({ x: 0, y: 0 });
 
   // Drag node start
   const handleNodePointerDown = (e: React.PointerEvent, nodeId: string) => {
     e.stopPropagation();
-    setSelectedNodeId(nodeId);
+    clickStartCoords.current = { x: e.clientX, y: e.clientY };
+    
+    if (e.shiftKey && toggleNodeSelection) {
+      toggleNodeSelection(nodeId, true);
+    } else {
+      if (selectedNodeIds && !selectedNodeIds.includes(nodeId)) {
+        if (toggleNodeSelection) toggleNodeSelection(nodeId, false);
+        else setSelectedNodeId(nodeId);
+      } else if (!selectedNodeIds) {
+        setSelectedNodeId(nodeId);
+      }
+    }
+
     if (isReadOnly) return;
     setDraggedNodeId(nodeId);
 
@@ -546,11 +785,16 @@ export default function ProcessCanvas({
         x: coords.x - node.x,
         y: coords.y - node.y,
       });
-      try {
-        (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-      } catch (err) {
-        // ignore
-      }
+    }
+  };
+
+  const handleNodeClick = (e: React.MouseEvent, node: Node) => {
+    e.stopPropagation();
+    // Only trigger click if mouse didn't move significantly (i.e. it wasn't a drag)
+    const dx = Math.abs(e.clientX - clickStartCoords.current.x);
+    const dy = Math.abs(e.clientY - clickStartCoords.current.y);
+    if (dx < 5 && dy < 5 && onNodeClick) {
+      onNodeClick(node);
     }
   };
 
@@ -568,13 +812,16 @@ export default function ProcessCanvas({
   return (
     <div
       ref={canvasRef}
-      className="flex-1 h-full relative cursor-grab active:cursor-grabbing overflow-hidden bg-[#F4F1EE] dark:bg-background"
+      className={`absolute inset-0 overflow-hidden bg-[#F4F1EE] dark:bg-background ${
+        isPanning
+          ? "cursor-grabbing"
+          : isSpacePressed
+          ? "cursor-grab"
+          : "cursor-default"
+      }`}
       onPointerDown={handleCanvasPointerDown}
-      onPointerMove={handleCanvasPointerMove}
-      onPointerUp={handleCanvasPointerUp}
-      onPointerCancel={handleCanvasPointerUp}
       onWheel={handleCanvasWheel}
-      style={{ touchAction: "none" }}
+      style={{ touchAction: "none", overscrollBehavior: "none" }}
     >
       {/* Dot Grid Background */}
       <div
@@ -681,6 +928,7 @@ export default function ProcessCanvas({
                     className="cursor-pointer pointer-events-auto"
                     onMouseEnter={() => setHoveredConnectionId(conn.id)}
                     onMouseLeave={() => setHoveredConnectionId(null)}
+                    onPointerDown={(e) => e.stopPropagation()}
                     onClick={(e) => {
                       e.stopPropagation();
                       setHoveredConnectionId(prev => prev === conn.id ? null : conn.id);
@@ -737,6 +985,7 @@ export default function ProcessCanvas({
               }`}
               onMouseEnter={() => setHoveredConnectionId(conn.id)}
               onMouseLeave={() => setHoveredConnectionId(null)}
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <button
                 onClick={() => handleDeleteConnection(conn.id)}
@@ -750,27 +999,29 @@ export default function ProcessCanvas({
 
         {/* Nodes Render Layer */}
         {filteredNodes.map((node) => {
-          const isSelected = selectedNodeId === node.id;
+          const isSelected = selectedNodeId === node.id || (selectedNodeIds && selectedNodeIds.includes(node.id));
+          const isHighlighted = isSelected || isNodeIntersecting(node, selectionRect);
           const { w, h } = getNodeDimensions(node);
           const isCircle = node.type === "appointment" || (node.type === "custom_shape" && node.shape === "circle");
           const roundedClass = isCircle ? "rounded-full" : "rounded-3xl";
-          const colors = getPastelColor(node.color, node.type);
+          const colors = getNodeColors(node);
 
           return (
             <div
               key={node.id}
               onPointerDown={(e) => handleNodePointerDown(e, node.id)}
               onPointerUp={(e) => handleNodePointerUp(e, node.id)}
+              onClick={(e) => handleNodeClick(e, node)}
               onDoubleClick={(e) => {
                 e.stopPropagation();
                 if (onOpenInlineEditor && (node.type === "exercise" || node.type === "task" || node.type === "reflection")) {
                   void onOpenInlineEditor(node);
                 }
               }}
-              className={`absolute pointer-events-auto transition-[background-color,border-color,box-shadow,ring] duration-200 z-10 group ${roundedClass} ${
-                isSelected
-                  ? "ring-4 ring-[#8B5CF6]/50 shadow-xl shadow-[#1F3A5F]/10"
-                  : "shadow-[0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_8px_20px_rgba(0,0,0,0.12)]"
+              className={`absolute pointer-events-auto transition-all duration-300 z-10 group overflow-hidden ${roundedClass} bg-card backdrop-blur-xl ${
+                isHighlighted
+                  ? "ring-2 ring-offset-2 z-20 scale-[1.02]"
+                  : "hover:-translate-y-1 shadow-md"
               }`}
               style={{
                 left: `${node.x}px`,
@@ -778,45 +1029,100 @@ export default function ProcessCanvas({
                 width: `${w}px`,
                 height: `${h}px`,
                 cursor: isReadOnly ? "default" : "grab",
-                borderStyle: "solid",
-                borderWidth: colors.isHeavyBorder ? "3px" : "1.5px",
-                borderColor: colors.border,
-                backgroundColor: colors.bg,
+                borderStyle: node.borderStyle === "none" ? "none" : (node.borderStyle || "solid"),
+                borderWidth: node.borderStyle === "none" ? "0px" : (node.borderWidth !== undefined ? `${node.borderWidth}px` : "2px"),
+                borderColor: node.borderStyle === "none" ? "transparent" : colors.border,
+                boxShadow: isHighlighted 
+                  ? `0 20px 40px -12px ${colors.accent}60, 0 0 0 2px ${colors.accent}40`
+                  : `0 10px 30px -10px ${colors.accent}40, 0 4px 12px rgba(0,0,0,0.08)`,
                 touchAction: "none",
+                ...(isHighlighted ? { '--tw-ring-color': colors.accent } as any : {})
               }}
             >
-              {/* Resize Handle */}
-              {isSelected && !isReadOnly && node.type === "custom_shape" && (
-                <div
-                  onPointerDown={(e) => handleStartResize(e, node.id)}
-                  style={{ touchAction: "none" }}
-                  className="absolute bottom-2 right-2 w-3.5 h-3.5 cursor-se-resize flex items-center justify-center z-30 opacity-60 hover:opacity-100 transition-opacity"
-                >
-                  <svg width="10" height="10" viewBox="0 0 10 10" className="text-muted-foreground hover:text-primary">
-                    <line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    <line x1="8" y1="5" x2="5" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                    <line x1="8" y1="8" x2="8" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
-                </div>
+              {/* Premium Background Tint */}
+              <div 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ 
+                  backgroundColor: colors.accent,
+                  opacity: 0.12
+                }} 
+              />
+              {/* Premium Gradient Overlay */}
+              <div 
+                className="absolute inset-0 pointer-events-none" 
+                style={{ background: `linear-gradient(135deg, ${colors.accent}40, transparent)` }} 
+              />
+              
+              {/* Edge/Corner Resizing Handles */}
+              {!isReadOnly && (
+                <>
+                  {/* East edge resize handle */}
+                  <div
+                    onPointerDown={(e) => handleStartResize(e, node.id, "e")}
+                    style={{ touchAction: "none" }}
+                    className="absolute top-0 right-0 w-1.5 h-full cursor-ew-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Breite anpassen"
+                  >
+                    <div 
+                      className="w-[2px] h-8 rounded-full" 
+                      style={{ backgroundColor: colors.accent }} 
+                    />
+                  </div>
+
+                  {/* South edge resize handle */}
+                  <div
+                    onPointerDown={(e) => handleStartResize(e, node.id, "s")}
+                    style={{ touchAction: "none" }}
+                    className="absolute bottom-0 left-0 w-full h-1.5 cursor-ns-resize flex items-center justify-center z-30 opacity-0 group-hover:opacity-100 transition-opacity"
+                    title="Höhe anpassen"
+                  >
+                    <div 
+                      className="h-[2px] w-8 rounded-full" 
+                      style={{ backgroundColor: colors.accent }} 
+                    />
+                  </div>
+
+                  {/* South-East corner resize handle */}
+                  <div
+                    onPointerDown={(e) => handleStartResize(e, node.id, "se")}
+                    style={{ touchAction: "none" }}
+                    className="absolute bottom-0 right-0 w-3.5 h-3.5 cursor-se-resize flex items-center justify-center z-30 opacity-60 hover:opacity-100 transition-opacity"
+                    title="Größe anpassen"
+                  >
+                    <svg width="8" height="8" viewBox="0 0 10 10" style={{ color: colors.accent }}>
+                      <line x1="8" y1="2" x2="2" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      <line x1="8" y1="5" x2="5" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                      <line x1="8" y1="8" x2="8" y2="8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                    </svg>
+                  </div>
+                </>
               )}
               {/* Connection Point bottom center */}
               {!isReadOnly && (
                 <div
-                  className="absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-crosshair opacity-0 group-hover:opacity-100 transition-opacity shadow-md z-20"
+                  className={`absolute bottom-[-10px] left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center cursor-crosshair transition-opacity shadow-md z-20 ${
+                    isHighlighted ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+                  }`}
                   onPointerDown={(e) => handleStartConnection(e, node.id)}
                   style={{ touchAction: "none" }}
+                  title="Verbindungslinie ziehen"
                 >
-                  <Plus size={12} />
+                  <ArrowDown size={12} />
                 </div>
               )}
 
               {/* Uniform Whiteboard Cards Render Layout */}
               {node.type !== "custom_shape" ? (
                 node.type === "checkin" ? (
-                  <div className="flex flex-col justify-between p-2.5 h-full w-full select-none relative">
+                  <div className="flex flex-col justify-between p-3.5 h-full w-full select-none relative">
                     {/* Top row: Heart Icon & Mood Emoji */}
                     <div className="flex items-center justify-between w-full shrink-0">
-                      <Heart size={14} className="text-pink-500 fill-pink-500 shrink-0" />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Heart size={14} className="text-pink-500 fill-pink-500 shrink-0" />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider opacity-60 text-pink-700 dark:text-pink-400 truncate">
+                          Check-In
+                        </span>
+                      </div>
                       <span className="text-sm leading-none shrink-0" title={`Stimmung: ${node.metadata?.mood || '?'}/5`}>
                         {typeof node.metadata?.mood === "number"
                           ? node.metadata.mood >= 4
@@ -829,17 +1135,17 @@ export default function ProcessCanvas({
                     </div>
 
                     {/* Center: Title / Note */}
-                    <div className="flex-1 flex flex-col justify-center items-center my-0.5 min-w-0 text-center">
+                    <div className="flex-1 flex flex-col justify-center my-1 min-w-0">
                       <h3 
-                        className="text-[9px] font-black text-foreground line-clamp-2 leading-snug break-words"
-                        style={{ color: colors.text }}
+                        className="text-[11px] font-extrabold text-foreground line-clamp-2 leading-snug break-words"
+                        style={{ color: colors.accent }}
                       >
                         {node.title}
                       </h3>
                       {node.metadata?.note && (
                         <p 
-                          className="text-[7.5px] italic opacity-85 truncate max-w-full mt-0.5 px-0.5"
-                          style={{ color: colors.text }}
+                          className="text-[9px] italic opacity-85 truncate max-w-full mt-0.5"
+                          style={{ color: colors.accent }}
                           title={node.metadata.note}
                         >
                           "{node.metadata.note}"
@@ -851,59 +1157,96 @@ export default function ProcessCanvas({
                     <div className="w-full space-y-1 mt-auto shrink-0">
                       {typeof node.metadata?.mood === "number" && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[7px] font-black opacity-75 w-4 text-left shrink-0" style={{ color: colors.text }}>Sti</span>
+                          <span className="text-[7.5px] font-black opacity-75 w-5 text-left shrink-0" style={{ color: colors.accent }}>Stimm.</span>
                           <div className="flex-1 h-1 bg-pink-100 dark:bg-pink-950/40 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-pink-500 rounded-full"
                               style={{ width: `${(node.metadata.mood / 5) * 100}%` }}
                             />
                           </div>
-                          <span className="text-[7px] font-black opacity-75 shrink-0" style={{ color: colors.text }}>{node.metadata.mood}</span>
+                          <span className="text-[7.5px] font-black opacity-75 shrink-0" style={{ color: colors.accent }}>{node.metadata.mood}/5</span>
                         </div>
                       )}
                       {typeof node.metadata?.energy === "number" && (
                         <div className="flex items-center gap-1">
-                          <span className="text-[7px] font-black opacity-75 w-4 text-left shrink-0" style={{ color: colors.text }}>Ene</span>
+                          <span className="text-[7.5px] font-black opacity-75 w-5 text-left shrink-0" style={{ color: colors.accent }}>Energ.</span>
+                          <span className="text-[7.5px] font-black opacity-75 w-5 text-left shrink-0 text-foreground">Energ.</span>
                           <div className="flex-1 h-1 bg-orange-100 dark:bg-orange-950/40 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-orange-500 rounded-full"
                               style={{ width: `${(node.metadata.energy / 5) * 100}%` }}
                             />
                           </div>
-                          <span className="text-[7px] font-black opacity-75 shrink-0" style={{ color: colors.text }}>{node.metadata.energy}</span>
+                          <span className="text-[7.5px] font-black opacity-75 shrink-0 text-foreground">{node.metadata.energy}/5</span>
                         </div>
                       )}
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-between p-3 text-center h-full w-full select-none relative">
-                    {/* Completed Badge */}
-                    {!!node.metadata?.completed && (
-                      <div className="absolute top-1.5 right-1.5 bg-emerald-500 text-white rounded-full p-0.5 border border-white z-20 shadow-sm">
-                        <CheckCircle2 size={10} className="stroke-[3]" />
+                  <div className="flex flex-col justify-between p-3.5 h-full w-full select-none relative z-10">
+                    {/* Top Row: Icon & Type Label & Completed Badge */}
+                    <div className="flex items-center justify-between w-full gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <div className="shrink-0" style={{ color: colors.accent }}>
+                          {getIconForNodeType(node.type, 14)}
+                        </div>
+                        <span className="text-[8.5px] font-black uppercase tracking-wider truncate" style={{ color: colors.accent }}>
+                          {node.type === "anamnese" ? "Anamnese" :
+                           node.type === "exercise" ? "Übung" :
+                           node.type === "task" ? "Aufgabe" :
+                           node.type === "reflection" ? "Reflexion" :
+                           node.type === "appointment" ? "Termin" :
+                           node.type === "note" ? "Notiz" :
+                           node.type === "milestone" ? "Meilenstein" : node.type}
+                        </span>
                       </div>
-                    )}
-                    {/* Icon */}
-                    <div className="mt-1" style={{ color: colors.text }}>
-                      {getIconForNodeType(node.type)}
+                      
+                      {/* Completed/Pending Status Indicator */}
+                      {node.metadata?.completed !== undefined && (
+                        <div className={`text-[8px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                          node.metadata.completed
+                            ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                            : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                        }`}>
+                          {node.metadata.completed ? "Erledigt" : "Offen"}
+                        </div>
+                      )}
                     </div>
-                    {/* Title */}
-                    <div className="flex-1 flex items-center justify-center my-1 px-1">
+
+                    {/* Middle: Title & Description / Prompt */}
+                    <div className="flex-1 flex flex-col justify-center min-w-0 my-1">
                       <h3 
-                        className="text-[10px] font-black line-clamp-3 leading-snug break-words"
-                        style={{ color: colors.text }}
+                        className="text-[11px] font-extrabold line-clamp-2 leading-snug break-words text-foreground"
                       >
                         {node.title}
                       </h3>
+                      {node.metadata?.description && (
+                        <p className="text-[9px] text-muted-foreground leading-tight line-clamp-2 mt-0.5 break-words">
+                          {node.metadata.description}
+                        </p>
+                      )}
+                      {node.type === "reflection" && node.metadata?.prompt && (
+                        <p 
+                          className="text-[9px] line-clamp-2 leading-normal mt-0.5 italic font-medium opacity-80"
+                          style={{ color: colors.accent }}
+                        >
+                          "{node.metadata.prompt}"
+                        </p>
+                      )}
                     </div>
-                    {/* Subtitle */}
+
+                    {/* Bottom Row: Date / Details */}
                     {(() => {
                       const subtitle = getSubtitleForNodeType(node);
-                      if (!subtitle) return <div className="h-2" />; // spacer
+                      if (!subtitle && !node.metadata?.date && !node.metadata?.dueDate) return <div className="h-1.5 shrink-0" />; // spacer
+                      const displayDate = subtitle || node.metadata?.date || node.metadata?.dueDate;
                       return (
-                        <span className="text-[8px] font-bold opacity-75 truncate max-w-full" style={{ color: colors.text }}>
-                          {subtitle}
-                        </span>
+                        <div 
+                          className="mt-auto pt-1 border-t border-border flex justify-between items-center text-[8px] font-bold shrink-0 leading-none"
+                          style={{ color: colors.accent }}
+                        >
+                          <span>{displayDate}</span>
+                        </div>
                       );
                     })()}
                   </div>
@@ -918,12 +1261,46 @@ export default function ProcessCanvas({
             </div>
           );
         })}
-      </div>
 
-      {/* Floating Canvas Filters (Bottom Left) */}
-      <div className="absolute bottom-6 left-6 flex flex-wrap gap-2 z-20 pointer-events-auto select-none">
-        <div className="flex bg-card/85 backdrop-blur-xl border border-border/80 p-1.5 rounded-2xl shadow-xl gap-1">
+        {/* Marquee Selection Rectangle */}
+        {selectionRect && (
+          <div
+            className="absolute border border-[#8B5CF6]/50 bg-[#8B5CF6]/8 rounded-md z-30 pointer-events-none"
+            style={{
+              left: `${Math.min(selectionRect.startX, selectionRect.endX)}px`,
+              top: `${Math.min(selectionRect.startY, selectionRect.endY)}px`,
+              width: `${Math.abs(selectionRect.endX - selectionRect.startX)}px`,
+              height: `${Math.abs(selectionRect.endY - selectionRect.startY)}px`,
+              boxShadow: "0 0 12px rgba(139, 92, 246, 0.15)",
+            }}
+          />
+        )}
+
+         {/* Floating Canvas Filters (Bottom Left) */}
+      <motion.div 
+        drag
+        dragMomentum={false}
+        className="absolute bottom-6 left-6 flex flex-wrap gap-2 z-20 pointer-events-auto select-none cursor-grab active:cursor-grabbing"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
+        {!showFilters ? (
           <button
+            onClick={() => setShowFilters(true)}
+            className="flex items-center justify-center bg-card/85 backdrop-blur-xl border border-border/80 p-3 rounded-2xl shadow-xl hover:bg-secondary transition-colors text-foreground"
+            title="Filter anzeigen"
+          >
+            <Settings size={18} />
+          </button>
+        ) : (
+          <div className="flex bg-card/85 backdrop-blur-xl border border-border/80 p-1.5 rounded-2xl shadow-xl gap-1 items-center">
+            <button
+              onClick={() => setShowFilters(false)}
+              className="p-1.5 mr-1 text-muted-foreground hover:bg-secondary rounded-lg transition-colors"
+              title="Filter ausblenden"
+            >
+              <X size={14} />
+            </button>
+            <button
             onClick={() => {
               setShowAppointments(true);
               setShowDiaries(true);
@@ -1013,10 +1390,15 @@ export default function ProcessCanvas({
             Check-Ins
           </button>
         </div>
+        )}
+      </motion.div>
       </div>
 
       {/* Floating Canvas Controls (Zoom In, Zoom Out, Maximize) */}
-      <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-20 pointer-events-auto">
+      <div 
+        className="absolute bottom-6 right-6 flex flex-col gap-2 z-20 pointer-events-auto"
+        onPointerDown={(e) => e.stopPropagation()}
+      >
         <div className="flex flex-col bg-card border border-border shadow-lg rounded-2xl overflow-hidden">
           <button
             onClick={() => handleZoom(Math.min(2.0, zoom + 0.1))}
