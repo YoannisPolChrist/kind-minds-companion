@@ -406,12 +406,15 @@ export default function ProcessCanvas({
     const isMiddleClick = e.button === 1;
     const isRightClick = e.button === 2;
     const isSpace = isSpacePressedRef.current;
+    const isShift = e.shiftKey;
 
-    if (isTouch || isMiddleClick || isRightClick || isSpace) {
+    clickStartCoords.current = { x: e.clientX, y: e.clientY };
+
+    if (isTouch || isMiddleClick || isRightClick || isSpace || (e.button === 0 && !isShift)) {
       setIsPanning(true);
       setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y });
-    } else if (e.button === 0) {
-      // Left click on canvas empty space starts marquee select
+    } else if (e.button === 0 && isShift) {
+      // Left click with Shift on canvas empty space starts marquee select
       if (clearSelection) clearSelection();
       else setSelectedNodeId(null);
       
@@ -502,6 +505,17 @@ export default function ProcessCanvas({
 
     const handleWindowPointerUp = (e: PointerEvent) => {
       const state = stateRef.current;
+      
+      // If we were panning on standard left click, check if it was just a simple background click (no actual drag)
+      if (state.isPanning && e.button === 0 && !e.shiftKey && !isSpacePressedRef.current) {
+        const dx = Math.abs(e.clientX - clickStartCoords.current.x);
+        const dy = Math.abs(e.clientY - clickStartCoords.current.y);
+        if (dx < 5 && dy < 5) {
+          if (clearSelection) clearSelection();
+          else setSelectedNodeId(null);
+        }
+      }
+      
       setIsPanning(false);
       
       if (state.selectionRect) {
@@ -534,11 +548,7 @@ export default function ProcessCanvas({
               return intersectingNodeIds;
             }
           });
-          if (intersectingNodeIds.length > 0) {
-            setSelectedNodeId(intersectingNodeIds[0]);
-          } else {
-            setSelectedNodeId(null);
-          }
+          // Do not call setSelectedNodeId here, because it resets the multi-selection state in parent.
         } else if (toggleNodeSelection) {
           if (e.shiftKey) {
             intersectingNodeIds.forEach(id => {
@@ -696,10 +706,23 @@ export default function ProcessCanvas({
     }, 150);
 
     const currentZoom = latestZoomRef.current;
-    // Trackpad pinch or scroll deltaY
-    let newZoom = currentZoom * (1 - e.deltaY * 0.005);
-    newZoom = Math.max(0.1, Math.min(3.0, newZoom));
-    handleZoom(newZoom, e.clientX, e.clientY);
+
+    if (e.ctrlKey) {
+      // Zoom on trackpad pinch or Ctrl + mouse wheel scroll
+      let newZoom = currentZoom * (1 - e.deltaY * 0.005);
+      newZoom = Math.max(0.1, Math.min(3.0, newZoom));
+      handleZoom(newZoom, e.clientX, e.clientY);
+    } else {
+      // Pan on two-finger trackpad swipe or mouse scroll wheel
+      // If Shift key is held while scrolling with a mouse wheel, scroll horizontally.
+      const dx = e.shiftKey ? e.deltaY : e.deltaX;
+      const dy = e.shiftKey ? 0 : e.deltaY;
+
+      setPanOffset(prev => ({
+        x: prev.x - dx / currentZoom,
+        y: prev.y - dy / currentZoom
+      }));
+    }
   };
 
   // Start connecting from edge handle
@@ -793,8 +816,19 @@ export default function ProcessCanvas({
     // Only trigger click if mouse didn't move significantly (i.e. it wasn't a drag)
     const dx = Math.abs(e.clientX - clickStartCoords.current.x);
     const dy = Math.abs(e.clientY - clickStartCoords.current.y);
-    if (dx < 5 && dy < 5 && onNodeClick) {
-      onNodeClick(node);
+    if (dx < 5 && dy < 5) {
+      // Clear multi-selection on standard click (without shift)
+      if (!e.shiftKey) {
+        if (toggleNodeSelection) {
+          toggleNodeSelection(node.id, false);
+        } else {
+          setSelectedNodeId(node.id);
+        }
+      }
+      
+      if (onNodeClick) {
+        onNodeClick(node);
+      }
     }
   };
 
@@ -1170,16 +1204,241 @@ export default function ProcessCanvas({
                       {typeof node.metadata?.energy === "number" && (
                         <div className="flex items-center gap-1">
                           <span className="text-[7.5px] font-black opacity-75 w-5 text-left shrink-0" style={{ color: colors.accent }}>Energ.</span>
-                          <span className="text-[7.5px] font-black opacity-75 w-5 text-left shrink-0 text-foreground">Energ.</span>
                           <div className="flex-1 h-1 bg-orange-100 dark:bg-orange-950/40 rounded-full overflow-hidden">
                             <div
                               className="h-full bg-orange-500 rounded-full"
                               style={{ width: `${(node.metadata.energy / 5) * 100}%` }}
                             />
                           </div>
-                          <span className="text-[7.5px] font-black opacity-75 shrink-0 text-foreground">{node.metadata.energy}/5</span>
+                          <span className="text-[7.5px] font-black opacity-75 shrink-0" style={{ color: colors.accent }}>{node.metadata.energy}/5</span>
                         </div>
                       )}
+                    </div>
+                  </div>
+                ) : node.type === "appointment" ? (() => {
+                  // Ring-Binder Calendar Page design
+                  let day = "12";
+                  let month = "JUN";
+                  let time = "14:00";
+                  if (node.metadata?.date) {
+                    const withTime = node.metadata.date.split(",");
+                    if (withTime.length > 1) {
+                      time = withTime[1].trim();
+                    }
+                    const dateParts = withTime[0].split(".");
+                    if (dateParts.length >= 2) {
+                      day = dateParts[0].trim();
+                      const m = parseInt(dateParts[1], 10);
+                      const months = ["JAN", "FEB", "MÄR", "APR", "MAI", "JUN", "JUL", "AUG", "SEP", "OKT", "NOV", "DEZ"];
+                      if (m >= 1 && m <= 12) month = months[m - 1];
+                    }
+                  }
+                  return (
+                    <div className="flex flex-col h-full w-full select-none relative">
+                      {/* Spiral notebook red top bar with punch holes */}
+                      <div className="h-5 bg-gradient-to-r from-rose-500 to-rose-600 w-full flex justify-around items-center px-4 relative shrink-0">
+                        {/* Silver spiral rings */}
+                        <div className="absolute top-[-3px] left-4 w-1.5 h-3 bg-gradient-to-r from-slate-200 to-slate-400 rounded-full shadow-sm" />
+                        <div className="absolute top-[-3px] left-12 w-1.5 h-3 bg-gradient-to-r from-slate-200 to-slate-400 rounded-full shadow-sm" />
+                        <div className="absolute top-[-3px] right-12 w-1.5 h-3 bg-gradient-to-r from-slate-200 to-slate-400 rounded-full shadow-sm" />
+                        <div className="absolute top-[-3px] right-4 w-1.5 h-3 bg-gradient-to-r from-slate-200 to-slate-400 rounded-full shadow-sm" />
+                        {/* Tiny white punch holes */}
+                        <span className="w-2 h-2 rounded-full bg-[#FFFDF9] dark:bg-[#1A1A1A] block opacity-90 shadow-inner" />
+                        <span className="w-2 h-2 rounded-full bg-[#FFFDF9] dark:bg-[#1A1A1A] block opacity-90 shadow-inner" />
+                        <span className="w-2 h-2 rounded-full bg-[#FFFDF9] dark:bg-[#1A1A1A] block opacity-90 shadow-inner" />
+                        <span className="w-2 h-2 rounded-full bg-[#FFFDF9] dark:bg-[#1A1A1A] block opacity-90 shadow-inner" />
+                      </div>
+                      
+                      {/* Calendar page body */}
+                      <div className="flex-1 flex flex-col justify-center items-center px-3 py-1 relative">
+                        <div className="text-3xl font-black text-rose-500 tracking-tighter leading-none">{day}</div>
+                        <div className="text-[8px] font-black uppercase tracking-widest text-muted-foreground mt-0.5">{month}</div>
+                        
+                        <div className="mt-1 text-center w-full truncate px-1 text-[10px] font-extrabold text-foreground" style={{ color: colors.accent }}>
+                          {node.title}
+                        </div>
+                        
+                        {/* Time stamp pill */}
+                        <div className="mt-1 px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-600 font-extrabold text-[7.5px] leading-none">
+                          {time} Uhr
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })() : node.type === "note" ? (
+                  /* Yellow textured corkboard sticky note design */
+                  <div className="flex flex-col h-full w-full select-none relative p-3 bg-[#FFFDF0] dark:bg-[#FFFDF0]">
+                    {/* Metal paperclip in top-left */}
+                    <div className="absolute top-[-4px] left-3 text-slate-400 rotate-[25deg] select-none text-[15px] filter drop-shadow-sm shrink-0">📎</div>
+                    {/* Folded page corner representation in bottom-right */}
+                    <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-gradient-to-br from-transparent via-[#EADCB9] to-[#E3D1A5] rounded-tl-md shadow-sm pointer-events-none" />
+                    
+                    {/* Title in handwriting-like script */}
+                    <h4 className="font-serif italic text-xs font-black text-blue-900 border-b border-blue-200/30 pb-0.5 line-clamp-1 truncate max-w-[85%] mt-1 ml-3">
+                      {node.title}
+                    </h4>
+
+                    {/* Paper writing lines representing handwriting */}
+                    <div className="flex-1 flex flex-col justify-center space-y-1.5 mt-2 ml-1 text-left">
+                      <p className="font-serif text-[9px] text-blue-800/80 leading-normal italic line-clamp-3">
+                        {node.metadata?.description || "Keine Notizen..."}
+                      </p>
+                    </div>
+                  </div>
+                ) : node.type === "task" ? (
+                  /* High-fidelity checklists snapshot */
+                  <div className="flex flex-col justify-between p-3.5 h-full w-full select-none relative">
+                    <div className="flex items-center justify-between w-full shrink-0 gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <CheckCircle size={12} className="text-amber-500 shrink-0" />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider opacity-60 text-amber-700 dark:text-amber-400 truncate">
+                          Aufgabe
+                        </span>
+                      </div>
+                      <div className={`text-[7.5px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                        node.metadata?.completed
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                          : "bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20"
+                      }`}>
+                        {node.metadata?.completed ? "Erledigt" : "Offen"}
+                      </div>
+                    </div>
+
+                    {/* Checklist task layout */}
+                    <div className="flex-1 flex items-center gap-2 my-1.5 text-left min-w-0">
+                      {node.metadata?.completed ? (
+                        <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[9px] shrink-0 border border-emerald-600/30">
+                          ✓
+                        </div>
+                      ) : (
+                        <div className="w-3.5 h-3.5 rounded-full bg-background border-2 border-amber-500 shrink-0" />
+                      )}
+                      
+                      <div className="min-w-0">
+                        <h3 className={`text-[11px] font-extrabold break-words text-foreground ${node.metadata?.completed ? 'line-through opacity-50' : ''}`}>
+                          {node.title}
+                        </h3>
+                        {node.metadata?.description && (
+                          <p className="text-[8px] text-muted-foreground truncate max-w-full">
+                            {node.metadata.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Due Date alarm footer */}
+                    {node.metadata?.dueDate && (
+                      <div className="mt-auto shrink-0 flex items-center gap-1 text-[7.5px] font-black text-amber-600">
+                        <Clock size={9} />
+                        <span>Bis: {new Date(node.metadata.dueDate).toLocaleDateString("de-DE", { dateStyle: "short" })}</span>
+                      </div>
+                    )}
+                  </div>
+                ) : node.type === "reflection" ? (
+                  /* Dialogue speech bubbles preview snapshot */
+                  <div className="flex flex-col justify-between p-3.5 h-full w-full select-none relative">
+                    <div className="flex items-center gap-1.5 shrink-0 mb-1">
+                      <MessageCircle size={12} className="text-cyan-500 shrink-0" />
+                      <span className="text-[8.5px] font-black uppercase tracking-wider opacity-60 text-cyan-700 dark:text-cyan-400 truncate">
+                        Reflexion
+                      </span>
+                    </div>
+
+                    {/* Dialogue box */}
+                    <div className="flex-1 flex flex-col justify-center space-y-1 min-w-0">
+                      {/* Therapist question bubble */}
+                      <div className="bg-primary/10 text-primary border border-primary/20 text-[8.5px] font-bold rounded-2xl rounded-tl-none p-1.5 line-clamp-1 max-w-[85%] text-left">
+                        "{node.metadata?.prompt || "Frage..."}"
+                      </div>
+                      
+                      {/* Client response bubble */}
+                      {node.metadata?.response ? (
+                        <div className="bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 text-[8.5px] font-bold rounded-2xl rounded-tr-none p-1.5 line-clamp-1 max-w-[85%] ml-auto text-right italic">
+                          "{node.metadata.response}"
+                        </div>
+                      ) : (
+                        <div className="bg-muted text-muted-foreground text-[8px] rounded-2xl rounded-tr-none p-1.5 line-clamp-1 max-w-[85%] ml-auto text-right italic font-medium">
+                          Warte auf Antwort...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : node.type === "exercise" ? (
+                  /* Course notebook preview layout */
+                  <div className="flex flex-col justify-between p-3.5 h-full w-full select-none relative text-left">
+                    {/* Pink margin line on the left resembling a course book page */}
+                    <div className="absolute left-2.5 top-0 bottom-0 w-[1px] bg-rose-400/30" />
+                    
+                    <div className="flex items-center justify-between w-full shrink-0 gap-1.5 pl-2">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <BookOpen size={12} className="text-indigo-500 shrink-0" />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider opacity-60 text-indigo-700 dark:text-indigo-400 truncate">
+                          Übung
+                        </span>
+                      </div>
+                      <div className={`text-[7.5px] font-black px-1.5 py-0.5 rounded-md leading-none shrink-0 ${
+                        node.metadata?.completed
+                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20"
+                          : "bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-500/20"
+                      }`}>
+                        {node.metadata?.completed ? "Erledigt" : "Offen"}
+                      </div>
+                    </div>
+
+                    {/* Miniature course checkboxes */}
+                    <div className="flex-1 flex flex-col justify-center space-y-0.5 pl-4 py-1">
+                      <h4 className="text-[10px] font-black text-foreground truncate max-w-full">
+                        {node.title}
+                      </h4>
+                      <div className="space-y-0.5 text-[7px] font-bold text-muted-foreground shrink-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-emerald-500 shrink-0">✓</span>
+                          <span className="truncate">Theorie & Erklärung</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className={node.metadata?.completed ? "text-emerald-500" : "text-muted-foreground"}>
+                            {node.metadata?.completed ? "✓" : "○"}
+                          </span>
+                          <span className="truncate">Reflexionsübung</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : node.type === "anamnese" ? (
+                  /* Clinical baseline scale mini snapshot */
+                  <div className="flex flex-col justify-between p-3.5 h-full w-full select-none relative text-left">
+                    <div className="flex items-center justify-between w-full shrink-0 gap-1.5">
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <Activity size={12} className="text-purple-500 shrink-0 animate-pulse" />
+                        <span className="text-[8.5px] font-black uppercase tracking-wider opacity-60 text-purple-700 dark:text-purple-400 truncate">
+                          Anamnese
+                        </span>
+                      </div>
+                      <div className="text-[7.5px] font-black px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 border border-purple-500/20 rounded-md leading-none shrink-0">
+                        Baseline
+                      </div>
+                    </div>
+
+                    {/* Mini horizontal gradient bars from baseline metrics! */}
+                    <div className="flex-1 flex flex-col justify-center space-y-1 my-1">
+                      {[
+                        { label: "Energie", val: baseline?.metrics?.energy || 6, color: "from-amber-400 to-orange-500" },
+                        { label: "Regulation", val: baseline?.metrics?.regulation || 5, color: "from-emerald-400 to-teal-500" },
+                        { label: "Resilienz", val: baseline?.metrics?.resilience || 6, color: "from-rose-400 to-pink-500" },
+                      ].map((bar, i) => (
+                        <div key={i} className="space-y-0.5 shrink-0">
+                          <div className="flex justify-between text-[7px] font-extrabold text-foreground leading-none">
+                            <span className="opacity-75">{bar.label}</span>
+                            <span>{bar.val}/10</span>
+                          </div>
+                          <div className="h-1 bg-muted rounded-full overflow-hidden">
+                            <div
+                              className={`h-full bg-gradient-to-r ${bar.color}`}
+                              style={{ width: `${bar.val * 10}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ) : (
@@ -1214,7 +1473,7 @@ export default function ProcessCanvas({
                     </div>
 
                     {/* Middle: Title & Description / Prompt */}
-                    <div className="flex-1 flex flex-col justify-center min-w-0 my-1">
+                    <div className="flex-1 flex flex-col justify-center min-w-0 my-1 text-left">
                       <h3 
                         className="text-[11px] font-extrabold line-clamp-2 leading-snug break-words text-foreground"
                       >
@@ -1396,9 +1655,13 @@ export default function ProcessCanvas({
 
       {/* Floating Canvas Controls (Zoom In, Zoom Out, Maximize) */}
       <div 
-        className="absolute bottom-6 right-6 flex flex-col gap-2 z-20 pointer-events-auto"
+        className="absolute bottom-6 right-6 flex flex-col gap-2.5 z-20 pointer-events-auto items-end"
         onPointerDown={(e) => e.stopPropagation()}
       >
+        <div className="bg-[#FFFDF9]/90 dark:bg-card/90 backdrop-blur-md border border-[#DED6C9] dark:border-border px-3 py-2 rounded-2xl shadow-lg text-[10px] font-extrabold text-foreground flex items-center gap-2 pointer-events-none select-none border-b-2">
+          <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded-lg text-[9px] font-black border border-primary/25">Shift</span>
+          <span className="opacity-80">Gedrückthalten + Ziehen für Kasten-Auswahl</span>
+        </div>
         <div className="flex flex-col bg-card border border-border shadow-lg rounded-2xl overflow-hidden">
           <button
             onClick={() => handleZoom(Math.min(2.0, zoom + 0.1))}
