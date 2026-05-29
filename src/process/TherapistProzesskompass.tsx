@@ -40,6 +40,14 @@ export default function TherapistProzesskompass() {
   const navigate = useNavigate();
   const { locale } = useLanguage();
   const canvasRef = useRef<HTMLDivElement>(null);
+  
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const confirmDeleteSelectedNodes = () => {
+    if (selectedNodeIds.length > 0) {
+      setShowDeleteConfirm(true);
+    }
+  };
 
   const {
     client,
@@ -129,6 +137,7 @@ export default function TherapistProzesskompass() {
     handleDeleteConnection,
     handleUpdateNode,
     handleUpdateNodeMetadata,
+    handleTriggerEmailNotification,
 
     handleTitleBlur,
     handleDescriptionBlur,
@@ -160,7 +169,7 @@ export default function TherapistProzesskompass() {
       // Delete
       if (e.key === "Delete" || e.key === "Backspace") {
         e.preventDefault();
-        handleDeleteSelectedNodes();
+        confirmDeleteSelectedNodes();
       }
 
       // Copy (Ctrl+C / Cmd+C)
@@ -252,6 +261,10 @@ export default function TherapistProzesskompass() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedNodeId, selectedNodeIds, nodes, handleDeleteSelectedNodes, handleSave]);
+
+  const selectedNodeTitles = useMemo(() => {
+    return nodes.filter(n => selectedNodeIds.includes(n.id)).map(n => n.title || "Unbenannte Kachel");
+  }, [nodes, selectedNodeIds]);
 
   const text = useMemo(() => ({
     title: translate(locale, { de: "Prozesskompass", en: "Process Compass" }),
@@ -500,7 +513,8 @@ export default function TherapistProzesskompass() {
             selectedNodeIds={selectedNodeIds}
             onUpdate={handleUpdateNode}
             onUpdateMetadata={handleUpdateNodeMetadata}
-            onDelete={() => handleDeleteSelectedNodes()}
+            onDelete={confirmDeleteSelectedNodes}
+            onTriggerEmailNotification={handleTriggerEmailNotification}
             onSave={handleSave}
             locale={locale}
             localTitle={localTitle}
@@ -687,6 +701,81 @@ export default function TherapistProzesskompass() {
         type={toast.type}
         onDone={() => setToast({ ...toast, visible: false })}
       />
+
+      {/* Deletion Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 15 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 15 }}
+              transition={{ type: "spring", duration: 0.45 }}
+              className="bg-[#FFFDF9]/95 dark:bg-card/95 border border-[#DED6C9] dark:border-border w-full max-w-md rounded-[2.5rem] overflow-hidden shadow-2xl p-7 relative select-none border-b-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Top Warning Badge */}
+              <div className="flex items-center gap-4 mb-5">
+                <div className="w-12 h-12 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center font-black text-xl animate-pulse">
+                  ⚠️
+                </div>
+                <div>
+                  <h3 className="font-black text-lg text-foreground tracking-tight">
+                    {selectedNodeIds.length > 1 ? "Elemente löschen?" : "Element löschen?"}
+                  </h3>
+                  <p className="text-[10px] uppercase font-black tracking-wider text-muted-foreground mt-0.5">
+                    Unwiderruflicher Schritt
+                  </p>
+                </div>
+              </div>
+
+              {/* Body message */}
+              <div className="space-y-4 mb-6 text-left">
+                <p className="text-xs font-semibold text-muted-foreground leading-relaxed">
+                  {selectedNodeIds.length > 1
+                    ? `Bist du sicher, dass du diese ${selectedNodeIds.length} Kacheln inklusive all ihrer Verbindungslinien löschen möchtest?`
+                    : `Bist du sicher, dass du dieses Element inklusive all seiner Verbindungslinien löschen möchtest?`}
+                </p>
+
+                {/* List of selected items */}
+                <div className="max-h-36 overflow-y-auto bg-secondary/65 border border-border/80 rounded-2xl p-3.5 space-y-2">
+                  <p className="text-[9px] font-black uppercase tracking-wider text-muted-foreground">Ausgewählte Kacheln:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedNodeTitles.map((title, idx) => (
+                      <span
+                        key={idx}
+                        className="text-[10px] font-bold px-2.5 py-1 rounded-xl bg-destructive/10 text-destructive border border-destructive/20 flex items-center gap-1.5 shadow-sm"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-destructive shrink-0" />
+                        {title}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions row */}
+              <div className="flex gap-3 justify-end pt-2 border-t border-border/50">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="px-5 py-2.5 rounded-2xl bg-secondary text-foreground hover:bg-muted font-bold text-xs transition-all border border-border"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  onClick={async () => {
+                    setShowDeleteConfirm(false);
+                    await handleDeleteSelectedNodes();
+                  }}
+                  className="px-5 py-2.5 rounded-2xl bg-destructive hover:bg-destructive-dark text-destructive-foreground font-bold text-xs transition-all shadow-lg shadow-destructive/20"
+                >
+                  Ja, löschen
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </PageTransition>
   );
 }
